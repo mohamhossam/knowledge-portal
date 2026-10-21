@@ -1,6 +1,6 @@
 import { Plus } from "lucide-react";
 import { lazy, Suspense, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import type { Journey, Release } from "../api/client";
 import {
@@ -13,7 +13,7 @@ import { RouterLink } from "../shell/links";
 import { acceptances } from "./accepted";
 import { AcceptedFrom } from "./AcceptedFrom";
 import { systemName } from "./catalogue";
-import { JourneyEdit, WholeRemove } from "./DraftEdits";
+import { JourneyEdit, WholeRemove, WholeRename } from "./DraftEdits";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useFindParam } from "./frame/useFindParam";
 import type { JourneyView } from "./journey/JourneyViews";
@@ -53,6 +53,10 @@ export function JourneysPage() {
   const focusLater = useFocusAfterRender();
   const journeys = book.release.journeys ?? [];
   const chosen = journeyId !== undefined ? journeys.find((item) => item.id === journeyId) : undefined;
+  // An address made before a rename still finds the journey, under its id now.
+  const renamed = chosen || journeyId === undefined ? undefined : journeys.find((item) => (item.former_ids ?? []).includes(journeyId));
+  const location = useLocation();
+  if (renamed) return <Navigate replace to={`${base}/journeys/${encodeURIComponent(renamed.id)}${location.search}`} />;
 
   const record = adding ? (
     <JourneyEdit
@@ -228,7 +232,8 @@ function JourneyRecord({ journey }: { journey: Journey }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [params, setParams] = useSearchParams();
-  const [editing, setEditing] = useState<"edit" | "remove" | null>(null);
+  const [editing, setEditing] = useState<"edit" | "remove" | "rename" | null>(null);
+  const focusLater = useFocusAfterRender();
   const view = VIEWS.find((item) => item === params.get("view")) ?? "swimlane";
   const offering = (book.release.products ?? []).find((item) => item.id === journey.product_id);
   const orderType = orderTypeName(book.release, journey);
@@ -255,6 +260,7 @@ function JourneyRecord({ journey }: { journey: Journey }) {
             )}
           </span>
           <span>{count(journey.activities.length, "step")} · {count(systemsOf(journey).size, "system")}</span>
+          {(journey.former_ids ?? []).length > 0 && <span>Formerly <code>{(journey.former_ids ?? []).join(", ")}</code></span>}
         </>
       }
       actions={
@@ -262,11 +268,23 @@ function JourneyRecord({ journey }: { journey: Journey }) {
           <ActionGroup label="This journey">
             <Button aria-expanded={editing === "edit"} onClick={() => setEditing(editing === "edit" ? null : "edit")}>Edit this journey</Button>
             <Button variant="tertiary" aria-expanded={editing === "remove"} onClick={() => setEditing(editing === "remove" ? null : "remove")}>Remove this journey…</Button>
+            <Button id="journey-rename" variant="tertiary" aria-expanded={editing === "rename"} onClick={() => setEditing(editing === "rename" ? null : "rename")}>Change the id…</Button>
           </ActionGroup>
         ) : undefined
       }
     >
       {editing === "edit" && <JourneyEdit journey={journey} onDone={() => setEditing(null)} />}
+      {editing === "rename" && (
+        <WholeRename
+          kind="journey"
+          item={journey}
+          onDone={(newId) => {
+            if (newId) return navigate(`${base}/journeys/${encodeURIComponent(newId)}${location.search}`, { replace: true });
+            focusLater(() => document.getElementById("journey-rename"));
+            setEditing(null);
+          }}
+        />
+      )}
       {editing === "remove" && (
         <WholeRemove kind="journey" item={journey} onDone={(removed) => (removed ? navigate(`${base}/journeys`) : setEditing(null))} />
       )}

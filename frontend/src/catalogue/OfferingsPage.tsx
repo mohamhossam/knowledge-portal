@@ -1,6 +1,6 @@
 import { Check, Minus, Plus } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import type { Offering, Release } from "../api/client";
 import {
@@ -14,7 +14,7 @@ import { acceptances } from "./accepted";
 import { AcceptedFrom } from "./AcceptedFrom";
 import { roleLabel, systemName } from "./catalogue";
 import { OfferingStructureDiagram } from "./diagrams/CatalogueDiagrams";
-import { OfferingEdit, OfferingSectionEdit, WholeRemove } from "./DraftEdits";
+import { OfferingEdit, OfferingSectionEdit, WholeRemove, WholeRename } from "./DraftEdits";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useFindParam } from "./frame/useFindParam";
 import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions } from "./GovernanceSections";
@@ -44,6 +44,10 @@ export function OfferingsPage() {
   const focusLater = useFocusAfterRender();
   const offerings = book.release.products ?? [];
   const chosen = offeringId !== undefined ? offerings.find((item) => item.id === offeringId) : undefined;
+  // An address made before a rename still finds the offering, under its id now.
+  const renamed = chosen || offeringId === undefined ? undefined : offerings.find((item) => (item.former_ids ?? []).includes(offeringId));
+  const location = useLocation();
+  if (renamed) return <Navigate replace to={`${base}/offerings/${encodeURIComponent(renamed.id)}${location.search}`} />;
 
   const record = adding ? (
     <OfferingEdit
@@ -206,10 +210,10 @@ function OfferingRecord({ offering }: { offering: Offering }) {
       return query;
     }, { replace: true });
   // One section is edited at a time, in place of where it is read; closing gives focus back to its button.
-  const [editing, setEditing] = useState<OfferingSection | "remove" | null>(null);
+  const [editing, setEditing] = useState<OfferingSection | "remove" | "rename" | null>(null);
   const focusLater = useFocusAfterRender();
   const setReturnTo = (id: string) => focusLater(() => document.getElementById(id));
-  const buttonId = (key: OfferingSection | "remove") => `offering-edit-${key}`;
+  const buttonId = (key: OfferingSection | "remove" | "rename") => `offering-edit-${key}`;
   const offer = (key: OfferingSection): ReactNode =>
     editable && editing === null ? (
       <Button id={buttonId(key)} variant="quiet" onClick={() => setEditing(key)}>Edit {OFFERING_SECTIONS[key].edit}</Button>
@@ -247,6 +251,7 @@ function OfferingRecord({ offering }: { offering: Offering }) {
             {[offering.code, offering.family, offering.version && `version ${offering.version}`, offering.lifecycle].filter(Boolean).join(" · ")}
           </span>
           <span>{count(offering.components.length, "component")} · {count(offering.order_types.length, "order type")} · {count(journeys.length, "journey")}</span>
+          {(offering.former_ids ?? []).length > 0 && <span>Formerly <code>{(offering.former_ids ?? []).join(", ")}</code></span>}
         </>
       }
       actions={
@@ -264,11 +269,33 @@ function OfferingRecord({ offering }: { offering: Offering }) {
             >
               Remove this offering…
             </Button>
+            <Button
+              id={buttonId("rename")}
+              variant="tertiary"
+              aria-expanded={editing === "rename"}
+              onClick={() => {
+                if (editing === "rename") setReturnTo(buttonId("rename"));
+                setEditing(editing === "rename" ? null : "rename");
+              }}
+            >
+              Change the id…
+            </Button>
           </ActionGroup>
         ) : undefined
       }
     >
       {editing === "facts" && panel("facts")}
+      {editing === "rename" && (
+        <WholeRename
+          kind="offering"
+          item={offering}
+          onDone={(newId) => {
+            if (newId) return navigate(`${base}/offerings/${encodeURIComponent(newId)}${location.search}`, { replace: true });
+            setReturnTo(buttonId("rename"));
+            setEditing(null);
+          }}
+        />
+      )}
       {editing === "remove" && (
         <WholeRemove
           kind="offering"

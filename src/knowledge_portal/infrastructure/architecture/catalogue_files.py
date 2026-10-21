@@ -223,6 +223,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "primary_source",
         "portfolio",
         "purpose",
+        # Ids it was known by before a rename, by ;.
+        "former_ids",
     ),
     ORDER_TYPES: (
         "product_id",
@@ -275,6 +277,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "description",
         "confidence",
         "source",
+        "former_ids",
     ),
     ACTIVITIES: (
         "journey_id",
@@ -713,7 +716,8 @@ _INSTRUCTIONS = (
     (
         "Portfolio (optional): where offerings sit, such as Enterprise > Fixed > SMB; level "
         "is the operator's own word for it, parent_id nests one node under another. Products "
-        "portfolio: the node_id an offering sits in.",
+        "portfolio: the node_id an offering sits in. Products and Journeys former_ids: the ids "
+        "an offering or journey had before it was renamed, by ;.",
     ),
     (
         "Plans (optional): an offering's plans as its sources describe them; "
@@ -1329,6 +1333,7 @@ def _journeys(entries: list[dict[str, Any]]) -> list[Journey]:
                     integrations=tuple(links),
                     confidence=_trust(item.get("confidence"), where),
                     source=_optional_text(item.get("source"), where, "source"),
+                    former_ids=_text_list(item.get("former_ids"), where, "former_ids"),
                 )
             )
         except _LocatedError:
@@ -1346,6 +1351,7 @@ def _journey_mapping(journey: Journey) -> dict[str, Any]:
             product=journey.product_id,
             order_type=journey.order_type_code,
             description=journey.description,
+            former_ids=list(journey.former_ids),
         ),
         **_sourced(journey),
         **_present(
@@ -1617,6 +1623,7 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                         for spot in [_where(raw, f"{where}, business rule {index}")]
                     ),
                     purpose=_optional_text(item.get("purpose"), where, "purpose"),
+                    former_ids=_text_list(item.get("former_ids"), where, "former_ids"),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -1996,6 +2003,7 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
                 }
                 for rule in offering.business_rules
             ],
+            former_ids=list(offering.former_ids),
         ),
     }
 
@@ -2756,6 +2764,7 @@ def _sheet_journeys(workbook: Any) -> list[dict[str, Any]]:
             "description": cells.get("description"),
             "confidence": cells.get("confidence"),
             "source": cells.get("source"),
+            "former_ids": list(_split(cells.get("former_ids"), where, "former_ids")),
             "activities": [],
             "flow_rules": [],
             "integrations": [],
@@ -2820,12 +2829,13 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
             **{
                 key: cells.get(key)
                 for key in _HEADERS[PRODUCTS][1:]
-                if key not in {"rules", "sources"}
+                if key not in {"rules", "sources", "former_ids"}
             },
             "_where": where,
             "id": product_id,
             "rules": list(_split(cells.get("rules"), where, "rules")),
             "sources": list(_split(cells.get("sources"), where, "sources")),
+            "former_ids": list(_split(cells.get("former_ids"), where, "former_ids")),
             "questions": [],
             "decisions": [],
             "boundaries": [],
@@ -3168,6 +3178,7 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
             product.primary_source,
             product.portfolio_node_id,
             product.purpose,
+            f"{_LIST_SEPARATOR} ".join(product.former_ids),
         ),
     )
     for plan in product.plans:
@@ -3437,6 +3448,7 @@ def _write_journey(sheets: dict[str, Any], journey: Journey) -> None:
             journey.description,
             _confidence(journey),
             journey.source,
+            f"{_LIST_SEPARATOR} ".join(journey.former_ids),
         ),
     )
     for step in journey.activities:

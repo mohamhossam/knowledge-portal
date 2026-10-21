@@ -1,9 +1,19 @@
 # Handoff to requirement-portal: catalogue contract changes (October 2026)
 
 The internal contract (`contracts/knowledge-internal.openapi.json`) gains structured fields for
-catalogue facts that used to live in prose. Every change but one adds an optional field; nothing
+catalogue facts that used to live in prose, and former ids for renamed offerings and
+journeys. Every change but one adds an optional field; nothing
 is renamed or removed. requirement-portal should review them before it next regenerates its
-client, and answer the one question below before this change is released.
+client, adopt the first item, and answer the one question below before this change is
+released.
+
+## To adopt
+
+- **Former ids** (`former_ids` on offerings and journeys; ADR 0124). A renamed offering or
+  journey keeps the ids it had. A precedent, change request or saved assessment that stored
+  an old id should resolve it through `former_ids` before treating the offering or journey
+  as gone. This portal already does so for its own precedents, change requests and
+  suggestions.
 
 ## One narrowed type: please confirm
 

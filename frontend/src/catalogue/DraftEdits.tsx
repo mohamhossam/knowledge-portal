@@ -371,7 +371,7 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
   const [value, setValue] = useState<Offering>(
     () => ({
       id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [],
-      sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], accepted: [],
+      sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], accepted: [], former_ids: [],
     }),
   );
   const products = release.products ?? [];
@@ -444,7 +444,7 @@ export function JourneyEdit({ journey, onDone }: { journey?: Journey; onDone: (s
   const release = book.release;
   const { saveDraft } = useEditing(release);
   const [value, setValue] = useState<Journey>(
-    () => journey ?? { id: "", name: "", activities: [], flow_rules: [], integrations: [], edges: [], channel_edges: [], shared_edges: [], accepted: [] },
+    () => journey ?? { id: "", name: "", activities: [], flow_rules: [], integrations: [], edges: [], channel_edges: [], shared_edges: [], accepted: [], former_ids: [] },
   );
   const journeys = release.journeys ?? [];
   return (
@@ -502,5 +502,55 @@ export function WholeRemove({ kind, item, onDone }: { kind: "offering" | "journe
           .catch(() => undefined)
       }
     />
+  );
+}
+
+/** What an id may be: it is part of a page's address. */
+const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
+
+/**
+ * A new id for an offering or journey. Precedents, change requests and requirement work that
+ * name the old id still find it: the old id is kept as a former id.
+ */
+export function WholeRename({ kind, item, onDone }: { kind: "offering" | "journey"; item: Offering | Journey; onDone: (newId: string | null) => void }) {
+  const { book } = useCatalogueContext();
+  const release = book.release;
+  const { renameEntity } = useEditing(release);
+  const [newId, setNewId] = useState(item.id);
+  const wanted = newId.trim();
+  const siblings: (Offering | Journey)[] = kind === "offering" ? release.products ?? [] : release.journeys ?? [];
+  const taken = siblings.some((other) => other.id !== item.id && (other.id === wanted || (other.former_ids ?? []).includes(wanted)));
+  const problem = !wanted
+    ? "Give it an id."
+    : wanted === item.id
+      ? "Type the id it should have."
+      : !ID_PATTERN.test(wanted)
+        ? "An id is up to 200 letters, digits, dots, dashes and underscores, with no spaces."
+        : taken
+          ? `${wanted} is already the id, or a former id, of another ${kind}.`
+          : null;
+  return (
+    <EditPanel
+      title={`Change the id of ${item.name}`}
+      focusOnOpen
+      action="Change the id"
+      busy={renameEntity.isPending}
+      // The field says what is wrong; the button only points to it.
+      problem={problem && wanted !== item.id ? "Correct the new id first." : problem}
+      error={renameEntity.error}
+      onCancel={() => onDone(null)}
+      onSubmit={() =>
+        void renameEntity
+          .mutateAsync({ kind: kind === "offering" ? "offerings" : "journeys", id: item.id, newId: wanted })
+          .then(() => onDone(wanted))
+          .catch(() => undefined)
+      }
+    >
+      <p className="cat-quiet">
+        What still names <code>{item.id}</code> finds it under its new id: the old one is kept as a former id.
+      </p>
+      {/* The id as it stands is no error, only nothing to save yet. */}
+      <TextField label="New id" value={newId} dir="ltr" required onChange={setNewId} error={wanted === item.id ? null : problem} />
+    </EditPanel>
   );
 }

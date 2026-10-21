@@ -4425,6 +4425,26 @@
         "title": "DraftedComponentResponse",
         "type": "object"
       },
+      "EntityRenameRequest": {
+        "description": "A new id for an offering or journey; the old one is kept as a former id.",
+        "properties": {
+          "expected_revision": {
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "new_id": {
+            "maxLength": 200,
+            "title": "New Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "new_id"
+        ],
+        "title": "EntityRenameRequest",
+        "type": "object"
+      },
       "EvidenceBlockKind": {
         "enum": [
           "heading",
@@ -6342,6 +6362,16 @@
             },
             "maxItems": 5000,
             "title": "Flow Rules",
+            "type": "array"
+          },
+          "former_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Former Ids",
             "type": "array"
           },
           "id": {
@@ -9556,6 +9586,16 @@
               }
             ],
             "title": "Family"
+          },
+          "former_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Former Ids",
+            "type": "array"
           },
           "id": {
             "maxLength": 200,
@@ -15926,6 +15966,89 @@
         ]
       }
     },
+    "/architecture-knowledge/releases/{release_id}/journeys/{journey_id}/rename": {
+      "post": {
+        "description": "Give a journey a new id; the old id stays as a former id.",
+        "operationId": "rename_journey_architecture_knowledge_releases__release_id__journeys__journey_id__rename_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "journey_id",
+            "required": true,
+            "schema": {
+              "title": "Journey Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntityRenameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeReleaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rename Journey",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
     "/architecture-knowledge/releases/{release_id}/name": {
       "put": {
         "operationId": "rename_draft_architecture_knowledge_releases__release_id__name_put",
@@ -15994,6 +16117,89 @@
           }
         ],
         "summary": "Rename Draft",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/offerings/{offering_id}/rename": {
+      "post": {
+        "description": "Give an offering a new id; the old id stays as a former id, and the version's\njourneys and conflicts follow.",
+        "operationId": "rename_offering_architecture_knowledge_releases__release_id__offerings__offering_id__rename_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "offering_id",
+            "required": true,
+            "schema": {
+              "title": "Offering Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntityRenameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeReleaseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rename Offering",
         "tags": [
           "architecture knowledge"
         ]

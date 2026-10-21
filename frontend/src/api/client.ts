@@ -272,6 +272,9 @@ export const api = {
     (await send(`${releasePath(releaseId)}/catalogue-file?format=${format}`)).blob(),
   /** Starts the one draft: a copy of the version in service. */
   createDraft: (name: string) => post<Release>("/architecture-knowledge/releases", { name }),
+  /** A new id for an offering or journey; the old one is kept as a former id. */
+  renameEntity: (releaseId: string, kind: "offerings" | "journeys", id: string, body: { expected_revision: number; new_id: string }) =>
+    post<Release>(`${releasePath(releaseId)}/${kind}/${encodeURIComponent(id)}/rename`, body),
   renameDraft: (releaseId: string, body: { expected_revision: number; name: string }) =>
     apiRequest<Release>(`${releasePath(releaseId)}/name`, { method: "PUT", body: JSON.stringify(body) }),
   discardDraft: async (releaseId: string, expectedRevision: number) => {

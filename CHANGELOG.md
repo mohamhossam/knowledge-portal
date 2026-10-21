@@ -14,6 +14,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   domain or in none. The committed catalogue holds to both. ADR-0123 proposes the item's
   three open decisions: co-mastery, an interface suggestion kind, library classification.
 
+- Stable ids for offerings and journeys (ADR 0124, proposed). An offering or journey can be
+  given a new id from its page ("Change the id…"); the old id is kept in `former_ids`, and the
+  version's journeys and conflicts follow. Precedents, change requests, suggestions and the
+  organisation catalogue that still name the old id find it, and an address with the old id
+  opens the page under the new one. Renaming back undoes a rename. The version diff reports
+  a rename as one change with `id` first. Every catalogue file carries `former_ids`.
+  `POST /architecture-knowledge/releases/{id}/offerings/{offering_id}/rename` and
+  `.../journeys/{journey_id}/rename`. Public and internal contracts, additive; requirement-portal
+  should adopt `former_ids` (`docs/architecture/requirement-portal-handoff-catalogue.md`).
+
 - Structured fields, part 2: a call's `timing` is `Sync` or `Async`, read in any case and as
   sources write it ("Synchronous", "Sync (callback)"); text that names no timing, or both, is
   refused, with its place in a catalogue file. Tables read from documents keep other wording

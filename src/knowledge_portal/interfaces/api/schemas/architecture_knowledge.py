@@ -1500,6 +1500,8 @@ class ProductOfferingSchema(BaseModel):
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     # Why a customer buys it, beside the proposition that says what it is.
     purpose: Text | None = None
+    # Ids it was known by before a rename; set by renaming, kept when a file says so.
+    former_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, offering: ProductOffering) -> ProductOfferingSchema:
@@ -1538,6 +1540,7 @@ class ProductOfferingSchema(BaseModel):
             ],
             accepted=[AcceptedFromSchema.from_domain(item) for item in offering.accepted],
             purpose=offering.purpose,
+            former_ids=list(offering.former_ids),
         )
 
     def to_domain(self) -> ProductOffering:
@@ -1569,6 +1572,7 @@ class ProductOfferingSchema(BaseModel):
             plans=tuple(item.to_domain() for item in self.plans),
             business_rules=tuple(item.to_domain() for item in self.business_rules),
             purpose=self.purpose,
+            former_ids=tuple(self.former_ids),
         )
 
 
@@ -1834,6 +1838,8 @@ class JourneySchema(BaseModel):
 
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # Ids it was known by before a rename; set by renaming, kept when a file says so.
+    former_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, journey: Journey) -> JourneySchema:
@@ -1859,6 +1865,7 @@ class JourneySchema(BaseModel):
             ],
             shared_edges=_edge_responses(shared_journey_edges(journey)),
             accepted=[AcceptedFromSchema.from_domain(item) for item in journey.accepted],
+            former_ids=list(journey.former_ids),
         )
 
     def to_domain(self) -> Journey:
@@ -1873,6 +1880,7 @@ class JourneySchema(BaseModel):
             integrations=tuple(item.to_domain() for item in self.integrations),
             confidence=self.confidence,
             source=self.source,
+            former_ids=tuple(self.former_ids),
         )
 
 
@@ -2863,3 +2871,10 @@ class IndexCoverageResponse(BaseModel):
                 for item in coverage.concepts_without_chunk
             ],
         )
+
+
+class EntityRenameRequest(BaseModel):
+    """A new id for an offering or journey; the old one is kept as a former id."""
+
+    expected_revision: int
+    new_id: Identifier

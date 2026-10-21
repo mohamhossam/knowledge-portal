@@ -448,11 +448,15 @@ class ProductOffering:
     business_rules: tuple[BusinessRule, ...] = ()
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
+    # Ids it was known by before a rename, so precedents, change requests and requirement
+    # work that still name an old id find it.
+    former_ids: tuple[str, ...] = ()
     # Why a customer buys it, beside the proposition that says what it is.
     purpose: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Offering id"))
+        object.__setattr__(self, "former_ids", former(self.id, self.former_ids))
         object.__setattr__(self, "name", required(self.name, "Offering name"))
         for field, label in (
             ("code", "Offering code"),
@@ -706,9 +710,21 @@ def _named[T](
     return found[0] if len(found) == 1 else None
 
 
+def former(current: str, ids: tuple[str, ...]) -> tuple[str, ...]:
+    """An entity's former ids: each once, and never its current id."""
+    found = tuple(dict.fromkeys(required(item, "Former id") for item in ids))
+    if current in found:
+        raise InvalidKnowledgeError(f"{current!r} cannot be a former id of itself.")
+    return found
+
+
 def find_offering(offerings: tuple[ProductOffering, ...], reference: str) -> ProductOffering | None:
-    """The offering named by id, code or name, ignoring case and punctuation; only one may fit."""
-    exact = next((item for item in offerings if item.id == reference), None)
+    """The offering named by id, former id, code or name, ignoring case and punctuation; only
+    one may fit."""
+    exact = next(
+        (item for item in offerings if item.id == reference or reference in item.former_ids),
+        None,
+    )
     return exact or _named(offerings, reference, lambda item: (item.id, item.code, item.name))
 
 

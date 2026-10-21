@@ -22,7 +22,7 @@ function startingSystem(release: Release, name: string | null, id: string): stri
 }
 
 const emptyJourney = (name: string): Journey => ({
-  id: slug(name), name, activities: [], flow_rules: [], integrations: [], edges: [], channel_edges: [], shared_edges: [], accepted: [],
+  id: slug(name), name, activities: [], flow_rules: [], integrations: [], edges: [], channel_edges: [], shared_edges: [], accepted: [], former_ids: [],
 });
 
 /**

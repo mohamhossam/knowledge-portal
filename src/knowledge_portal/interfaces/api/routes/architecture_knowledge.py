@@ -72,6 +72,7 @@ from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     DocumentPassageResponse,
     DocumentSelectionRequest,
     DraftUpdateRequest,
+    EntityRenameRequest,
     ExtractionRunResponse,
     ImpactComparisonResponse,
     IndexCoverageResponse,
@@ -313,6 +314,43 @@ def remove_system(
 ) -> KnowledgeReleaseResponse:
     return KnowledgeReleaseResponse.from_domain(
         knowledge.remove_system(release_id, body.expected_revision, system_id, actor)
+    )
+
+
+@router.post(
+    "/releases/{release_id}/offerings/{offering_id}/rename",
+    response_model=KnowledgeReleaseResponse,
+)
+def rename_offering(
+    release_id: str,
+    offering_id: str,
+    body: EntityRenameRequest,
+    knowledge: KnowledgeDep,
+    actor: KnowledgeActorDep,
+) -> KnowledgeReleaseResponse:
+    """Give an offering a new id; the old id stays as a former id, and the version's
+    journeys and conflicts follow."""
+    return KnowledgeReleaseResponse.from_domain(
+        knowledge.rename_offering(
+            release_id, body.expected_revision, offering_id, body.new_id, actor
+        )
+    )
+
+
+@router.post(
+    "/releases/{release_id}/journeys/{journey_id}/rename",
+    response_model=KnowledgeReleaseResponse,
+)
+def rename_journey(
+    release_id: str,
+    journey_id: str,
+    body: EntityRenameRequest,
+    knowledge: KnowledgeDep,
+    actor: KnowledgeActorDep,
+) -> KnowledgeReleaseResponse:
+    """Give a journey a new id; the old id stays as a former id."""
+    return KnowledgeReleaseResponse.from_domain(
+        knowledge.rename_journey(release_id, body.expected_revision, journey_id, body.new_id, actor)
     )
 
 

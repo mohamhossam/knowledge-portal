@@ -3822,6 +3822,14 @@
             "title": "Flow Rules",
             "type": "array"
           },
+          "former_ids": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Former Ids",
+            "type": "array"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -4050,6 +4058,16 @@
             },
             "maxItems": 5000,
             "title": "Flow Rules",
+            "type": "array"
+          },
+          "former_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Former Ids",
             "type": "array"
           },
           "id": {
@@ -6452,6 +6470,14 @@
             ],
             "title": "Family"
           },
+          "former_ids": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Former Ids",
+            "type": "array"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -6718,6 +6744,16 @@
               }
             ],
             "title": "Family"
+          },
+          "former_ids": {
+            "default": [],
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Former Ids",
+            "type": "array"
           },
           "id": {
             "maxLength": 200,

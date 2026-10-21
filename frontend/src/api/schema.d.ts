@@ -581,6 +581,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/releases/{release_id}/journeys/{journey_id}/rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rename Journey
+         * @description Give a journey a new id; the old id stays as a former id.
+         */
+        post: operations["rename_journey_architecture_knowledge_releases__release_id__journeys__journey_id__rename_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/releases/{release_id}/name": {
         parameters: {
             query?: never;
@@ -592,6 +612,27 @@ export interface paths {
         /** Rename Draft */
         put: operations["rename_draft_architecture_knowledge_releases__release_id__name_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/architecture-knowledge/releases/{release_id}/offerings/{offering_id}/rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rename Offering
+         * @description Give an offering a new id; the old id stays as a former id, and the version's
+         *     journeys and conflicts follow.
+         */
+        post: operations["rename_offering_architecture_knowledge_releases__release_id__offerings__offering_id__rename_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3512,6 +3553,16 @@ export interface components {
             system_ids: string[];
         };
         /**
+         * EntityRenameRequest
+         * @description A new id for an offering or journey; the old one is kept as a former id.
+         */
+        EntityRenameRequest: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** New Id */
+            new_id: string;
+        };
+        /**
          * EvidenceBlockKind
          * @enum {string}
          */
@@ -4153,6 +4204,11 @@ export interface components {
              * @default []
              */
             flow_rules: components["schemas"]["FlowRuleSchema"][];
+            /**
+             * Former Ids
+             * @default []
+             */
+            former_ids: string[];
             /** Id */
             id: string;
             /**
@@ -5202,6 +5258,11 @@ export interface components {
             decisions: components["schemas"]["ArchitectureDecisionSchema"][];
             /** Family */
             family?: string | null;
+            /**
+             * Former Ids
+             * @default []
+             */
+            former_ids: string[];
             /** Id */
             id: string;
             /** Lifecycle */
@@ -7812,6 +7873,44 @@ export interface operations {
             };
         };
     };
+    rename_journey_architecture_knowledge_releases__release_id__journeys__journey_id__rename_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+                journey_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityRenameRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeReleaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     rename_draft_architecture_knowledge_releases__release_id__name_put: {
         parameters: {
             query?: never;
@@ -7826,6 +7925,44 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["RenameVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeReleaseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_offering_architecture_knowledge_releases__release_id__offerings__offering_id__rename_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+                offering_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityRenameRequest"];
             };
         };
         responses: {

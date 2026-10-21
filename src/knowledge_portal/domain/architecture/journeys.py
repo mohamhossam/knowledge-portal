@@ -25,6 +25,7 @@ from knowledge_portal.domain.architecture.products import (
     SourceConfidence,
     check_source,
     first_known,
+    former,
     role_code,
 )
 from knowledge_portal.domain.architecture.provenance import AcceptedFrom
@@ -328,9 +329,12 @@ class Journey:
     source: str | None = None
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
+    # Ids it was known by before a rename.
+    former_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Journey id"))
+        object.__setattr__(self, "former_ids", former(self.id, self.former_ids))
         object.__setattr__(self, "name", required(self.name, "Journey name"))
         for field, label in (
             ("product_id", "Product offering"),

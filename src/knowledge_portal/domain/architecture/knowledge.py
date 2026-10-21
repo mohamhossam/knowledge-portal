@@ -29,6 +29,7 @@ from knowledge_portal.domain.architecture.governance import (
     SourceConflict,
     check_governance,
 )
+from knowledge_portal.domain.architecture.identity import check_former_ids
 from knowledge_portal.domain.architecture.interfaces import (
     SystemInterface,
     check_data_roles,
@@ -606,6 +607,8 @@ class ArchitectureKnowledge:
                     "which is not in the portfolio."
                 )
         check_journeys(self.journeys, system_ids, self.products, channel_ids)
+        check_former_ids("offering", self.products)
+        check_former_ids("journey", self.journeys)
         terms = check_vocabulary(self.vocabulary)
         check_vocabulary_links(terms, self.products, self.journeys, self.channels)
         for system in self.systems:
