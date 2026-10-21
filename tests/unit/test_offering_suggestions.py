@@ -63,6 +63,7 @@ from knowledge_portal.infrastructure.architecture.located_extractor import (
 )
 from knowledge_portal.infrastructure.architecture.markdown_passages import markdown_passages
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.llm.catalogue_extraction import (
     ChangeOutput,
     ComponentOutput,
@@ -422,6 +423,7 @@ def test_parts_of_one_offering_read_apart_are_one_suggestion() -> None:
         CatalogueFileAdapter(),
         InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
         10_000,
+        OfflineDocumentScanner(),
     )
     storage = InMemoryDocumentStorage()
     candidates = InMemoryCatalogueCandidates()

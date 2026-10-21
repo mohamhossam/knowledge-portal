@@ -43,6 +43,7 @@ from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddin
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
 from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
     InMemoryArchitectureKnowledgeRepository,
 )
@@ -120,6 +121,7 @@ def test_accept_all_leaves_what_cannot_apply_and_accepts_the_rest() -> None:
         CatalogueFileAdapter(),
         InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
         10_000,
+        OfflineDocumentScanner(),
     )
     candidates = InMemoryCatalogueCandidates()
     draft = manage.create_draft(MAINTAINER, "Next version")

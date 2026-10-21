@@ -42,6 +42,7 @@ from knowledge_portal.infrastructure.architecture.postgres_evidence_index import
     PostgresEvidenceIndex,
 )
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.persistence.document_storage import (
     InMemoryDocumentStorage,
 )
@@ -78,7 +79,9 @@ def test_pgvector_index_release_and_job_survive_repository_restart() -> None:
     index = PostgresEvidenceIndex(
         PostgresStore(DirectPostgresConnector(DATABASE_URL)), FakeEmbeddings(), FakeWordTokenizer()
     )
-    knowledge = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), index, 10_000_000)
+    knowledge = ManageArchitectureKnowledge(
+        repository, CatalogueFileAdapter(), index, 10_000_000, OfflineDocumentScanner()
+    )
     actor = Actor("knowledge-editor", frozenset({"knowledge_maintainer"}))
     draft = _fresh_draft(knowledge, actor)
     built = BuildArchitectureIndex(
@@ -144,7 +147,9 @@ def test_deselected_document_registry_survives_restart() -> None:
     index = PostgresEvidenceIndex(
         PostgresStore(DirectPostgresConnector(DATABASE_URL)), FakeEmbeddings(), FakeWordTokenizer()
     )
-    knowledge = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), index, 10_000_000)
+    knowledge = ManageArchitectureKnowledge(
+        repository, CatalogueFileAdapter(), index, 10_000_000, OfflineDocumentScanner()
+    )
     actor = Actor("maintainer", frozenset({"knowledge_maintainer"}))
     draft = _fresh_draft(knowledge, actor)
     version_id = uuid4().hex

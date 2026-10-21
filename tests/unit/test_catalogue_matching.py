@@ -68,6 +68,7 @@ from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
 )
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.llm.catalogue_extraction import (
     ChangeOutput,
     ExtractionOutput,
@@ -413,6 +414,7 @@ def _setup(
         CatalogueFileAdapter(),
         InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
         10_000,
+        OfflineDocumentScanner(),
     )
     storage = InMemoryDocumentStorage()
     candidates = InMemoryCatalogueCandidates()

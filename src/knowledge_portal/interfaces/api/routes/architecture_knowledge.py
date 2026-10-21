@@ -356,9 +356,11 @@ async def preview_catalogue_file(
     file: Annotated[UploadFile, File()],
 ) -> CatalogueDiffResponse:
     content = await file.read(knowledge.max_file_bytes + 1)
-    return CatalogueDiffResponse.from_domain(
-        knowledge.preview_file_import(release_id, file.filename or "", content, actor)
+    # Spreadsheet parsing is synchronous; off the event loop, like the batch route.
+    diff = await run_in_threadpool(
+        knowledge.preview_file_import, release_id, file.filename or "", content, actor
     )
+    return CatalogueDiffResponse.from_domain(diff)
 
 
 @router.post("/releases/{release_id}/catalogue-file", response_model=KnowledgeReleaseResponse)
@@ -370,11 +372,16 @@ async def import_catalogue_file(
     expected_revision: Annotated[int, Form()],
 ) -> KnowledgeReleaseResponse:
     content = await file.read(knowledge.max_file_bytes + 1)
-    return KnowledgeReleaseResponse.from_domain(
-        knowledge.apply_file_import(
-            release_id, expected_revision, file.filename or "", content, actor
-        )
+    # Spreadsheet parsing and the save are synchronous; off the event loop.
+    imported = await run_in_threadpool(
+        knowledge.apply_file_import,
+        release_id,
+        expected_revision,
+        file.filename or "",
+        content,
+        actor,
     )
+    return KnowledgeReleaseResponse.from_domain(imported)
 
 
 @router.get("/releases/{release_id}/changes", response_model=CatalogueDiffResponse)
@@ -413,19 +420,20 @@ async def upload_document(
     # One byte past the limit is enough for validation to reject an oversized
     # file without buffering the rest of an arbitrarily large body.
     content = await file.read(use_case.max_bytes + 1)
-    return KnowledgeReleaseResponse.from_domain(
-        use_case.execute(
-            release_id,
-            expected_revision,
-            title,
-            file.filename or "",
-            file.content_type or "",
-            language,
-            content,
-            actor,
-            clock.now(),
-        )
+    # Scanning and extraction are synchronous; off the event loop, like the batch route.
+    updated = await run_in_threadpool(
+        use_case.execute,
+        release_id,
+        expected_revision,
+        title,
+        file.filename or "",
+        file.content_type or "",
+        language,
+        content,
+        actor,
+        clock.now(),
     )
+    return KnowledgeReleaseResponse.from_domain(updated)
 
 
 @router.post(

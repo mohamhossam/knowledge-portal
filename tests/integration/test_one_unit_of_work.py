@@ -46,6 +46,7 @@ from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddin
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
 from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.persistence.document_storage import PostgresDocumentStorage
 from knowledge_portal.infrastructure.persistence.migration_runner import run_migrations
 from knowledge_portal.infrastructure.persistence.postgres_architecture_knowledge import (
@@ -92,6 +93,7 @@ def _world() -> tuple[PostgresStore, PostgresArchitectureKnowledgeRepository, An
         CatalogueFileAdapter(),
         InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
         10_000_000,
+        OfflineDocumentScanner(),
     )
     return store, repository, manage
 
@@ -194,6 +196,7 @@ def test_a_lost_upload_rolls_its_blob_back() -> None:
         failing_repository,
         storage,
         SafeDocumentTextExtractor(),
+        OfflineDocumentScanner(),
         store,
         10_000_000,
     )

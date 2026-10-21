@@ -128,6 +128,7 @@ from knowledge_portal.infrastructure.architecture.yaml_knowledge import (
     YamlArchitectureKnowledge,
     default_knowledge_path,
 )
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.persistence.document_storage import InMemoryDocumentStorage
 from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
     InMemoryArchitectureKnowledgeRepository,
@@ -173,7 +174,9 @@ def world() -> _World:
     clock = FixedClock(NOW)
     repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
     index = InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer())
-    manage = ManageArchitectureKnowledge(repository, CatalogueFileAdapter(), index, 10_000_000)
+    manage = ManageArchitectureKnowledge(
+        repository, CatalogueFileAdapter(), index, 10_000_000, OfflineDocumentScanner()
+    )
     build = BuildArchitectureIndex(
         manage,
         index,

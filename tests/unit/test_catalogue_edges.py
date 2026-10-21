@@ -78,6 +78,7 @@ from knowledge_portal.infrastructure.architecture.yaml_knowledge import (
     YamlArchitectureKnowledge,
     default_knowledge_path,
 )
+from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.llm.catalogue_extraction import (
     FakeCatalogueExtractor,
     slug,
@@ -279,7 +280,11 @@ def test_workbook_rows_are_checked_against_the_systems_sheet() -> None:
 def test_file_import_refuses_published_empty_and_oversized_files() -> None:
     repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
     manage = ManageArchitectureKnowledge(
-        repository, ADAPTER, InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()), 10
+        repository,
+        ADAPTER,
+        InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
+        10,
+        OfflineDocumentScanner(),
     )
     with pytest.raises(KnowledgeConflictError, match="Only a draft"):
         manage.preview_file_import(seed_knowledge().id, "c.yaml", b"systems: []", MAINTAINER)
@@ -302,7 +307,11 @@ def _proposer(
 ]:
     repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
     manage = ManageArchitectureKnowledge(
-        repository, ADAPTER, InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()), 10_000
+        repository,
+        ADAPTER,
+        InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
+        10_000,
+        OfflineDocumentScanner(),
     )
     storage = InMemoryDocumentStorage()
     candidates = InMemoryCatalogueCandidates()
@@ -467,7 +476,9 @@ def test_fake_extractor_skips_table_rows() -> None:
 def test_ai_mapping_of_a_published_release_records_organisation_ownership() -> None:
     repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
     index = InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer())
-    manage = ManageArchitectureKnowledge(repository, ADAPTER, index, 10_000)
+    manage = ManageArchitectureKnowledge(
+        repository, ADAPTER, index, 10_000, OfflineDocumentScanner()
+    )
     draft = manage.create_draft(MAINTAINER, "Next version")
     built = BuildArchitectureIndex(
         manage,

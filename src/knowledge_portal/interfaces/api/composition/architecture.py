@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from smb_kernel.documents.ports import DocumentScannerPort
 from smb_kernel.documents.text_extractor import SafeDocumentTextExtractor
 from smb_kernel.time.clock import ClockPort
 
@@ -131,12 +132,14 @@ def build_architecture(
     llm: LLMAdapters,
     reasoner: ArchitectureReasonerPort,
     clock: ClockPort,
+    scanner: DocumentScannerPort,
 ) -> ArchitectureWiring:
     manage = ManageArchitectureKnowledge(
         persistence.architecture_repository,
         CatalogueFileAdapter(),
         persistence.architecture_evidence_index,
         settings.document_max_file_bytes,
+        scanner,
     )
     # The operator's DOCUMENT_* limits, as the library's extractor uses them.
     document_extractor = SafeDocumentTextExtractor(
@@ -152,6 +155,7 @@ def build_architecture(
         persistence.architecture_repository,
         persistence.document_storage,
         document_extractor,
+        scanner,
         persistence.transaction_manager,
         settings.document_max_file_bytes,
     )

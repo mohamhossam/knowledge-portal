@@ -116,7 +116,11 @@ def build_mapping_evaluation(settings: Settings, clock: ClockPort) -> MappingEva
     repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
     index = InMemoryEvidenceIndex(retrieval.embeddings, retrieval.tokenizer)
     manage = ManageArchitectureKnowledge(
-        repository, CatalogueFileAdapter(), index, settings.document_max_file_bytes
+        repository,
+        CatalogueFileAdapter(),
+        index,
+        settings.document_max_file_bytes,
+        OfflineDocumentScanner(),
     )
     build_index = BuildArchitectureIndex(
         manage,
