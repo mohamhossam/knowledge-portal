@@ -117,7 +117,10 @@ from knowledge_portal.application.use_cases.precedents import (
     ReadPrecedentSummaries,
     RecordPrecedent,
 )
-from knowledge_portal.application.use_cases.provider_call_rate import ProviderCallRateLimit
+from knowledge_portal.application.use_cases.provider_call_rate import (
+    CATALOG_REFUSAL,
+    ProviderCallRateLimit,
+)
 from knowledge_portal.application.use_cases.reference_knowledge import (
     LEGACY_BYTE_BUDGET,
     ChunkSizer,
@@ -209,6 +212,8 @@ class Container:
     resolve_signed_in_actor: ResolveSignedInActor
     search_known_actors: SearchKnownActors
     provider_call_rate_limit: ProviderCallRateLimit
+    # Explorer readers' product catalogue lookups, counted apart (ADR-0101, Amendment 3).
+    catalog_read_rate_limit: ProviderCallRateLimit
     document_storage: DocumentStoragePort
     knowledge_events: KnowledgeEventOutboxPort
     document_library: DocumentLibrary
@@ -399,6 +404,9 @@ def _build_container(
         search_known_actors=SearchKnownActors(persistence.actor_directory),
         provider_call_rate_limit=ProviderCallRateLimit(
             settings.provider_rate_limit_per_minute, clock
+        ),
+        catalog_read_rate_limit=ProviderCallRateLimit(
+            settings.provider_rate_limit_per_minute, clock, CATALOG_REFUSAL
         ),
         document_storage=persistence.document_storage,
         knowledge_events=persistence.knowledge_events,
