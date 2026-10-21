@@ -197,14 +197,12 @@
           "timing": {
             "anyOf": [
               {
-                "maxLength": 300,
-                "type": "string"
+                "$ref": "#/components/schemas/CallTiming"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Timing"
+            ]
           },
           "tmf_equivalent": {
             "anyOf": [
@@ -1421,6 +1419,15 @@
         ],
         "title": "BusinessRuleSchema",
         "type": "object"
+      },
+      "CallTiming": {
+        "description": "Whether a call waits for its answer.",
+        "enum": [
+          "Sync",
+          "Async"
+        ],
+        "title": "CallTiming",
+        "type": "string"
       },
       "CandidateBasis": {
         "description": "Whether the document says this outright or the model read it from what it describes.",
@@ -9179,10 +9186,34 @@
       },
       "PlanCharacteristicSchema": {
         "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
           "name": {
             "maxLength": 300,
             "title": "Name",
             "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
           },
           "value": {
             "maxLength": 10000,

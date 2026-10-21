@@ -64,8 +64,10 @@ from knowledge_portal.domain.architecture.interfaces import (
 from knowledge_portal.domain.architecture.journeys import (
     Activity,
     ActivityIntegration,
+    CallTiming,
     FlowRule,
     Journey,
+    call_timing,
     flow_rule_kind,
 )
 from knowledge_portal.domain.architecture.knowledge import (
@@ -830,6 +832,14 @@ def _optional_text(value: object, where: str, field: str) -> str | None:
     return _text(value, where, field)
 
 
+def _timing(value: object, where: str) -> CallTiming | None:
+    """A call's timing as a file writes it: "Sync", "synchronous", "Sync (callback)"."""
+    try:
+        return call_timing(_optional_text(value, where, "timing"))
+    except InvalidKnowledgeError as exc:
+        raise InvalidKnowledgeError(f"{where}: {exc}") from exc
+
+
 def _kind(value: object, where: str) -> RelationshipKind:
     """An optional relationship kind; "Calls API" and "calls_api" both read as calls_api."""
     text = _optional_text(value, where, "kind")
@@ -1271,7 +1281,7 @@ def _link(link: dict[str, Any], place: str) -> ActivityIntegration:
         interaction=_optional_text(link.get("interaction"), place, "interaction"),
         interface=_optional_text(link.get("interface"), place, "interface"),
         payload=_optional_text(link.get("payload"), place, "payload"),
-        timing=_optional_text(link.get("timing"), place, "timing"),
+        timing=_timing(link.get("timing"), place),
         correlation_key=_optional_text(link.get("correlation_key"), place, "correlation_key"),
         confidence=_trust(link.get("confidence"), place),
         source=_optional_text(link.get("source"), place, "source"),
@@ -1392,7 +1402,7 @@ def _journey_mapping(journey: Journey) -> dict[str, Any]:
                         interaction=link.interaction,
                         interface=link.interface,
                         payload=link.payload,
-                        timing=link.timing,
+                        timing=link.timing.value if link.timing else None,
                         correlation_key=link.correlation_key,
                         from_system=link.from_system_id,
                         to_system=link.to_system_id,
@@ -3486,7 +3496,7 @@ def _write_journey(sheets: dict[str, Any], journey: Journey) -> None:
                 link.interaction,
                 link.interface,
                 link.payload,
-                link.timing,
+                link.timing.value if link.timing else None,
                 link.correlation_key,
                 _confidence(link),
                 link.source,

@@ -2232,8 +2232,7 @@ export interface components {
             source?: string | null;
             /** Style */
             style?: string | null;
-            /** Timing */
-            timing?: string | null;
+            timing?: components["schemas"]["CallTiming"] | null;
             /** Tmf Equivalent */
             tmf_equivalent?: string | null;
             /** To Activity */
@@ -2604,6 +2603,12 @@ export interface components {
             /** Statement */
             statement: string;
         };
+        /**
+         * CallTiming
+         * @description Whether a call waits for its answer.
+         * @enum {string}
+         */
+        CallTiming: "Sync" | "Async";
         /**
          * CandidateBasis
          * @description Whether the document says this outright or the model read it from what it describes.
@@ -5071,8 +5076,12 @@ export interface components {
         };
         /** PlanCharacteristicSchema */
         PlanCharacteristicSchema: {
+            /** Amount */
+            amount?: string | null;
             /** Name */
             name: string;
+            /** Unit */
+            unit?: string | null;
             /** Value */
             value: string;
         };

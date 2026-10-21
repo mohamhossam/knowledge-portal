@@ -15,13 +15,14 @@ from knowledge_portal.domain.architecture.change_requests import (
     IncomingStatus,
 )
 from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
+from knowledge_portal.infrastructure.persistence.stored_timings import stored_timings
 
 _ITEM: TypeAdapter[IncomingChangeRequest] = TypeAdapter(IncomingChangeRequest)
 
 
 def _item(raw: object) -> IncomingChangeRequest:
     try:
-        return _ITEM.validate_python(raw)
+        return _ITEM.validate_python(stored_timings(raw))
     except ValidationError as exc:
         raise PersistenceError("A stored change request is invalid.") from exc
 

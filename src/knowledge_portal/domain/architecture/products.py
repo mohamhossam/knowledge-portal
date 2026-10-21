@@ -21,6 +21,7 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Collection
 from dataclasses import dataclass
+from decimal import Decimal
 from enum import StrEnum
 
 from knowledge_portal.domain.architecture.concepts import check_link
@@ -303,16 +304,64 @@ class OfferingComponent:
             )
 
 
+# A number and a unit: "200 Mbps", "2.5 GB", "2,5 GB" (a decimal comma takes one or two digits),
+# "1,000 GB" (thousands grouped by commas), "100Mbps". The unit starts with a letter or "%", so
+# "24/7" is not a measure.
+_MEASURE = re.compile(
+    r"^(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+|,\d{1,2})?)(\s*)((?:[^\W\d_]|%)\S*)$"
+)
+_GROUPED = re.compile(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?")
+_AMOUNT = re.compile(r"\d+(?:\.\d+)?")
+
+
+def measure_of(value: str) -> tuple[str, str] | None:
+    """A value's amount (with a decimal point, no grouping) and unit, if it is a measure.
+
+    A single letter written against its number names a thing, not a unit: "5G", "4K"."""
+    measured = _MEASURE.match(value)
+    if not measured:
+        return None
+    number, spaced, unit = measured[1], measured[2], measured[3]
+    if not spaced and len(unit) == 1 and unit != "%":
+        return None
+    amount = number.replace(",", "") if _GROUPED.fullmatch(number) else number.replace(",", ".")
+    return amount, unit
+
+
+def measure_disagrees(value: str, amount: str | None, unit: str | None) -> bool:
+    """An amount and unit a writer gave that the value does not say: "300 Mbps" given as 200
+    Mbps, or any pair for a value that is not a measure. Units compare in any case; amounts as
+    decimals ("200" is "200.0")."""
+    if amount is None and unit is None:
+        return False
+    measured = measure_of(value)
+    if measured is None or amount is None or unit is None or not _AMOUNT.fullmatch(amount):
+        return True
+    return (Decimal(amount), unit.casefold()) != (Decimal(measured[0]), measured[1].casefold())
+
+
 @dataclass(frozen=True)
 class PlanCharacteristic:
-    """One stated fact of a plan, such as "Download" › "200 Mbps" or "CPE" › "Fortinet 90G"."""
+    """One stated fact of a plan, such as "Download" › "200 Mbps" or "CPE" › "Fortinet 90G".
+
+    A value written as a number and a unit is also held as its amount and unit ("200",
+    "Mbps"), so plans compare without reading the words. Both are read from the value, never
+    stated beside it, so every catalogue file, which holds the value alone, keeps them.
+    """
 
     name: str
     value: str
+    # The amount, a decimal number with a point ("200", "2.5"); None when it is not a measure.
+    amount: str | None = None
+    unit: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "name", required(self.name, "Plan characteristic"))
         object.__setattr__(self, "value", required(self.value, f"{self.name}'s value"))
+        # Whatever a writer gave, the value says the amount and unit.
+        amount, unit = measure_of(self.value) or (None, None)
+        object.__setattr__(self, "amount", amount)
+        object.__setattr__(self, "unit", unit)
 
 
 @dataclass(frozen=True)

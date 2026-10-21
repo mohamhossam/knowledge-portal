@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, BeforeValidator, Field
 
 from knowledge_portal.application.ports.architecture_jobs import (
     ArchitectureJob,
@@ -77,10 +77,12 @@ from knowledge_portal.domain.architecture.interfaces import InterfaceStyle, Syst
 from knowledge_portal.domain.architecture.journeys import (
     Activity,
     ActivityIntegration,
+    CallTiming,
     FlowRule,
     FlowRuleKind,
     Journey,
     JourneyEdge,
+    call_timing,
     journey_channels,
     journey_edges,
     shared_journey_edges,
@@ -88,6 +90,7 @@ from knowledge_portal.domain.architecture.journeys import (
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     CapabilityDomain,
+    InvalidKnowledgeError,
     KnowledgeAuditEvent,
     KnowledgeCapability,
     KnowledgeDocumentVersion,
@@ -121,6 +124,7 @@ from knowledge_portal.domain.architecture.products import (
     Realisation,
     RealisationLayer,
     SourceConfidence,
+    measure_disagrees,
 )
 from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.architecture.realisations import RealisationRecord
@@ -1379,12 +1383,23 @@ class OfferingComponentSchema(BaseModel):
 class PlanCharacteristicSchema(BaseModel):
     name: Name
     value: Text
+    # Read from a value written as a number and a unit ("200 Mbps" is 200, Mbps); None when it
+    # is not a measure. A request may leave them out; one that gives them must agree.
+    amount: Name | None = None
+    unit: Name | None = None
 
     @classmethod
     def from_domain(cls, item: PlanCharacteristic) -> PlanCharacteristicSchema:
-        return cls.model_construct(name=item.name, value=item.value)
+        return cls.model_construct(
+            name=item.name, value=item.value, amount=item.amount, unit=item.unit
+        )
 
     def to_domain(self) -> PlanCharacteristic:
+        if measure_disagrees(self.value, self.amount, self.unit):
+            raise InvalidKnowledgeError(
+                f"{self.name}: the amount and unit are read from the value {self.value!r}, "
+                f"which does not say {self.amount} {self.unit}."
+            )
         return PlanCharacteristic(self.name, self.value)
 
 
@@ -1690,13 +1705,27 @@ class FlowRuleSchema(BaseModel):
         )
 
 
+def _timing(value: object) -> object:
+    """A timing as sources write it ("sync", "Synchronous", "Sync (callback)"); other text is
+    left for the enum to refuse with 422."""
+    if isinstance(value, str):
+        try:
+            return call_timing(value)
+        except InvalidKnowledgeError:
+            return value
+    return value
+
+
+Timing = Annotated[CallTiming | None, BeforeValidator(_timing)]
+
+
 class ActivityIntegrationSchema(BaseModel):
     from_activity: Identifier
     to_activity: Identifier
     interaction: Name | None = None
     interface: Text | None = None
     payload: Text | None = None
-    timing: Name | None = None
+    timing: Timing = None
     correlation_key: Name | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None

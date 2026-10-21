@@ -3185,23 +3185,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "200 Mbps"
+       "value": "200 Mbps",
+       "amount": "200",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "100 Mbps"
+       "value": "100 Mbps",
+       "amount": "100",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 90G"
+       "value": "Fortinet 90G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-23JF-E"
+       "value": "FAP-23JF-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 862 (200 Mbps)"
+       "value": "IN offer 862 (200 Mbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,
@@ -3213,23 +3223,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "300 Mbps"
+       "value": "300 Mbps",
+       "amount": "300",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "150 Mbps"
+       "value": "150 Mbps",
+       "amount": "150",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 90G"
+       "value": "Fortinet 90G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-23JF-E"
+       "value": "FAP-23JF-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 864 (300 Mbps)"
+       "value": "IN offer 864 (300 Mbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,
@@ -3241,23 +3261,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "400 Mbps"
+       "value": "400 Mbps",
+       "amount": "400",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "200 Mbps"
+       "value": "200 Mbps",
+       "amount": "200",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 90G"
+       "value": "Fortinet 90G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-23JF-E"
+       "value": "FAP-23JF-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 866 (400 Mbps)"
+       "value": "IN offer 866 (400 Mbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,
@@ -3269,23 +3299,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "600 Mbps"
+       "value": "600 Mbps",
+       "amount": "600",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "300 Mbps"
+       "value": "300 Mbps",
+       "amount": "300",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 90G"
+       "value": "Fortinet 90G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-23JF-E"
+       "value": "FAP-23JF-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 869 (600 Mbps)"
+       "value": "IN offer 869 (600 Mbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,
@@ -3297,23 +3337,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "800 Mbps"
+       "value": "800 Mbps",
+       "amount": "800",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "400 Mbps"
+       "value": "400 Mbps",
+       "amount": "400",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 90G"
+       "value": "Fortinet 90G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-23JF-E"
+       "value": "FAP-23JF-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 872 (800 Mbps)"
+       "value": "IN offer 872 (800 Mbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,
@@ -3325,23 +3375,33 @@
      "characteristics": [
       {
        "name": "Download",
-       "value": "1024 Mbps"
+       "value": "1024 Mbps",
+       "amount": "1024",
+       "unit": "Mbps"
       },
       {
        "name": "Upload",
-       "value": "512 Mbps"
+       "value": "512 Mbps",
+       "amount": "512",
+       "unit": "Mbps"
       },
       {
        "name": "CPE",
-       "value": "Fortinet 120G"
+       "value": "Fortinet 120G",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Access point",
-       "value": "FAP-431F-E"
+       "value": "FAP-431F-E",
+       "amount": null,
+       "unit": null
       },
       {
        "name": "Backup 5G",
-       "value": "IN offer 874 (1 Gbps)"
+       "value": "IN offer 874 (1 Gbps)",
+       "amount": null,
+       "unit": null
       }
      ],
      "description": null,

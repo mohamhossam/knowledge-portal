@@ -9,6 +9,13 @@ import { ChannelChoices } from "./OfferingEditor";
 type Rule = Journey["flow_rules"][number];
 type Handover = Journey["integrations"][number];
 
+// Whether a call waits for its answer; most sources don't say.
+const TIMINGS = [
+  { value: "", label: "Not said" },
+  { value: "Sync", label: "Sync: waits for its answer" },
+  { value: "Async", label: "Async: carries on" },
+];
+
 const CONFIDENCE_OPTIONS = [
   { value: "", label: "Not stated" },
   ...(Object.keys(CONFIDENCE) as SourceConfidence[]).map((value) => ({ value, label: CONFIDENCE[value] })),
@@ -182,7 +189,12 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
             <TextField label="Interaction" value={link.interaction} onChange={(interaction) => update({ interaction: interaction || null })} />
             <TextField label="Interface" value={link.interface} onChange={(item) => update({ interface: item || null })} />
             <TextField label="Payload" value={link.payload} onChange={(payload) => update({ payload: payload || null })} />
-            <TextField label="Timing" value={link.timing} onChange={(timing) => update({ timing: timing || null })} />
+            <SelectField
+              label="Timing"
+              value={link.timing ?? ""}
+              options={TIMINGS}
+              onChange={(timing) => update({ timing: (timing || null) as Handover["timing"] })}
+            />
           </>
         )}
       />
