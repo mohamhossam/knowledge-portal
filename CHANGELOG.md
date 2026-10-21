@@ -7,6 +7,18 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Business areas and portfolio places suggested from documents (ADR-0123,
+  `docs/slices/tree-suggestions.md`): reading a document now suggests the capability domains
+  ("business areas") and portfolio nodes it describes, each with the node it sits inside,
+  and a portfolio node with its level in the document's own words. One per tree and name, its
+  readings merged; each waits for its parent (`needs_domain`, new `needs_portfolio_node`),
+  fills an existing node's gaps and never replaces its level or anything set, and records
+  where it came from once accepted (ADR-0120): `accepted` on capability domains and portfolio
+  nodes, kept by every catalogue file format. Decide lists them under Business areas and
+  Portfolio. Accepting all now repeats while it makes progress, so a node three levels down
+  is accepted in one go once the nodes above it are. Public contract, additive; prompt
+  `catalogue-extraction-v18`.
+
 - Interfaces suggested from documents (ADR-0123, `docs/slices/interface-suggestions.md`):
   reading a document now suggests the APIs, event streams and file feeds it describes, each
   with the system that exposes it and those that consume it. One per system and name, its

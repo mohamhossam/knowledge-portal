@@ -22,7 +22,7 @@ export const STATE_LABEL: Record<SuggestionState, string> = {
 
 /** The order accepting-all walks, and the order rows sit inside a system. */
 const KIND_ORDER: SuggestionKind[] = [
-  "landscape_domain", "system", "placement", "component", "capability", "constraint", "relationship", "interface", "channel", "product", "offering_rule", "question", "journey",
+  "capability_domain", "portfolio_node", "landscape_domain", "system", "placement", "component", "capability", "constraint", "relationship", "interface", "channel", "product", "offering_rule", "question", "journey",
 ];
 
 /**
@@ -54,6 +54,10 @@ export type Lexicon = {
   system: (id: string) => string;
   component: (systemId: string, componentId: string) => string;
   domain: (id: string) => string;
+  /** A business area (capability domain) by id, or as a document named it. */
+  area: (reference: string) => string;
+  /** A portfolio node by id, or as a document named it. */
+  portfolio: (reference: string) => string;
   offering: (id: string) => string;
   channel: (id: string) => string;
   /** An offering's order type by code, or as a change request named it ("New Activation"). */
@@ -70,6 +74,10 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
   const domains = new Map<string, string>();
   const offerings = new Map<string, string>();
   const channels = new Map<string, string>();
+  const areas = new Map<string, string>();
+  const nodes = new Map<string, string>();
+  for (const item of release.capability_domains ?? []) areas.set(item.id, item.name);
+  for (const item of release.portfolio ?? []) nodes.set(item.id, item.name);
   for (const channel of release.channels ?? []) channels.set(channel.id, channel.name);
   for (const system of release.systems) {
     systems.set(system.id, system.name);
@@ -86,6 +94,8 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
     if (content.kind === "landscape_domain") set(domains, content.system_id, content.name);
     if (content.kind === "product") set(offerings, content.system_id, content.name);
     if (content.kind === "channel") set(channels, content.system_id, content.name);
+    if (content.kind === "capability_domain") set(areas, content.system_id, content.name);
+    if (content.kind === "portfolio_node") set(nodes, content.system_id, content.name);
   }
   // A name the document used for a system it may share with the draft keeps the document's spelling.
   for (const suggestion of suggestions) {
@@ -115,6 +125,9 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
     system: (id) => systems.get(id) ?? humane(id),
     component: (systemId, componentId) => components.get(`${systemId}/${componentId}`) ?? humane(componentId),
     domain: (id) => domains.get(id) ?? humane(id),
+    // A parent is named as the document wrote it until the draft resolves it, so it is kept.
+    area: (reference) => areas.get(reference) ?? reference,
+    portfolio: (reference) => nodes.get(reference) ?? reference,
     offering: (id) => offerings.get(id) ?? humane(id),
     // A channel the document named that no suggestion adds is kept as written.
     channel: (id) => channels.get(id) ?? id,
@@ -178,6 +191,19 @@ export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
       return `Places it in ${words.domain(content.landscape_domain_id ?? "")}`;
     case "landscape_domain":
       return `Adds the landscape domain ${content.name}${content.parent_domain_id ? `, inside ${words.domain(content.parent_domain_id)}` : ""}`;
+    case "capability_domain": {
+      const parent = content.capability_domain?.parent_id;
+      const inside = parent ? `, inside ${words.area(parent)}` : "";
+      return replaces ? `Adds what the document says about the business area ${content.name}` : `Adds the business area ${content.name}${inside}`;
+    }
+    case "portfolio_node": {
+      const node = content.portfolio_node;
+      const level = node?.level ? ` (${node.level})` : "";
+      const under = node?.parent_id ? `, under ${words.portfolio(node.parent_id)}` : "";
+      return replaces
+        ? `Adds what the document says about ${content.name} in the portfolio`
+        : `Adds ${content.name}${level} to the portfolio${under}`;
+    }
     case "product": {
       const held = listed(details(content.product));
       if (replaces) return `Replaces the offering ${content.name} with the document's version${held ? `, which includes ${held}` : ""}`;
@@ -290,7 +316,10 @@ export function waitsFor(suggestion: Suggestion, words: Lexicon): string {
         ? "Waits for the offering's parts it names"
         : `Waits for the component ${words.component(content.system_id, content.component_id ?? "")}`;
     case "needs_domain":
+      if (content.kind === "capability_domain") return `Waits for the business area ${words.area(content.capability_domain?.parent_id ?? "")}`;
       return `Waits for the landscape domain ${words.domain(content.landscape_domain_id ?? content.parent_domain_id ?? "")}`;
+    case "needs_portfolio_node":
+      return `Waits for ${words.portfolio(content.portfolio_node?.parent_id ?? "")} in the portfolio`;
     case "needs_offering":
       if (content.kind === "offering_rule") return `Waits for the offering ${words.offering(content.system_id)}`;
       if (content.kind === "question") {
@@ -423,6 +452,8 @@ export type SuggestionGroup = {
 };
 
 const SECTION = {
+  areas: "Business areas",
+  portfolio: "Portfolio",
   domains: "Landscape domains",
   interfaces: "Interfaces",
   channels: "Channels",
@@ -440,7 +471,13 @@ export function suggestionGroups(release: Release, suggestions: Suggestion[], wo
     const { content } = suggestion;
     let key: string;
     let group: Omit<SuggestionGroup, "suggestions">;
-    if (content.kind === "landscape_domain") {
+    if (content.kind === "capability_domain") {
+      key = "section:areas";
+      group = { key, isNew: false, label: SECTION.areas };
+    } else if (content.kind === "portfolio_node") {
+      key = "section:portfolio";
+      group = { key, isNew: false, label: SECTION.portfolio };
+    } else if (content.kind === "landscape_domain") {
       key = "section:domains";
       group = { key, isNew: false, label: SECTION.domains };
     } else if (content.kind === "interface") {
@@ -536,6 +573,8 @@ function knownKeys(release: Release): Set<string> {
   for (const offering of release.products ?? []) [offering.id, offering.code ?? "", offering.name].forEach((reference) => reference && known.add(offeringKey(reference)));
   for (const channel of release.channels ?? []) channelKeys(channel.id, channel.name).forEach((key) => known.add(key));
   for (const item of release.interfaces ?? []) interfaceKeys(item.id, item.name).forEach((key) => known.add(key));
+  for (const item of release.capability_domains ?? []) nodeKeys("area", item.id, item.name).forEach((key) => known.add(key));
+  for (const item of release.portfolio ?? []) nodeKeys("portfolio", item.id, item.name).forEach((key) => known.add(key));
   return known;
 }
 
@@ -661,9 +700,18 @@ function provides(suggestion: Suggestion): string[] {
       return channelKeys(content.system_id, content.channel?.name ?? content.name);
     case "interface":
       return interfaceKeys(content.system_id, content.interface?.name ?? content.name);
+    case "capability_domain":
+      return nodeKeys("area", content.system_id, content.capability_domain?.name ?? content.name);
+    case "portfolio_node":
+      return nodeKeys("portfolio", content.system_id, content.portfolio_node?.name ?? content.name);
     default:
       return [];
   }
+}
+
+/** A business area's or portfolio node's keys: its id and its name, by their words, as the service finds a parent. */
+function nodeKeys(tree: "area" | "portfolio", ...references: string[]): string[] {
+  return references.filter(Boolean).map((reference) => `${tree}:${reference.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, "")}`);
 }
 
 /** An interface's keys: its id and its name, without case, as the service finds a relayed one. */
@@ -738,12 +786,15 @@ function requiredKeys(suggestion: Suggestion): string[] {
     case "needs_component":
       return [...system, `component:${content.system_id}/${content.component_id ?? ""}`];
     case "needs_domain":
+      if (content.kind === "capability_domain") return nodeKeys("area", content.capability_domain?.parent_id ?? "");
       // A domain waits for its parent; a placement for the domain it places the system in.
       return [`domain:${(content.kind === "landscape_domain" ? content.parent_domain_id : content.landscape_domain_id) ?? ""}`];
     case "needs_offering":
       return [offeringKey(content.kind === "question" || content.kind === "offering_rule" ? content.system_id : content.journey?.product_id ?? "")];
     case "needs_interface":
       return (content.interface?.relays ?? []).flatMap((reference) => interfaceKeys(reference));
+    case "needs_portfolio_node":
+      return nodeKeys("portfolio", content.portfolio_node?.parent_id ?? "");
     case "needs_system":
       if (content.kind === "channel") return [`system:${content.channel?.entry_system_id ?? ""}`];
       if (content.kind === "interface") {
@@ -822,7 +873,9 @@ export function inWords(message: string, words: Lexicon): string {
     .replace(/component '([^']+)'/g, (_, id: string) => `the component ${id.replace(/[-_]+/g, " ")}`)
     .replace(/product offering '([^']+)'/g, (_, id: string) => `the offering ${words.offering(id)}`)
     .replace(/channel '([^']+)'/g, (_, id: string) => `the channel ${words.channel(id)}`)
-    .replace(/interface '([^']+)'/g, (_, id: string) => `the interface ${id}`);
+    .replace(/interface '([^']+)'/g, (_, id: string) => `the interface ${id}`)
+    .replace(/capability domain '([^']+)'/g, (_, id: string) => `the business area ${words.area(id)}`)
+    .replace(/portfolio node '([^']+)'/g, (_, id: string) => `${words.portfolio(id)} in the portfolio`);
 }
 
 /** How the reading of one document stands. */

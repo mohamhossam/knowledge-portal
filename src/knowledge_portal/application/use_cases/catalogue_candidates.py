@@ -317,6 +317,9 @@ def _within_budget(
 
 # Accepted in this order, so what a suggestion refers to is in the draft first.
 _ORDER = (
+    # Trees first: a capability names its domain, and an offering its portfolio node.
+    CandidateKind.CAPABILITY_DOMAIN,
+    CandidateKind.PORTFOLIO_NODE,
     CandidateKind.LANDSCAPE_DOMAIN,
     CandidateKind.SYSTEM,
     CandidateKind.PLACEMENT,
@@ -366,6 +369,8 @@ def _view(candidate: CatalogueCandidate, release: ArchitectureKnowledge) -> Cand
     channel = candidate.content.kind in {
         CandidateKind.CHANNEL,
         CandidateKind.INTERFACE,
+        CandidateKind.CAPABILITY_DOMAIN,
+        CandidateKind.PORTFOLIO_NODE,
         CandidateKind.QUESTION,
         CandidateKind.CONCEPT,
         CandidateKind.COMPONENT_LINK,
@@ -429,6 +434,8 @@ def _references(
         CandidateKind.JOURNEY,
         CandidateKind.CHANNEL,
         CandidateKind.INTERFACE,
+        CandidateKind.CAPABILITY_DOMAIN,
+        CandidateKind.PORTFOLIO_NODE,
     }:
         return ()
     if content.kind is CandidateKind.SYSTEM:
@@ -513,8 +520,12 @@ def _canonical(
     unsuggested: dict[str, ProposedChange] = {}
     for change in changes:
         content = change.content
-        if content.kind is CandidateKind.LANDSCAPE_DOMAIN:
-            # Its subject is a domain, not a system.
+        if content.kind in {
+            CandidateKind.LANDSCAPE_DOMAIN,
+            CandidateKind.CAPABILITY_DOMAIN,
+            CandidateKind.PORTFOLIO_NODE,
+        }:
+            # Its subject is a domain or a portfolio node, not a system.
             result.append(change)
             continue
         ruled = (
@@ -915,6 +926,8 @@ def _subject(content: CandidateContent) -> tuple[object, ...] | None:
         return (kind, content.system_id, " ".join(content.text.casefold().split()))
     if kind is CandidateKind.RELATIONSHIP:
         return (kind, content.system_id, content.target_system_id, content.relationship_kind)
+    if kind in {CandidateKind.CAPABILITY_DOMAIN, CandidateKind.PORTFOLIO_NODE}:
+        return (kind, content.system_id)
     return None
 
 
@@ -952,6 +965,26 @@ def _merged_content(lead: CandidateContent, others: list[CandidateContent]) -> C
             triggers=_labels(*(item.triggers for item in every)),
             concept_ids=tuple(dict.fromkeys(cid for item in every for cid in item.concept_ids)),
             component_id=_first([item.component_id for item in every]),
+        )
+    if lead.capability_domain is not None:
+        domain = lead.capability_domain
+        described = _first(
+            [item.capability_domain.description for item in every if item.capability_domain]
+        )
+        return replace(
+            lead, capability_domain=replace(domain, description=domain.description or described)
+        )
+    if lead.portfolio_node is not None:
+        node = lead.portfolio_node
+        others_nodes = [item.portfolio_node for item in every if item.portfolio_node]
+        return replace(
+            lead,
+            portfolio_node=replace(
+                node,
+                description=_first([item.description for item in others_nodes]),
+                confidence=_first([item.confidence for item in others_nodes]),
+                source=_first([item.source for item in others_nodes]),
+            ),
         )
     return lead
 
@@ -1555,22 +1588,29 @@ class DecideCatalogueCandidate:
                 if item.status is CandidateStatus.PROPOSED
             ),
             # A domain before the sub-domains inside it.
-            key=lambda item: (
-                _ORDER.index(item.content.kind),
-                item.content.parent_domain_id is not None,
-            ),
+            key=lambda item: (_ORDER.index(item.content.kind), _nested(item.content)),
         )
         merged = release
         accepted: list[CatalogueCandidate] = []
-        for candidate in pending:
-            if needs_one_by_one(candidate, merged):
-                continue
-            try:
-                merged = self._applied(candidate, candidate.content, merged, actor.id, at)
-            except (CandidateDependencyError, InvalidKnowledgeError):
-                # Left undecided for a one-by-one look; the rest still apply.
-                continue
-            accepted.append(candidate.decide(True, actor.id, at))
+        # Again while a round accepts something: a node three levels down waits for the one
+        # between, accepted in the same round or the round before.
+        waiting = pending
+        while waiting:
+            before = len(accepted)
+            later: list[CatalogueCandidate] = []
+            for candidate in waiting:
+                if needs_one_by_one(candidate, merged):
+                    continue
+                try:
+                    merged = self._applied(candidate, candidate.content, merged, actor.id, at)
+                except CandidateDependencyError:
+                    later.append(candidate)
+                    continue
+                except InvalidKnowledgeError:
+                    # Left undecided for a one-by-one look; the rest still apply.
+                    continue
+                accepted.append(candidate.decide(True, actor.id, at))
+            waiting = later if len(accepted) > before else []
         if not accepted:
             return release, len(pending)
         updated = _accepted(release, merged)
@@ -1728,6 +1768,12 @@ class DecideCatalogueCandidate:
             for item in decided:
                 self._candidates.save_decision(item)
             self._repository.save(updated, expected_revision, actor.id, "accept_suggestion")
+
+
+def _nested(content: CandidateContent) -> bool:
+    """Whether a domain or portfolio suggestion sits inside another, so is accepted after."""
+    tree = content.capability_domain or content.portfolio_node
+    return (content.parent_domain_id or (tree.parent_id if tree else None)) is not None
 
 
 def _identity(content: CandidateContent) -> CandidateContent:

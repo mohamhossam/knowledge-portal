@@ -433,6 +433,8 @@ class CapabilityDomainSchema(BaseModel):
     name_ar: Name | None = None
     parent_id: Identifier | None = None
     description: Text | None = None
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, domain: CapabilityDomain) -> CapabilityDomainSchema:
@@ -442,6 +444,7 @@ class CapabilityDomainSchema(BaseModel):
             name_ar=domain.name_ar,
             parent_id=domain.parent_id,
             description=domain.description,
+            accepted=[AcceptedFromSchema.from_domain(item) for item in domain.accepted],
         )
 
     def to_domain(self) -> CapabilityDomain:
@@ -495,6 +498,8 @@ class PortfolioNodeSchema(BaseModel):
     description: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
+    accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, node: PortfolioNode) -> PortfolioNodeSchema:
@@ -506,6 +511,7 @@ class PortfolioNodeSchema(BaseModel):
             description=node.description,
             confidence=node.confidence,
             source=node.source,
+            accepted=[AcceptedFromSchema.from_domain(item) for item in node.accepted],
         )
 
     def to_domain(self) -> PortfolioNode:
@@ -2416,6 +2422,9 @@ class CandidateContentSchema(BaseModel):
     value_refs: list[VocabularyRefSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     # The whole interface, for an interface suggestion (ADR-0123).
     interface: SystemInterfaceSchema | None = None
+    # The whole node, for a capability domain or portfolio suggestion (ADR-0123).
+    capability_domain: CapabilityDomainSchema | None = None
+    portfolio_node: PortfolioNodeSchema | None = None
 
     @classmethod
     def from_domain(cls, content: CandidateContent) -> CandidateContentSchema:
@@ -2458,6 +2467,16 @@ class CandidateContentSchema(BaseModel):
             interface=(
                 SystemInterfaceSchema.from_domain(content.interface) if content.interface else None
             ),
+            capability_domain=(
+                CapabilityDomainSchema.from_domain(content.capability_domain)
+                if content.capability_domain
+                else None
+            ),
+            portfolio_node=(
+                PortfolioNodeSchema.from_domain(content.portfolio_node)
+                if content.portfolio_node
+                else None
+            ),
         )
 
     def to_domain(self) -> CandidateContent:
@@ -2489,6 +2508,8 @@ class CandidateContentSchema(BaseModel):
             self.term.to_domain() if self.term else None,
             tuple(item.to_domain() for item in self.value_refs),
             self.interface.to_domain() if self.interface else None,
+            self.capability_domain.to_domain() if self.capability_domain else None,
+            self.portfolio_node.to_domain() if self.portfolio_node else None,
         )
 
 
