@@ -5,6 +5,14 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ## Unreleased
 
+### Changed
+
+- Dependabot no longer proposes TypeScript 6 or later (`.github/dependabot.yml`):
+  openapi-typescript and typescript-eslint, even at their latest, require TypeScript below 6.1,
+  so such a bump cannot install. Lift the rule once both accept a newer major.
+- CI builds and tests the frontend on Node 26 (`.github/workflows/ci.yml`), the version the web
+  image builds with once #115 moves `deploy/web` to `node:26-alpine`.
+
 ## 0.7.0 — 2026-10-21
 
 Reading a document now suggests every kind of catalogue entry a curator decides on: interfaces,
