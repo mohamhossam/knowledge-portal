@@ -189,6 +189,7 @@ class ManageArchitectureKnowledge:
             published_by=None,
             name=label,
             created_by=actor.id,
+            base_release_id=current.id,
         )
         self._repository.save(draft, None, actor.id, "create_draft")
         return draft
@@ -433,14 +434,24 @@ class ManageArchitectureKnowledge:
         return self._files.template()
 
     def changes(self, release_id: str, actor: Actor, base_id: str | None = None) -> CatalogueDiff:
-        """How a release differs from another: the one in service unless a base is named.
+        """How a release differs from another: a draft against the release it was
+        copied from, anything else against the one in service, unless a base is named.
 
         Any two versions compare, in either order, so a curator can see what one published
-        version changed from the one before it (Knowledge Center C).
+        version changed from the one before it (Knowledge Center C). A draft keeps its
+        recorded base, so re-activating an older release mid-draft cannot silently move
+        the review diff onto the wrong base.
         """
         require_maintainer(actor)
-        base = self._repository.active() if base_id is None else self.get(base_id)
-        return diff_releases(base, self.get(release_id))
+        release = self.get(release_id)
+        if base_id is None:
+            recorded = (
+                release.base_release_id if release.status is KnowledgeReleaseStatus.DRAFT else None
+            )
+            base = self.get(recorded) if recorded is not None else self._repository.active()
+        else:
+            base = self.get(base_id)
+        return diff_releases(base, release)
 
     def select_documents(
         self,

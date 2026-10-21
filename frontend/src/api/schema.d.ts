@@ -2966,7 +2966,7 @@ export interface components {
          * ChangedItem
          * @enum {string}
          */
-        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request" | "concept" | "vocabulary_term" | "interface" | "realisation";
+        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request" | "concept" | "vocabulary_term" | "interface" | "realisation" | "portfolio_node";
         /**
          * ChannelSchema
          * @description Where orders are placed, and the system each is entered through (ADR-0101, step 3).
@@ -4153,6 +4153,8 @@ export interface components {
         };
         /** KnowledgeReleaseResponse */
         KnowledgeReleaseResponse: {
+            /** Base Release Id */
+            base_release_id?: string | null;
             /** Built Revision */
             built_revision?: number | null;
             /** Business Capabilities */

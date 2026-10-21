@@ -2768,7 +2768,8 @@
           "concept",
           "vocabulary_term",
           "interface",
-          "realisation"
+          "realisation",
+          "portfolio_node"
         ],
         "title": "ChangedItem",
         "type": "string"
@@ -6469,6 +6470,17 @@
       },
       "KnowledgeReleaseResponse": {
         "properties": {
+          "base_release_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Release Id"
+          },
           "built_revision": {
             "anyOf": [
               {
