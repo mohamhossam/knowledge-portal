@@ -39,6 +39,7 @@ from knowledge_portal.application.ports.change_requests import (
     ChangeRequestInboxPort,
 )
 from knowledge_portal.application.ports.identity import Actor, require_maintainer
+from knowledge_portal.application.ports.transaction_manager import TransactionManagerPort
 from knowledge_portal.application.use_cases.architecture_knowledge import (
     ManageArchitectureKnowledge,
 )
@@ -573,12 +574,14 @@ class ReadChangeRequestIntoDraft:
         knowledge: ManageArchitectureKnowledge,
         repository: ArchitectureKnowledgeRepositoryPort,
         candidates: CatalogueCandidateRepositoryPort,
+        transactions: TransactionManagerPort,
         clock: ClockPort,
     ) -> None:
         self._inbox = inbox
         self._knowledge = knowledge
         self._repository = repository
         self._candidates = candidates
+        self._transactions = transactions
         self._clock = clock
 
     def execute(self, change_request_id: str, actor: Actor) -> ChangeRequestReading:
@@ -591,30 +594,35 @@ class ReadChangeRequestIntoDraft:
             raise ChangeRequestStateError(
                 f"{incoming.id} was dismissed, so it cannot be read into a draft."
             )
-        draft = next(
-            (
-                item
-                for item in self._repository.list_all()
-                if item.status is KnowledgeReleaseStatus.DRAFT
-            ),
-            None,
-        ) or self._knowledge.create_draft(actor, incoming.id)
-        now = self._clock.now()
-        found, warnings = read_change_request(incoming, draft, now, self._repository.active().id)
-        run = ExtractionRun(
-            uuid4().hex,
-            draft.id,
-            incoming.id,
-            READER,
-            READER_VERSION,
-            len(found),
-            warnings,
-            now,
-            change_request_id=incoming.id,
-        )
-        self._candidates.replace_proposals(run, found)
-        read = incoming.read(draft.id, actor.id, now)
-        self._inbox.save(read, incoming.status)
+        # The draft, its proposals and the inbox row commit together: a failure
+        # midway must not leave a half-filled draft beside an unread row.
+        with self._transactions.transaction():
+            draft = next(
+                (
+                    item
+                    for item in self._repository.list_all()
+                    if item.status is KnowledgeReleaseStatus.DRAFT
+                ),
+                None,
+            ) or self._knowledge.create_draft(actor, incoming.id)
+            now = self._clock.now()
+            found, warnings = read_change_request(
+                incoming, draft, now, self._repository.active().id
+            )
+            run = ExtractionRun(
+                uuid4().hex,
+                draft.id,
+                incoming.id,
+                READER,
+                READER_VERSION,
+                len(found),
+                warnings,
+                now,
+                change_request_id=incoming.id,
+            )
+            self._candidates.replace_proposals(run, found)
+            read = incoming.read(draft.id, actor.id, now)
+            self._inbox.save(read, incoming.status)
         return ChangeRequestReading(draft, run, read)
 
 

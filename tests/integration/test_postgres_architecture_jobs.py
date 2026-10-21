@@ -30,6 +30,7 @@ from knowledge_portal.infrastructure.persistence.migration_runner import run_mig
 from knowledge_portal.infrastructure.persistence.postgres_architecture_jobs import (
     PostgresArchitectureJobs,
 )
+from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
 
 DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not DATABASE_URL, reason="TEST_DATABASE_URL is not configured")
@@ -44,7 +45,7 @@ def jobs() -> Iterator[PostgresArchitectureJobs]:
     # Finished jobs are left alone; only claimable ones would interfere.
     with connector.connection() as connection:
         connection.execute("DELETE FROM architecture_jobs WHERE status IN ('queued', 'running')")
-    yield PostgresArchitectureJobs(connector)
+    yield PostgresArchitectureJobs(PostgresStore(connector))
 
 
 def _enqueue(jobs: PostgresArchitectureJobs) -> ArchitectureJob:

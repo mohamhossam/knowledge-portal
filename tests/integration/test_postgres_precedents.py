@@ -20,6 +20,7 @@ from knowledge_portal.domain.architecture.precedents import (
 from knowledge_portal.domain.architecture.verdicts import ProductVerdict
 from knowledge_portal.infrastructure.persistence.migration_runner import run_migrations
 from knowledge_portal.infrastructure.persistence.postgres_precedents import PostgresPrecedents
+from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
 
 DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not DATABASE_URL, reason="TEST_DATABASE_URL is not configured")
@@ -53,7 +54,7 @@ def _precedent(release: str, number: int, **changes: Any) -> Precedent:
 def test_precedents_are_kept_once_and_searched_by_their_model() -> None:
     assert DATABASE_URL is not None
     run_migrations(DATABASE_URL)
-    store = PostgresPrecedents(DirectPostgresConnector(DATABASE_URL))
+    store = PostgresPrecedents(PostgresStore(DirectPostgresConnector(DATABASE_URL)))
     release = f"r-{uuid4().hex}"
     model = f"model-{uuid4().hex}"
     first = _precedent(release, 1)

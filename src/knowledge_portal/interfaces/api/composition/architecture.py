@@ -156,6 +156,7 @@ def build_architecture(
         persistence.document_storage,
         document_extractor,
         scanner,
+        persistence.transaction_manager,
         settings.document_max_file_bytes,
     )
     build_index = BuildArchitectureIndex(
@@ -231,6 +232,7 @@ def build_architecture(
             manage,
             persistence.architecture_repository,
             persistence.catalogue_candidates,
+            persistence.transaction_manager,
             persistence.change_requests,
         ),
         propose_concepts=ProposeCapabilityConcepts(manage, persistence.catalogue_candidates, clock),
@@ -247,6 +249,7 @@ def build_architecture(
             manage,
             persistence.architecture_repository,
             persistence.catalogue_candidates,
+            persistence.transaction_manager,
             clock,
         ),
         dismiss_change_request=DismissChangeRequest(persistence.change_requests, clock),

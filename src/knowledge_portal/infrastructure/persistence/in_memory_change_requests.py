@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from threading import RLock
+from typing import Any
 
 from knowledge_portal.application.ports.change_requests import ChangeRequestConflictError
 from knowledge_portal.domain.architecture.change_requests import (
@@ -15,6 +17,12 @@ class InMemoryChangeRequests:
     def __init__(self) -> None:
         self._lock = RLock()
         self._items: dict[str, IncomingChangeRequest] = {}
+
+    def snapshot_state(self) -> Any:
+        return deepcopy((self._items,))
+
+    def restore_state(self, state: Any) -> None:
+        (self._items,) = deepcopy(state)
 
     def receive(self, item: IncomingChangeRequest) -> tuple[IncomingChangeRequest, bool]:
         with self._lock:

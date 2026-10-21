@@ -25,6 +25,7 @@ from knowledge_portal.infrastructure.persistence.migration_runner import run_mig
 from knowledge_portal.infrastructure.persistence.postgres_catalogue_candidates import (
     PostgresCatalogueCandidates,
 )
+from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
 
 DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not DATABASE_URL, reason="TEST_DATABASE_URL is not configured")
@@ -47,7 +48,7 @@ def _candidate(release_id: str, name: str) -> CatalogueCandidate:
 def test_suggestions_round_trip_replace_undecided_ones_and_decide_once() -> None:
     assert DATABASE_URL is not None
     run_migrations(DATABASE_URL)
-    store = PostgresCatalogueCandidates(DirectPostgresConnector(DATABASE_URL))
+    store = PostgresCatalogueCandidates(PostgresStore(DirectPostgresConnector(DATABASE_URL)))
     release_id = f"draft-{uuid4().hex}"
     first, second = _candidate(release_id, "Alpha"), _candidate(release_id, "Beta")
     run = ExtractionRun(uuid4().hex, release_id, "doc-1", "model", "v1", 2, ("note",), NOW)
@@ -63,7 +64,7 @@ def test_suggestions_round_trip_replace_undecided_ones_and_decide_once() -> None
         (replacement,),
     )
 
-    reloaded = PostgresCatalogueCandidates(DirectPostgresConnector(DATABASE_URL))
+    reloaded = PostgresCatalogueCandidates(PostgresStore(DirectPostgresConnector(DATABASE_URL)))
     stored = {item.id: item for item in reloaded.list(release_id)}
     assert set(stored) == {first.id, replacement.id}
     assert stored[first.id].status is CandidateStatus.ACCEPTED
@@ -75,7 +76,7 @@ def test_suggestions_round_trip_replace_undecided_ones_and_decide_once() -> None
 def test_a_revision_retypes_undecided_suggestions_adds_new_ones_and_spares_decided_ones() -> None:
     assert DATABASE_URL is not None
     run_migrations(DATABASE_URL)
-    store = PostgresCatalogueCandidates(DirectPostgresConnector(DATABASE_URL))
+    store = PostgresCatalogueCandidates(PostgresStore(DirectPostgresConnector(DATABASE_URL)))
     release_id = f"draft-{uuid4().hex}"
     first, second = _candidate(release_id, "Alpha"), _candidate(release_id, "Beta")
     store.replace_proposals(
