@@ -46,7 +46,7 @@ export function SystemEditor({ value, onChange, release }: {
         one="capability"
         items={value.capabilities}
         onChange={(capabilities) => set({ capabilities })}
-        blank={() => ({ id: "", name: "", triggers: [] })}
+        blank={() => ({ id: "", name: "", triggers: [], accepted: [] })}
         itemLabel={(item, index) => `capability ${item.name || index + 1}`}
         render={(item, update) => (
           <>
@@ -74,7 +74,7 @@ export function SystemEditor({ value, onChange, release }: {
         one="component"
         items={value.components}
         onChange={(next) => set({ components: next })}
-        blank={() => ({ id: "", name: "", aliases: [] })}
+        blank={() => ({ id: "", name: "", aliases: [], accepted: [] })}
         itemLabel={(item, index) => `component ${item.name || index + 1}`}
         render={(item, update) => (
           <>

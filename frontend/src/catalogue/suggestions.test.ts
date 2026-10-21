@@ -180,10 +180,10 @@ describe("in words", () => {
 
 describe("channel suggestions", () => {
   const web = suggestion(
-    { kind: "channel", system_id: "business-web", name: "Business Web", channel: { id: "business-web", name: "Business Web", entry_system_id: "bcrm" } },
+    { kind: "channel", system_id: "business-web", name: "Business Web", channel: { id: "business-web", name: "Business Web", entry_system_id: "bcrm", accepted: [] } },
   );
   const till = suggestion(
-    { kind: "channel", system_id: "shop", name: "Shop", channel: { id: "shop", name: "Shop", entry_system_id: "shop-till" } },
+    { kind: "channel", system_id: "shop", name: "Shop", channel: { id: "shop", name: "Shop", entry_system_id: "shop-till", accepted: [] } },
     { match: "needs_system" },
   );
   const office = suggestion(
@@ -191,7 +191,7 @@ describe("channel suggestions", () => {
       kind: "product", system_id: "office", name: "Office Connect",
       product: {
         id: "office", name: "Office Connect", rules: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [],
-        sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [],
+        sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], accepted: [],
         order_types: [{ code: "NEW", name: "New", enabled: true, channels: ["business-web", "Partner Feed"] }],
       },
     },
@@ -238,7 +238,7 @@ describe("offering detail suggestions", () => {
         kind: "product", system_id: "office", name: "Office Connect",
         product: {
           id: "office", name: "Office Connect", rules: [], values: [], audiences: [],
-          sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [],
+          sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], accepted: [],
           order_types: [{ code: "NEW", name: "New", enabled: true, channels: [] }],
           components: [{ id: "fibre", name: "Fibre", responsibilities: [], realisation: [{ layer: "cfs", name: "Fibre CFS" }], capability_ids: [] }],
           nfrs: [{ quality: "Availability", coverage: "defined" }, { quality: "Security", coverage: "missing" }],
@@ -300,8 +300,8 @@ describe("offering detail suggestions", () => {
     const portal = suggestion({ kind: "system", system_id: "Order Portal", name: "Order Portal" });
     const offering = detailed("needs_system");
     const channels = [
-      suggestion({ kind: "channel", system_id: "Business Web", name: "Business Web", channel: { id: "Business Web", name: "Business Web" } }),
-      suggestion({ kind: "channel", system_id: "Shop", name: "Shop", channel: { id: "Shop", name: "Shop" } }),
+      suggestion({ kind: "channel", system_id: "Business Web", name: "Business Web", channel: { id: "Business Web", name: "Business Web", accepted: [] } }),
+      suggestion({ kind: "channel", system_id: "Shop", name: "Shop", channel: { id: "Shop", name: "Shop", accepted: [] } }),
     ];
     expect(bulkAcceptable(release, [store, ...channels, offering]).lifted).toEqual([]);
     expect(bulkAcceptable(release, [store, portal, ...channels, offering]).lifted).toEqual([offering]);
@@ -313,7 +313,7 @@ describe("vocabulary suggestions", () => {
   const orders = suggestion(
     {
       kind: "vocabulary_term", system_id: "etom-order-handling",
-      term: { id: "etom-order-handling", scheme: "etom_process", pref_label: "Order Handling", alt_labels: [] },
+      term: { id: "etom-order-handling", scheme: "etom_process", pref_label: "Order Handling", alt_labels: [], accepted: [] },
       value_refs: [ref, { ...ref, item: "20" }],
     },
     { match: "updates_existing" },
@@ -321,13 +321,13 @@ describe("vocabulary suggestions", () => {
   const saml = suggestion(
     {
       kind: "vocabulary_term", system_id: "role-saml",
-      term: { id: "role-saml", scheme: "responsibility_role", pref_label: "SAML", alt_labels: [] },
+      term: { id: "role-saml", scheme: "responsibility_role", pref_label: "SAML", alt_labels: [], accepted: [] },
       value_refs: [{ field: "responsibility_role", owner_id: "bpp", value: "SAML", item: "selfservice", part: "b2b-web" }],
     },
   );
   const api = suggestion({
     kind: "vocabulary_term", system_id: "api-tmf681",
-    term: { id: "api-tmf681", scheme: "open_api", pref_label: "Communication", notation: "TMF681", alt_labels: [] },
+    term: { id: "api-tmf681", scheme: "open_api", pref_label: "Communication", notation: "TMF681", alt_labels: [], accepted: [] },
     value_refs: [],
   });
   const termWords = lexicon(release, [orders, saml, api]);

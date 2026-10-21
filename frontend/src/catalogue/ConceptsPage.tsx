@@ -7,6 +7,8 @@ import {
 } from "../design/components";
 import { count } from "../home/format";
 import { RouterLink } from "../shell/links";
+import { acceptances } from "./accepted";
+import { AcceptedFrom } from "./AcceptedFrom";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useFindParam } from "./frame/useFindParam";
 import {
@@ -252,6 +254,7 @@ function ConceptRecord({ concept, index }: { concept: Concept; index: ConceptInd
             ...(narrower.length ? [["Narrower", <span key="narrower">{narrower.map((item, position) => <span key={item.id}>{position > 0 && ", "}{conceptLink(item)}</span>)}</span>] as [string, ReactNode]] : []),
             ["Outside match", concept.exact_match ? <bdi>{concept.exact_match}</bdi> : <span className="cat-quiet">None recorded</span>],
             ["Source", concept.source ? <bdi>{concept.source}</bdi> : <span className="cat-quiet">Not stated</span>],
+            ...(acceptances(concept).length ? [["Accepted from", <AcceptedFrom key="accepted" accepted={acceptances(concept)} />] as [string, ReactNode]] : []),
           ]}
         />
       </Section>

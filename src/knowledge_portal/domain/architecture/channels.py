@@ -17,6 +17,7 @@ from knowledge_portal.domain.architecture.invariants import (
     required,
 )
 from knowledge_portal.domain.architecture.products import SourceConfidence, check_source
+from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 
 
 @dataclass(frozen=True)
@@ -31,6 +32,8 @@ class Channel:
     description: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Channel id"))

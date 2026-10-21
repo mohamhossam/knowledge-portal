@@ -32,6 +32,12 @@ from knowledge_portal.application.ports.catalogue_file import (
     CatalogueContent,
     CatalogueFileFormat,
 )
+from knowledge_portal.domain.architecture.acceptance import (
+    AcceptanceKey,
+    CatalogueBody,
+    recorded_acceptances,
+    with_recorded_acceptances,
+)
 from knowledge_portal.domain.architecture.change_requests import (
     ChangeItem,
     ChangeItemStatus,
@@ -93,6 +99,7 @@ from knowledge_portal.domain.architecture.products import (
     Realisation,
     SourceConfidence,
 )
+from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.architecture.realisations import RealisationRecord
 from knowledge_portal.domain.architecture.tracking import (
     FalloutCase,
@@ -144,6 +151,7 @@ CONCEPTS = "Concepts"
 VOCABULARY = "Vocabulary"
 INTERFACES = "Interfaces"
 REALISATION_RECORDS = "RealisationRecords"
+ACCEPTANCES = "Acceptances"
 _CELLS = tuple(f"cell_{number}" for number in range(1, MAX_TABLE_COLUMNS + 1))
 INSTRUCTIONS = "Instructions"
 _DOMAIN_HEADERS = ("domain_id", "name", "name_ar", "parent_id", "description")
@@ -504,6 +512,15 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "confidence",
         "source",
     ),
+    ACCEPTANCES: (
+        "entity",
+        "key",
+        "candidate_id",
+        "model",
+        "prompt_version",
+        "decided_by",
+        "decided_at",
+    ),
 }
 # Headers a sheet cannot do without. Columns added later stay optional, so
 # workbooks filled from an older template still import.
@@ -556,6 +573,7 @@ _REQUIRED_HEADERS: dict[str, tuple[str, ...]] = {
     VOCABULARY: ("term_id", "scheme", "pref_label"),
     INTERFACES: ("interface_id", "name", "system_id"),
     REALISATION_RECORDS: ("record_id", "layer", "name"),
+    ACCEPTANCES: _HEADERS[ACCEPTANCES],
 }
 _KINDS = ", ".join(kind.value for kind in RelationshipKind)
 _REQUIRED_SHEETS = (SYSTEMS,)
@@ -717,6 +735,11 @@ _INSTRUCTIONS = (
         "purpose, style and tmf_equivalent; a call to a system with no step of its own has "
         "to_activity equal to from_activity.",
     ),
+    (
+        "Acceptances (kept by the portal): which accepted suggestions produced an entry, one "
+        "row each, naming the entry by entity and key. Leave it as exported; a row naming "
+        "nothing in the file is ignored.",
+    ),
     ("Row 1 of each sheet holds the headers; keep them as they are.",),
 )
 
@@ -800,6 +823,62 @@ def _entries(raw: dict[str, Any], key: str) -> list[dict[str, Any]]:
     if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
         raise InvalidKnowledgeError(f"'{key}' must be a list of entries.")
     return value
+
+
+# Acceptances (ADR-0120): which accepted suggestions produced an entity, one row each, naming
+# the entity by kind and key so the entries themselves stay as people write them.
+def _acceptance_rows(body: CatalogueBody) -> list[dict[str, Any]]:
+    return [
+        {
+            "entity": key[0],
+            "key": list(key[1:]),
+            "candidate_id": entry.candidate_id,
+            "model": entry.model,
+            "prompt_version": entry.prompt_version,
+            "decided_by": entry.decided_by,
+            "decided_at": entry.decided_at.isoformat(),
+        }
+        for key, entries in recorded_acceptances(body).items()
+        for entry in entries
+    ]
+
+
+def _acceptance(item: dict[str, Any], where: str) -> AcceptedFrom:
+    moment = _moment(item.get("decided_at"), where, "decided_at")
+    if moment is None:
+        raise InvalidKnowledgeError(f"{where}: decided_at is required.")
+    return AcceptedFrom(
+        _text(item.get("candidate_id"), where, "candidate_id"),
+        _text(item.get("model"), where, "model"),
+        _text(item.get("prompt_version"), where, "prompt_version"),
+        _text(item.get("decided_by"), where, "decided_by"),
+        moment,
+    )
+
+
+def _acceptances(
+    entries: list[dict[str, Any]],
+) -> dict[AcceptanceKey, tuple[AcceptedFrom, ...]]:
+    recorded: dict[AcceptanceKey, list[AcceptedFrom]] = {}
+    for number, item in enumerate(entries, start=1):
+        where = _where(item, f"acceptances entry {number}")
+        key = (
+            _text(item.get("entity"), where, "entity"),
+            *_text_list(item.get("key"), where, "key"),
+        )
+        recorded.setdefault(key, []).append(_part(where, partial(_acceptance, item, where)))
+    return {key: tuple(entries) for key, entries in recorded.items()}
+
+
+def _key_cell(value: object, where: str) -> list[object]:
+    """A workbook key: the JSON list the export wrote, such as ["bcrm", "quotes"]."""
+    try:
+        key = json.loads(_text(value, where, "key"))
+    except json.JSONDecodeError as exc:
+        raise InvalidKnowledgeError(f"{where}: key must be a list as exported.") from exc
+    if not isinstance(key, list):
+        raise InvalidKnowledgeError(f"{where}: key must be a list as exported.")
+    return key
 
 
 def content_from_mapping(raw: object) -> CatalogueContent:
@@ -899,7 +978,7 @@ def content_from_mapping(raw: object) -> CatalogueContent:
             )
         except InvalidKnowledgeError as exc:
             raise _located(where, exc) from exc
-    return _content(
+    content = _content(
         systems,
         relationships,
         _mapped_domains(raw, "capability_domains", CapabilityDomain),
@@ -920,6 +999,7 @@ def content_from_mapping(raw: object) -> CatalogueContent:
         _interfaces(_entries(raw, "interfaces")),
         _realisations(_entries(raw, "realisations")),
     )
+    return with_recorded_acceptances(content, _acceptances(_entries(raw, "acceptances")))
 
 
 def _concepts(entries: list[dict[str, Any]]) -> list[BusinessCapability]:
@@ -2275,6 +2355,7 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
             vocabulary=[_term_mapping(item) for item in release.vocabulary],
             interfaces=[_interface_mapping(item) for item in release.interfaces],
             realisations=[_realisation_mapping(item) for item in release.realisations],
+            acceptances=_acceptance_rows(release),
         ),
     }
 
@@ -2520,6 +2601,16 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                 for number, cells in _rows(workbook, REALISATION_RECORDS)
             ]
         )
+        acceptances = _acceptances(
+            [
+                {
+                    **cells,
+                    "_where": f"{ACCEPTANCES} row {number}",
+                    "key": _key_cell(cells.get("key"), f"{ACCEPTANCES} row {number}"),
+                }
+                for number, cells in _rows(workbook, ACCEPTANCES)
+            ]
+        )
     finally:
         workbook.close()
     definitions = []
@@ -2549,7 +2640,7 @@ def _read_workbook(content: bytes) -> CatalogueContent:
             )
         except InvalidKnowledgeError as exc:
             raise _located(data["where"], exc) from exc
-    return _content(
+    body = _content(
         definitions,
         relationships,
         domains,
@@ -2566,6 +2657,7 @@ def _read_workbook(content: bytes) -> CatalogueContent:
         interfaces,
         realisations,
     )
+    return with_recorded_acceptances(body, acceptances)
 
 
 def _sheet_journeys(workbook: Any) -> list[dict[str, Any]]:
@@ -3604,6 +3696,19 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 sheets[CHANGE_ITEMS],
                 (record.id, item.kind, item.summary, item.status.value, item.feature_id),
             )
+    for row in _acceptance_rows(release) if release is not None else ():
+        _append(
+            sheets[ACCEPTANCES],
+            (
+                row["entity"],
+                json.dumps(row["key"], ensure_ascii=False),
+                row["candidate_id"],
+                row["model"],
+                row["prompt_version"],
+                row["decided_by"],
+                row["decided_at"],
+            ),
+        )
     buffer = io.BytesIO()
     workbook.save(buffer)
     return buffer.getvalue()

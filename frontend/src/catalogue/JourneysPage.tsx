@@ -10,6 +10,8 @@ import {
 import { useFocusAfterRender } from "../design/hooks";
 import { count } from "../home/format";
 import { RouterLink } from "../shell/links";
+import { acceptances } from "./accepted";
+import { AcceptedFrom } from "./AcceptedFrom";
 import { systemName } from "./catalogue";
 import { JourneyEdit, WholeRemove } from "./DraftEdits";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
@@ -241,6 +243,7 @@ function JourneyRecord({ journey }: { journey: Journey }) {
       meta={
         <>
           {journey.confidence && <Status tone={SOURCE_TONE[journey.confidence]}>{SOURCE_WORD[journey.confidence]}</Status>}
+          <AcceptedFrom accepted={acceptances(journey)} summary />
           <span>
             {offering ? (
               <>

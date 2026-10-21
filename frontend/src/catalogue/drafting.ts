@@ -75,7 +75,7 @@ export function withoutSystem(release: Release, systemId: string): DraftUpdate {
 }
 
 /** A new system's starting shape. */
-export const blankSystem = (): CatalogueSystem => ({ id: "", name: "", aliases: [], capabilities: [], components: [], constraints: [], external: false, masters: [], reads: [] });
+export const blankSystem = (): CatalogueSystem => ({ id: "", name: "", aliases: [], capabilities: [], components: [], constraints: [], external: false, masters: [], reads: [], accepted: [] });
 
 type BuildState = "built" | "building" | "failed" | "stale" | "never";
 

@@ -22,7 +22,7 @@ function startingSystem(release: Release, name: string | null, id: string): stri
 }
 
 const emptyJourney = (name: string): Journey => ({
-  id: slug(name), name, activities: [], flow_rules: [], integrations: [], edges: [], channel_edges: [], shared_edges: [],
+  id: slug(name), name, activities: [], flow_rules: [], integrations: [], edges: [], channel_edges: [], shared_edges: [], accepted: [],
 });
 
 /**
@@ -273,7 +273,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
           />
         ) : null;
       case "channel": {
-        const channel = content.channel ?? { id: content.system_id, name: content.name };
+        const channel: Channel = content.channel ?? { id: content.system_id, name: content.name, accepted: [] };
         const change = (patch: Partial<Channel>) => set({ channel: { ...channel, ...patch } });
         return (
           <>

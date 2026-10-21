@@ -9,6 +9,8 @@ import { ActionGroup, Button, type Column, DataTable, Facts, Lines, RecordView, 
 import { RouterLink } from "../shell/links";
 import { SystemReview } from "../reviews/SystemReview";
 import { seatsLine, seatsOn } from "../squads/organisation";
+import { acceptances } from "./accepted";
+import { AcceptedFrom } from "./AcceptedFrom";
 import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRoles, usedHow } from "./catalogue";
 import { SystemContextDiagram } from "./diagrams/CatalogueDiagrams";
 import { ConnectionEdit, ConnectionRemove, SystemEdit, SystemRemove } from "./DraftEdits";
@@ -69,6 +71,7 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
                 {system.source ? <bdi>{system.source}</bdi> : !system.confidence && <span className="cat-quiet">Not stated</span>}
               </span>,
             ],
+            ...(acceptances(system).length ? [["Accepted from", <AcceptedFrom key="accepted" accepted={acceptances(system)} />] as [string, ReactNode]] : []),
           ]}
         />
       </div>

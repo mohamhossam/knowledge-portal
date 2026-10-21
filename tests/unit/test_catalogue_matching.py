@@ -559,12 +559,18 @@ def test_a_possible_match_is_confirmed_and_inferred_items_wait_for_a_person(
         headers=OWNER,
     )
     assert accepted.status_code == 200, accepted.text
-    assert {
+    quotes = next(
+        item
+        for item in accepted.json()["relationships"]
+        if (item["source_system_id"], item["description"]) == ("order-hub", "quotes")
+    )
+    assert {key: value for key, value in quotes.items() if key != "accepted"} == {
         "source_system_id": "order-hub",
         "target_system_id": "bcrm",
         "description": "quotes",
         "kind": "unspecified",
-    } in accepted.json()["relationships"]
+    }
+    assert [entry["candidate_id"] for entry in quotes["accepted"]] == [stated["id"]]
     decided = {
         s["id"]: s["status"]
         for s in client.get(f"{base}/suggestions", headers=OWNER).json()["suggestions"]

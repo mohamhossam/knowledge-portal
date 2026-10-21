@@ -16,7 +16,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-assisted-order-capture",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     },
     {
      "id": "sales-quoting",
@@ -30,7 +31,8 @@
      "domain_id": "market-sales",
      "component_id": null,
      "concept_id": "cap-sales-quoting",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -48,7 +50,8 @@
    "masters": [],
    "reads": [
     "entity-customer"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "nc-csrd",
@@ -67,7 +70,8 @@
      "domain_id": "market-sales",
      "component_id": null,
      "concept_id": "cap-sales-quoting",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -83,7 +87,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "pega",
@@ -99,7 +104,8 @@
      "domain_id": "market-sales",
      "component_id": null,
      "concept_id": "cap-offer-recommendation",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -115,7 +121,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "sonic",
@@ -131,7 +138,8 @@
      "domain_id": "market-sales",
      "component_id": null,
      "concept_id": "cap-offer-recommendation",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -147,7 +155,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "bcc",
@@ -167,7 +176,8 @@
      "domain_id": "product",
      "component_id": null,
      "concept_id": "cap-product-catalogue",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -185,7 +195,8 @@
    "masters": [],
    "reads": [
     "entity-product-offering"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "psm",
@@ -205,7 +216,8 @@
      "domain_id": "product",
      "component_id": null,
      "concept_id": "cap-product-catalogue",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -223,7 +235,8 @@
    "masters": [
     "entity-product-offering"
    ],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "ecm",
@@ -243,7 +256,8 @@
      "domain_id": "product",
      "component_id": null,
      "concept_id": "cap-product-catalogue",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -261,7 +275,8 @@
    "masters": [],
    "reads": [
     "entity-product-offering"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "rtf-catalog",
@@ -278,7 +293,8 @@
      "domain_id": "product",
      "component_id": null,
      "concept_id": "cap-product-catalogue",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -294,7 +310,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "caf",
@@ -316,7 +333,8 @@
      "domain_id": "product",
      "component_id": null,
      "concept_id": "cap-product-design",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -332,7 +350,8 @@
    "confidence": "inferred",
    "source": "SDD v2.3 · §P1 Bundle Definition · The SDD's “Automation Portal for BFM” is read as this framework's portal (Ref §6: BFM is its SMB name).",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "b2b-web",
@@ -352,7 +371,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-self-service-order-capture",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     },
     {
      "id": "customer-management",
@@ -364,7 +384,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-customer-self-management",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -380,7 +401,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "smb-app",
@@ -396,7 +418,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-self-service-order-capture",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     },
     {
      "id": "customer-management",
@@ -407,7 +430,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-customer-self-management",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -423,7 +447,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "sas-portal",
@@ -440,7 +465,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-identity-verification",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -458,7 +484,8 @@
    "masters": [],
    "reads": [
     "entity-customer"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "cim",
@@ -474,7 +501,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-complaint-management",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -492,7 +520,8 @@
    "masters": [],
    "reads": [
     "entity-trouble-ticket"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "dcrm",
@@ -508,7 +537,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-assisted-order-capture",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -524,7 +554,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "cbcm",
@@ -545,7 +576,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-customer-data",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -565,7 +597,8 @@
     "entity-billing-account",
     "entity-product"
    ],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "nc-crm",
@@ -585,7 +618,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-customer-data",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -604,7 +638,8 @@
     "entity-party",
     "entity-customer"
    ],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "rtf",
@@ -624,7 +659,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-order-orchestration",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -645,7 +681,8 @@
    "reads": [
     "entity-customer",
     "entity-product"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "ibm-bpm",
@@ -664,7 +701,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-order-tracking",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -682,7 +720,8 @@
    "masters": [],
    "reads": [
     "entity-order-milestone"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "felix",
@@ -699,7 +738,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-order-tracking",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -717,7 +757,8 @@
    "masters": [
     "entity-order-milestone"
    ],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "ehs",
@@ -734,7 +775,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-contract-lifecycle",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -750,7 +792,8 @@
    "confidence": "inferred",
    "source": "SDD v2.3 · §EHS ADO 420619 · Not in the SMB reference; its full name and owner are not stated.",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "nc-cpm",
@@ -768,7 +811,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-complaint-management",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -786,7 +830,8 @@
    "masters": [
     "entity-trouble-ticket"
    ],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "bscs",
@@ -802,7 +847,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-billing",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -823,7 +869,8 @@
    "reads": [
     "entity-billing-account",
     "entity-product"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "cwom",
@@ -842,7 +889,8 @@
      "domain_id": "service",
      "component_id": null,
      "concept_id": "cap-fixed-order-management",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -858,7 +906,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "e2eso",
@@ -875,7 +924,8 @@
      "domain_id": "service",
      "component_id": null,
      "concept_id": "cap-cpe-provisioning",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -893,7 +943,8 @@
    "masters": [
     "entity-service-order"
    ],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "xaas",
@@ -909,7 +960,8 @@
      "domain_id": "service",
      "component_id": null,
      "concept_id": "cap-saas-activation",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -925,7 +977,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "sla",
@@ -941,7 +994,8 @@
      "domain_id": "service",
      "component_id": null,
      "concept_id": null,
-     "unlinked_reason": "No capability concept describes SLA management yet."
+     "unlinked_reason": "No capability concept describes SLA management yet.",
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -957,7 +1011,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "veda",
@@ -977,7 +1032,8 @@
      "domain_id": "resource",
      "component_id": null,
      "concept_id": "cap-mobile-network-activation",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     },
     {
      "id": "backup-profile",
@@ -988,7 +1044,8 @@
      "domain_id": "service",
      "component_id": null,
      "concept_id": "cap-mobile-backup-access",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1004,7 +1061,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "in",
@@ -1023,7 +1081,8 @@
      "domain_id": "resource",
      "component_id": null,
      "concept_id": "cap-mobile-network-activation",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     },
     {
      "id": "backup-speed",
@@ -1034,7 +1093,8 @@
      "domain_id": "service",
      "component_id": null,
      "concept_id": "cap-mobile-backup-access",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     },
     {
      "id": "dunning-throttle",
@@ -1045,7 +1105,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-collections",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1061,7 +1122,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "alepo",
@@ -1077,7 +1139,8 @@
      "domain_id": "resource",
      "component_id": null,
      "concept_id": "cap-mobile-network-activation",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1093,7 +1156,8 @@
    "confidence": "inferred",
    "source": "SDD v2.3 · §vEDA Cessation · Named once in the SDD; not in the SMB reference.",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "nrm",
@@ -1110,7 +1174,8 @@
      "domain_id": "resource",
      "component_id": null,
      "concept_id": null,
-     "unlinked_reason": "No capability concept describes network resource allocation yet."
+     "unlinked_reason": "No capability concept describes network resource allocation yet.",
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1126,7 +1191,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "inv-6d",
@@ -1146,7 +1212,8 @@
      "domain_id": "resource",
      "component_id": null,
      "concept_id": "cap-device-logistics",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1165,7 +1232,8 @@
     "entity-resource",
     "entity-telephone-number"
    ],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "nps",
@@ -1182,7 +1250,8 @@
      "domain_id": "resource",
      "component_id": null,
      "concept_id": "cap-number-portability",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1200,7 +1269,8 @@
    "masters": [],
    "reads": [
     "entity-telephone-number"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "gis",
@@ -1217,7 +1287,8 @@
      "domain_id": "resource",
      "component_id": null,
      "concept_id": "cap-network-feasibility",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1233,7 +1304,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "wfms",
@@ -1252,7 +1324,8 @@
      "domain_id": "resource",
      "component_id": null,
      "concept_id": "cap-field-installation",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1270,7 +1343,8 @@
    "masters": [
     "entity-work-order"
    ],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "remedy",
@@ -1287,7 +1361,8 @@
      "domain_id": "service",
      "component_id": null,
      "concept_id": "cap-trouble-ticketing",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1303,7 +1378,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory (WFM / Remedy)",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "gov",
@@ -1320,7 +1396,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-identity-verification",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1336,7 +1413,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "eida",
@@ -1352,7 +1430,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-identity-verification",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1368,7 +1447,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "ocr",
@@ -1386,7 +1466,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-identity-verification",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1404,7 +1485,8 @@
    "masters": [],
    "reads": [
     "entity-customer-document"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "fortinet",
@@ -1423,7 +1505,8 @@
      "domain_id": "service",
      "component_id": null,
      "concept_id": "cap-cpe-provisioning",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     },
     {
      "id": "fortiportal",
@@ -1434,7 +1517,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-customer-self-management",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1450,7 +1534,8 @@
    "confidence": "confirmed",
    "source": "SDD v2.3 · §P1 New Activation; §P3 ADO 194831",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "npc",
@@ -1466,7 +1551,8 @@
      "domain_id": "resource",
      "component_id": null,
      "concept_id": "cap-number-portability",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1482,7 +1568,8 @@
    "confidence": "inferred",
    "source": "SDD v2.3 · §NPS Portout · Expanded nowhere in the sources.",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "cns",
@@ -1502,7 +1589,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-customer-notification",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1518,7 +1606,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "edms",
@@ -1535,7 +1624,8 @@
      "domain_id": "customer",
      "component_id": null,
      "concept_id": "cap-document-management",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1553,7 +1643,8 @@
    "masters": [
     "entity-customer-document"
    ],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "itsm",
@@ -1573,7 +1664,8 @@
      "domain_id": "resource",
      "component_id": null,
      "concept_id": "cap-device-logistics",
-     "unlinked_reason": null
+     "unlinked_reason": null,
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1589,7 +1681,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "adfs",
@@ -1605,7 +1698,8 @@
      "domain_id": null,
      "component_id": null,
      "concept_id": null,
-     "unlinked_reason": "Single sign-on is a platform service, not a business capability."
+     "unlinked_reason": "Single sign-on is a platform service, not a business capability.",
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1621,7 +1715,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "tibco",
@@ -1637,7 +1732,8 @@
      "domain_id": null,
      "component_id": null,
      "concept_id": null,
-     "unlinked_reason": "An integration bus realises no business capability of its own."
+     "unlinked_reason": "An integration bus realises no business capability of its own.",
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1653,7 +1749,8 @@
    "confidence": "confirmed",
    "source": "SMB reference v1.0 · §1 System Directory",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   },
   {
    "id": "bff",
@@ -1671,7 +1768,8 @@
      "domain_id": null,
      "component_id": null,
      "concept_id": null,
-     "unlinked_reason": "A channel backend realises no business capability of its own."
+     "unlinked_reason": "A channel backend realises no business capability of its own.",
+     "accepted": []
     }
    ],
    "constraints": [],
@@ -1687,7 +1785,8 @@
    "confidence": "inferred",
    "source": "SMB reference v1.0 · §1 B2B Web integrations; §7 Glossary · Named as an integration, not described as a system.",
    "masters": [],
-   "reads": []
+   "reads": [],
+   "accepted": []
   }
  ],
  "relationships": [],
@@ -1746,7 +1845,8 @@
    "name_ar": null,
    "parent_id": null,
    "description": "Leads, opportunities, quotes, discounts and sales recommendations.",
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "market-sales.sales",
@@ -1754,7 +1854,8 @@
    "name_ar": null,
    "parent_id": "market-sales",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "market-sales.recommendation",
@@ -1762,7 +1863,8 @@
    "name_ar": null,
    "parent_id": "market-sales",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "product",
@@ -1770,7 +1872,8 @@
    "name_ar": null,
    "parent_id": null,
    "description": "Product catalogues, offer design and catalogue automation.",
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "product.catalogue",
@@ -1778,7 +1881,8 @@
    "name_ar": null,
    "parent_id": "product",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "product.design",
@@ -1786,7 +1890,8 @@
    "name_ar": null,
    "parent_id": "product",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "customer",
@@ -1794,7 +1899,8 @@
    "name_ar": null,
    "parent_id": null,
    "description": "Engagement channels, customer data, customer orders, order tracking, problems and bills.",
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "customer.self-service",
@@ -1802,7 +1908,8 @@
    "name_ar": null,
    "parent_id": "customer",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "customer.assisted",
@@ -1810,7 +1917,8 @@
    "name_ar": null,
    "parent_id": "customer",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "customer.customer-data",
@@ -1818,7 +1926,8 @@
    "name_ar": null,
    "parent_id": "customer",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "customer.order",
@@ -1826,7 +1935,8 @@
    "name_ar": null,
    "parent_id": "customer",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "customer.problem",
@@ -1834,7 +1944,8 @@
    "name_ar": null,
    "parent_id": "customer",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "customer.bill",
@@ -1842,7 +1953,8 @@
    "name_ar": null,
    "parent_id": "customer",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "service",
@@ -1850,7 +1962,8 @@
    "name_ar": null,
    "parent_id": null,
    "description": "Service order management, service activation and service quality.",
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "service.order",
@@ -1858,7 +1971,8 @@
    "name_ar": null,
    "parent_id": "service",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "service.activation",
@@ -1866,7 +1980,8 @@
    "name_ar": null,
    "parent_id": "service",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "service.quality",
@@ -1874,7 +1989,8 @@
    "name_ar": null,
    "parent_id": "service",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "resource",
@@ -1882,7 +1998,8 @@
    "name_ar": null,
    "parent_id": null,
    "description": "Network activation, inventory, numbers, feasibility and field work.",
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "resource.activation",
@@ -1890,7 +2007,8 @@
    "name_ar": null,
    "parent_id": "resource",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "resource.inventory",
@@ -1898,7 +2016,8 @@
    "name_ar": null,
    "parent_id": "resource",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "resource.field",
@@ -1906,7 +2025,8 @@
    "name_ar": null,
    "parent_id": "resource",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "engaged-party",
@@ -1914,7 +2034,8 @@
    "name_ar": null,
    "parent_id": null,
    "description": "Government bodies, identity and document services, partners and vendors.",
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "engaged-party.government",
@@ -1922,7 +2043,8 @@
    "name_ar": null,
    "parent_id": "engaged-party",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "engaged-party.partner",
@@ -1930,7 +2052,8 @@
    "name_ar": null,
    "parent_id": "engaged-party",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "enterprise",
@@ -1938,7 +2061,8 @@
    "name_ar": null,
    "parent_id": null,
    "description": "Cross-cutting: notification, documents, IT service management, single sign-on.",
-   "cross_cutting": true
+   "cross_cutting": true,
+   "accepted": []
   },
   {
    "id": "enterprise.common",
@@ -1946,7 +2070,8 @@
    "name_ar": null,
    "parent_id": "enterprise",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   },
   {
    "id": "integration",
@@ -1954,7 +2079,8 @@
    "name_ar": null,
    "parent_id": null,
    "description": "The bus and gateways every domain talks through.",
-   "cross_cutting": true
+   "cross_cutting": true,
+   "accepted": []
   },
   {
    "id": "integration.bus",
@@ -1962,7 +2088,8 @@
    "name_ar": null,
    "parent_id": "integration",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "accepted": []
   }
  ],
  "products": [
@@ -3229,7 +3356,8 @@
      "confidence": "confirmed",
      "source": "SDD v2.3 · §P1 FortiPortal Access; §P2 ADO 259161"
     }
-   ]
+   ],
+   "accepted": []
   }
  ],
  "journeys": [
@@ -5591,7 +5719,8 @@
      "kind": "rejoin",
      "label": "rejoin"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-updowngrd",
@@ -6911,7 +7040,8 @@
      "kind": "decision",
      "label": "Yes"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-order-tracking",
@@ -7592,7 +7722,8 @@
      "kind": "sequence",
      "label": null
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-migrate",
@@ -8886,7 +9017,8 @@
      "kind": "decision",
      "label": "rejoin"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-cessation",
@@ -9995,7 +10127,8 @@
      "kind": "decision",
      "label": "rejoin"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-extshift",
@@ -10978,7 +11111,8 @@
      "kind": "decision",
      "label": "rejoin"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-dunning",
@@ -11670,7 +11804,8 @@
      "kind": "decision",
      "label": "rejoin"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-portin",
@@ -12400,7 +12535,8 @@
      "kind": "decision",
      "label": "rejoin"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-portout",
@@ -12851,7 +12987,8 @@
      "kind": "decision",
      "label": "rejoin"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-dvcrep",
@@ -13561,7 +13698,8 @@
      "kind": "decision",
      "label": "Yes"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-renewal",
@@ -14192,7 +14330,8 @@
      "kind": "decision",
      "label": "rejoin"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-adddelete",
@@ -14687,7 +14826,8 @@
      "kind": "decision",
      "label": "rejoin"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-chintusrn",
@@ -15041,7 +15181,8 @@
      "kind": "decision",
      "label": "Yes"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-chgpswd",
@@ -15395,7 +15536,8 @@
      "kind": "decision",
      "label": "Yes"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-chgdomn",
@@ -15749,7 +15891,8 @@
      "kind": "decision",
      "label": "Yes"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-chgsubdomn",
@@ -16103,7 +16246,8 @@
      "kind": "decision",
      "label": "Yes"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-chnumber",
@@ -16457,7 +16601,8 @@
      "kind": "decision",
      "label": "Yes"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-fleximinmov",
@@ -16811,7 +16956,8 @@
      "kind": "decision",
      "label": "Yes"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-techvisit",
@@ -17165,7 +17311,8 @@
      "kind": "decision",
      "label": "Yes"
     }
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "bpp-modsubs",
@@ -17575,7 +17722,8 @@
      "kind": "decision",
      "label": "Yes"
     }
-   ]
+   ],
+   "accepted": []
   }
  ],
  "channels": [
@@ -17587,7 +17735,8 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": "channel-assisted"
+   "kind_id": "channel-assisted",
+   "accepted": []
   },
   {
    "id": "b2b-web",
@@ -17597,7 +17746,8 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": "channel-self-service"
+   "kind_id": "channel-self-service",
+   "accepted": []
   },
   {
    "id": "smb-app",
@@ -17607,7 +17757,8 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": "channel-self-service"
+   "kind_id": "channel-self-service",
+   "accepted": []
   },
   {
    "id": "cim",
@@ -17617,7 +17768,8 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": "channel-assisted"
+   "kind_id": "channel-assisted",
+   "accepted": []
   },
   {
    "id": "nps",
@@ -17627,7 +17779,8 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": "channel-system"
+   "kind_id": "channel-system",
+   "accepted": []
   },
   {
    "id": "ehs",
@@ -17637,7 +17790,8 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": "channel-system"
+   "kind_id": "channel-system",
+   "accepted": []
   }
  ],
  "sources": [
@@ -17853,7 +18007,8 @@
    "domain_id": "customer",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-self-service-order-capture",
@@ -17868,7 +18023,8 @@
    "domain_id": "customer",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-sales-quoting",
@@ -17883,7 +18039,8 @@
    "domain_id": "market-sales",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-offer-recommendation",
@@ -17898,7 +18055,8 @@
    "domain_id": "market-sales",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-product-design",
@@ -17913,7 +18071,8 @@
    "domain_id": "product",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-product-catalogue",
@@ -17929,7 +18088,8 @@
    "domain_id": "product",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-order-orchestration",
@@ -17944,7 +18104,8 @@
    "domain_id": "customer",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-fixed-order-management",
@@ -17959,7 +18120,8 @@
    "domain_id": "service",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-cpe-provisioning",
@@ -17974,7 +18136,8 @@
    "domain_id": "service",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-sdwan",
@@ -17988,7 +18151,8 @@
    "domain_id": "service",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-firewall",
@@ -18003,7 +18167,8 @@
    "domain_id": "service",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-wifi-access",
@@ -18018,7 +18183,8 @@
    "domain_id": "service",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-static-ip",
@@ -18033,7 +18199,8 @@
    "domain_id": "service",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-proactive-monitoring",
@@ -18048,7 +18215,8 @@
    "domain_id": "service",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-customer-self-management",
@@ -18063,7 +18231,8 @@
    "domain_id": "customer",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-mobile-backup-access",
@@ -18079,7 +18248,8 @@
    "domain_id": "service",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-mobile-network-activation",
@@ -18094,7 +18264,8 @@
    "domain_id": "resource",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-field-installation",
@@ -18110,7 +18281,8 @@
    "domain_id": "resource",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-network-feasibility",
@@ -18125,7 +18297,8 @@
    "domain_id": "resource",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-number-portability",
@@ -18140,7 +18313,8 @@
    "domain_id": "resource",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-identity-verification",
@@ -18155,7 +18329,8 @@
    "domain_id": "customer",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-customer-notification",
@@ -18170,7 +18345,8 @@
    "domain_id": "customer",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-order-tracking",
@@ -18185,7 +18361,8 @@
    "domain_id": "customer",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-complaint-management",
@@ -18199,7 +18376,8 @@
    "domain_id": "customer",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-trouble-ticketing",
@@ -18214,7 +18392,8 @@
    "domain_id": "service",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-billing",
@@ -18229,7 +18408,8 @@
    "domain_id": "customer",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-collections",
@@ -18244,7 +18424,8 @@
    "domain_id": "customer",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-saas-activation",
@@ -18259,7 +18440,8 @@
    "domain_id": "service",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-device-logistics",
@@ -18275,7 +18457,8 @@
    "domain_id": "resource",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-customer-data",
@@ -18290,7 +18473,8 @@
    "domain_id": "customer",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-contract-lifecycle",
@@ -18305,7 +18489,8 @@
    "domain_id": "customer",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-document-management",
@@ -18320,7 +18505,8 @@
    "domain_id": "customer",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-iot-connectivity-management",
@@ -18335,7 +18521,8 @@
    "domain_id": "service",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-vehicle-telematics",
@@ -18350,7 +18537,8 @@
    "domain_id": "service",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-video-surveillance",
@@ -18365,7 +18553,8 @@
    "domain_id": "service",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-payment-acceptance",
@@ -18380,7 +18569,8 @@
    "domain_id": "service",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-learning-content",
@@ -18395,7 +18585,8 @@
    "domain_id": "service",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   },
   {
    "id": "cap-fibre-access",
@@ -18410,7 +18601,8 @@
    "domain_id": "service",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 1 · golden set v1 concept list"
+   "source": "Ontology plan Phase 1 · golden set v1 concept list",
+   "accepted": []
   }
  ],
  "vocabulary": [
@@ -18426,7 +18618,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values"
+   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
+   "accepted": []
   },
   {
    "id": "etom-selling",
@@ -18438,7 +18631,8 @@
    "broader_id": "etom-fulfillment",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values"
+   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
+   "accepted": []
   },
   {
    "id": "etom-order-handling",
@@ -18450,7 +18644,8 @@
    "broader_id": "etom-fulfillment",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values"
+   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
+   "accepted": []
   },
   {
    "id": "etom-service-configuration-activation",
@@ -18462,7 +18657,8 @@
    "broader_id": "etom-fulfillment",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values"
+   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
+   "accepted": []
   },
   {
    "id": "etom-resource-provisioning",
@@ -18474,7 +18670,8 @@
    "broader_id": "etom-fulfillment",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values"
+   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
+   "accepted": []
   },
   {
    "id": "etom-supplier-partner-requisition-management",
@@ -18486,7 +18683,8 @@
    "broader_id": "etom-fulfillment",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values"
+   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
+   "accepted": []
   },
   {
    "id": "etom-assurance",
@@ -18498,7 +18696,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values"
+   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
+   "accepted": []
   },
   {
    "id": "etom-problem-handling",
@@ -18510,7 +18709,8 @@
    "broader_id": "etom-assurance",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values"
+   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
+   "accepted": []
   },
   {
    "id": "etom-billing-revenue-management",
@@ -18524,7 +18724,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values"
+   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
+   "accepted": []
   },
   {
    "id": "etom-customer-relationship-management",
@@ -18538,7 +18739,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values"
+   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
+   "accepted": []
   },
   {
    "id": "etom-customer-interface-management",
@@ -18550,7 +18752,8 @@
    "broader_id": "etom-customer-relationship-management",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values"
+   "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
+   "accepted": []
   },
   {
    "id": "channel-assisted",
@@ -18562,7 +18765,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own channel kinds"
+   "source": "Ontology plan Phase 6 · the catalogue's own channel kinds",
+   "accepted": []
   },
   {
    "id": "channel-self-service",
@@ -18576,7 +18780,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own channel kinds"
+   "source": "Ontology plan Phase 6 · the catalogue's own channel kinds",
+   "accepted": []
   },
   {
    "id": "channel-system",
@@ -18590,7 +18795,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own channel kinds"
+   "source": "Ontology plan Phase 6 · the catalogue's own channel kinds",
+   "accepted": []
   },
   {
    "id": "role-capture",
@@ -18604,7 +18810,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+   "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
+   "accepted": []
   },
   {
    "id": "role-catalog",
@@ -18616,7 +18823,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+   "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
+   "accepted": []
   },
   {
    "id": "role-customer-data",
@@ -18628,7 +18836,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+   "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
+   "accepted": []
   },
   {
    "id": "role-validate",
@@ -18640,7 +18849,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+   "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
+   "accepted": []
   },
   {
    "id": "role-orchestrate",
@@ -18654,7 +18864,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+   "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
+   "accepted": []
   },
   {
    "id": "role-activate",
@@ -18670,7 +18881,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+   "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
+   "accepted": []
   },
   {
    "id": "role-field",
@@ -18684,7 +18896,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+   "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
+   "accepted": []
   },
   {
    "id": "role-logistics",
@@ -18696,7 +18909,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+   "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
+   "accepted": []
   },
   {
    "id": "role-bill",
@@ -18708,7 +18922,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+   "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
+   "accepted": []
   },
   {
    "id": "role-track",
@@ -18720,7 +18935,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+   "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
+   "accepted": []
   },
   {
    "id": "role-notify",
@@ -18732,7 +18948,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+   "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
+   "accepted": []
   },
   {
    "id": "role-record",
@@ -18744,7 +18961,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+   "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
+   "accepted": []
   },
   {
    "id": "role-configure",
@@ -18761,7 +18979,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Catalogue curation · the components' own responsibility notes"
+   "source": "Catalogue curation · the components' own responsibility notes",
+   "accepted": []
   },
   {
    "id": "role-authenticate",
@@ -18776,7 +18995,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Catalogue curation · the components' own responsibility notes"
+   "source": "Catalogue curation · the components' own responsibility notes",
+   "accepted": []
   },
   {
    "id": "role-suggest",
@@ -18790,7 +19010,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Catalogue curation · the components' own responsibility notes"
+   "source": "Catalogue curation · the components' own responsibility notes",
+   "accepted": []
   },
   {
    "id": "api-tmf620",
@@ -18804,7 +19025,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents"
+   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
+   "accepted": []
   },
   {
    "id": "api-tmf621",
@@ -18816,7 +19038,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents"
+   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
+   "accepted": []
   },
   {
    "id": "api-tmf622",
@@ -18828,7 +19051,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents"
+   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
+   "accepted": []
   },
   {
    "id": "api-tmf629",
@@ -18842,7 +19066,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents"
+   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
+   "accepted": []
   },
   {
    "id": "api-tmf632",
@@ -18854,7 +19079,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents"
+   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
+   "accepted": []
   },
   {
    "id": "api-tmf637",
@@ -18868,7 +19094,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents"
+   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
+   "accepted": []
   },
   {
    "id": "api-tmf641",
@@ -18880,7 +19107,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents"
+   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
+   "accepted": []
   },
   {
    "id": "api-tmf679",
@@ -18892,7 +19120,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents"
+   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
+   "accepted": []
   },
   {
    "id": "api-tmf681",
@@ -18904,7 +19133,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents"
+   "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
+   "accepted": []
   },
   {
    "id": "entity-party",
@@ -18920,7 +19150,8 @@
    "broader_id": null,
    "exact_match": "SID Party ABE",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions"
+   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
+   "accepted": []
   },
   {
    "id": "entity-customer",
@@ -18934,7 +19165,8 @@
    "broader_id": null,
    "exact_match": "SID Customer ABE",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions"
+   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
+   "accepted": []
   },
   {
    "id": "entity-billing-account",
@@ -18949,7 +19181,8 @@
    "broader_id": null,
    "exact_match": "SID Customer Bill ABE",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions"
+   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
+   "accepted": []
   },
   {
    "id": "entity-bill",
@@ -18963,7 +19196,8 @@
    "broader_id": null,
    "exact_match": "SID Customer Bill ABE",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions"
+   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
+   "accepted": []
   },
   {
    "id": "entity-product-offering",
@@ -18978,7 +19212,8 @@
    "broader_id": null,
    "exact_match": "SID Product Offering ABE",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions"
+   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
+   "accepted": []
   },
   {
    "id": "entity-product",
@@ -18994,7 +19229,8 @@
    "broader_id": null,
    "exact_match": "SID Product ABE",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions"
+   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
+   "accepted": []
   },
   {
    "id": "entity-product-order",
@@ -19009,7 +19245,8 @@
    "broader_id": null,
    "exact_match": "SID Customer Order ABE",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions"
+   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
+   "accepted": []
   },
   {
    "id": "entity-order-milestone",
@@ -19024,7 +19261,8 @@
    "broader_id": "entity-product-order",
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions"
+   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
+   "accepted": []
   },
   {
    "id": "entity-service-order",
@@ -19036,7 +19274,8 @@
    "broader_id": null,
    "exact_match": "SID Service Order ABE",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions"
+   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
+   "accepted": []
   },
   {
    "id": "entity-resource",
@@ -19052,7 +19291,8 @@
    "broader_id": null,
    "exact_match": "SID Resource ABE",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions"
+   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
+   "accepted": []
   },
   {
    "id": "entity-telephone-number",
@@ -19067,7 +19307,8 @@
    "broader_id": "entity-resource",
    "exact_match": "SID Logical Resource ABE",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions"
+   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
+   "accepted": []
   },
   {
    "id": "entity-work-order",
@@ -19081,7 +19322,8 @@
    "broader_id": null,
    "exact_match": "SID Work Order ABE",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions"
+   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
+   "accepted": []
   },
   {
    "id": "entity-trouble-ticket",
@@ -19096,7 +19338,8 @@
    "broader_id": null,
    "exact_match": "SID Customer Problem ABE",
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions"
+   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
+   "accepted": []
   },
   {
    "id": "entity-customer-document",
@@ -19112,7 +19355,8 @@
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions"
+   "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
+   "accepted": []
   }
  ],
  "interfaces": [

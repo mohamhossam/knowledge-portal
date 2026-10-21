@@ -10,6 +10,8 @@ import {
 import { useFocusAfterRender } from "../design/hooks";
 import { count } from "../home/format";
 import { RouterLink } from "../shell/links";
+import { acceptances } from "./accepted";
+import { AcceptedFrom } from "./AcceptedFrom";
 import { roleLabel, systemName } from "./catalogue";
 import { OfferingStructureDiagram } from "./diagrams/CatalogueDiagrams";
 import { OfferingEdit, OfferingSectionEdit, WholeRemove } from "./DraftEdits";
@@ -240,6 +242,7 @@ function OfferingRecord({ offering }: { offering: Offering }) {
       meta={
         <>
           {offering.confidence && <Status tone={SOURCE_TONE[offering.confidence]}>{SOURCE_WORD[offering.confidence]}</Status>}
+          <AcceptedFrom accepted={acceptances(offering)} summary />
           <span>
             {[offering.code, offering.family, offering.version && `version ${offering.version}`, offering.lifecycle].filter(Boolean).join(" · ")}
           </span>

@@ -35,6 +35,7 @@ from knowledge_portal.domain.architecture.invariants import (
     required,
 )
 from knowledge_portal.domain.architecture.lifecycle import LifecycleNote, check_lifecycle_notes
+from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.architecture.sources import (
     SourceConfidence as SourceConfidence,
 )
@@ -371,6 +372,8 @@ class ProductOffering:
     # Its plans as the sources describe them, and the rules it is sold and fulfilled by.
     plans: tuple[OfferingPlan, ...] = ()
     business_rules: tuple[BusinessRule, ...] = ()
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Offering id"))

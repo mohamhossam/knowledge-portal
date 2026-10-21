@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, fields, is_dataclass, replace
 from enum import StrEnum
 
 from knowledge_portal.domain.architecture.journeys import Journey
@@ -169,6 +169,18 @@ _REALISATION_FIELDS = (
     "confidence",
     "source",
 )
+
+
+def _unstamped(item: object) -> object:
+    """The item without the acceptances recorded on it: an acceptance is not a change to the
+    fact itself (ADR-0120)."""
+    if (
+        is_dataclass(item)
+        and not isinstance(item, type)
+        and any(field.name == "accepted" for field in fields(item))
+    ):
+        return replace(item, accepted=())
+    return item
 
 
 def _bare(offering: ProductOffering) -> tuple[object, ...]:
@@ -393,7 +405,7 @@ def _register_changes(
     changes = _keyed_changes(item, before, after)
     for key, (label, value) in after.items():
         previous = before.get(key)
-        if previous is None or previous[1] == value:
+        if previous is None or _unstamped(previous[1]) == _unstamped(value):
             continue
         changes.append(
             CatalogueChange(
@@ -589,7 +601,7 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
     changes.extend(_keyed_changes(ChangedItem.PRODUCT, base_offerings, draft_offerings))
     for key, (label, offering) in draft_offerings.items():
         previous_offering = base_offerings.get(key)
-        if previous_offering is None or previous_offering[1] == offering:
+        if previous_offering is None or _unstamped(previous_offering[1]) == _unstamped(offering):
             continue
         changes.append(
             CatalogueChange(
@@ -605,7 +617,7 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
     changes.extend(_keyed_changes(ChangedItem.JOURNEY, base_journeys, draft_journeys))
     for key, (label, journey) in draft_journeys.items():
         previous_journey = base_journeys.get(key)
-        if previous_journey is None or previous_journey[1] == journey:
+        if previous_journey is None or _unstamped(previous_journey[1]) == _unstamped(journey):
             continue
         changes.append(
             CatalogueChange(
@@ -621,7 +633,7 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
     changes.extend(_keyed_changes(ChangedItem.CHANNEL, base_channels, draft_channels))
     for key, (label, channel) in draft_channels.items():
         previous_channel = base_channels.get(key)
-        if previous_channel is None or previous_channel[1] == channel:
+        if previous_channel is None or _unstamped(previous_channel[1]) == _unstamped(channel):
             continue
         changes.append(
             CatalogueChange(
