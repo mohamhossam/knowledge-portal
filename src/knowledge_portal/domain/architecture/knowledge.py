@@ -16,6 +16,8 @@ from knowledge_portal.domain.architecture.concepts import (
     BusinessCapability,
     check_concepts,
     check_link,
+    concept_domain,
+    label_key,
 )
 from knowledge_portal.domain.architecture.deprecation import (
     check_replacements,
@@ -151,6 +153,12 @@ def _check_node(node: _Node, noun: str) -> None:
         raise InvalidKnowledgeError(f"A {noun.casefold()} cannot be its own parent.")
 
 
+def _compared(label: str) -> str:
+    """A label as one entity's own labels are told apart: punctuation counts, so a system
+    may keep both "CRMGW" and "CRM GW". Between entities, ``label_key`` decides."""
+    return label.casefold().strip()
+
+
 def _check_domains[NodeT: _Node](
     domains: tuple[NodeT, ...], noun: str = "Domain"
 ) -> dict[str, NodeT]:
@@ -165,7 +173,7 @@ def _check_domains[NodeT: _Node](
             raise InvalidKnowledgeError(
                 f"{noun} {item.name!r} names a parent that is not in the catalogue."
             )
-        key = (item.parent_id, item.name.casefold().strip())
+        key = (item.parent_id, label_key(item.name) or _compared(item.name))
         if key in siblings:
             raise InvalidKnowledgeError(f"Two {lower}s under one parent are named {item.name!r}.")
         siblings.add(key)
@@ -312,22 +320,26 @@ class SystemDefinition:
         if any(not value.strip() for value in (*self.aliases, *self.constraints)):
             raise InvalidKnowledgeError("System aliases and constraints must not be blank.")
         labels = (self.name, *((self.name_ar,) if self.name_ar else ()), *self.aliases)
-        if len({value.casefold().strip() for value in labels}) != len(labels):
+        if len({_compared(value) for value in labels}) != len(labels):
             raise InvalidKnowledgeError("System names and aliases must be unique.")
         if len({item.id for item in self.capabilities}) != len(self.capabilities):
             raise InvalidKnowledgeError("Capability ids must be unique within a system.")
         if len({item.id for item in self.components}) != len(self.components):
             raise InvalidKnowledgeError(f"{self.name}: component ids must be unique.")
-        seen: set[str] = set()
+        named: dict[str, str] = {}
         for component in self.components:
+            if len({_compared(label) for label in component.labels}) != len(component.labels):
+                raise InvalidKnowledgeError(
+                    f"{self.name}: {component.name}'s names and aliases must be unique."
+                )
             for label in component.labels:
-                key = label.casefold().strip()
-                if key in seen:
+                if named.setdefault(label_key(label) or _compared(label), component.id) != (
+                    component.id
+                ):
                     raise InvalidKnowledgeError(
                         f"{self.name}: {label!r} names more than one component. Each name or "
                         "alias must identify one component."
                     )
-                seen.add(key)
         component_ids = {item.id for item in self.components}
         for capability in self.capabilities:
             if capability.component_id is not None and capability.component_id not in component_ids:
@@ -536,7 +548,7 @@ class ArchitectureKnowledge:
             for alias in (system.id, system.name, system.name_ar or "", *system.aliases):
                 if not alias:
                     continue
-                owner = owners.setdefault(alias.casefold().strip(), system)
+                owner = owners.setdefault(label_key(alias) or _compared(alias), system)
                 if owner.id != system.id:
                     raise InvalidKnowledgeError(
                         f"{alias!r} already names {owner.name}, so it cannot also name "
@@ -561,10 +573,20 @@ class ArchitectureKnowledge:
         concepts = check_concepts(self.business_capabilities, domains)
         for system in self.systems:
             for capability in system.capabilities:
-                if capability.concept_id is not None and capability.concept_id not in concepts:
+                if capability.concept_id is None:
+                    continue
+                if capability.concept_id not in concepts:
                     raise InvalidKnowledgeError(
                         f"{system.name}: {capability.name} is linked to concept "
                         f"{capability.concept_id!r}, which is not in the catalogue."
+                    )
+                held = concept_domain(concepts, capability.concept_id)
+                if capability.domain_id is not None and held not in (None, capability.domain_id):
+                    raise InvalidKnowledgeError(
+                        f"{system.name}: {capability.name} is placed in domain "
+                        f"{capability.domain_id!r}, but the concept it realises, "
+                        f"{concepts[capability.concept_id].pref_label}, sits in {held!r}. A "
+                        "capability sits in its concept's domain."
                     )
         channel_ids = check_channels(self.channels, system_ids)
         check_offerings(self.products, system_ids, channel_ids)

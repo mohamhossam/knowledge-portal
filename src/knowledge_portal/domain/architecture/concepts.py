@@ -153,6 +153,18 @@ def check_concepts(
     return by_id
 
 
+def concept_domain(concepts: dict[str, BusinessCapability], concept_id: str) -> str | None:
+    """The domain a concept sits in: its own as a top concept, else its top concept's."""
+    current = concepts.get(concept_id)
+    seen: set[str] = set()
+    while current is not None and current.id not in seen:
+        if current.broader_id is None:
+            return current.domain_id
+        seen.add(current.id)
+        current = concepts.get(current.broader_id)
+    return None
+
+
 def check_link(concept_ids: Iterable[str], unlinked_reason: str | None, where: str) -> None:
     """A link is to concepts, or it says why none fits, never both."""
     ids = tuple(concept_ids)

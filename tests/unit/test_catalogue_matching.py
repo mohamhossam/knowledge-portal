@@ -126,10 +126,11 @@ def test_a_system_is_found_by_its_words_when_only_one_system_fits() -> None:
     assert found is not None and found.id == "bcrm"
     assert find_system(release, "ORDER_HUB") is None  # underscores are part of a word
     assert find_system(release, "---") is None
-    twins = release.updated(
-        systems=(*release.systems, SystemDefinition("hub-b", "Hub B", aliases=("order hub!",)))
-    )
-    assert find_system(twins, "order  hub") is None
+    # Two systems whose labels share their words cannot both be catalogued.
+    with pytest.raises(InvalidKnowledgeError, match="already names Order Hub"):
+        release.updated(
+            systems=(*release.systems, SystemDefinition("hub-b", "Hub B", aliases=("order hub!",)))
+        )
 
 
 def _candidate(content: CandidateContent, **values: Any) -> CatalogueCandidate:
