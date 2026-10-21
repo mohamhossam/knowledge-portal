@@ -127,7 +127,7 @@ class Settings:
     llm_provider: LLMProvider = LLMProvider.OPENAI
     llm_config_path: str | None = None
     llm_profiles: LLMProfileConfiguration | None = field(default=None, repr=False)
-    openai_api_key: str | None = None
+    openai_api_key: str | None = field(default=None, repr=False)
     openai_model: str = DEFAULT_OPENAI_MODEL
     openai_timeout_seconds: float = DEFAULT_OPENAI_TIMEOUT_SECONDS
     openai_embedding_model: str = DEFAULT_OPENAI_EMBEDDING_MODEL
