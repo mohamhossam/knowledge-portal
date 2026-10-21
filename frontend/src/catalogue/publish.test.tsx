@@ -80,4 +80,20 @@ describe("hand edits on a system's sheet", () => {
       relationships: [{ source_system_id: "cwom", target_system_id: "bscs", kind: "calls_api", description: "Order closure updates billing." }],
     });
   });
+
+  it("adds a second connection to the same system for something else, and refuses the same words", async () => {
+    const billing = { source_system_id: "cwom", target_system_id: "bscs", kind: "calls_api" as const, description: "Order closure updates billing." };
+    const save = vi.spyOn(api, "saveDraft").mockResolvedValue(draft({ revision: 6 }));
+    renderAt(draft({ relationships: [billing] }), "/architecture/versions/d/systems/cwom", systemRoutes);
+    fireEvent.click(screen.getByRole("button", { name: "Add a dependency" }));
+    const panel = screen.getByRole("form", { name: /Add a dependency of CWOM/ });
+    const add = within(panel).getByRole("button", { name: "Add the dependency" });
+    fireEvent.change(within(panel).getByLabelText("Depends on"), { target: { value: "bscs" } });
+    fireEvent.change(within(panel).getByLabelText(/For what/), { target: { value: "order closure updates billing." } });
+    expect(add).toHaveAttribute("aria-disabled", "true");
+    fireEvent.change(within(panel).getByLabelText(/For what/), { target: { value: "Reads the account balance." } });
+    fireEvent.click(add);
+    await waitFor(() => expect(save).toHaveBeenCalled());
+    expect(save.mock.calls[0]![1].relationships).toHaveLength(2);
+  });
 });

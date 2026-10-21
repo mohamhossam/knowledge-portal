@@ -275,7 +275,7 @@ function ConnectionTable({ title, rows, other, how, from, system, empty, editabl
             // A derived link changes with the interfaces and journeys it is known from.
             if (!stated) return <span className="cat-quiet">Changes with its sources</span>;
             return (
-              <ActionGroup label={`The dependency on ${systemName(book, other(row))}`}>
+              <ActionGroup label={`The dependency on ${systemName(book, other(row))}: ${row.description}`}>
                 <Button variant="quiet" onClick={() => { setRemoving(null); setEditing(stated); }}>Change</Button>
                 <Button variant="quiet" onClick={() => { setEditing(null); setRemoving(stated); }}>Remove</Button>
               </ActionGroup>
@@ -298,7 +298,7 @@ function ConnectionTable({ title, rows, other, how, from, system, empty, editabl
       )}
       {editing && (
         <ConnectionEdit
-          key={editing === "new" ? "new" : `${editing.source_system_id}>${editing.target_system_id}`}
+          key={editing === "new" ? "new" : `${editing.source_system_id}>${editing.target_system_id}>${editing.description}`}
           system={system}
           connection={editing === "new" ? undefined : editing}
           onDone={() => setEditing(null)}

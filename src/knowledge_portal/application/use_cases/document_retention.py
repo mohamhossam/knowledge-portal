@@ -32,7 +32,7 @@ class DocumentRetention:
         """Versions no release holds, never published, uploaded at least `older_than` ago."""
         if older_than < timedelta(0):
             raise ValueError("The retention period cannot be negative.")
-        held = {item.id for release in self._repository.list_all() for item in release.documents}
+        held = self._held()
         published = {item.id for item in self._repository.document_versions(False)}
         return tuple(
             version
@@ -46,17 +46,25 @@ class DocumentRetention:
     def collect(self, now: datetime, older_than: timedelta) -> tuple[KnowledgeDocumentVersion, ...]:
         """Delete the stored files of the unused versions; their registrations stay.
 
-        Each version is marked collected before its file goes, so it can no longer be
-        selected into a draft; one a draft took in the meantime is left alone.
+        Each version is marked collected before its file goes, so a draft can no longer take
+        it; one a draft took before the mark is unmarked and kept. A file whose delete fails is
+        unmarked too, so the next run tries it again. Run it while the portal is quiet: a draft
+        that checks a version just before the mark and saves just after the delete can still
+        name a version without a file (docs/operations/deployment.md, "Retention").
         """
         collected: list[KnowledgeDocumentVersion] = []
         for version in self.unused(now, older_than):
-            held = {
-                item.id for release in self._repository.list_all() for item in release.documents
-            }
-            if version.id in held:
-                continue
             self._repository.mark_file_collected(version.id)
-            self._storage.delete(DocumentVersionId(version.storage_key))
+            if version.id in self._held():
+                self._repository.mark_file_collected(version.id, False)
+                continue
+            try:
+                self._storage.delete(DocumentVersionId(version.storage_key))
+            except Exception:
+                self._repository.mark_file_collected(version.id, False)
+                raise
             collected.append(version)
         return tuple(collected)
+
+    def _held(self) -> set[str]:
+        return {item.id for release in self._repository.list_all() for item in release.documents}

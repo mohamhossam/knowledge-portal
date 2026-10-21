@@ -54,11 +54,11 @@ class InMemoryArchitectureKnowledgeRepository:
                 if include_drafts or key in self._published_documents
             )
 
-    def mark_file_collected(self, version_id: str) -> None:
+    def mark_file_collected(self, version_id: str, collected: bool = True) -> None:
         with self._lock:
             found = self._documents.get(version_id)
             if found is not None:
-                self._documents[version_id] = replace(found, file_collected=True)
+                self._documents[version_id] = replace(found, file_collected=collected)
 
     def active(self) -> ArchitectureKnowledge:
         with self._lock:

@@ -103,14 +103,14 @@ class PostgresArchitectureKnowledgeRepository:
         except (psycopg.Error, ValidationError) as exc:
             raise PersistenceError("Architecture document list failed.") from exc
 
-    def mark_file_collected(self, version_id: str) -> None:
+    def mark_file_collected(self, version_id: str, collected: bool = True) -> None:
         try:
             with self._connector.connection() as connection:
                 connection.execute(
                     "UPDATE architecture_knowledge_documents "
-                    "SET payload = jsonb_set(payload, '{file_collected}', 'true') "
+                    "SET payload = jsonb_set(payload, '{file_collected}', to_jsonb(%s::boolean)) "
                     "WHERE version_id = %s",
-                    (version_id,),
+                    (collected, version_id),
                 )
         except psycopg.Error as exc:
             raise PersistenceError("Architecture document update failed.") from exc

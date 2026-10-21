@@ -48,6 +48,7 @@ from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledg
 )
 from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     ActivityIntegrationSchema,
+    PlanCharacteristicSchema,
 )
 
 MAINTAINER = Actor("maintainer", frozenset({"knowledge_maintainer"}))
@@ -192,8 +193,15 @@ def test_a_measured_plan_value_carries_its_amount_and_unit() -> None:
     assert PlanCharacteristic("Support", "24/7").amount is None
     assert PlanCharacteristic("Uptime", "99.9 %").unit == "%"
     assert PlanCharacteristic("Download", "200 Mbps", amount="200.0", unit="Mbps").amount == "200"
+    # Stored before "1,000 GB" read as a thousand: the value wins, so the release still loads.
+    stored = PlanCharacteristic("Quota", "1,000 GB", amount="1.000", unit="GB")
+    assert (stored.amount, stored.unit) == ("1000", "GB")
+    # A writer that gives a pair which disagrees is refused at the API; units in any case agree.
+    written = {"name": "Download", "value": "300 Mbps", "amount": "200", "unit": "Mbps"}
     with pytest.raises(InvalidKnowledgeError, match="disagree"):
-        PlanCharacteristic("Download", "300 Mbps", amount="200", unit="Mbps")
+        PlanCharacteristicSchema.model_validate(written).to_domain()
+    same = {"name": "Download", "value": "200 Mbps", "amount": "200.0", "unit": "mbps"}
+    assert PlanCharacteristicSchema.model_validate(same).to_domain().amount == "200"
     with pytest.raises(InvalidKnowledgeError, match="needs its unit"):
         PlanCharacteristic("Download", "fast", amount="200")
     with pytest.raises(InvalidKnowledgeError, match="not a number"):

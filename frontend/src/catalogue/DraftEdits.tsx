@@ -168,13 +168,19 @@ export function ConnectionEdit({ system, connection, onDone }: { system: Catalog
   const [kind, setKind] = useState<RelationshipKind>(connection?.kind ?? "calls_api");
   const [text, setText] = useState(connection?.description ?? "");
   const others = release.systems.filter((item) => item.id !== system.id);
+  // A pair may hold several connections; two with the same words are one (as the service holds them).
+  const words = (value: string) => value.trim().toLocaleLowerCase();
   const duplicate = release.relationships.some(
-    (item) => item !== connection && item.source_system_id === system.id && item.target_system_id === target,
+    (item) =>
+      item !== connection &&
+      item.source_system_id === system.id &&
+      item.target_system_id === target &&
+      words(item.description) === words(text),
   );
   const problem = !target
     ? "Choose the system it depends on."
     : duplicate
-      ? "It already depends on that system; change that connection instead."
+      ? "It already depends on that system for that; change that connection instead."
       : !text.trim() ? "Say what the dependency is for." : null;
   const next: Relationship = { source_system_id: system.id, target_system_id: target, kind, description: text.trim() };
   const relationships = connection
@@ -531,7 +537,8 @@ export function WholeRename({ kind, item, onDone }: { kind: "offering" | "journe
       focusOnOpen
       action="Change the id"
       busy={renameEntity.isPending}
-      problem={problem}
+      // The field says what is wrong; the button only points to it.
+      problem={problem && wanted !== item.id ? "Correct the new id first." : problem}
       error={renameEntity.error}
       onCancel={() => onDone(null)}
       onSubmit={() =>

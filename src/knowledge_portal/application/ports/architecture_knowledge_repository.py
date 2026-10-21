@@ -16,8 +16,9 @@ class ArchitectureKnowledgeRepositoryPort(Protocol):
 
     def document_versions(self, include_drafts: bool) -> tuple[KnowledgeDocumentVersion, ...]: ...
 
-    def mark_file_collected(self, version_id: str) -> None:
-        """Record that a version's stored file is about to be deleted; it stays registered."""
+    def mark_file_collected(self, version_id: str, collected: bool = True) -> None:
+        """Record that a version's stored file is about to be deleted (or, with False, that it
+        was kept after all); the version stays registered."""
         ...
 
     def active(self) -> ArchitectureKnowledge: ...

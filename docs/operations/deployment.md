@@ -217,4 +217,6 @@ Users sign in again once when the portal moves to a new origin.
   uv run python scripts/collect_unused_documents.py --older-than-days 90 --apply  # deletes
   ```
 
-  The period is the retention policy's to set; nothing is deleted on its own.
+  The period is the retention policy's to set; nothing is deleted on its own. Run `--apply`
+  while the portal is quiet: a curator selecting an old version at the same moment could keep
+  it in a draft after its file goes.

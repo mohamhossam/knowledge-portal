@@ -231,6 +231,26 @@ def test_a_build_says_what_it_reused_and_cut(caplog: pytest.LogCaptureFixture) -
     assert "documents reused 1, cut 0" in caplog.text
 
 
+def test_a_file_whose_delete_fails_is_tried_again_on_the_next_run(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    catalogue = Catalogue()
+    draft = catalogue.add(catalogue.manage.create_draft(MAINTAINER, "Next"), "CWOM orders v1")
+    first = draft.documents[0]
+    catalogue.add(draft, "CWOM orders v2", replaces=first.id)
+    retention = DocumentRetention(catalogue.repository, catalogue.storage)
+    later = NOW + timedelta(days=91)
+
+    def unavailable(_: DocumentVersionId) -> None:
+        raise OSError("storage unavailable")
+
+    monkeypatch.setattr(catalogue.storage, "delete", unavailable)
+    with pytest.raises(OSError):
+        retention.collect(later, timedelta(days=90))
+    assert not catalogue.manage.known_versions()[first.id].file_collected
+    assert [item.id for item in retention.unused(later, timedelta(days=90))] == [first.id]
+
+
 def test_unused_document_files_are_listed_then_collected_and_registrations_kept() -> None:
     catalogue = Catalogue()
     draft = catalogue.add(catalogue.manage.create_draft(MAINTAINER, "Next"), "CWOM orders v1")

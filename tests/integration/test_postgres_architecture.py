@@ -174,6 +174,9 @@ def test_deselected_document_registry_survives_restart() -> None:
     repository.mark_file_collected(version_id)
     (collected,) = [item for item in restarted.document_versions(True) if item.id == version_id]
     assert collected.file_collected
+    repository.mark_file_collected(version_id, False)
+    (kept,) = [item for item in restarted.document_versions(True) if item.id == version_id]
+    assert not kept.file_collected
 
     knowledge.discard_draft(selected.id, selected.revision, actor)
     assert restarted.get(selected.id) is None

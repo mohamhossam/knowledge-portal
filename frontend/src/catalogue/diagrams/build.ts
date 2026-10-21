@@ -67,7 +67,15 @@ export function connectionsFlow(landscape: Landscape, options: { href?: Href; hi
       ...(highlight?.has(system.id) ? { tone: "subject" as const, status: "In this order" } : {}),
     }));
   const known = new Set(nodes.map((node) => node.id));
-  const drawn = links.filter((item) => known.has(item.source_system_id) && known.has(item.target_system_id));
+  // One line per pair, the pair's first connection: a pair stated several times is listed in
+  // full in the table beside the drawing.
+  const pairs = new Set<string>();
+  const drawn = links.filter((item) => {
+    const pair = `${item.source_system_id}>${item.target_system_id}`;
+    if (!known.has(item.source_system_id) || !known.has(item.target_system_id) || pairs.has(pair)) return false;
+    pairs.add(pair);
+    return true;
+  });
   const crowded = drawn.length > CROWDED_LINES;
   const edges = drawn.map((item) => edgeOf(item, item.source_system_id, item.target_system_id, !crowded));
   const unconnected = landscape.systems.length - landscape.systems.filter((system) => linked.has(system.id)).length;

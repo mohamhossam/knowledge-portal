@@ -89,6 +89,7 @@ from knowledge_portal.domain.architecture.journeys import (
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     CapabilityDomain,
+    InvalidKnowledgeError,
     KnowledgeAuditEvent,
     KnowledgeCapability,
     KnowledgeDocumentVersion,
@@ -123,6 +124,7 @@ from knowledge_portal.domain.architecture.products import (
     Realisation,
     RealisationLayer,
     SourceConfidence,
+    measure_disagrees,
 )
 from knowledge_portal.domain.architecture.realisations import RealisationRecord
 from knowledge_portal.domain.architecture.samples import MAX_SAMPLES, SampleRequirementSet
@@ -1333,6 +1335,11 @@ class PlanCharacteristicSchema(BaseModel):
         )
 
     def to_domain(self) -> PlanCharacteristic:
+        if measure_disagrees(self.value, self.amount, self.unit):
+            raise InvalidKnowledgeError(
+                f"{self.name}: the amount and unit ({self.amount} {self.unit}) disagree with "
+                f"the value {self.value!r}."
+            )
         return PlanCharacteristic(self.name, self.value, self.amount, self.unit)
 
 

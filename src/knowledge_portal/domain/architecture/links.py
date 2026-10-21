@@ -98,8 +98,9 @@ def _named(names: list[str]) -> str:
 
 
 def system_links(release: ArchitectureKnowledge) -> tuple[SystemLink, ...]:
-    """Every link between systems in a version: stated ones first in their own order, then
-    the rest as the interfaces and journeys name them."""
+    """Every link between systems in a version, grouped by pair in the order each pair is
+    first met (stated connections, then interfaces, then journeys). Within a pair, each
+    stated connection is a link in its own order; a pair stated nowhere is one link."""
     pairs: dict[tuple[str, str], _Pair] = {}
 
     def pair(source: str | None, target: str | None) -> _Pair | None:

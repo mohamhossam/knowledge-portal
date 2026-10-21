@@ -159,9 +159,13 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   accepted for a draft, and never listed for collection again. The public document version
   carries `file_collected`.
 - Several stated connections between the same two systems each stay a connection of their own,
-  in the service and on screen; only the first was kept.
+  in the service and on screen; only the first was kept. A system's record adds and changes
+  them one by one (two with the same words are one); a diagram draws one line per pair.
+- A document file whose delete fails, or that a draft took meanwhile, is unmarked and kept, so
+  retention tries it again on its next run.
 - A plan value reads as a measure only when it is one: "1,000 GB" is 1000 GB, "24/7" is not a
-  measure, and a given amount and unit must agree with a value written as a measure.
+  measure. A value written as a measure sets its amount and unit, so a release stored with the
+  old reading still loads; the API refuses a given amount and unit that disagree with it.
 - A change to how documents are cut now cuts every document again on the next build
   (`SECTIONING_RULES` is part of a document's chunk-set key).
 - A citation of "SDD v2.3" no longer counts as citing a source registered as "SDD v2".

@@ -21,6 +21,7 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Collection
 from dataclasses import dataclass
+from decimal import Decimal
 from enum import StrEnum
 
 from knowledge_portal.domain.architecture.concepts import check_link
@@ -312,7 +313,7 @@ _MEASURE = re.compile(
 _AMOUNT = re.compile(r"\d+(?:\.\d+)?")
 
 
-def _measure(value: str) -> tuple[str, str] | None:
+def measure_of(value: str) -> tuple[str, str] | None:
     """A value's amount (with a decimal point, no grouping) and unit, if it is a measure."""
     measured = _MEASURE.match(value)
     if not measured:
@@ -321,6 +322,15 @@ def _measure(value: str) -> tuple[str, str] | None:
     grouped = re.fullmatch(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?", number)
     amount = number.replace(",", "") if grouped else number.replace(",", ".")
     return amount, measured[2]
+
+
+def measure_disagrees(value: str, amount: str | None, unit: str | None) -> bool:
+    """A given amount and unit that say otherwise than a value written as a measure: "300
+    Mbps" given as 200 Mbps. Units compare in any case; amounts as decimals ("200" is "200.0")."""
+    measured = measure_of(value)
+    if measured is None or amount is None or unit is None or not _AMOUNT.fullmatch(amount):
+        return False
+    return (Decimal(amount), unit.casefold()) != (Decimal(measured[0]), measured[1].casefold())
 
 
 @dataclass(frozen=True)
@@ -349,20 +359,13 @@ class PlanCharacteristic:
             )
         if self.amount is not None and not _AMOUNT.fullmatch(self.amount):
             raise InvalidKnowledgeError(f"{self.name}: the amount {self.amount!r} is not a number.")
-        measured = _measure(self.value)
-        if measured is None:
-            return
-        # A value written as a measure says its own amount and unit; a given pair must agree.
-        if self.amount is not None and (float(self.amount), self.unit) != (
-            float(measured[0]),
-            measured[1],
-        ):
-            raise InvalidKnowledgeError(
-                f"{self.name}: the amount and unit ({self.amount} {self.unit}) disagree with "
-                f"the value {self.value!r}."
-            )
-        object.__setattr__(self, "amount", measured[0])
-        object.__setattr__(self, "unit", measured[1])
+        # A value written as a measure says its own amount and unit, over any given: a release
+        # stored when "1,000 GB" read as 1.000 GB loads as 1000 GB. Writers that give a pair
+        # which disagrees are refused at the API (measure_disagrees).
+        measured = measure_of(self.value)
+        if measured is not None:
+            object.__setattr__(self, "amount", measured[0])
+            object.__setattr__(self, "unit", measured[1])
 
 
 @dataclass(frozen=True)
