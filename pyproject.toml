@@ -14,7 +14,7 @@ dependencies = [
     "httpx>=0.27,<1",
     "openpyxl>=3.1,<4",
     "openai>=3.8,<4",
-    "Pillow>=12.3,<13",
+    "Pillow>=13,<14",
     "pydantic>=2.9,<3",
     "PyJWT[crypto]>=2.15.1,<2.16",
     "psycopg[binary,pool]>=3.2,<4",
@@ -72,3 +72,10 @@ source = ["knowledge_portal"]
 # the adapter tests skip. requirement-portal holds 92.5%.
 fail_under = 89
 skip_covered = true
+
+[tool.uv]
+# Temporary: platform-kernel v1.1.0 and the docling family pin Pillow<13, but
+# every 12.x carries the October 2026 Pillow CVEs (fixed only in 13.0.0). The
+# full suite passes on 13. Drop this override once the kernel and docling both
+# allow Pillow 13.
+override-dependencies = ["Pillow>=13,<14"]
