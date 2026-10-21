@@ -551,10 +551,10 @@ A task is complete only when:
   verb `PASSES` has no curated role term yet; the Phase 6 clean-up deliberately
   leaves it flagged until a curator decides whether it merges into
   `role-record` or earns its own term.
-- **Proposed ADRs 0119–0121** (one canonical dependency model, provenance that
-  survives acceptance, lifecycle `deprecated`/`replaced_by`) are written and
-  indexed but not yet accepted; their implementation slices wait on that
-  decision.
+- **ADRs 0119 and 0121** (one canonical dependency model, lifecycle
+  `deprecated`/`replaced_by`) still read Proposed: each is accepted in the pull
+  request that implements it. ADR-0120 (provenance that survives acceptance) is
+  implemented.
 - **No frontend coverage floor.** The backend holds an 89% floor with
   `TEST_DATABASE_URL`; the frontend's vitest suite runs without one.
 

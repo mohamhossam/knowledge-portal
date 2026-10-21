@@ -20,6 +20,6 @@ the same platform-wide series.
 | [0115](adr-0115-product-verdict-in-requirement-analysis.md) | A requirement-level product verdict, decided in analysis |
 | [0116](adr-0116-capability-concepts-reach-generation.md) | The decided product impact and its capability concepts reach generation |
 | [0119](adr-0119-one-canonical-dependency-model.md) | One canonical dependency model (proposed) |
-| [0120](adr-0120-provenance-survives-acceptance.md) | Provenance survives acceptance (proposed) |
+| [0120](adr-0120-provenance-survives-acceptance.md) | Provenance survives acceptance |
 | [0121](adr-0121-lifecycle-deprecation-and-replacement.md) | Lifecycle: deprecation and replacement (proposed) |
 | [0122](adr-0122-golden-set-report-runs.md) | Golden set report: stored runs on their own queue (proposed) |

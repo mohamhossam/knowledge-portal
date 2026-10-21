@@ -7,6 +7,17 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Provenance survives acceptance (ADR-0120, `docs/slices/provenance-survives-acceptance.md`):
+  accepting a suggestion records on what it produced which suggestion it was, the model and
+  prompt version behind it, and who accepted it when. The system and concept records show it
+  beside their source, the offering and journey records in a line under their name; the
+  explorer does not. A page edit adds and removes none; a catalogue file carries them in a new
+  `acceptances` table (an `Acceptances` sheet in the workbook) and an import adds them. The diff
+  ignores them. Public contract, additive: a read-only `accepted` list on systems, components,
+  capabilities, dependencies, landscape domains, offerings, journeys, channels, concepts and
+  terms. The internal contract gains the same list on an offering draft's offering and journey
+  (always empty): requirement-portal should review it.
+
 - The Golden set report (Catalogue › Golden set): run the impact mapper over the catalogue's
   golden set in the background, keep each run, and read it: scores in three groups with the counts
   and range behind each and the floor it is held to, a verdict table, every case at a glance,

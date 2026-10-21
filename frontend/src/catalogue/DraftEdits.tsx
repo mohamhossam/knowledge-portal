@@ -176,7 +176,7 @@ export function ConnectionEdit({ system, connection, onDone }: { system: Catalog
     : duplicate
       ? "It already depends on that system; change that connection instead."
       : !text.trim() ? "Say what the dependency is for." : null;
-  const next: Relationship = { source_system_id: system.id, target_system_id: target, kind, description: text.trim() };
+  const next: Relationship = { source_system_id: system.id, target_system_id: target, kind, description: text.trim(), accepted: connection?.accepted ?? [] };
   const relationships = connection
     ? release.relationships.map((item) => (item === connection ? next : item))
     : [...release.relationships, next];
@@ -268,7 +268,7 @@ export function DomainsEdit({ tree, onDone }: { tree: "landscape" | "areas"; onD
       error={saveDraft.error}
       onCancel={onDone}
       onSubmit={() =>
-        saveDraft.mutate(draftBody(release, tree === "landscape" ? { landscape_domains: finished.map((item) => ({ ...item, cross_cutting: item.cross_cutting ?? false })) } : { capability_domains: finished }), {
+        saveDraft.mutate(draftBody(release, tree === "landscape" ? { landscape_domains: finished.map((item) => ({ ...item, cross_cutting: item.cross_cutting ?? false, accepted: [] })) } : { capability_domains: finished }), {
           onSuccess: onDone,
         })
       }
@@ -341,7 +341,7 @@ export function ChannelsEdit({ onDone }: { onDone: () => void }) {
         one="channel"
         items={items}
         onChange={setItems}
-        blank={() => ({ id: "", name: "" })}
+        blank={() => ({ id: "", name: "", accepted: [] })}
         itemLabel={(item, index) => `channel ${item.name || index + 1}`}
         render={(item, update) => (
           <>
@@ -370,7 +370,7 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
   const [value, setValue] = useState<Offering>(
     () => ({
       id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [],
-      sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [],
+      sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], accepted: [],
     }),
   );
   const products = release.products ?? [];
@@ -443,7 +443,7 @@ export function JourneyEdit({ journey, onDone }: { journey?: Journey; onDone: (s
   const release = book.release;
   const { saveDraft } = useEditing(release);
   const [value, setValue] = useState<Journey>(
-    () => journey ?? { id: "", name: "", activities: [], flow_rules: [], integrations: [], edges: [], channel_edges: [], shared_edges: [] },
+    () => journey ?? { id: "", name: "", activities: [], flow_rules: [], integrations: [], edges: [], channel_edges: [], shared_edges: [], accepted: [] },
   );
   const journeys = release.journeys ?? [];
   return (

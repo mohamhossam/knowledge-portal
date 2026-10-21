@@ -61,6 +61,7 @@ from knowledge_portal.application.use_cases.architecture_knowledge import (
     KnowledgeNotFoundError,
     ManageArchitectureKnowledge,
 )
+from knowledge_portal.domain.architecture.acceptance import with_acceptance
 from knowledge_portal.domain.architecture.candidates import (
     CandidateBasis,
     CandidateCitation,
@@ -110,6 +111,7 @@ from knowledge_portal.domain.architecture.products import (
     merge_offerings,
     same_offering,
 )
+from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.document.value_objects import DocumentVersionId, EvidenceBlockKind
 
 IMAGE_TYPES = frozenset({"image/png", "image/jpeg"})
@@ -1408,20 +1410,25 @@ class DecideCatalogueCandidate:
         candidate: CatalogueCandidate,
         content: CandidateContent,
         release: ArchitectureKnowledge,
+        actor_id: str,
         at: datetime,
     ) -> ArchitectureKnowledge:
-        """The draft with one suggestion accepted; one from a change request also registers
-        the change request as a source and records it in the change history."""
+        """The draft with one suggestion accepted and recorded on what it produced
+        (ADR-0120); one from a change request also registers the change request as a
+        source and records it in the change history."""
         cited = candidate.change_request
         if cited is None:
-            return apply_candidate(content, release)
-        incoming = self._inbox.get(cited.change_request_id) if self._inbox else None
-        if incoming is None:
-            raise CandidateDependencyError(
-                f"The change request {cited.change_request_id} this suggestion comes from is "
-                "no longer kept, so it cannot be accepted."
-            )
-        return accept_from_change_request(release, content, incoming, cited.feature_id, at)
+            merged = apply_candidate(content, release)
+        else:
+            incoming = self._inbox.get(cited.change_request_id) if self._inbox else None
+            if incoming is None:
+                raise CandidateDependencyError(
+                    f"The change request {cited.change_request_id} this suggestion comes from "
+                    "is no longer kept, so it cannot be accepted."
+                )
+            merged = accept_from_change_request(release, content, incoming, cited.feature_id, at)
+        entry = AcceptedFrom(candidate.id, candidate.model, candidate.prompt_version, actor_id, at)
+        return with_acceptance(content.kind, release, merged, entry)
 
     def overview(self, release_id: str, actor: Actor) -> CandidateOverview:
         require_maintainer(actor)
@@ -1456,7 +1463,7 @@ class DecideCatalogueCandidate:
         if not accept:
             self._candidates.save_decision(decided)
             return release
-        merged = self._applied(decided, decided.content, release, at)
+        merged = self._applied(decided, decided.content, release, actor.id, at)
         updated = _accepted(release, merged)
         self._save(updated, expected_revision, actor, (decided,))
         return updated
@@ -1491,7 +1498,7 @@ class DecideCatalogueCandidate:
             if needs_one_by_one(candidate, merged):
                 continue
             try:
-                merged = self._applied(candidate, candidate.content, merged, at)
+                merged = self._applied(candidate, candidate.content, merged, actor.id, at)
             except (CandidateDependencyError, InvalidKnowledgeError):
                 # Left undecided for a one-by-one look; the rest still apply.
                 continue

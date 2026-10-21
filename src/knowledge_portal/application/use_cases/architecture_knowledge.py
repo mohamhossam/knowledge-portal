@@ -26,6 +26,7 @@ from knowledge_portal.application.ports.identity import (
     require_maintainer,
     require_reader,
 )
+from knowledge_portal.domain.architecture.acceptance import with_provenance_kept
 from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.concepts import BusinessCapability
 from knowledge_portal.domain.architecture.diff import CatalogueDiff, diff_releases
@@ -259,6 +260,8 @@ class ManageArchitectureKnowledge:
             interfaces=interfaces,
             realisations=realisations,
         )
+        # What accepted suggestions produced stays recorded, whatever the edit sent.
+        updated = with_provenance_kept(current, updated)
         self._repository.save(updated, expected_revision, actor.id, "edit_draft")
         return updated
 

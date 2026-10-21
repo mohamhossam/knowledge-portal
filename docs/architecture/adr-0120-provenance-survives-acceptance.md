@@ -2,9 +2,17 @@
 
 ## Status
 
+Accepted 2026-10-21 by the owner; implemented in `docs/slices/provenance-survives-acceptance.md`.
 Proposed 2026-10-19. Implements review finding #10 of the portal review
 ([report](https://claude.ai/code/artifact/d5147883-5ccd-472f-a57a-6a2464b2fd53));
 AGENTS.md §7.14 already requires provenance on generated content.
+
+Settled while implementing it: the value object lives in its own leaf module
+(`domain/architecture/provenance.py`), since `candidates.py` imports the entities that carry
+it; the catalogue files hold the entries in one `acceptances` table keyed by entity rather
+than inside each entry; an imported file adds the entries it recorded that the draft does not
+hold (point 4 governs edits made on a page, which send none); and the explorer, which any
+signed-in user reads, carries none.
 
 ## Context
 

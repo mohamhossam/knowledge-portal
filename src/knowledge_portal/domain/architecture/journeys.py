@@ -27,6 +27,7 @@ from knowledge_portal.domain.architecture.products import (
     first_known,
     role_code,
 )
+from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 
 MAIN_TRACK = "MAIN"
 
@@ -266,6 +267,8 @@ class Journey:
     integrations: tuple[ActivityIntegration, ...] = ()
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Journey id"))

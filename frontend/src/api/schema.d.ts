@@ -2157,6 +2157,26 @@ export interface components {
             /** Remaining */
             remaining: number;
         };
+        /**
+         * AcceptedFromSchema
+         * @description An accepted suggestion recorded on what it produced: the model and prompt that
+         *     suggested it, and who accepted it when (ADR-0120).
+         */
+        AcceptedFromSchema: {
+            /** Candidate Id */
+            candidate_id: string;
+            /**
+             * Decided At
+             * Format: date-time
+             */
+            decided_at: string;
+            /** Decided By */
+            decided_by: string;
+            /** Model */
+            model: string;
+            /** Prompt Version */
+            prompt_version: string;
+        };
         /** ActivateRequest */
         ActivateRequest: {
             /** Rationale */
@@ -2515,6 +2535,11 @@ export interface components {
          * @description A business capability concept; a top concept names its capability domain (ADR-0114).
          */
         BusinessCapabilitySchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             /**
              * Alt Labels
              * @default []
@@ -2972,6 +2997,11 @@ export interface components {
          * @description Where orders are placed, and the system each is entered through (ADR-0101, step 3).
          */
         ChannelSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Description */
             description?: string | null;
@@ -3447,8 +3477,9 @@ export interface components {
         /**
          * ExplorerReleaseResponse
          * @description The version in service as the explorer reads it: its content, never its documents,
-         *     index or version history (requirement-portal ADR-0101). The change requests applied to
-         *     it are part of its content, for the Solution Architecture document (step 7).
+         *     index, version history or who accepted what (requirement-portal ADR-0101, ADR-0120).
+         *     The change requests applied to it are part of its content, for the Solution
+         *     Architecture document (step 7).
          */
         ExplorerReleaseResponse: {
             /** Change History */
@@ -4049,6 +4080,11 @@ export interface components {
          */
         JourneySchema: {
             /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
+            /**
              * Activities
              * @default []
              */
@@ -4112,6 +4148,11 @@ export interface components {
         };
         /** KnowledgeCapabilitySchema */
         KnowledgeCapabilitySchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             /** Component Id */
             component_id?: string | null;
             /** Concept Id */
@@ -4257,6 +4298,11 @@ export interface components {
          * @description Where systems sit in the landscape; a sub-domain names its parent (ADR-0094).
          */
         LandscapeDomainSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             /**
              * Cross Cutting
              * @default false
@@ -5063,6 +5109,11 @@ export interface components {
          * @description A commercial offering, its order types and components, and the systems behind them.
          */
         ProductOfferingSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             /**
              * Audiences
              * @default []
@@ -5995,6 +6046,11 @@ export interface components {
         /** SystemComponentSchema */
         SystemComponentSchema: {
             /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
+            /**
              * Aliases
              * @default []
              */
@@ -6012,6 +6068,11 @@ export interface components {
         };
         /** SystemDefinitionSchema */
         SystemDefinitionSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             /**
              * Aliases
              * @default []
@@ -6129,6 +6190,11 @@ export interface components {
         };
         /** SystemRelationshipSchema */
         SystemRelationshipSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             /** Description */
             description: string;
             /** @default unspecified */
@@ -6342,6 +6408,11 @@ export interface components {
          *     role, an Open API or an information entity.
          */
         VocabularyTermSchema: {
+            /**
+             * Accepted
+             * @default []
+             */
+            accepted: components["schemas"]["AcceptedFromSchema"][];
             /**
              * Alt Labels
              * @default []

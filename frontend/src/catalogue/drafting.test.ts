@@ -4,7 +4,7 @@ import type { Release } from "../api/client";
 import { buildState, connectionSentence, diffSections, fieldsInWords, impactVerdict, systemUses, withoutSystem } from "./drafting";
 import { finishedSystem, systemProblem } from "./editing";
 
-const system = (id: string, name: string, extra: object = {}) => ({ id, name, aliases: [], capabilities: [], components: [], constraints: [], external: false, masters: [], reads: [], ...extra });
+const system = (id: string, name: string, extra: object = {}) => ({ id, name, aliases: [], capabilities: [], components: [], constraints: [], external: false, masters: [], reads: [], accepted: [], ...extra });
 
 const draft = {
   id: "d", revision: 5, built_revision: 4, status: "draft", documents: [],
@@ -32,8 +32,8 @@ describe("a draft's hand edits", () => {
   it("gives a new system, its parts and capabilities ids, and refuses a name already taken", () => {
     const value = {
       ...system("", "Order Hub", { aliases: ["  hub ", ""] }),
-      components: [{ id: "", name: "Order API", aliases: [] }],
-      capabilities: [{ id: "", name: "Order capture", triggers: ["capture order", " "], component_id: "Order API" }],
+      components: [{ id: "", name: "Order API", aliases: [], accepted: [] }],
+      capabilities: [{ id: "", name: "Order capture", triggers: ["capture order", " "], component_id: "Order API", accepted: [] }],
     };
     const finished = finishedSystem(value, draft);
     expect(finished).toMatchObject({
@@ -43,7 +43,7 @@ describe("a draft's hand edits", () => {
       capabilities: [{ id: "order-capture", triggers: ["capture order"], component_id: "order-api" }],
     });
     expect(systemProblem({ ...value, aliases: ["Fixed order orchestration"] }, draft)).toContain("CWOM already goes by");
-    expect(systemProblem({ ...value, capabilities: [{ id: "", name: "X", triggers: [] }] }, draft)).toBe(
+    expect(systemProblem({ ...value, capabilities: [{ id: "", name: "X", triggers: [], accepted: [] }] }, draft)).toBe(
       "Every capability needs at least one matching phrase.",
     );
   });

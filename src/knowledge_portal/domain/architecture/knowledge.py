@@ -37,6 +37,7 @@ from knowledge_portal.domain.architecture.invariants import required
 from knowledge_portal.domain.architecture.journeys import Journey, check_journeys
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode, check_portfolio
 from knowledge_portal.domain.architecture.products import ProductOffering, check_offerings
+from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.architecture.realisations import (
     RealisationRecord,
     check_realisations,
@@ -108,6 +109,8 @@ class LandscapeDomain:
     # It serves every other domain (TAM's enterprise domain, the integration layer), so the
     # landscape runs it across the domains rather than beside them.
     cross_cutting: bool = False
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         _check_node(self, "Landscape domain")
@@ -190,6 +193,8 @@ class KnowledgeCapability:
     concept_id: str | None = None
     # Why no concept fits, when a maintainer has said so; None while undecided.
     unlinked_reason: str | None = None
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         if self.domain_id is not None:
@@ -222,6 +227,8 @@ class SystemComponent:
     aliases: tuple[str, ...] = ()
     # What it is built as, in the maintainer's words: "Microservice", "Batch job".
     technology: str | None = None
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.id, "Component id")
@@ -271,6 +278,8 @@ class SystemDefinition:
     # term id (ontology plan Phase 8).
     masters: tuple[str, ...] = ()
     reads: tuple[str, ...] = ()
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.id, "System id")
@@ -348,6 +357,8 @@ class SystemRelationship:
     # An attribute of the relationship, not part of its identity: changing it is
     # an edit. Relationships recorded before kinds existed are unspecified.
     kind: RelationshipKind = RelationshipKind.UNSPECIFIED
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "kind", relationship_kind(self.kind))
