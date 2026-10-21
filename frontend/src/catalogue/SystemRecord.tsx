@@ -428,11 +428,13 @@ function Data({ system }: { system: CatalogueSystem }) {
   if (!masters.length && !reads.length) return null;
   const entities = entityNames(book.release);
   const names = (ids: string[]) => ids.map((entity) => entities.get(entity) ?? entity).join(", ");
+  const notes = system.mastery_notes ?? [];
   return (
     <Section title="Information" headingLevel={3}>
       <Facts
         items={[
           ["Masters", masters.length ? <bdi>{names(masters)}</bdi> : <span className="cat-quiet">Nothing recorded</span>],
+          ...notes.map((item): [string, ReactNode] => [`Its share of ${entities.get(item.entity_id) ?? item.entity_id}`, <bdi key={item.entity_id}>{item.note}</bdi>]),
           ["Reads", reads.length ? <bdi>{names(reads)}</bdi> : <span className="cat-quiet">Nothing recorded</span>],
         ]}
       />
