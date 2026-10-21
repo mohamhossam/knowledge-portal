@@ -54,6 +54,9 @@ from knowledge_portal.application.use_cases.knowledge_reviews import (
 )
 from knowledge_portal.application.use_cases.library_admin import AdministerLibraryDocument
 from knowledge_portal.application.use_cases.library_bulk import BulkRetryLibrary
+from knowledge_portal.application.use_cases.library_classification import (
+    LibraryClassification,
+)
 from knowledge_portal.application.use_cases.library_governance import LibraryGovernance
 from knowledge_portal.application.use_cases.organisation_catalogue import (
     ManageOrganisationCatalogue,
@@ -178,6 +181,10 @@ def get_document_library(container: ContainerDep) -> DocumentLibrary:
 
 def get_library_governance(container: ContainerDep) -> LibraryGovernance:
     return container.library_governance
+
+
+def get_library_classification(container: ContainerDep) -> LibraryClassification:
+    return container.library_classification
 
 
 def get_library_admin(container: ContainerDep) -> AdministerLibraryDocument:

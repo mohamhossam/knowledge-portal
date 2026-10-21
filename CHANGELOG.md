@@ -7,6 +7,14 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Library documents have a type and topics (ADR-0123, `docs/slices/library-classification.md`):
+  the owner sets what kind of document it is (a document-type term of the catalogue in service,
+  such as Solution design or Contract) and the business capabilities it is about, on its page
+  or its type at upload. The library list filters by type and topic, and the summary and the
+  document page say both. English only. `GET /library/classification-options`,
+  `PUT /library/documents/{id}/classification`, and an optional `document_type` on upload;
+  public contract, additive. The catalogue gains a `document_type` vocabulary with eight terms.
+
 - Names compared one way (`docs/slices/model-cleanup.md`): two systems, two components of
   one system or two sibling domains may no longer differ only in punctuation ("Wi-Fi Hub"
   and "WiFi hub"), as concepts and terms already may not; one system still keeps such

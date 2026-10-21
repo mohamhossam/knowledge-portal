@@ -109,6 +109,9 @@ from knowledge_portal.application.use_cases.library_admin import (
     LibraryStewardship,
 )
 from knowledge_portal.application.use_cases.library_bulk import BulkRetryLibrary
+from knowledge_portal.application.use_cases.library_classification import (
+    LibraryClassification,
+)
 from knowledge_portal.application.use_cases.library_governance import LibraryGovernance
 from knowledge_portal.application.use_cases.organisation_catalogue import (
     ManageOrganisationCatalogue,
@@ -212,6 +215,8 @@ class Container:
     document_storage: DocumentStoragePort
     knowledge_events: KnowledgeEventOutboxPort
     document_library: DocumentLibrary
+    # Library documents' types and topics, from the catalogue in service (ADR-0123).
+    library_classification: LibraryClassification
     library_governance: LibraryGovernance
     library_admin: AdministerLibraryDocument
     library_retry: BulkRetryLibrary
@@ -403,6 +408,7 @@ def _build_container(
         document_storage=persistence.document_storage,
         knowledge_events=persistence.knowledge_events,
         document_library=library,
+        library_classification=LibraryClassification(library, persistence.architecture_repository),
         library_governance=LibraryGovernance(
             persistence.library_repository,
             persistence.actor_directory,
