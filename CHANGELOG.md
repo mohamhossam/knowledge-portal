@@ -59,6 +59,12 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- Opening a result a moment after typing in a find box no longer pulls the reader back to the
+  list. The box writes `?find=` to the address shortly after typing stops; when Enter opened a
+  record first, that late write landed on the list's address and replaced the record. It now
+  stays with the page it was typed on. The catalogue's keyboard journey failed about one run
+  in twenty on it.
+
 - A catalogue upload the malware scanner gives no verdict on is refused with 503
   `malware_scanner_unavailable`, not 422 `document_extraction`: the scanner being down, or
   the file being larger than it accepts, is an outage to retry, not a fault in the file. This
