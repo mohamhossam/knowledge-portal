@@ -14,8 +14,8 @@ Accepted 2026-10-21 by the owner, who decided each point as follows:
 
 Implemented in slices: `docs/slices/shared-mastery.md` (1),
 `docs/slices/library-classification.md` (3), `docs/slices/interface-suggestions.md` and
-`docs/slices/tree-suggestions.md` (2: interfaces, capability domains, portfolio nodes); the
-other suggestion kinds follow.
+`docs/slices/tree-suggestions.md`, `docs/slices/realisation-suggestions.md` (2: interfaces,
+capability domains, portfolio nodes, realisation records); sources and conflicts follow.
 
 Proposed 2026-10-21. Records the three decisions left from review item O7 of the portal
 review ([report](https://claude.ai/code/artifact/d5147883-5ccd-472f-a57a-6a2464b2fd53)).
