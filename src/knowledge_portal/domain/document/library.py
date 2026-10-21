@@ -258,10 +258,20 @@ class LibraryDocument:
     ownership_history: tuple[OwnershipTransfer, ...] = ()
     # Confirmations that it is still right (Knowledge Center D), oldest first.
     reviews: tuple[ReviewConfirmation, ...] = ()
+    # What kind of document it is, as a document-type term of the catalogue, and the
+    # business capability concepts it is about, by id (ADR-0123).
+    document_type: str | None = None
+    topics: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.id or not self.title.strip() or self.version < 1 or not self.versions:
             raise InvalidDocumentError("Library document identity and title are required.")
+        if self.document_type is not None and not self.document_type.strip():
+            raise InvalidDocumentError("A document type must not be blank.")
+        if any(not item.strip() for item in self.topics) or len(set(self.topics)) != len(
+            self.topics
+        ):
+            raise InvalidDocumentError("Topics must not be blank or repeated.")
         if tuple(v.number for v in self.versions) != tuple(range(1, len(self.versions) + 1)):
             raise InvalidDocumentError("Library version numbers must be contiguous.")
         if len({v.id for v in self.versions}) != len(self.versions):
@@ -349,6 +359,10 @@ class LibraryDocument:
             if item.id == version_id:
                 return item
         raise InvalidDocumentError("Version does not belong to this document.")
+
+    def classified(self, document_type: str | None, topics: tuple[str, ...]) -> LibraryDocument:
+        """The document with its type and topics set (ADR-0123)."""
+        return replace(self, document_type=document_type, topics=topics, version=self.version + 1)
 
     def transfer(self, change: OwnershipTransfer) -> LibraryDocument:
         if change.previous_owner != self.owner:

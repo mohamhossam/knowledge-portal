@@ -19675,6 +19675,137 @@
    "deprecated": false,
    "replaced_by": null,
    "accepted": []
+  },
+  {
+   "id": "doctype-solution-design",
+   "scheme": "document_type",
+   "pref_label": "Solution design",
+   "alt_labels": [
+    "SDD",
+    "Solution design document"
+   ],
+   "notation": null,
+   "definition": "How a solution is built: its systems, integrations and data, such as an SDD.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
+   "deprecated": false,
+   "replaced_by": null,
+   "accepted": []
+  },
+  {
+   "id": "doctype-high-level-design",
+   "scheme": "document_type",
+   "pref_label": "High-level design",
+   "alt_labels": [
+    "HLD"
+   ],
+   "notation": null,
+   "definition": "The shape of a solution before its detail: its parts and how they connect.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
+   "deprecated": false,
+   "replaced_by": null,
+   "accepted": []
+  },
+  {
+   "id": "doctype-process-book",
+   "scheme": "document_type",
+   "pref_label": "Process book",
+   "alt_labels": [
+    "Workflow book"
+   ],
+   "notation": null,
+   "definition": "How work flows step by step, such as a workflow book of an order journey.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
+   "deprecated": false,
+   "replaced_by": null,
+   "accepted": []
+  },
+  {
+   "id": "doctype-product-specification",
+   "scheme": "document_type",
+   "pref_label": "Product specification",
+   "alt_labels": [
+    "Product spec"
+   ],
+   "notation": null,
+   "definition": "What an offering is and how it is sold and fulfilled.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
+   "deprecated": false,
+   "replaced_by": null,
+   "accepted": []
+  },
+  {
+   "id": "doctype-contract",
+   "scheme": "document_type",
+   "pref_label": "Contract",
+   "alt_labels": [],
+   "notation": null,
+   "definition": "An agreement with a customer, vendor or partner.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
+   "deprecated": false,
+   "replaced_by": null,
+   "accepted": []
+  },
+  {
+   "id": "doctype-policy",
+   "scheme": "document_type",
+   "pref_label": "Policy",
+   "alt_labels": [],
+   "notation": null,
+   "definition": "A rule the business has to follow, and why.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
+   "deprecated": false,
+   "replaced_by": null,
+   "accepted": []
+  },
+  {
+   "id": "doctype-guide",
+   "scheme": "document_type",
+   "pref_label": "Guide",
+   "alt_labels": [
+    "How-to"
+   ],
+   "notation": null,
+   "definition": "How to do something, for the people who do it.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
+   "deprecated": false,
+   "replaced_by": null,
+   "accepted": []
+  },
+  {
+   "id": "doctype-other",
+   "scheme": "document_type",
+   "pref_label": "Other",
+   "alt_labels": [],
+   "notation": null,
+   "definition": "A document none of the other types describes.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
+   "deprecated": false,
+   "replaced_by": null,
+   "accepted": []
   }
  ],
  "interfaces": [

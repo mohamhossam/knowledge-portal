@@ -7,8 +7,9 @@ import { expect, settled, test } from "./fixtures";
 import { ROUTES, seeded } from "./routes";
 
 test("every route has Search, Jobs, Help and Account in the masthead, in that order, and the skip link first", async ({ page }) => {
-  // It opens every route in turn (34 since area 2, some loading their own chunk): more than one page's time.
-  test.slow();
+  // It opens every route in turn, some loading their own chunk: a share of time per route, so
+  // adding a route never starves it (a fixed budget ran out at 54 routes on a loaded runner).
+  test.setTimeout(ROUTES.length * 5_000);
   const ids = await seeded();
   for (const route of ROUTES) {
     const path = route.path(ids);
