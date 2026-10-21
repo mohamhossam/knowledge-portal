@@ -8,6 +8,8 @@ import { JourneyEditor } from "./JourneyEditor";
 import { OfferingEditor, QuestionFields } from "./OfferingEditor";
 import type { Lexicon } from "./suggestions";
 
+type Contract = NonNullable<SuggestionContent["interface"]>;
+
 const HOW: { value: RelationshipKind; label: string }[] = [
   { value: "calls_api", label: "Calls its API" },
   { value: "publishes_events_to", label: "Sends it events" },
@@ -47,7 +49,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
   useEffect(() => title.current?.focus(), []);
   const [content, setContent] = useState<SuggestionContent>(() => kept ?? ({
     ...original,
-    system_id: original.kind === "landscape_domain" || original.kind === "product" || original.kind === "journey" || original.kind === "channel" || original.kind === "offering_rule"
+    system_id: original.kind === "landscape_domain" || original.kind === "product" || original.kind === "journey" || original.kind === "channel" || original.kind === "interface" || original.kind === "offering_rule"
       ? original.system_id
       : startingSystem(release, suggestion.system_name, original.system_id),
     target_system_id: original.target_system_id
@@ -78,6 +80,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
     }
     if (content.kind === "journey" && content.journey) return { ...base, system_id: content.journey.id, name: content.journey.name };
     if (content.kind === "channel" && content.channel) return { ...base, name: content.channel.name };
+    if (content.kind === "interface" && content.interface) return { ...base, name: content.interface.name };
     return base;
   };
 
@@ -106,6 +109,9 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
         return content.journey ? journeyProblem(content.journey) : "The journey is missing.";
       case "channel":
         return content.channel?.name.trim() ? null : "Give the channel a name.";
+      case "interface":
+        if (!content.interface?.name.trim()) return "Give the interface a name.";
+        return content.interface.system_id ? null : "Choose the system that exposes it.";
       case "question":
         if (!content.system_id.trim()) return "Choose the offering it asks.";
         return content.question?.text.trim() ? null : "Say what it asks.";
@@ -288,6 +294,39 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
               onChange={(entry) => change({ entry_system_id: entry || null })}
             />
             <AreaField label="What it is" value={channel.description} onChange={(description) => change({ description: description || null })} />
+          </>
+        );
+      }
+      case "interface": {
+        const contract = content.interface;
+        if (!contract) return null;
+        const change = (patch: Partial<Contract>) => set({ interface: { ...contract, ...patch } });
+        const consumers = contract.consumer_ids ?? [];
+        return (
+          <>
+            <TextField label="Name" value={contract.name} required onChange={(name) => change({ name })} />
+            <SystemField
+              label="Exposed by"
+              value={contract.system_id}
+              systems={systems}
+              writtenAs={contract.system_id ? words.system(contract.system_id) : undefined}
+              onChange={(exposer) => change({ system_id: exposer })}
+            />
+            <SelectField
+              label="How it is called"
+              value={contract.style ?? "unspecified"}
+              options={[
+                { value: "api", label: "An API" },
+                { value: "event", label: "Events" },
+                { value: "file", label: "Files" },
+                { value: "unspecified", label: "Not said" },
+              ]}
+              onChange={(style) => change({ style: style as Contract["style"] })}
+            />
+            <AreaField label="What it carries" value={contract.description} onChange={(description) => change({ description: description || null })} />
+            <p className="cat-quiet">
+              {consumers.length ? `Consumed by ${consumers.map(words.system).join(", ")}, as the document says.` : "The document names no system that consumes it."}
+            </p>
           </>
         );
       }

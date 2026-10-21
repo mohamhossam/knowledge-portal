@@ -376,3 +376,36 @@ describe("what waits on what (focus mode)", () => {
     expect(decideChoices(link)[0]!.consequence).toContain("The link was inferred, not stated.");
   });
 });
+
+describe("an interface suggestion (ADR-0123)", () => {
+  const contract = (extra: Partial<NonNullable<Suggestion["content"]["interface"]>> = {}) => ({
+    id: "if-order-hub-order-api", name: "Order API", system_id: "order-hub", style: "api" as const,
+    consumer_ids: ["cwom", "billing"], open_api_ids: [], entity_ids: [], relays: [], accepted: [], ...extra,
+  });
+  const orders = suggestion(
+    { kind: "interface", system_id: "if-order-hub-order-api", name: "Order API", interface: contract() },
+    { match: "needs_system", missing_systems: ["order-hub", "billing"] } as Partial<Suggestion>,
+  );
+  const relaying = suggestion(
+    { kind: "interface", system_id: "if-tibco-relay", name: "Relay", interface: contract({ id: "if-tibco-relay", name: "Relay", system_id: "cwom", consumer_ids: [], relays: ["Order API"] }) },
+    { match: "needs_interface" },
+  );
+  const named = lexicon(release, [hub, orders, relaying]);
+
+  it("says what it adds, of which system and for whom", () => {
+    expect(changeSentence(orders, named)).toBe("Adds the interface Order API of Order Hub, consumed by CWOM, Billing");
+  });
+
+  it("waits for the systems it names, and for the interfaces it relays", () => {
+    expect(waitsFor(orders, named)).toBe("Waits for the systems Order Hub, Billing");
+    expect(waitsFor(relaying, named)).toBe("Waits for the interface it relays: Order API");
+    expect(inWords("Accept or add interface 'Order API' before the interface Relay that relays it.", named)).toBe(
+      "Accept or add the interface Order API before the interface Relay that relays it.",
+    );
+  });
+
+  it("is listed under Interfaces, not under a system", () => {
+    const groups = suggestionGroups(release, [hub, orders], named);
+    expect(groups.find((group) => group.key === "section:interfaces")?.suggestions).toEqual([orders]);
+  });
+});

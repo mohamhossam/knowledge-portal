@@ -97,6 +97,7 @@ def _item(**values: Any) -> dict[str, Any]:
         "reasoning": None,
         "relationship_kind": None,
         "channel_kind": None,
+        "interface_style": None,
     }
     return base | values
 

@@ -4,7 +4,7 @@ import json
 
 from knowledge_portal.application.ports.catalogue_extractor import ExtractionRequest
 
-PROMPT_VERSION = "catalogue-extraction-v16"
+PROMPT_VERSION = "catalogue-extraction-v17"
 
 # A journey is the largest answer shape. A model whose context leaves too little room for
 # it reads without it (ADR-0096): LEAN_SYSTEM_PROMPT and an answer schema without journeys.
@@ -48,6 +48,16 @@ one channel. Each channel the document names for placing orders, such as in an "
 Channels" line or an order type's channels, is also one channel item, even when a system has \
 the same name: give that system as target_system. Never propose a channel as a system or a \
 dependency."""
+
+# Interfaces (ADR-0123) ride with channels: only the full prompts propose them.
+INTERFACE_RULE = """
+- interface: an API, event or file contract one system exposes for others, such as "CRM GW \
+API" (name), the system that exposes it (system), one system that consumes it (target_system) \
+if stated, how it is called (interface_style: "api", "event", "file", or "unspecified" when \
+the document does not say) and what it carries in one sentence (text) only if stated. Give one \
+interface item per consumer the document names; they are merged. An interface is also the \
+reason for a dependency: propose the relationship as well when the document says one system \
+calls or feeds another through it."""
 
 _SYSTEM_PROMPT = """You read architecture documents and propose entries for an architecture \
 catalogue. A human maintainer reviews every proposal before anything changes.
@@ -181,8 +191,10 @@ def _prompt(*, details: str, journey: str, channel: str, lean: bool = False) -> 
     )
 
 
-DETAILED_SYSTEM_PROMPT = _prompt(details=DETAIL_RULE, journey=JOURNEY_RULE, channel=CHANNEL_RULE)
-SYSTEM_PROMPT = _prompt(details="", journey=JOURNEY_RULE, channel=CHANNEL_RULE)
+DETAILED_SYSTEM_PROMPT = _prompt(
+    details=DETAIL_RULE, journey=JOURNEY_RULE, channel=CHANNEL_RULE + INTERFACE_RULE
+)
+SYSTEM_PROMPT = _prompt(details="", journey=JOURNEY_RULE, channel=CHANNEL_RULE + INTERFACE_RULE)
 LEAN_SYSTEM_PROMPT = _prompt(details="", journey="", channel="", lean=True)
 
 

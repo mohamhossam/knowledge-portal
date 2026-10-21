@@ -17,7 +17,7 @@ layer that relays them.
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 
 from knowledge_portal.domain.architecture.concepts import label_key
@@ -26,6 +26,7 @@ from knowledge_portal.domain.architecture.invariants import (
     optional,
     required,
 )
+from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.domain.architecture.sources import SourceConfidence, check_source
 from knowledge_portal.domain.architecture.vocabularies import (
     VocabularyScheme,
@@ -77,6 +78,8 @@ class SystemInterface:
     source: str | None = None
     # The interfaces it passes on, by id: its system consumes each of them.
     relays: tuple[str, ...] = ()
+    # The accepted suggestions that created or extended it, oldest first (ADR-0120).
+    accepted: tuple[AcceptedFrom, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Interface id"))
@@ -99,6 +102,43 @@ class SystemInterface:
             raise InvalidKnowledgeError(
                 f"{self.name}: a system does not consume its own interface."
             )
+
+
+def find_interface_among(
+    interfaces: tuple[SystemInterface, ...], reference: str, system_id: str | None = None
+) -> SystemInterface | None:
+    """An interface named by id or, when only one has it, by name, ignoring case and
+    punctuation; ``system_id`` narrows a name to the interfaces that system exposes."""
+    exact = next((item for item in interfaces if item.id == reference.strip()), None)
+    if exact is not None:
+        return exact
+    key = label_key(reference)
+    named = [
+        item
+        for item in interfaces
+        if label_key(item.name) == key and (system_id is None or item.system_id == system_id)
+    ]
+    return named[0] if len(named) == 1 else None
+
+
+def merge_interfaces(first: SystemInterface, second: SystemInterface) -> SystemInterface:
+    """Two readings of one interface as one: the first's facts win, the second fills gaps
+    and adds the consumers, terms and relays it names."""
+
+    def joined(one: tuple[str, ...], other: tuple[str, ...]) -> tuple[str, ...]:
+        return tuple(dict.fromkeys((*one, *other)))
+
+    return replace(
+        first,
+        style=first.style if first.style is not InterfaceStyle.UNSPECIFIED else second.style,
+        consumer_ids=joined(first.consumer_ids, second.consumer_ids),
+        open_api_ids=joined(first.open_api_ids, second.open_api_ids),
+        entity_ids=joined(first.entity_ids, second.entity_ids),
+        description=first.description or second.description,
+        confidence=first.confidence or second.confidence,
+        source=first.source or second.source,
+        relays=joined(first.relays, second.relays),
+    )
 
 
 def check_interfaces(

@@ -19832,7 +19832,8 @@
    "description": "Customer, account and product data for the channels and RTF.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cbcm-retrieve-account",
@@ -19853,7 +19854,8 @@
    "description": "An account and its installed products.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cbcm-evaluate-order",
@@ -19873,7 +19875,8 @@
    "description": "Translates an order to the value order with PSM codes and checks business rules.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cbcm-load-registry-basket",
@@ -19890,7 +19893,8 @@
    "description": "The summary-order basket RTF loads.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cbcm-order-closure",
@@ -19910,7 +19914,8 @@
    "description": "Closes the order and updates the product inventory.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-bscs-billing",
@@ -19928,7 +19933,8 @@
    "description": "Starts billing once the order is fulfilled.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-bcc-offer-catalogue",
@@ -19946,7 +19952,8 @@
    "description": "The offers and components the digital channels show.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-psm-package-codes",
@@ -19963,7 +19970,8 @@
    "description": "Maps an offer to PSM package codes.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-ecm-product-structure",
@@ -19980,7 +19988,8 @@
    "description": "Bundle and component detail.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-ecm-evaluate-order",
@@ -19997,7 +20006,8 @@
    "description": "Checks an order against the ECM product structure.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-ecm-catalogue-validation",
@@ -20015,7 +20025,8 @@
    "description": "Validates an order against the ECM catalogue.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-ecm-cpe-model-inquiry",
@@ -20033,7 +20044,8 @@
    "description": "The CPE and access-point model for a bandwidth.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-rtf-order-request",
@@ -20056,7 +20068,8 @@
    "description": "Submits a channel order, with the summary-order flags, as XML.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-rtf-order-closure-notification",
@@ -20073,7 +20086,8 @@
    "description": "Tells RTF the fixed order is closed.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cwom-order",
@@ -20092,7 +20106,8 @@
    "description": "The summary, cessation and dunning orders RTF hands to CWOM.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cwom-create-shopping-cart",
@@ -20111,7 +20126,8 @@
    "description": "Hands a migration or up/downgrade order to CWOM.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cwom-refresh-shopping-cart",
@@ -20130,7 +20146,8 @@
    "description": "Carries devices forward and overrides amounts on a changed order.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cwom-callback",
@@ -20148,7 +20165,8 @@
    "description": "Activation and shipment results returned to CWOM.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cwom-update-transaction",
@@ -20165,7 +20183,8 @@
    "description": "The technician's results: SIC codes and serials.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-e2eso-service-order",
@@ -20184,7 +20203,8 @@
    "description": "Provisions the Fortinet CPE, SD-WAN and FortiPortal services.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-e2eso-serials",
@@ -20201,7 +20221,8 @@
    "description": "Passes the installed CPE and FEX serials on.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-fortinet-api",
@@ -20218,7 +20239,8 @@
    "description": "Provisions the CPE in the ADOM and creates the FortiPortal organisation.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-in-update-offer",
@@ -20235,7 +20257,8 @@
    "description": "Applies a Backup 5G speed or the dunning offer.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-in-delete-offer",
@@ -20252,7 +20275,8 @@
    "description": "Removes a Backup 5G speed or the dunning offer.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-veda-hss-activation",
@@ -20269,7 +20293,8 @@
    "description": "Activates or removes the Backup 5G profile.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-alepo-commands",
@@ -20284,7 +20309,8 @@
    "description": "vEDA's Backup 5G commands.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-xaas-activate-saas",
@@ -20301,7 +20327,8 @@
    "description": "Activates a SaaS add-on.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-wfms-work-order",
@@ -20318,7 +20345,8 @@
    "description": "A manual work order for the technician.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-wfms-create-complaint-wo",
@@ -20338,7 +20366,8 @@
    "description": "A work order raised for a complaint.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-itsm-shipment-order",
@@ -20355,7 +20384,8 @@
    "description": "A device-delivery shipment order.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-cns-notification-api",
@@ -20373,7 +20403,8 @@
    "description": "SMS and email to the customer: order submitted, completed, OTP.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-nc-crm-party-apis",
@@ -20394,7 +20425,8 @@
    "description": "Customer, organisation, individual, contact and site data.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-tibco-party-apis",
@@ -20418,7 +20450,8 @@
    "source": "Ontology plan Phase 8 · the journeys' integrations",
    "relays": [
     "if-nc-crm-party-apis"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "if-ibm-bpm-notify-order-creation",
@@ -20437,7 +20470,8 @@
    "description": "Opens the order tracker.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-tibco-notify-order-creation",
@@ -20458,7 +20492,8 @@
    "source": "Ontology plan Phase 8 · the journeys' integrations",
    "relays": [
     "if-ibm-bpm-notify-order-creation"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "if-ibm-bpm-update-milestones",
@@ -20475,7 +20510,8 @@
    "description": "Milestones per sub-order.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-tibco-milestones",
@@ -20494,7 +20530,8 @@
    "source": "Ontology plan Phase 8 · the journeys' integrations",
    "relays": [
     "if-ibm-bpm-update-milestones"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "if-felix-order-details",
@@ -20513,7 +20550,8 @@
    "description": "Stored procedure reading an order and its milestones.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-tibco-order-details",
@@ -20536,7 +20574,8 @@
    "source": "Ontology plan Phase 8 · the journeys' integrations",
    "relays": [
     "if-felix-order-details"
-   ]
+   ],
+   "accepted": []
   },
   {
    "id": "if-nps-port-out-request",
@@ -20553,7 +20592,8 @@
    "description": "A number leaving for another operator.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-ocr-read-document",
@@ -20571,7 +20611,8 @@
    "description": "Reads a trade licence, Emirates ID or establishment card.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   },
   {
    "id": "if-gov-licence-validation",
@@ -20588,7 +20629,8 @@
    "description": "Validates a trade licence or decree.",
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · the journeys' integrations",
-   "relays": []
+   "relays": [],
+   "accepted": []
   }
  ],
  "realisations": [

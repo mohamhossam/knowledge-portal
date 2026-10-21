@@ -91,7 +91,9 @@ from knowledge_portal.domain.architecture.channels import (
     merge_channels,
     same_channel,
 )
+from knowledge_portal.domain.architecture.concepts import label_key
 from knowledge_portal.domain.architecture.deprecation import in_service
+from knowledge_portal.domain.architecture.interfaces import merge_interfaces
 from knowledge_portal.domain.architecture.journeys import (
     Journey,
     merge_journeys,
@@ -322,7 +324,9 @@ _ORDER = (
     CandidateKind.CAPABILITY,
     CandidateKind.CONSTRAINT,
     CandidateKind.RELATIONSHIP,
-    # A channel names the system its orders enter through,
+    # An interface names the systems that expose and consume it,
+    CandidateKind.INTERFACE,
+    # a channel names the system its orders enter through,
     CandidateKind.CHANNEL,
     # then an offering names systems and channels that must be in the draft first,
     CandidateKind.PRODUCT,
@@ -361,6 +365,7 @@ def _view(candidate: CatalogueCandidate, release: ArchitectureKnowledge) -> Cand
     # concept's, and a component link's offering.
     channel = candidate.content.kind in {
         CandidateKind.CHANNEL,
+        CandidateKind.INTERFACE,
         CandidateKind.QUESTION,
         CandidateKind.CONCEPT,
         CandidateKind.COMPONENT_LINK,
@@ -423,6 +428,7 @@ def _references(
         CandidateKind.OFFERING_RULE,
         CandidateKind.JOURNEY,
         CandidateKind.CHANNEL,
+        CandidateKind.INTERFACE,
     }:
         return ()
     if content.kind is CandidateKind.SYSTEM:
@@ -526,6 +532,21 @@ def _canonical(
             entry = content.channel.entry_system_id
             channel = replace(content.channel, entry_system_id=resolved(entry) if entry else None)
             result.append(replace(change, content=replace(content, channel=channel)))
+            continue
+        if content.kind is CandidateKind.INTERFACE and content.interface is not None:
+            exposer = resolved(content.interface.system_id)
+            interface = replace(
+                content.interface,
+                system_id=exposer,
+                consumer_ids=tuple(
+                    item
+                    for item in dict.fromkeys(
+                        resolved(name) for name in content.interface.consumer_ids
+                    )
+                    if item != exposer
+                ),
+            )
+            result.append(replace(change, content=replace(content, interface=interface)))
             continue
         if content.kind is CandidateKind.PRODUCT and content.product is not None:
             offering = content.product
@@ -804,6 +825,37 @@ def _one_channel_each(changes: tuple[ProposedChange, ...]) -> tuple[ProposedChan
     return tuple(result)
 
 
+def _one_interface_each(changes: tuple[ProposedChange, ...]) -> tuple[ProposedChange, ...]:
+    """Every reading of one interface as one suggestion: one system's interface of one name,
+    its consumers joined, the first's facts winning, with every reading's citations."""
+    result: list[ProposedChange] = []
+    places: dict[tuple[str, str], int] = {}
+    for change in changes:
+        interface = change.content.interface
+        if interface is None:
+            result.append(change)
+            continue
+        key = (interface.system_id, label_key(interface.name))
+        index = places.get(key)
+        first_interface = result[index].content.interface if index is not None else None
+        if index is None or first_interface is None:
+            places[key] = len(result)
+            result.append(change)
+            continue
+        first = result[index]
+        result[index] = replace(
+            first,
+            content=replace(first.content, interface=merge_interfaces(first_interface, interface)),
+            also_cited=(*first.also_cited, *change.citations),
+            basis=(
+                CandidateBasis.STATED
+                if CandidateBasis.STATED in {first.basis, change.basis}
+                else first.basis
+            ),
+        )
+    return tuple(result)
+
+
 def _one_offering_each(changes: tuple[ProposedChange, ...]) -> tuple[ProposedChange, ...]:
     """Every reading of one product offering as one suggestion (ADR-0095).
 
@@ -1014,6 +1066,11 @@ def _accepted(
         change_history=merged.change_history,
         business_capabilities=merged.business_capabilities,
         vocabulary=merged.vocabulary,
+        capability_domains=merged.capability_domains,
+        conflicts=merged.conflicts,
+        portfolio=merged.portfolio,
+        interfaces=merged.interfaces,
+        realisations=merged.realisations,
     )
 
 
@@ -1244,7 +1301,9 @@ class ProposeCatalogueChanges:
         self_linked = 0
         read = tuple(_cited_where_repeated(change, repeats) for change in proposal.changes)
         canonical = _canonical(read, release)
-        for change in _one_journey_each(_one_offering_each(_one_channel_each(canonical))):
+        for change in _one_journey_each(
+            _one_offering_each(_one_channel_each(_one_interface_each(canonical)))
+        ):
             if _self_dependency(change.content):
                 # A table row naming one system twice is not a dependency, and
                 # accepting it would fail; it is left out rather than offered.

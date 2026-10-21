@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
@@ -45,6 +47,17 @@ ADMIN = Actor("fake-reviewer", frozenset({"knowledge_maintainer"}))
 def _finish_queued_runs(container: Container) -> None:
     while container.golden_runs.run_once() is not None:
         pass
+
+
+def _settled_run(client: TestClient, run_id: str) -> dict[str, Any]:
+    """The run once it has finished: the API's own worker may have claimed it before the test
+    did, so it is read until it leaves queued and running."""
+    deadline = time.monotonic() + 60
+    while True:
+        detail: dict[str, Any] = client.get(f"/evaluation/golden-runs/{run_id}").json()
+        if detail["status"] not in {"queued", "running"} or time.monotonic() > deadline:
+            return detail
+        time.sleep(0.05)
 
 
 def _floors_file(floors: dict[str, dict[str, float]]) -> bytes:
@@ -180,7 +193,7 @@ def test_the_routes(client: TestClient, container: Container) -> None:
     assert client.post("/evaluation/golden-runs", json={}).status_code == 409
 
     _finish_queued_runs(container)
-    detail = client.get(f"/evaluation/golden-runs/{run_id}").json()
+    detail = _settled_run(client, run_id)
     assert detail["status"] == "succeeded"
     assert (detail["mapper"], detail["precedents"], detail["repeats"]) == ("assess", "none", 2)
     assert len(detail["result"]["repetitions"]) == 2

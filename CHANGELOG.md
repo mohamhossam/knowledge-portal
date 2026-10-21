@@ -7,6 +7,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Interfaces suggested from documents (ADR-0123, `docs/slices/interface-suggestions.md`):
+  reading a document now suggests the APIs, event streams and file feeds it describes, each
+  with the system that exposes it and those that consume it. One per system and name, its
+  readings merged; it waits for the systems it names and the interfaces it relays, fills an
+  existing interface's gaps and never overrides it, and records where it came from once
+  accepted (ADR-0120). Decide lists them under Interfaces. An accepted suggestion of any kind
+  now always reaches the draft: capability domains, conflicts, the portfolio, interfaces and
+  realisation records were left out of what accepting saved. Public contract, additive;
+  prompt `catalogue-extraction-v17`.
+
 - Library documents have a type and topics (ADR-0123, `docs/slices/library-classification.md`):
   the owner sets what kind of document it is (a document-type term of the catalogue in service,
   such as Solution design or Contract) and the business capabilities it is about, on its page

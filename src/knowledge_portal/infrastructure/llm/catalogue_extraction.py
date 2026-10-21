@@ -38,6 +38,7 @@ from knowledge_portal.domain.architecture.candidates import (
     CandidateKind,
 )
 from knowledge_portal.domain.architecture.channels import Channel
+from knowledge_portal.domain.architecture.interfaces import InterfaceStyle, SystemInterface
 from knowledge_portal.domain.architecture.journeys import (
     Activity,
     FlowRule,
@@ -383,12 +384,14 @@ class LeanChangeOutput(_Output):
 
 class ChangeOutput(LeanChangeOutput):
     # A small context reads without journeys and channels; tables still give both.
-    kind: _LeanKind | Literal["journey", "channel"]  # type: ignore[assignment]
+    kind: _LeanKind | Literal["journey", "channel", "interface"]  # type: ignore[assignment]
     # The whole journey, for a journey; null for other kinds (ADR-0096).
     offering: PlannedOfferingOutput | None
     journey: JourneyOutput | None
     # A channel's kind, such as Digital or Assisted; null for other kinds (ADR-0101).
     channel_kind: str | None = Field(max_length=_MAX_NAME)
+    # How an interface is called; null for other kinds (ADR-0123).
+    interface_style: Literal["api", "event", "file", "unspecified"] | None
 
 
 class ExtractionOutput(_Output):
@@ -504,7 +507,7 @@ def _kind_of(raw: object) -> str:
     return kind if isinstance(kind, str) and kind in _KINDS else "item"
 
 
-_KINDS = frozenset((*get_args(_LeanKind), "journey", "channel"))
+_KINDS = frozenset((*get_args(_LeanKind), "journey", "channel", "interface"))
 # What each reading asks with: its prompt, the answer it parses, and each item's shape.
 _ASKED: dict[_Reading, tuple[str, type[_Answers], type[LeanChangeOutput]]] = {
     "detailed": (DETAILED_SYSTEM_PROMPT, _DetailedAnswers, DetailedChangeOutput),
@@ -522,6 +525,7 @@ def _detailed(item: LeanChangeOutput) -> DetailedChangeOutput:
         {
             "journey": None,
             "channel_kind": None,
+            "interface_style": None,
             **item.model_dump(),
             "offering": (
                 offering
@@ -636,6 +640,7 @@ def _proposed(
             CandidateKind.PRODUCT,
             CandidateKind.JOURNEY,
             CandidateKind.CHANNEL,
+            CandidateKind.INTERFACE,
         }
         else item.system
     )
@@ -996,6 +1001,27 @@ def _channel(item: DetailedChangeOutput, names: _SystemNames) -> Channel:
     )
 
 
+def _interface(item: DetailedChangeOutput, names: _SystemNames) -> SystemInterface:
+    """An interface as stated: the system that exposes it and, when named, one consumer, both
+    resolved like any system reference; readings of one interface are merged later."""
+    name = (item.name or "").strip()
+    exposer = plain_name(item.system or "")
+    if not name or not exposer:
+        raise InvalidKnowledgeError("An interface needs its name and the system that exposes it.")
+    exposer_id = names.resolve(exposer)
+    consumer = plain_name(item.target_system or "")
+    consumer_id = names.resolve(consumer) if consumer else None
+    return SystemInterface(
+        f"if-{slug(exposer_id)}-{slug(name)}",
+        name,
+        exposer_id,
+        style=InterfaceStyle(item.interface_style or "unspecified"),
+        consumer_ids=(consumer_id,) if consumer_id and consumer_id != exposer_id else (),
+        description=_text(item.text),
+        confidence=SourceConfidence.CONFIRMED,
+    )
+
+
 def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateContent:
     if item.kind == "journey":
         journey = _journey(item, names)
@@ -1011,6 +1037,11 @@ def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateConten
         channel = _channel(item, names)
         return CandidateContent(
             CandidateKind.CHANNEL, channel.id, name=channel.name, channel=channel
+        )
+    if item.kind == "interface":
+        interface = _interface(item, names)
+        return CandidateContent(
+            CandidateKind.INTERFACE, interface.id, name=interface.name, interface=interface
         )
     kind = CandidateKind(item.kind)
     name = (item.name or "").strip()
@@ -1760,8 +1791,9 @@ class FakeCatalogueExtractor:
     """Deterministic offline extraction from labelled lines; not a language model.
 
     Recognises ``System: Name``, ``Component: Name [technology]``,
-    ``Capability: Name (phrase, phrase) @ Component``, ``Constraint: text`` (all
-    three for the last system named; the technology and component are optional),
+    ``Capability: Name (phrase, phrase) @ Component``, ``Constraint: text`` and
+    ``Interface: Name [api] consumed by A, B`` (all for the last system named; the
+    technology, component, style and consumers are optional),
     ``A depends on B for reason`` and ``A calls B for reason`` lines (the second
     as an API call), and reads ``A sends X to B`` as an inferred data transfer.
     An uploaded image yields one system named after the document so the review
@@ -1780,6 +1812,11 @@ class FakeCatalogueExtractor:
         re.I,
     )
     _CONSTRAINT = re.compile(r"^constraint:\s*(?P<text>.+)$", re.IGNORECASE)
+    _INTERFACE = re.compile(
+        r"^interface:\s*(?P<name>[^\[]+?)\s*(?:\[(?P<style>api|event|file)\])?"
+        r"(?:\s+consumed by\s+(?P<consumers>.+?))?\.?$",
+        re.IGNORECASE,
+    )
     _DEPENDS = re.compile(
         r"^(?P<source>.+?)\s+(?P<verb>depends on|calls)\s+(?P<target>.+?)"
         r"(?:\s+(?:for|to)\s+(?P<why>.+?))?\.?$",
@@ -1855,6 +1892,24 @@ class FakeCatalogueExtractor:
                 elif (match := self._CONSTRAINT.match(line)) and current:
                     content = CandidateContent(
                         CandidateKind.CONSTRAINT, current, text=match["text"].strip()
+                    )
+                elif (match := self._INTERFACE.match(line)) and current:
+                    name = match["name"].strip()
+                    consumers = _clean(re.split(r",|\band\b", match["consumers"] or ""))
+                    interface = SystemInterface(
+                        f"if-{current}-{slug(name)}",
+                        name,
+                        current,
+                        style=InterfaceStyle((match["style"] or "unspecified").casefold()),
+                        consumer_ids=tuple(
+                            dict.fromkeys(
+                                system_id(item) for item in consumers if system_id(item) != current
+                            )
+                        ),
+                    )
+                    source_name = name
+                    content = CandidateContent(
+                        CandidateKind.INTERFACE, interface.id, name=name, interface=interface
                     )
                 elif match := self._DEPENDS.match(line) or self._SENDS.match(line):
                     source_name, target_name = match["source"].strip(), match["target"].strip()
