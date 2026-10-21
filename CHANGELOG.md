@@ -7,6 +7,18 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Structured fields for facts the screens read from prose. Offerings carry a `purpose` beside
+  the proposition; open questions a `title`; components a `hub` flag (at most one per
+  offering); order types a customer `stage` (join, change, support, leave); fallout cases the
+  `system_id` they fall out in; flow rules the `channel_id` they are taken for. Every catalogue
+  file format reads and writes them, the editors set them, and the lab and explorer read them
+  first, parsing the old prose only for a version saved before them. The explorer document
+  takes a step's `VALIDATE` role, not its words, as a validation. smb-architecture.yaml moves
+  its prose into the fields: the purpose paragraph, 12 question titles, the CPE as hub, the 19
+  order types' stages (the lab's stage table of 2026-10-14) and the two fallout cases' systems,
+  each named in its own text. Contracts, additive (public and internal: requirement-portal
+  should review the new optional fields).
+
 - The catalogue shows what its data already holds. The map, a system's connections and the
   explorer draw every link between systems from the stated connections, the interfaces systems
   expose to their consumers and the calls journey steps make, one line per pair with what it is

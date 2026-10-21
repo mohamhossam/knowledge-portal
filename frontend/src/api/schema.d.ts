@@ -3372,6 +3372,12 @@ export interface components {
             name: string;
         };
         /**
+         * CustomerStage
+         * @description Where an order type sits in the customer's life with the offering.
+         * @enum {string}
+         */
+        CustomerStage: "join" | "change" | "support" | "leave";
+        /**
          * DeliveredChangeKind
          * @description A change to the catalogue a delivered requirement implies.
          * @enum {string}
@@ -3736,6 +3742,8 @@ export interface components {
             handling?: string | null;
             /** Source */
             source?: string | null;
+            /** System Id */
+            system_id?: string | null;
             /** Trigger */
             trigger: string;
         };
@@ -3778,6 +3786,8 @@ export interface components {
         FlowRuleSchema: {
             /** Branch */
             branch?: string | null;
+            /** Channel Id */
+            channel_id?: string | null;
             /** Condition */
             condition?: string | null;
             confidence?: components["schemas"]["SourceConfidence"] | null;
@@ -4897,6 +4907,11 @@ export interface components {
             customer_visible?: boolean | null;
             /** Description */
             description?: string | null;
+            /**
+             * Hub
+             * @default false
+             */
+            hub: boolean;
             /** Id */
             id: string;
             /** Kind */
@@ -5024,6 +5039,8 @@ export interface components {
             source?: string | null;
             /** Text */
             text: string;
+            /** Title */
+            title?: string | null;
         };
         /**
          * OrderTrackingSchema
@@ -5091,6 +5108,7 @@ export interface components {
             name: string;
             /** Source */
             source?: string | null;
+            stage?: components["schemas"]["CustomerStage"] | null;
         };
         /** OrganisationAuditEventResponse */
         OrganisationAuditEventResponse: {
@@ -5404,6 +5422,8 @@ export interface components {
             primary_source?: string | null;
             /** Proposition */
             proposition?: string | null;
+            /** Purpose */
+            purpose?: string | null;
             /**
              * Questions
              * @default []

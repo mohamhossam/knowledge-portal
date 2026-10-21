@@ -76,8 +76,11 @@ class OrderType:
     channels: tuple[str, ...] = ()
     # The delivery drop it comes in, as its source names it, such as "P2 / P3".
     delivery_drop: str | None = None
+    # Where it sits in the customer's life: joining, changing, support or leaving.
+    stage: CustomerStage | None = None
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "stage", customer_stage(self.stage))
         object.__setattr__(self, "code", required(self.code, "Order type code"))
         object.__setattr__(self, "name", required(self.name, "Order type name"))
         object.__setattr__(self, "description", optional(self.description, "Description"))
@@ -88,6 +91,26 @@ class OrderType:
             tuple(dict.fromkeys(required(item, "Channel") for item in self.channels)),
         )
         check_source(self)
+
+
+class CustomerStage(StrEnum):
+    """Where an order type sits in the customer's life with the offering."""
+
+    JOIN = "join"
+    CHANGE = "change"
+    SUPPORT = "support"
+    LEAVE = "leave"
+
+
+def customer_stage(value: CustomerStage | str | None) -> CustomerStage | None:
+    if value is None:
+        return None
+    try:
+        return CustomerStage(str(value).strip().casefold())
+    except ValueError as exc:
+        raise InvalidKnowledgeError(
+            f"A customer stage is join, change, support or leave, not {value!r}."
+        ) from exc
 
 
 class RealisationLayer(StrEnum):
@@ -241,6 +264,8 @@ class OfferingComponent:
     unlinked_reason: str | None = None
     # The component kind term the kind means, beside the text; None while unmapped.
     kind_id: str | None = None
+    # The device the bundle is built on (its router or CPE): at most one per offering.
+    hub: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Component id"))
@@ -374,6 +399,8 @@ class ProductOffering:
     # Ids it was known by before a rename, so precedents, change requests and requirement
     # work that still name an old id find it.
     former_ids: tuple[str, ...] = ()
+    # Why a customer buys it, beside the proposition that says what it is.
+    purpose: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Offering id"))
@@ -385,6 +412,7 @@ class ProductOffering:
             ("version", "Version"),
             ("lifecycle", "Lifecycle"),
             ("proposition", "Proposition"),
+            ("purpose", "Purpose"),
             ("portfolio_node_id", "Portfolio node"),
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
@@ -410,6 +438,8 @@ class ProductOffering:
         ids = [item.id for item in self.components]
         if len(set(ids)) != len(ids):
             raise InvalidKnowledgeError(f"{self.name}: component ids must be unique.")
+        if sum(item.hub for item in self.components) > 1:
+            raise InvalidKnowledgeError(f"{self.name}: at most one component is its hub.")
         qualities = [item.quality.casefold() for item in self.nfrs]
         if len(set(qualities)) != len(qualities):
             raise InvalidKnowledgeError(f"{self.name}: each NFR quality is stated once.")

@@ -974,12 +974,10 @@ products:
   family: Business internet bundles
   proposition: 'The premium flavour of Business Pro: fibre (GPON) internet on Fortinet 90G/120G CPEs,
     with SD-WAN and FortiPortal, firewall, static IP, proactive monitoring, a managed FortiAP and optional
-    Backup 5G.
-
-
-    Gives a small or medium business a secure, managed business connection it can run itself: one premium
-    bundle instead of separate internet, security and Wi-Fi products, delivered through the Summary Order
-    Fulfillment of the SMB Framework (Order to Delivery).'
+    Backup 5G.'
+  purpose: 'Gives a small or medium business a secure, managed business connection it can run itself:
+    one premium bundle instead of separate internet, security and Wi-Fi products, delivered through the
+    Summary Order Fulfillment of the SMB Framework (Order to Delivery).'
   confidence: confirmed
   source: SDD v2.3 · §Solution Overview P1
   order_types:
@@ -988,6 +986,7 @@ products:
     enabled: true
     description: A new Business Pro Plus subscription on a new or existing account.
     delivery_drop: P1
+    stage: join
     channels:
     - bcrm
     - b2b-web
@@ -1000,6 +999,7 @@ products:
     description: From a legacy product (DEL, PBX, BQS…) or from Business Edge (BFV2). Legacy through BCRM
       (P1); Business Edge through BCRM and the SMB App (P3).
     delivery_drop: P1 / P3
+    stage: join
     channels:
     - bcrm
     - smb-app
@@ -1010,6 +1010,7 @@ products:
     enabled: true
     description: A new activation that brings the customer's number from another operator.
     delivery_drop: P3
+    stage: join
     channels:
     - bcrm
     - b2b-web
@@ -1024,6 +1025,7 @@ products:
       with or without a device change. 28 from/to paths across Business Pro Plus, Office Presence, Business
       ON and Business Pro; P3 adds device change.
     delivery_drop: P2 / P3
+    stage: change
     channels:
     - bcrm
     - smb-app
@@ -1032,9 +1034,10 @@ products:
   - code: ADDDELETE
     name: Add / delete add-on
     enabled: true
-    description: Static IP, Speed Booster, VSaaS, voice, SaaS, managed-device and other add-ons. VSaaS and
-      static IP (P2); Speed Booster and add-ons while on 5G backup (P4).
+    description: Static IP, Speed Booster, VSaaS, voice, SaaS, managed-device and other add-ons. VSaaS
+      and static IP (P2); Speed Booster and add-ons while on 5G backup (P4).
     delivery_drop: P2 / P4
+    stage: change
     channels:
     - bcrm
     - b2b-web
@@ -1046,6 +1049,7 @@ products:
     enabled: true
     description: SaaS service activation from the digital channel.
     delivery_drop: P4
+    stage: change
     channels:
     - b2b-web
     - smb-app
@@ -1055,6 +1059,7 @@ products:
     name: Change internet username
     enabled: true
     delivery_drop: P2 / P4
+    stage: change
     channels:
     - bcrm
     - b2b-web
@@ -1065,6 +1070,7 @@ products:
     name: Change password
     enabled: true
     delivery_drop: P2 / P4
+    stage: change
     channels:
     - bcrm
     - b2b-web
@@ -1075,6 +1081,7 @@ products:
     name: Change domain
     enabled: true
     delivery_drop: P4
+    stage: change
     channels:
     - bcrm
     - b2b-web
@@ -1085,6 +1092,7 @@ products:
     name: Change sub-domain
     enabled: true
     delivery_drop: P4
+    stage: change
     channels:
     - bcrm
     - b2b-web
@@ -1095,6 +1103,7 @@ products:
     name: Change number
     enabled: true
     delivery_drop: P4
+    stage: change
     channels:
     - bcrm
     - b2b-web
@@ -1105,6 +1114,7 @@ products:
     name: Flexi minute movement
     enabled: true
     delivery_drop: P4
+    stage: change
     channels:
     - bcrm
     - b2b-web
@@ -1115,6 +1125,7 @@ products:
     name: Technician visit
     enabled: true
     delivery_drop: P4
+    stage: support
     channels:
     - bcrm
     - b2b-web
@@ -1126,6 +1137,7 @@ products:
     enabled: true
     description: Raised as a complaint; CPE or FortiAP replaced, with exit charges when out of warranty.
     delivery_drop: P3 / P4
+    stage: support
     channels:
     - cim
     confidence: confirmed
@@ -1135,6 +1147,7 @@ products:
     enabled: true
     description: Moves the service to another site within the Etisalat area.
     delivery_drop: P3
+    stage: change
     channels:
     - bcrm
     - b2b-web
@@ -1146,6 +1159,7 @@ products:
     enabled: true
     description: Contract renewal; EHS can trigger a move to the non-commitment package.
     delivery_drop: P4
+    stage: change
     channels:
     - ehs
     confidence: confirmed
@@ -1155,6 +1169,7 @@ products:
     enabled: true
     description: Direct, with retention, within the trial period, or bulk.
     delivery_drop: P2
+    stage: leave
     channels:
     - bcrm
     - b2b-web
@@ -1166,6 +1181,7 @@ products:
     enabled: true
     description: A cessation started by a port-out request from NPC.
     delivery_drop: P3
+    stage: leave
     channels:
     - nps
     confidence: confirmed
@@ -1176,6 +1192,7 @@ products:
     description: Throttle or suspend for non-payment, reconnect, or cease (CESSNP). The source that starts
       dunning isn't named in the SDD.
     delivery_drop: P3
+    stage: leave
     confidence: confirmed
     source: SDD v2.3 · §P3 ADO 259162
   components:
@@ -1209,6 +1226,7 @@ products:
     name: CPE device (Fortinet 90G / 120G)
     code: PO_ADDON_BFM_ONPREM_CPE
     mandatory: true
+    hub: true
     description: Generic CPE offer with CPE_PLATFORM_TYPE “Fortinet HE”, SIC_CODE, MODEL and LIST_OF_MODELS;
       a new generic CPE rate plan for B. Pro+ (ADO 438907).
     technical_spec: RPCUSTONPREMEQPT
@@ -1467,10 +1485,12 @@ products:
     fallout:
     - trigger: Stale or incomplete status
       handling: Tracking can show a stale status if CWOM fails to send a milestone or it isn't captured.
+      system: cwom
       confidence: confirmed
       source: SMB reference v1.0 · §5 Known Issues
     - trigger: Deleted items aren't tracked
       handling: BPM doesn't track order items with type DELETE on MIGRATE or UPDOWNGRD orders.
+      system: ibm-bpm
       confidence: confirmed
       source: SDD v2.3 · §BPM General Note
   sources:
@@ -1479,60 +1499,68 @@ products:
   primary_source: sdd
   questions:
   - id: F3
-    text: 'RTF → CWOM call for new activation: The reference says only “CWOM format”. The SDD names createShoppingCart
-      and refreshShoppingCart for migration and up/downgrade.'
+    title: RTF → CWOM call for new activation
+    text: The reference says only “CWOM format”. The SDD names createShoppingCart and refreshShoppingCart
+      for migration and up/downgrade.
     confidence: confirmed
     source: SMB reference v1.0 · §3.1 step 7
   - id: F4
-    text: 'Workflows and points of no return: The SDD''s workflow annex (WF-1 to WF-7) and PONR definitions
-      are “yet to be provided”.'
+    title: Workflows and points of no return
+    text: The SDD's workflow annex (WF-1 to WF-7) and PONR definitions are “yet to be provided”.
     confidence: confirmed
     source: 'SDD v2.3 · Annexure: Workflows'
   - id: F5
-    text: 'E2ESO technical proposal and interface agreement: Both annexes are empty, so the CWOM ↔ E2ESO
-      calls are known by purpose only.'
+    title: E2ESO technical proposal and interface agreement
+    text: Both annexes are empty, so the CWOM ↔ E2ESO calls are known by purpose only.
     confidence: confirmed
     source: 'SDD v2.3 · Annexure: E2ESO TP, IAD'
   - id: F6
-    text: 'Integration style and timing: Most calls don''t say whether they are REST, SOAP or messages,
-      or whether they are synchronous.'
+    title: Integration style and timing
+    text: Most calls don't say whether they are REST, SOAP or messages, or whether they are synchronous.
     confidence: confirmed
     source: SDD v2.3 · Throughout
   - id: F7
-    text: 'Plan prices: Neither source states the plans'' prices. The only amount is the 90G/120G CPE
-      exit charge, AED 650, to be confirmed.'
+    title: Plan prices
+    text: Neither source states the plans' prices. The only amount is the 90G/120G CPE exit charge, AED
+      650, to be confirmed.
     confidence: confirmed
     source: SDD v2.3 · §ADO 438907
   - id: F8
-    text: 'Device codes: SIC codes and some models of the 90G, 120G and FortiAP are TBD.'
+    title: Device codes
+    text: SIC codes and some models of the 90G, 120G and FortiAP are TBD.
     confidence: confirmed
     source: SDD v2.3 · §P1 Catalog Modelling
   - id: F9
-    text: 'Milestone names: No milestone dictionary in either source.'
+    title: Milestone names
+    text: No milestone dictionary in either source.
     confidence: confirmed
     source: SDD v2.3 · §BPM
   - id: F10
-    text: 'MSS ticketing system: The system that carries the SD-WAN onboarding ticket isn''t named.'
+    title: MSS ticketing system
+    text: The system that carries the SD-WAN onboarding ticket isn't named.
     confidence: confirmed
     source: SDD v2.3 · §P1 New Activation
   - id: F11
-    text: 'Names used but not defined: CPP, ODS (DWH), Bid Mgmt, PM tool and “Billing” are named as integrations
-      but not described as systems.'
+    title: Names used but not defined
+    text: CPP, ODS (DWH), Bid Mgmt, PM tool and “Billing” are named as integrations but not described
+      as systems.
     confidence: confirmed
     source: SMB reference v1.0 · §1; §5
   - id: F12
-    text: 'Who starts dunning: The SDD details the fulfilment of TOSS, reconnect and CESSNP but not the
-      system that raises them.'
+    title: Who starts dunning
+    text: The SDD details the fulfilment of TOSS, reconnect and CESSNP but not the system that raises
+      them.
     confidence: confirmed
     source: SDD v2.3 · §P3 ADO 259162
   - id: F14
-    text: 'Section references: The reference''s rules point to Section 4 for process flows; they are in
-      Section 3.'
+    title: Section references
+    text: The reference's rules point to Section 4 for process flows; they are in Section 3.
     confidence: confirmed
     source: SMB reference v1.0 · §0 Rules
   - id: F15
-    text: 'SDD version: The cover says version 2.2; the revision history goes to 2.3 (11/09/2026), and
-      2.2''s date is incomplete.'
+    title: SDD version
+    text: The cover says version 2.2; the revision history goes to 2.3 (11/09/2026), and 2.2's date is
+      incomplete.
     confidence: confirmed
     source: SDD v2.3 · Cover; Revision History
   portfolio: business-internet
@@ -1679,8 +1707,8 @@ products:
     confidence: confirmed
     source: SDD v2.3 · §P4 Enhancement 1871663
   - id: R14
-    statement: 'A device added during faulty device replacement carries its charge add-on PO: Fortinet 90G
-      AED 13,200 and Fortinet 120G AED 18,000, one-time.'
+    statement: 'A device added during faulty device replacement carries its charge add-on PO: Fortinet
+      90G AED 13,200 and Fortinet 120G AED 18,000, one-time.'
     kind: billing
     confidence: confirmed
     source: SDD v2.3 · §ADO 438907, US 438912
@@ -1692,9 +1720,9 @@ products:
     source: SDD v2.3 · §ADO 438907, US 438909 · The applicable SRs are stated; the commitment test follows
       the existing exit-charge rules.
   - id: R16
-    statement: At the end of the contract, EHS moves the account to the non-commitment package of the same
-      family (ccat_after_contract_migrate_plan) as an up/downgrade; from an old-model bundle, RTF copies
-      the dynamic attributes to the new-model target.
+    statement: At the end of the contract, EHS moves the account to the non-commitment package of the
+      same family (ccat_after_contract_migrate_plan) as an up/downgrade; from an old-model bundle, RTF
+      copies the dynamic attributes to the new-model target.
     kind: lifecycle
     confidence: confirmed
     source: SDD v2.3 · §P4 ADO 420619
@@ -1711,14 +1739,14 @@ products:
     confidence: confirmed
     source: SDD v2.3 · §P4 ADO 288752
   - id: R19
-    statement: Port-out is fulfilled as a cessation without Churn & Exit retention; port-in raises the port
-      request at master-order level, before the split.
+    statement: Port-out is fulfilled as a cessation without Churn & Exit retention; port-in raises the
+      port request at master-order level, before the split.
     kind: lifecycle
     confidence: confirmed
     source: SDD v2.3 · §P3 ADO 202826; §ADO 470510
   - id: R20
-    statement: The FortiPortal organisation is created with the customer's first site and removed only with
-      the last one.
+    statement: The FortiPortal organisation is created with the customer's first site and removed only
+      with the last one.
     kind: lifecycle
     confidence: confirmed
     source: SDD v2.3 · §P1 FortiPortal Access; §P2 ADO 259161
@@ -1965,8 +1993,8 @@ journeys:
     name: Start billing
     track: PARALLEL-BILL
     system: bscs
-    description: The CPE rate plan follows the contract period chosen at capture (no contract, 1 year, 2
-      years); a commitment carries an exit charge of AED 650.
+    description: The CPE rate plan follows the contract period chosen at capture (no contract, 1 year,
+      2 years); a commitment carries an exit charge of AED 650.
     etom: Billing · Billing & Revenue Management
     role: BILL
     confidence: confirmed
@@ -2341,10 +2369,10 @@ journeys:
   name: Upgrade / downgrade
   product: business-pro-plus
   order_type: UPDOWNGRD
-  description: 'A plan change as a summary order: accepted only when the activation is complete, RTF
-    loads the basket from CRMGW, CWOM fulfils it per workflow. Backup 5G follows four branches (in both,
-    added, removed, neither), the CPE changes only when the target plan needs another model, and a removed
-    CPE still under commitment carries its exit charge.'
+  description: 'A plan change as a summary order: accepted only when the activation is complete, RTF loads
+    the basket from CRMGW, CWOM fulfils it per workflow. Backup 5G follows four branches (in both, added,
+    removed, neither), the CPE changes only when the target plan needs another model, and a removed CPE
+    still under commitment carries its exit charge.'
   confidence: confirmed
   source: SDD v2.3 · §P2 ADO 81197; §P3 ADO 81961; §P4 Pending Order Validation; §P4 Enhancements 1871663,
     1873844; §ADO 438907
@@ -2379,8 +2407,8 @@ journeys:
   - number: '35'
     name: Check the pending activation (pending order validation)
     system: cbcm
-    description: While the new activation's master order is open, CRMGW accepts the up/downgrade only when
-      every sub-order (GSM, asynchronous SaaS, vSaaS, GPON) and the master order are closed; otherwise
+    description: While the new activation's master order is open, CRMGW accepts the up/downgrade only
+      when every sub-order (GSM, asynchronous SaaS, vSaaS, GPON) and the master order are closed; otherwise
       RTF rejects it.
     output: Accepted?
     etom: Fulfillment · Order Handling
@@ -2497,8 +2525,8 @@ journeys:
     name: Replace the CPE and FortiAP
     track: BRANCH-DEVICE
     system: wfms
-    description: The technician swaps the devices with site access, per workflow, and returns the new SIC
-      codes and serials.
+    description: The technician swaps the devices with site access, per workflow, and returns the new
+      SIC codes and serials.
     etom: Fulfillment · Resource Provisioning
     role: FIELD
     confidence: inferred
@@ -2508,8 +2536,8 @@ journeys:
     name: Post the exit charge on the removed CPE (AED 650)
     track: BRANCH-DEVICE
     system: bscs
-    description: Only when the removed CPE's rate plan is still within its commitment (1 or 2 years); the
-      amount is to be confirmed by Business.
+    description: Only when the removed CPE's rate plan is still within its commitment (1 or 2 years);
+      the amount is to be confirmed by Business.
     etom: Billing · Billing & Revenue Management
     role: BILL
     confidence: inferred
@@ -2618,8 +2646,8 @@ journeys:
     timing: Sync
     from_system: rtf
     to_system: cbcm
-    purpose: Validate the order against the pending-order matrix (UPDOWNGRD needs every sub-order and the
-      master order closed).
+    purpose: Validate the order against the pending-order matrix (UPDOWNGRD needs every sub-order and
+      the master order closed).
     style: API
     tmf_equivalent: TMF679 Product Offering Qualification
     confidence: confirmed
@@ -4016,7 +4044,8 @@ journeys:
     performer: Dunning process
     role: BILL
     confidence: gap
-    source: SDD v2.3 · §P3 ADO 259162 · The SDD doesn't name the system that raises the action (finding F12).
+    source: SDD v2.3 · §P3 ADO 259162 · The SDD doesn't name the system that raises the action (finding
+      F12).
   - number: '20'
     name: Check the account's bundle model; add the summary-order flags
     system: rtf
@@ -6257,7 +6286,8 @@ business_capabilities:
   - proactive monitoring
   - service monitoring
   - device monitoring
-  definition: Watching the customer's service and devices so faults are found before the customer reports them.
+  definition: Watching the customer's service and devices so faults are found before the customer reports
+    them.
   domain: service
   confidence: inferred
   source: Ontology plan Phase 1 · golden set v1 concept list

@@ -198,7 +198,13 @@ def test_a_draft_saves_tracking_through_the_api(client: TestClient) -> None:
     tracking = saved.json()["products"][0]["tracking"]
     assert tracking["channels"][0]["ui_system_id"] == WEB_SYSTEM
     assert tracking["fallout"] == [
-        {"trigger": "Rejected", "handling": None, "confidence": None, "source": None}
+        {
+            "trigger": "Rejected",
+            "handling": None,
+            "confidence": None,
+            "source": None,
+            "system_id": None,
+        }
     ]
 
     refused = client.put(

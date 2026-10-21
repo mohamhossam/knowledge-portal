@@ -240,7 +240,7 @@ describe("offering detail suggestions", () => {
           id: "office", name: "Office Connect", rules: [], values: [], audiences: [],
           sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], former_ids: [],
           order_types: [{ code: "NEW", name: "New", enabled: true, channels: [] }],
-          components: [{ id: "fibre", name: "Fibre", responsibilities: [], realisation: [{ layer: "cfs", name: "Fibre CFS" }], capability_ids: [] }],
+          components: [{ id: "fibre", name: "Fibre", responsibilities: [], realisation: [{ layer: "cfs", name: "Fibre CFS" }], capability_ids: [], hub: false }],
           nfrs: [{ quality: "Availability", coverage: "defined" }, { quality: "Security", coverage: "missing" }],
           tracking: tracking
             ? {

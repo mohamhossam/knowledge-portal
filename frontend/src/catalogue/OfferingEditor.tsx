@@ -10,6 +10,16 @@ type Responsibility = Part["responsibilities"][number];
 type Point = Offering["values"][number];
 type Realised = Part["realisation"][number];
 type Nfr = Offering["nfrs"][number];
+type OrderTypeStage = Offering["order_types"][number]["stage"];
+
+/** Where an order type sits in the customer's life; left empty when its source does not say. */
+const STAGE_OPTIONS = [
+  { value: "", label: "Not said" },
+  { value: "join", label: "Join: becoming a customer" },
+  { value: "change", label: "Change: changing a live account" },
+  { value: "support", label: "Support: tracking, repairs and visits" },
+  { value: "leave", label: "Leave: ending or suspending the service" },
+];
 
 /** "CFS CFSS_ONPREM_FIREWALL_HE", cut short, to name one row on its legend and its Remove button. */
 function realisedLabel(item: Realised, index: number): string {
@@ -70,6 +80,7 @@ export function OfferingFacts({ value, onChange }: SectionProps) {
         />
       </div>
       <AreaField label="What it offers" value={value.proposition} onChange={(proposition) => set({ proposition: proposition || null })} />
+      <AreaField label="Why a customer buys it" value={value.purpose} onChange={(purpose) => set({ purpose: purpose || null })} />
       <LinesField
         label="For"
         value={pointLines(value.audiences)}
@@ -101,6 +112,12 @@ export function OfferingOrderTypes({ value, onChange, channels, names }: Section
           <TextField label="Name" value={type.name} required onChange={(name) => update({ name })} />
           <TextField label="Code" value={type.code} required dir="ltr" onChange={(code) => update({ code })} />
           <CheckField label="Offered" checked={type.enabled} onChange={(enabled) => update({ enabled })} />
+          <SelectField
+            label="Customer stage"
+            value={type.stage ?? ""}
+            options={STAGE_OPTIONS}
+            onChange={(stage) => update({ stage: (stage || null) as OrderTypeStage })}
+          />
           {(channels.length > 0 || (type.channels ?? []).length > 0) && (
             <ChannelChoices
               legend="Ordered through"
@@ -125,7 +142,7 @@ export function OfferingParts({ value, onChange, systems, names }: SectionProps)
       one="part"
       items={value.components}
       onChange={(components) => onChange({ ...value, components })}
-      blank={() => ({ id: "", name: "", responsibilities: [], realisation: [], capability_ids: [] })}
+      blank={() => ({ id: "", name: "", responsibilities: [], realisation: [], capability_ids: [], hub: false })}
       itemLabel={(part, index) => `part ${part.name || index + 1}`}
       render={(part, update) => (
         <>
@@ -133,6 +150,12 @@ export function OfferingParts({ value, onChange, systems, names }: SectionProps)
           <TextField label="Code" value={part.code} onChange={(code) => update({ code: code || null })} />
           <TextField label="Kind" value={part.kind} onChange={(kind) => update({ kind: kind || null })} />
           <CheckField label="Always included" checked={part.mandatory === true} onChange={(mandatory) => update({ mandatory })} />
+          <CheckField
+            label="The device it is built on (its hub)"
+            checked={part.hub === true}
+            // One hub per offering: choosing this part clears the others.
+            onChange={(hub) => onChange({ ...value, components: value.components.map((item) => (item === part ? { ...item, hub } : hub ? { ...item, hub: false } : item)) })}
+          />
           <CheckField
             label="Seen by the customer"
             checked={part.customer_visible === true}
@@ -276,6 +299,7 @@ export function QuestionFields({ item, orders, change }: {
         onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
       />
       <TextField label="Source" value={item.source} onChange={(source) => change({ source: source || null })} />
+      <TextField label="In a few words" value={item.title} hint="Such as B2B Digital scope; optional." onChange={(title) => change({ title: title || null })} />
       <AreaField label="Question" value={item.text} required onChange={(text) => change({ text })} />
       <AreaField label="What the catalogue does meanwhile" value={item.impact} onChange={(impact) => change({ impact: impact || null })} />
       {choices.length > 0 && (

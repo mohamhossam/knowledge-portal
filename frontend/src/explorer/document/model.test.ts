@@ -79,6 +79,21 @@ describe("the Solution Architecture document", () => {
     expect(words(section(model.blocks, "8. Integration Architecture"))).toMatch(/RTF \| CWOM \| SR request \| RTF SR \| Sync/);
   });
 
+  it("files a fallout case under the system it names, whatever its words", () => {
+    const release = structuredClone(EXPLORED);
+    release.products![0]!.tracking!.fallout[0]!.system_id = "cwom";
+    const model = solutionDocument({ release, scenario: pickScenario(release, "bpp", "NEW", "online")!, plans: PLANS, at: AT, by: "Amina" });
+    let system = "";
+    const handled: string[] = [];
+    for (const block of model.blocks) {
+      if (block.t === "h2") system = block.text;
+      if (block.t !== "table") continue;
+      const failure = block.rows.find((row) => text(row[0]!) === "Failure handling");
+      if (failure && text(failure[1]!).includes("Rejected by business rules")) handled.push(system);
+    }
+    expect(handled).toEqual([expect.stringMatching(/CWOM$/)]);
+  });
+
   it("says a section the catalogue cannot hold yet is a gap, and fills nothing in", () => {
     const model = made();
 

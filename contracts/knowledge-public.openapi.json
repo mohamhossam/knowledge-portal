@@ -3563,6 +3563,17 @@
         "title": "CreateVersionRequest",
         "type": "object"
       },
+      "CustomerStage": {
+        "description": "Where an order type sits in the customer's life with the offering.",
+        "enum": [
+          "join",
+          "change",
+          "support",
+          "leave"
+        ],
+        "title": "CustomerStage",
+        "type": "string"
+      },
       "DeliveredChangeKind": {
         "description": "A change to the catalogue a delivered requirement implies.",
         "enum": [
@@ -4796,6 +4807,18 @@
             ],
             "title": "Source"
           },
+          "system_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Id"
+          },
           "trigger": {
             "maxLength": 10000,
             "title": "Trigger",
@@ -4926,6 +4949,18 @@
               }
             ],
             "title": "Branch"
+          },
+          "channel_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Id"
           },
           "condition": {
             "anyOf": [
@@ -8297,6 +8332,11 @@
             ],
             "title": "Description"
           },
+          "hub": {
+            "default": false,
+            "title": "Hub",
+            "type": "boolean"
+          },
           "id": {
             "maxLength": 200,
             "title": "Id",
@@ -8747,6 +8787,18 @@
             "maxLength": 10000,
             "title": "Text",
             "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
           }
         },
         "required": [
@@ -8936,6 +8988,16 @@
               }
             ],
             "title": "Source"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CustomerStage"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -9797,6 +9859,18 @@
               }
             ],
             "title": "Proposition"
+          },
+          "purpose": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purpose"
           },
           "questions": {
             "default": [],

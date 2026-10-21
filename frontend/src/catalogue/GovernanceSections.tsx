@@ -174,7 +174,7 @@ export function OpenQuestions({ offering, conflicts, action, beside, level = 3 }
               <li key={question.id} id={`question-${question.id}`}>
                 <span className="offering-id">{question.id}</span>
                 <div>
-                  <p dir="auto">{question.text}</p>
+                  <p dir="auto">{question.title && <strong>{question.title}: </strong>}{question.text}</p>
                   {asked.length > 0 && <span className="offering-by" dir="auto">Asked for {asked.join(", ")}</span>}
                   {question.impact && <span className="offering-by" dir="auto">Meanwhile: {question.impact}</span>}
                   {by.length > 0 && <span className="offering-by">Raised by {by.map((item) => `the conflict ${item.id}`).join(", ")}</span>}

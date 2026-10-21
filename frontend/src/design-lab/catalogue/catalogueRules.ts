@@ -6,9 +6,16 @@
  */
 import type { Catalogue, Offering } from "../../catalogue/model/model";
 
-/** The device a bundle is built on: a device or router, else a part named CPE (as a word); none when nothing is. */
+/**
+ * The device a bundle is built on: the part the version marks as its hub. A version that
+ * marks none is read by name, as before: a device or router, else a part named CPE (as a word).
+ */
 export function hubOf(offering: Offering): Offering["components"][number] | undefined {
-  return offering.components.find((item) => /device|router/i.test(item.name)) ?? offering.components.find((item) => /\bcpe\b/i.test(item.name));
+  return (
+    offering.components.find((item) => item.hub)
+    ?? offering.components.find((item) => /device|router/i.test(item.name))
+    ?? offering.components.find((item) => /\bcpe\b/i.test(item.name))
+  );
 }
 
 /** A channel kind's name: the version's vocabulary label, else the kind as written. */

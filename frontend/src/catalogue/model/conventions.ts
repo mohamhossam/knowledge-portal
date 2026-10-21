@@ -1,7 +1,8 @@
 /**
- * What the adapter reads from prose and naming conventions, parsed here, once, and tested:
- * - a proposition's summary and purpose, from its paragraphs;
- * - a question's title and detail, from "title: detail";
+ * What the adapter reads from prose and naming conventions, parsed here, once, and tested,
+ * for a catalogue version saved before the service sent the field that says it:
+ * - a proposition's summary and purpose, from its paragraphs (newer versions carry `purpose`);
+ * - a question's title and detail, from "title: detail" (newer versions carry `title`);
  * - for a catalogue version saved before the service sent them, the delivery drop (from
  *   "Delivered in drop …" in an order type's description) and the cross-cutting domains
  *   (from their ids in `BAND_DOMAINS`). Newer versions carry `delivery_drop` and

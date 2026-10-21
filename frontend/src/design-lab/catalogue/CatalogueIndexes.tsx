@@ -15,7 +15,7 @@ import { channelKindName, contractPeriods, eligibilityGroup, hubOf, SELLING_KIND
 import { journeyHref, LAB, useLabData } from "./labData";
 import { firstSentence, listOf, pathTo, plural, useTitle } from "./labUtil";
 import { capabilityOf, DEVICE_ICON, shortComponentName } from "./capabilities";
-import { stageOfCode } from "./stages";
+import { stageOf } from "./stages";
 import { SystemMonogram } from "./SystemMonogram";
 
 const PRODUCT_ICON = <path d="M2.5 4.5 8 2l5.5 2.5v7L8 14l-5.5-2.5zM2.5 4.5 8 7l5.5-2.5M8 7v7" />;
@@ -68,7 +68,7 @@ function ProductCard({ offering }: { offering: Offering }) {
   const base = `${LAB}/products/${offering.id}`;
 
   // Sold through: the channels its joining order types (new sale, migration, port in) arrive by, people-facing ones only.
-  const joining = offering.orderTypes.filter((type) => stageOfCode(type.code) === "join");
+  const joining = offering.orderTypes.filter((type) => stageOf(type) === "join");
   const sellingIds = new Set((joining.length ? joining : offering.orderTypes).flatMap((type) => type.channels));
   const selling = data.channels.filter((channel) => sellingIds.has(channel.id) && (SELLING_KINDS as readonly string[]).includes(channel.kind));
   const kinds = [...SELLING_KINDS]
