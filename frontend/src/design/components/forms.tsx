@@ -59,7 +59,7 @@ export function Field({
 
 type Common = { label: ReactNode; hint?: ReactNode; error?: string | null; required?: boolean };
 
-/** A text input. Content may be Arabic or English: dir="auto" always (§13). */
+/** A text input: dir="auto" always, so each value keeps its own direction (§13). */
 export function TextField({ label, hint, error, required, ...input }: Common & Omit<InputHTMLAttributes<HTMLInputElement>, "id">) {
   return (
     <Field label={label} hint={hint} error={error} required={required}>
@@ -128,7 +128,8 @@ export type ComboOption = { id: string; label: string; hint?: string };
 /**
  * §2.2 combobox: type to filter; ↓ ↑ move through matches; Enter picks; Esc
  * clears. The listbox is announced through aria-activedescendant; focus stays
- * in the input. Names may be Arabic: each option is isolated.
+ * in the input. Each option is isolated, so a name with punctuation keeps its
+ * order.
  */
 export function Combobox({
   label,
@@ -148,7 +149,7 @@ export function Combobox({
   emptyText?: string;
   /** An option to offer first, with its reason (e.g. the squad that runs related systems). */
   suggested?: { id: string; reason: string };
-  /** The caller's own matching (e.g. the catalogue's search over names, Arabic names and capabilities); replaces the label filter. */
+  /** The caller's own matching (e.g. the catalogue's search over names, aliases and capabilities); replaces the label filter. */
   search?: (query: string) => ComboOption[];
 }) {
   const id = useId();

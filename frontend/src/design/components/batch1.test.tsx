@@ -154,13 +154,13 @@ describe("forms", () => {
     expect(input).toHaveValue("Care squad");
   });
 
-  it("lets the caller do the matching (e.g. by Arabic name or capability)", async () => {
-    const search = vi.fn((query: string) => (query.includes("فوترة") ? [{ id: "bscs", label: "BSCS", hint: "Arabic name" }] : []));
+  it("lets the caller do the matching (e.g. by alias or capability)", async () => {
+    const search = vi.fn((query: string) => (query.includes("rating") ? [{ id: "bscs", label: "BSCS", hint: "Does: Usage rating" }] : []));
     render(<Combobox label="Find a system" options={[]} search={search} onSelect={() => {}} />);
     const input = screen.getByRole("combobox", { name: "Find a system" });
-    await userEvent.type(input, "فوترة");
-    expect(search).toHaveBeenLastCalledWith("فوترة");
-    expect(screen.getByRole("option")).toHaveTextContent("BSCS · Arabic name");
+    await userEvent.type(input, "rating");
+    expect(search).toHaveBeenLastCalledWith("rating");
+    expect(screen.getByRole("option")).toHaveTextContent("BSCS · Does: Usage rating");
   });
 
   it("lists uploaded files with their scan state in words", () => {

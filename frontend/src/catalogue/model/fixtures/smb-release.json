@@ -40,7 +40,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "MS Dynamics sales CRM: leads, opportunities, quotes and discount approvals. Captures assisted SMB orders.",
    "landscape_domain_id": "market-sales.sales",
@@ -84,7 +83,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "New sales and CRM screens replacing BCRM, including AI Studio.",
    "landscape_domain_id": "market-sales.sales",
@@ -123,7 +121,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Recommendation engine; can trigger opportunities.",
    "landscape_domain_id": "market-sales.recommendation",
@@ -162,7 +159,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "In-house AI model for B2B discount recommendations.",
    "landscape_domain_id": "market-sales.recommendation",
@@ -205,7 +201,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Digital product catalogue; offers uploaded by the business from Excel. Configured to accept the new Business Pro Plus POs.",
    "landscape_domain_id": "product.catalogue",
@@ -250,7 +245,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Enterprise catalogue module: eligibility rules, pricing, GL mapping. The master reference for package codes.",
    "landscape_domain_id": "product.catalogue",
@@ -295,7 +289,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "CWOM's catalogue: CFS, allowances and prices for fixed products and bundles. Answers the CPE and access-point model inquiry by bandwidth.",
    "landscape_domain_id": "product.catalogue",
@@ -337,7 +330,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "RTF's own catalogue of customer-facing services, for mobile fulfilment.",
    "landscape_domain_id": "product.catalogue",
@@ -382,7 +374,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Designs, approves and configures new products across IN, BCRM, BSCS, ECM, PSM, BCC and CPP. Its Automation Portal holds the bundle building blocks (SD-WAN/FortiPortal, Firewall, Static IP, Proactive Monitoring).",
    "landscape_domain_id": "product.design",
@@ -440,7 +431,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Angular web channel for SMB sales and customer management; catalogue from BCC. Opens FortiPortal by SAML single sign-on.",
    "landscape_domain_id": "customer.self-service",
@@ -493,7 +483,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "iOS and Android equivalent of B2B Web.",
    "landscape_domain_id": "customer.self-service",
@@ -533,7 +522,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Retail kiosk: biometric capture, document verification, bill payment, Customer 360.",
    "landscape_domain_id": "customer.self-service",
@@ -574,7 +562,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Agent screen for IVR, email and chat; complaint management APIs.",
    "landscape_domain_id": "customer.assisted",
@@ -615,7 +602,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Back-office order capture; the front end to CRMGW.",
    "landscape_domain_id": "customer.assisted",
@@ -659,7 +645,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Central customer, billing account, product inventory and order store; the registry RTF loads summary-order baskets from.",
    "landscape_domain_id": "customer.customer-data",
@@ -711,7 +696,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Customer, organisation, individual, contact and site data for customers migrated to NC Digital, read through TIBCO TMF APIs.",
    "landscape_domain_id": "customer.customer-data",
@@ -762,7 +746,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Receives channel orders, validates business rules, builds the value order and hands fixed orders to CWOM; loads summary-order baskets from CRMGW.",
    "landscape_domain_id": "customer.order",
@@ -809,7 +792,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Hosts orders and milestones for the order-tracking journey (isBFMOrder, mergeOrderItems).",
    "landscape_domain_id": "customer.order",
@@ -851,7 +833,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Stores order milestones for RTF and CWOM; read through getRealTimeOrderDetails.",
    "landscape_domain_id": "customer.order",
@@ -893,7 +874,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Raises contract events that start the renewal up/downgrade to a non-commitment package.",
    "landscape_domain_id": "customer.order",
@@ -934,7 +914,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Complaint case management, replacing CIM and UCMS.",
    "landscape_domain_id": "customer.problem",
@@ -975,7 +954,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Billing system; billing starts when the order is fulfilled.",
    "landscape_domain_id": "customer.bill",
@@ -1022,7 +1000,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Order management for fixed products: validates against ECM, splits the order into sub-orders and orchestrates activation, field work, billing and notification.",
    "landscape_domain_id": "service.order",
@@ -1062,7 +1039,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Service order management: provisions Fortinet HE CPEs in the dedicated ADOM cluster, SD-WAN and FortiPortal organisations.",
    "landscape_domain_id": "service.order",
@@ -1103,7 +1079,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "SaaS activation layer (Microsoft, AWS and others); answers by callback.",
    "landscape_domain_id": "service.activation",
@@ -1142,7 +1117,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "SLA provisioning and activation.",
    "landscape_domain_id": "service.quality",
@@ -1199,7 +1173,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Mobile network activation (HLR, HSS); activates and removes the Backup 5G profile and commands IN and Alepo.",
    "landscape_domain_id": "resource.activation",
@@ -1269,7 +1242,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Activates mobile SIM and data profiles; applies the Backup 5G speed offers (862–874) and the dunning throttle (854).",
    "landscape_domain_id": "resource.activation",
@@ -1308,7 +1280,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Receives vEDA's commands for Backup 5G, as for DI/DPI.",
    "landscape_domain_id": "resource.activation",
@@ -1348,7 +1319,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Port and network resource allocation.",
    "landscape_domain_id": "resource.inventory",
@@ -1391,7 +1361,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Reserves, deducts and releases SIMs, devices and numbers.",
    "landscape_domain_id": "resource.inventory",
@@ -1434,7 +1403,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Number portability: takes port-in and port-out requests and submits them to RTF with the summary-order flags.",
    "landscape_domain_id": "resource.inventory",
@@ -1476,7 +1444,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Network feasibility and availability check.",
    "landscape_domain_id": "resource.inventory",
@@ -1518,7 +1485,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Manual work orders: the technician installs the CPE and FortiAP, captures SIC codes and serials and updates CWOM.",
    "landscape_domain_id": "resource.field",
@@ -1560,7 +1526,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Engineering ticketing and assurance.",
    "landscape_domain_id": "resource.field",
@@ -1600,7 +1565,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Trade licence and decree validation.",
    "landscape_domain_id": "engaged-party.government",
@@ -1639,7 +1603,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "National ID reader device.",
    "landscape_domain_id": "engaged-party.government",
@@ -1680,7 +1643,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Reads trade licences, Emirates IDs and establishment cards.",
    "landscape_domain_id": "engaged-party.government",
@@ -1738,7 +1700,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Vendor platform: the dedicated ADOM FortiManager cluster for Business Pro Plus CPEs, and FortiPortal for customer self-management.",
    "landscape_domain_id": "engaged-party.partner",
@@ -1777,7 +1738,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Sends port-out requests to NPS.",
    "landscape_domain_id": "engaged-party.partner",
@@ -1820,7 +1780,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "SMS and email with OTP; template-driven, English and Arabic.",
    "landscape_domain_id": "enterprise.common",
@@ -1860,7 +1819,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Customer documents, technical templates and test results.",
    "landscape_domain_id": "enterprise.common",
@@ -1905,7 +1863,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "IT ticketing; device-delivery shipment orders and confirmations (HPSM moving to ServiceNow).",
    "landscape_domain_id": "enterprise.common",
@@ -1944,7 +1901,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Single sign-on for CSRD and GIS screens.",
    "landscape_domain_id": "enterprise.common",
@@ -1983,7 +1939,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Integration bus: digital channels to government, vendors and NC CRM (TMF APIs); carries order-creation notices, milestones and order-tracking reads.",
    "landscape_domain_id": "integration.bus",
@@ -2024,7 +1979,6 @@
     }
    ],
    "constraints": [],
-   "name_ar": null,
    "components": [],
    "description": "Backend for frontend of the digital channels.",
    "landscape_domain_id": "integration.bus",
@@ -2059,7 +2013,6 @@
   {
    "id": "market-sales",
    "name": "Market and sales",
-   "name_ar": null,
    "parent_id": null,
    "description": "Selling to business customers: opportunities, quotes, offers and discounts.",
    "accepted": []
@@ -2067,7 +2020,6 @@
   {
    "id": "product",
    "name": "Product",
-   "name_ar": null,
    "parent_id": null,
    "description": "Designing offerings and keeping the product catalogue, its eligibility and prices.",
    "accepted": []
@@ -2075,7 +2027,6 @@
   {
    "id": "customer",
    "name": "Customer",
-   "name_ar": null,
    "parent_id": null,
    "description": "Taking, tracking and caring for customers' orders, accounts, documents, bills and problems.",
    "accepted": []
@@ -2083,7 +2034,6 @@
   {
    "id": "service",
    "name": "Service",
-   "name_ar": null,
    "parent_id": null,
    "description": "The services an offering delivers, their fulfilment, activation and assurance.",
    "accepted": []
@@ -2091,7 +2041,6 @@
   {
    "id": "resource",
    "name": "Resource",
-   "name_ar": null,
    "parent_id": null,
    "description": "The network, devices, numbers and field work the services run on.",
    "accepted": []
@@ -2101,7 +2050,6 @@
   {
    "id": "market-sales",
    "name": "Market & Sales",
-   "name_ar": null,
    "parent_id": null,
    "description": "Leads, opportunities, quotes, discounts and sales recommendations.",
    "cross_cutting": false,
@@ -2111,7 +2059,6 @@
   {
    "id": "market-sales.sales",
    "name": "Sales management",
-   "name_ar": null,
    "parent_id": "market-sales",
    "description": null,
    "cross_cutting": false,
@@ -2121,7 +2068,6 @@
   {
    "id": "market-sales.recommendation",
    "name": "Recommendation",
-   "name_ar": null,
    "parent_id": "market-sales",
    "description": null,
    "cross_cutting": false,
@@ -2131,7 +2077,6 @@
   {
    "id": "product",
    "name": "Product",
-   "name_ar": null,
    "parent_id": null,
    "description": "Product catalogues, offer design and catalogue automation.",
    "cross_cutting": false,
@@ -2141,7 +2086,6 @@
   {
    "id": "product.catalogue",
    "name": "Product catalogues",
-   "name_ar": null,
    "parent_id": "product",
    "description": null,
    "cross_cutting": false,
@@ -2151,7 +2095,6 @@
   {
    "id": "product.design",
    "name": "Offer design & automation",
-   "name_ar": null,
    "parent_id": "product",
    "description": null,
    "cross_cutting": false,
@@ -2161,7 +2104,6 @@
   {
    "id": "customer",
    "name": "Customer",
-   "name_ar": null,
    "parent_id": null,
    "description": "Engagement channels, customer data, customer orders, order tracking, problems and bills.",
    "cross_cutting": false,
@@ -2171,7 +2113,6 @@
   {
    "id": "customer.self-service",
    "name": "Self-service channels",
-   "name_ar": null,
    "parent_id": "customer",
    "description": null,
    "cross_cutting": false,
@@ -2181,7 +2122,6 @@
   {
    "id": "customer.assisted",
    "name": "Assisted channels",
-   "name_ar": null,
    "parent_id": "customer",
    "description": null,
    "cross_cutting": false,
@@ -2191,7 +2131,6 @@
   {
    "id": "customer.customer-data",
    "name": "Customer information",
-   "name_ar": null,
    "parent_id": "customer",
    "description": null,
    "cross_cutting": false,
@@ -2201,7 +2140,6 @@
   {
    "id": "customer.order",
    "name": "Customer order management",
-   "name_ar": null,
    "parent_id": "customer",
    "description": null,
    "cross_cutting": false,
@@ -2211,7 +2149,6 @@
   {
    "id": "customer.problem",
    "name": "Customer problems",
-   "name_ar": null,
    "parent_id": "customer",
    "description": null,
    "cross_cutting": false,
@@ -2221,7 +2158,6 @@
   {
    "id": "customer.bill",
    "name": "Billing",
-   "name_ar": null,
    "parent_id": "customer",
    "description": null,
    "cross_cutting": false,
@@ -2231,7 +2167,6 @@
   {
    "id": "service",
    "name": "Service",
-   "name_ar": null,
    "parent_id": null,
    "description": "Service order management, service activation and service quality.",
    "cross_cutting": false,
@@ -2241,7 +2176,6 @@
   {
    "id": "service.order",
    "name": "Service order management",
-   "name_ar": null,
    "parent_id": "service",
    "description": null,
    "cross_cutting": false,
@@ -2251,7 +2185,6 @@
   {
    "id": "service.activation",
    "name": "Service activation",
-   "name_ar": null,
    "parent_id": "service",
    "description": null,
    "cross_cutting": false,
@@ -2261,7 +2194,6 @@
   {
    "id": "service.quality",
    "name": "Service quality & SLA",
-   "name_ar": null,
    "parent_id": "service",
    "description": null,
    "cross_cutting": false,
@@ -2271,7 +2203,6 @@
   {
    "id": "resource",
    "name": "Resource",
-   "name_ar": null,
    "parent_id": null,
    "description": "Network activation, inventory, numbers, feasibility and field work.",
    "cross_cutting": false,
@@ -2281,7 +2212,6 @@
   {
    "id": "resource.activation",
    "name": "Resource activation",
-   "name_ar": null,
    "parent_id": "resource",
    "description": null,
    "cross_cutting": false,
@@ -2291,7 +2221,6 @@
   {
    "id": "resource.inventory",
    "name": "Inventory & numbers",
-   "name_ar": null,
    "parent_id": "resource",
    "description": null,
    "cross_cutting": false,
@@ -2301,7 +2230,6 @@
   {
    "id": "resource.field",
    "name": "Workforce & trouble",
-   "name_ar": null,
    "parent_id": "resource",
    "description": null,
    "cross_cutting": false,
@@ -2311,7 +2239,6 @@
   {
    "id": "engaged-party",
    "name": "Engaged Party",
-   "name_ar": null,
    "parent_id": null,
    "description": "Government bodies, identity and document services, partners and vendors.",
    "cross_cutting": false,
@@ -2321,7 +2248,6 @@
   {
    "id": "engaged-party.government",
    "name": "Government & identity",
-   "name_ar": null,
    "parent_id": "engaged-party",
    "description": null,
    "cross_cutting": false,
@@ -2331,7 +2257,6 @@
   {
    "id": "engaged-party.partner",
    "name": "Partners & vendors",
-   "name_ar": null,
    "parent_id": "engaged-party",
    "description": null,
    "cross_cutting": false,
@@ -2341,7 +2266,6 @@
   {
    "id": "enterprise",
    "name": "Enterprise",
-   "name_ar": null,
    "parent_id": null,
    "description": "Cross-cutting: notification, documents, IT service management, single sign-on.",
    "cross_cutting": true,
@@ -2351,7 +2275,6 @@
   {
    "id": "enterprise.common",
    "name": "Common services",
-   "name_ar": null,
    "parent_id": "enterprise",
    "description": null,
    "cross_cutting": false,
@@ -2361,7 +2284,6 @@
   {
    "id": "integration",
    "name": "Integration layer",
-   "name_ar": null,
    "parent_id": null,
    "description": "The bus and gateways every domain talks through.",
    "cross_cutting": true,
@@ -2371,7 +2293,6 @@
   {
    "id": "integration.bus",
    "name": "Integration",
-   "name_ar": null,
    "parent_id": "integration",
    "description": null,
    "cross_cutting": false,

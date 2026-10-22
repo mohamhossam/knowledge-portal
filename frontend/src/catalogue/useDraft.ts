@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { api, type DocumentLanguage, type Release, type SuggestionContent } from "../api/client";
+import { api, type Release, type SuggestionContent } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { typedFile } from "./suggestions";
 
@@ -99,7 +99,7 @@ export function useDraft(release: Release) {
   });
 
   const addDocument = useMutation({
-    mutationFn: async (input: { file: File; title: string; language: DocumentLanguage }) => {
+    mutationFn: async (input: { file: File; title: string }) => {
       const next = await api.addCatalogueDocument(releaseId, {
         ...input,
         file: typedFile(input.file),
@@ -119,10 +119,9 @@ export function useDraft(release: Release) {
   // Several files at once (Knowledge Center C): each added file starts reading, one after
   // another, within the per-minute model budget; one the budget refuses waits to be read.
   const addDocuments = useMutation({
-    mutationFn: async (input: { files: File[]; language: DocumentLanguage }): Promise<UploadLine[]> => {
+    mutationFn: async (input: { files: File[] }): Promise<UploadLine[]> => {
       const batch = await api.addCatalogueDocuments(releaseId, {
         files: input.files.map(typedFile),
-        language: input.language,
         expectedRevision: revision.current,
       });
       settle(batch.release);

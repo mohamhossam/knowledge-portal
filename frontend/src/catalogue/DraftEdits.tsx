@@ -225,7 +225,7 @@ export function ConnectionRemove({ connection, onDone }: { connection: Relations
 }
 
 /** A domain as edited; a landscape domain keeps whether it is cross-cutting, which the panel doesn't change. */
-type Domain = { id: string; name: string; name_ar?: string | null; parent_id?: string | null; description?: string | null; cross_cutting?: boolean };
+type Domain = { id: string; name: string; parent_id?: string | null; description?: string | null; cross_cutting?: boolean };
 
 /** One domain tree edited whole: the landscape, or the business areas. */
 export function DomainsEdit({ tree, onDone }: { tree: "landscape" | "areas"; onDone: () => void }) {
@@ -284,7 +284,6 @@ export function DomainsEdit({ tree, onDone }: { tree: "landscape" | "areas"; onD
         render={(item, update, index) => (
           <>
             <TextField label="Name" value={item.name} required onChange={(name) => update({ name })} />
-            <TextField label="Arabic name" value={item.name_ar} dir="rtl" lang="ar" onChange={(name_ar) => update({ name_ar: name_ar || null })} />
             <SelectField
               label="Inside"
               value={item.parent_id ?? ""}

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Download, RotateCw, X } from "lucide-react";
 import { type FormEvent, useMemo, useState } from "react";
 
-import { api, type CatalogueDocument, type CatalogueFileFormat, type DocumentLanguage, type Release } from "../../api/client";
+import { api, type CatalogueDocument, type CatalogueFileFormat, type Release } from "../../api/client";
 import { errorMessage } from "../../api/errors";
 import {
   ActionGroup, Button, type Column, ConsequencePanel, DataTable, EmptyState, Lines, Section, Status, type StatusTone, TextField,
@@ -19,8 +19,6 @@ import { saveBlob, useCatalogueFile } from "../useEditing";
 import { ChangeTable } from "./ChangeTable";
 import { Said } from "./parts";
 
-// The portal reads English documents only (PRODUCT.md), so every document is sent as English.
-const ENGLISH: DocumentLanguage = "en";
 const MAX_FILES = 20;
 
 /**
@@ -238,9 +236,9 @@ function AddDocuments({ draft }: { draft: DraftHook }) {
     setSaid(null);
     setLines(null);
     if (several) {
-      draft.addDocuments.mutate({ files, language: ENGLISH }, { onSuccess: (result) => { setLines(result); done(); } });
+      draft.addDocuments.mutate({ files }, { onSuccess: (result) => { setLines(result); done(); } });
     } else {
-      draft.addDocument.mutate({ file: first, title: title.trim(), language: ENGLISH }, {
+      draft.addDocument.mutate({ file: first, title: title.trim() }, {
         onSuccess: (document) => {
           setSaid(document ? { text: `‘${document.title}’ was added and is being read.` } : null);
           done();

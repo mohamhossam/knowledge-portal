@@ -148,12 +148,6 @@ a.cat-chip:hover {
   line-height: var(--leading-tight);
 }
 
-.cat-record__arabic {
-  margin: 0;
-  font-family: var(--font-arabic);
-  line-height: var(--leading-arabic);
-}
-
 .cat-record__path {
   margin: 0;
   color: var(--color-ink-2);

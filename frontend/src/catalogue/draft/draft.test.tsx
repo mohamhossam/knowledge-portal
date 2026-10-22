@@ -18,7 +18,7 @@ afterEach(() => vi.restoreAllMocks());
 
 const draft = (extra: Partial<Release> = {}) => ({
   id: "d", name: "October", revision: 3, built_revision: 3, status: "draft", relationships: [], index_profile: "p", created_by: "fake-owner",
-  documents: [{ id: "v1", title: "Integration design", filename: "design.txt", language: "en", mime_type: "text/plain", uploaded_by: "fake-owner" }],
+  documents: [{ id: "v1", title: "Integration design", filename: "design.txt", mime_type: "text/plain", uploaded_by: "fake-owner" }],
   systems: [
     { id: "cwom", name: "CWOM", aliases: [], capabilities: [], components: [{ id: "milestones", name: "Milestone tracker", aliases: [] }], constraints: [] },
     { id: "bcrm", name: "BCRM", aliases: [], capabilities: [], components: [], constraints: [] },
@@ -323,7 +323,7 @@ describe("Decide", () => {
 describe("Sources", () => {
   it("adds several documents in one go and says what became of each", async () => {
     const files = [new File(["# Billing"], "billing.md", { type: "text/markdown" }), new File(["CRM"], "crm.txt", { type: "text/plain" })];
-    vi.spyOn(api, "addCatalogueDocuments").mockResolvedValue({
+    const add = vi.spyOn(api, "addCatalogueDocuments").mockResolvedValue({
       release: draft({ revision: 4 }),
       results: [
         { filename: "billing.md", outcome: "added", version_id: "v2" },
@@ -336,6 +336,8 @@ describe("Sources", () => {
     expect(screen.getByText("2 files chosen; each is titled by its file name.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Add the 2 files and read them" }));
     expect(await screen.findByText("1 of 2 files added.")).toBeInTheDocument();
+    // The portal is English only: an upload says nothing of its language.
+    expect(add).toHaveBeenCalledWith("d", { files: expect.any(Array), expectedRevision: 3 });
     expect(read).toHaveBeenCalledWith("d", "v2");
     expect(screen.getByText(/Not added: It can't be read./)).toBeInTheDocument();
   });

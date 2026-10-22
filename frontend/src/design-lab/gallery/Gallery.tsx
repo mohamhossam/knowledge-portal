@@ -147,7 +147,6 @@ function Foundations() {
         <p style={{ fontSize: "var(--text-h2)", fontWeight: "var(--weight-heading)" }}>Heading 2 · 20/680</p>
         <p>Body 15/400 for UI, 1.45 leading. The ledger rule sits under every head.</p>
         <p className="ds-num" style={{ fontStretch: "var(--stretch-numeral)" }}>Numerals 1,204 · 404 · 2026-10-08, condensed and tabular</p>
-        <p dir="rtl" lang="ar" style={{ fontSize: "var(--text-reading)" }}>يجب التحقق من العنوان قبل تفعيل الخدمة. نص عربي بخط Noto Sans Arabic وبتباعد أسطر أوسع.</p>
         <p style={{ fontSize: "var(--text-meta)", color: "var(--color-ink-2)" }}>Meta 14/400: the floor. No text is smaller.</p>
       </div>
       <div className="gallery-chart" aria-label="Chart palette" role="img">

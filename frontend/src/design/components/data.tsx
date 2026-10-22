@@ -94,7 +94,7 @@ export type Column<T> = {
   sortable?: boolean;
   /** Tabular, condensed numerals, aligned to the end. */
   numeric?: boolean;
-  /** Content of either language: each cell takes its own direction (§13). */
+  /** Free text: each cell takes its own direction (§13). */
   bidi?: boolean;
   width?: string;
 };

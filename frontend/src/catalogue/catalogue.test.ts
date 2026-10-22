@@ -13,7 +13,7 @@ const system = (id: string, name: string, extra: object = {}) => ({
 const release = {
   id: "r2", name: "September", revision: 2, status: "published", documents: [],
   systems: [
-    system("web", "B2B Web", { landscape_domain_id: "digital", aliases: ["web channel"], name_ar: "بوابة الأعمال" }),
+    system("web", "B2B Web", { landscape_domain_id: "digital", aliases: ["web channel"] }),
     system("cwom", "CWOM", {
       landscape_domain_id: "orchestration",
       components: [{ id: "m", name: "Milestone tracker", aliases: [] }],
@@ -65,7 +65,7 @@ describe("the systems index", () => {
 
   it("finds a system by any name it is known by, and says what matched", () => {
     expect(findSystems(book, "web channel").get("web")).toBe("Also called “web channel”");
-    expect(findSystems(book, "بوابة").get("web")).toBeNull();
+    expect(findSystems(book, "b2b").get("web")).toBeNull();
     expect(findSystems(book, "milestone tracker").get("cwom")).toBe("Component: Milestone tracker");
     expect(findSystems(book, "installation").get("cwom")).toBe("Matched by “installation milestones”");
     expect(findSystems(book, "nothing like it").size).toBe(0);

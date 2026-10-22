@@ -226,7 +226,6 @@
 /* Typography, space, motion, layers: theme-independent meanings */
 :root {
   --font-ui: var(--family-sans);
-  --font-arabic: var(--family-arabic);
   --font-code: var(--family-mono);
 
   --text-meta: var(--size-14);
@@ -251,7 +250,6 @@
   --leading-tight: var(--leading-125);
   --leading-ui: var(--leading-145);
   --leading-reading: var(--leading-165);
-  --leading-arabic: var(--leading-175);
 
   --gap-inline: var(--space-2);
   --gap-stack: var(--space-3);

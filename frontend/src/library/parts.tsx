@@ -20,7 +20,7 @@ export function Outcome({ text, failed, focusRef }: { text: string | null | unde
   );
 }
 
-/** Content of either language: isolated, with its language where it can be told (backlog K2). */
+/** Content from a document: isolated, so a title with punctuation reads in order. */
 export function Content({ text, children }: { text: string; children?: ReactNode }) {
   return <bdi>{children ?? text}</bdi>;
 }

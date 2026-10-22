@@ -41,12 +41,9 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
       // Choosing a system moves focus to its record; a fresh page load leaves it be.
       takeFocus={location.key !== "default"}
       meta={
-        system.name_ar || system.deprecated ? (
-          <>
-            {system.name_ar && <span lang="ar" dir="rtl">{system.name_ar}</span>}
-            {system.deprecated && <Retired successor={replacement && { name: replacement.name, href: `${base}/systems/${encodeURIComponent(replacement.id)}` }} />}
-          </>
-        ) : undefined
+        system.deprecated
+          ? <Retired successor={replacement && { name: replacement.name, href: `${base}/systems/${encodeURIComponent(replacement.id)}` }} />
+          : undefined
       }
       lead={system.description || undefined}
       actions={
@@ -459,7 +456,6 @@ function Components({ system }: { system: CatalogueSystem }) {
       cell: (component) => (
         <>
           {component.name}
-          {component.name_ar && <span className="cat-detail" lang="ar" dir="rtl">{component.name_ar}</span>}
           {component.aliases.length > 0 && <span className="cat-detail">Also called <bdi>{component.aliases.join(", ")}</bdi></span>}
         </>
       ),

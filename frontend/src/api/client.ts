@@ -130,7 +130,6 @@ export type CorpusFilters = {
 export type FindingFilters = { kind?: FindingKind; age?: FindingAge; ownerId?: string };
 type CitedPassage = Schemas["DocumentPassageResponse"];
 export type CatalogueDocument = Schemas["KnowledgeDocumentVersionResponse"];
-export type DocumentLanguage = "en" | "ar" | "mixed";
 export type Person = Schemas["PersonSchema"];
 export type ValueStream = Schemas["ValueStreamSchema"];
 export type OrgProduct = Schemas["ProductSchema"];
@@ -291,19 +290,17 @@ export const api = {
   discardDraft: async (releaseId: string, expectedRevision: number) => {
     await send(releasePath(releaseId), { method: "DELETE", body: JSON.stringify({ expected_revision: expectedRevision }) });
   },
-  addCatalogueDocument: (releaseId: string, input: { file: File; title: string; language: DocumentLanguage; expectedRevision: number }) => {
+  addCatalogueDocument: (releaseId: string, input: { file: File; title: string; expectedRevision: number }) => {
     const body = new FormData();
     body.set("file", input.file);
     body.set("title", input.title);
-    body.set("language", input.language);
     body.set("expected_revision", String(input.expectedRevision));
     return apiRequest<Release>(`${releasePath(releaseId)}/documents`, { method: "POST", body });
   },
   /** Several files at once: each is added or refused with its reason. */
-  addCatalogueDocuments: (releaseId: string, input: { files: File[]; language: DocumentLanguage; expectedRevision: number }) => {
+  addCatalogueDocuments: (releaseId: string, input: { files: File[]; expectedRevision: number }) => {
     const body = new FormData();
     for (const file of input.files) body.append("files", file);
-    body.set("language", input.language);
     body.set("expected_revision", String(input.expectedRevision));
     return apiRequest<BatchUpload>(`${releasePath(releaseId)}/documents/batch`, { method: "POST", body });
   },

@@ -78,7 +78,7 @@ describe("getting ready to publish", () => {
       base_release_id: "a", draft_release_id: "b",
       changes: [
         { item: "relationship", change: "removed", key: "r", label: "CWOM → BSCS", fields: [] },
-        { item: "system", change: "changed", key: "cwom", label: "CWOM", fields: ["name_ar", "landscape_domain"] },
+        { item: "system", change: "changed", key: "cwom", label: "CWOM", fields: ["aliases", "landscape_domain"] },
         { item: "system", change: "added", key: "hub", label: "Order Hub", fields: [] },
       ],
     });
@@ -86,7 +86,7 @@ describe("getting ready to publish", () => {
       ["Systems", ["added", "changed"]],
       ["Connections", ["removed"]],
     ]);
-    expect(fieldsInWords(["name_ar", "landscape_domain"])).toBe("Arabic name and where it sits");
+    expect(fieldsInWords(["aliases", "landscape_domain"])).toBe("other names and where it sits");
     // A connection is a sentence, never an arrow.
     // Its kind is in its key (ADR-0119), so even a removed one says how they were linked.
     const added = { item: "relationship" as const, change: "added" as const, key: "cwom->bscs:transfers_data_to", label: "CWOM → BSCS: Closure", fields: [] };

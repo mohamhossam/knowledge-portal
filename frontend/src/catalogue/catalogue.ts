@@ -174,8 +174,8 @@ export function systemGroups(book: Catalogue): SystemGroup[] {
 const fold = (text: string) => text.normalize("NFKC").toLocaleLowerCase().trim();
 
 /**
- * Which systems a curator could mean: by name, Arabic name, alias, component,
- * capability or matching phrase. Each match says what matched, unless it was
+ * Which systems a curator could mean: by name, alias, component, capability
+ * or matching phrase. Each match says what matched, unless it was
  * the name itself.
  */
 export function findSystems(book: Catalogue, query: string): Map<string, string | null> {
@@ -184,12 +184,12 @@ export function findSystems(book: Catalogue, query: string): Map<string, string 
   if (!wanted) return found;
   const hit = (text: string | null | undefined) => !!text && fold(text).includes(wanted);
   for (const system of book.release.systems) {
-    if (hit(system.name) || hit(system.name_ar)) {
+    if (hit(system.name)) {
       found.set(system.id, null);
       continue;
     }
     const alias = system.aliases.find(hit);
-    const component = system.components.find((item) => hit(item.name) || hit(item.name_ar) || item.aliases.some(hit));
+    const component = system.components.find((item) => hit(item.name) || item.aliases.some(hit));
     const capability = system.capabilities.find((item) => hit(item.name));
     const phrase = system.capabilities.flatMap((item) => item.triggers).find(hit);
     const reason = alias !== undefined

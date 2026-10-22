@@ -7,15 +7,14 @@ import { type DomainRow, domainTree } from "./catalogue";
 import { DomainsEdit } from "./DraftEdits";
 import { useCatalogueContext } from "./useCatalogue";
 
-type Domain = { id: string; name: string; name_ar?: string | null; description?: string | null; parent_id?: string | null };
+type Domain = { id: string; name: string; description?: string | null; parent_id?: string | null };
 
-/** A domain's name, set in by its depth, with its Arabic name and what it covers under it. */
+/** A domain's name, set in by its depth, with what it covers under it. */
 function DomainName({ row }: { row: DomainRow<Domain> }) {
   const { domain, depth } = row;
   return (
     <span className={`cat-depth cat-depth--${Math.min(depth, 2)}`}>
       <span className={depth === 0 ? "cat-name" : undefined}>{domain.name}</span>
-      {domain.name_ar && <span className="cat-detail" lang="ar" dir="rtl">{domain.name_ar}</span>}
       {domain.description && <span className="cat-detail" dir="auto">{domain.description}</span>}
     </span>
   );

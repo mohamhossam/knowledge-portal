@@ -28,7 +28,7 @@ export function ConsequencePanel({
   busyLabel = "Working…",
   panelRef,
 }: {
-  /** May hold a name (wrap it in <bdi> so a title in either language reads in order). */
+  /** May hold a name (wrap it in <bdi> so a title with punctuation reads in order). */
   title: ReactNode;
   happens: ReactNode;
   affects?: ReactNode;
