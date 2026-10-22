@@ -311,8 +311,8 @@ Each object lists its attributes, relationships, actions (with who can act) and 
   - *Rejected*.
 
   Decisions are final in the API.
-- **Undo:** the UI offers a **client-side delayed commit with an Undo window** [client]. A
-  true reopen is a **backend gap**. "Accepted in bulk" is known only in the session; recording
+- **Undo:** none today: a decision is sent at once (backlog BG3). The planned client-side
+  delayed commit with an Undo window was never built. A true reopen is a **backend gap**. "Accepted in bulk" is known only in the session; recording
   it is a **backend gap**.
 
 ### Evidence [`DocumentEvidenceBlock`, `SuggestionView`]
@@ -412,7 +412,7 @@ Each object lists its attributes, relationships, actions (with who can act) and 
 |---|---|---|
 | BG1 | No job-list endpoint | The Jobs panel is derived from the objects plus this session's jobs |
 | BG2 | Approval does not record review coverage (seen passages) | "Seen" is kept locally for the reviewer; approval shows coverage, but does not store it |
-| BG3 | Suggestion decisions cannot be reopened | Client-side delayed commit with an Undo window |
+| BG3 | Suggestion decisions cannot be reopened | Not built (backlog BG3): decisions are sent at once; focus mode commits at its summary |
 | BG4 | Bulk acceptance is not marked in provenance | Shown during the session only |
 | BG5 | The organisation audit has no field diff | Events link to their subject |
 | BG6 | Check results are not stored | Kept for the session, and marked stale when the draft's revision changes |

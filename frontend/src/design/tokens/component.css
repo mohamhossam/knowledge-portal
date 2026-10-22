@@ -92,11 +92,6 @@
   --panel-pad: var(--space-4);
   --panel-danger-border: var(--color-danger);
 
-  /* State line (mode and status, sticky) */
-  --stateline-bg: var(--color-surface-2);
-  --stateline-proof-bg: var(--color-proof);
-  --stateline-border: var(--color-rule);
-
   /* Split pane (from direction C) */
   --split-pane-width: clamp(22rem, 28vw, 34rem);
   --split-pane-bg: var(--color-surface-1);
@@ -113,10 +108,6 @@
   --overlay-shadow: var(--elevation-overlay);
   --overlay-radius: var(--radius-overlay);
   --scrim: var(--color-scrim);
-
-  /* Toast (undo only) */
-  --toast-bg: var(--color-ink);
-  --toast-fg: var(--color-surface);
 
   /* Skeleton: tint only, no shimmer */
   --skeleton-bg: var(--color-surface-2);

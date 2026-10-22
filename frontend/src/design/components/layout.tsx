@@ -1,6 +1,6 @@
 import "./layout.css";
 
-import { ChevronLeft, ChevronRight, Info, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Info, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import {
   type ComponentType,
   type KeyboardEvent,
@@ -14,7 +14,7 @@ import {
 } from "react";
 
 import etisalatLogo from "../assets/etisalat-logo-white.svg";
-import { rovingKeyDown, useFillHeight, useFocusAfterRender, useStickySize } from "../hooks";
+import { useFillHeight, useFocusAfterRender, useStickySize } from "../hooks";
 import { Badge, Status, type StatusTone } from "./feedback";
 
 function useMediaQuery(query: string): boolean {
@@ -361,7 +361,7 @@ export function PageHeader({
   actions?: ReactNode;
   /** Where this page sits (a Breadcrumbs): behind "About this page". */
   breadcrumbs?: ReactNode;
-  /** Tabs, sub-navigation or a state line under the head. */
+  /** Tabs or sub-navigation under the head. */
   children?: ReactNode;
 }) {
   const tabTitle = documentTitle ?? (typeof title === "string" ? title : undefined);
@@ -443,21 +443,6 @@ function PageAbout({ children }: { children: ReactNode }) {
       <div id={id} className="ds-pageabout__panel" hidden={!open}>
         {children}
       </div>
-    </div>
-  );
-}
-
-/**
- * The sticky line that says which mode and state you're in: a draft's steps,
- * or a version that isn't in service ("proof", on its own calm tint). It
- * publishes its height so focus never hides under it.
- */
-export function StateLine({ tone = "plain", children }: { tone?: "plain" | "proof"; children: ReactNode }) {
-  const line = useRef<HTMLDivElement>(null);
-  useStickySize(line, "--sticky-state");
-  return (
-    <div ref={line} className={`ds-stateline ds-stateline--${tone}`} role="status">
-      {children}
     </div>
   );
 }
@@ -570,15 +555,6 @@ export function Tabs<T extends string>({
   );
 }
 
-/** ARIA toolbar: one tab stop; ← → move between its controls. */
-export function Toolbar({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div role="toolbar" aria-label={label} className="ds-toolbar" onKeyDown={(event) => rovingKeyDown(event, "button,a[href],input,select", "horizontal")}>
-      {children}
-    </div>
-  );
-}
-
 /**
  * The list and its record (UX rebuild, phase 1): once the page is wide enough
  * the list and the record sit side by side and fill the window down to the
@@ -595,32 +571,6 @@ export function SplitPane({ list, pane, paneLabel }: { list: ReactNode; pane: Re
         {pane}
       </aside>
     </div>
-  );
-}
-
-/** Pages of a long list; the current page is marked and said. */
-export function Pagination({ page, pages, onPage, label = "Pages" }: { page: number; pages: number; onPage: (page: number) => void; label?: string }) {
-  if (pages <= 1) return null;
-  const shown = Array.from({ length: pages }, (_, i) => i + 1).filter((n) => n === 1 || n === pages || Math.abs(n - page) <= 1);
-  return (
-    <nav className="ds-pagination" aria-label={label}>
-      <button type="button" className="ds-pagination__step" disabled={page <= 1} onClick={() => onPage(page - 1)}>
-        <ChevronLeft size={14} aria-hidden="true" /> Previous
-      </button>
-      <ol>
-        {shown.map((n, i) => (
-          <li key={n}>
-            {i > 0 && n - shown[i - 1]! > 1 && <span aria-hidden="true" className="ds-pagination__gap">…</span>}
-            <button type="button" className="ds-pagination__page" aria-label={`Page ${n}`} aria-current={n === page ? "page" : undefined} onClick={() => onPage(n)}>
-              {n}
-            </button>
-          </li>
-        ))}
-      </ol>
-      <button type="button" className="ds-pagination__step" disabled={page >= pages} onClick={() => onPage(page + 1)}>
-        Next <ChevronRight size={14} aria-hidden="true" />
-      </button>
-    </nav>
   );
 }
 

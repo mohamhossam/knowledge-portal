@@ -586,22 +586,6 @@
   }
 }
 
-.ds-stateline {
-  position: sticky;
-  inset-block-start: var(--sticky-top);
-  z-index: var(--z-sticky);
-  padding: var(--space-2) var(--space-3);
-  background: var(--stateline-bg);
-  border: var(--rule-hair) solid var(--stateline-border);
-  font-weight: var(--weight-strong);
-}
-
-.ds-stateline--proof {
-  background: var(--stateline-proof-bg);
-  border-style: dashed;
-  border-color: var(--color-rule-strong);
-}
-
 .ds-breadcrumbs ol {
   display: flex;
   flex-wrap: wrap;
@@ -672,13 +656,6 @@
   padding-block-start: var(--space-4);
 }
 
-.ds-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
 /* List and record */
 .ds-split {
   display: grid;
@@ -727,54 +704,6 @@
   gap: var(--space-3);
   padding: var(--space-4);
   background: var(--split-pane-bg);
-}
-
-.ds-pagination {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.ds-pagination ol {
-  display: flex;
-  gap: var(--space-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.ds-pagination__page,
-.ds-pagination__step {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-block-size: 2rem;
-  min-inline-size: 2rem;
-  justify-content: center;
-  padding-inline: var(--space-2);
-  border: var(--rule-hair) solid var(--color-rule);
-  border-radius: var(--radius-control);
-  background: var(--color-surface);
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-}
-
-.ds-pagination__page[aria-current="page"] {
-  background: var(--color-selected);
-  color: var(--color-on-selected);
-  border-color: var(--color-action);
-  font-weight: var(--weight-strong);
-}
-
-.ds-pagination__step:disabled {
-  color: var(--color-ink-3);
-  cursor: default;
-}
-
-.ds-pagination__gap {
-  padding-inline: var(--space-1);
-  color: var(--color-ink-3);
 }
 
 /* Sections: the ledger rule carries every view */
@@ -877,7 +806,6 @@
 @media (max-width: 40rem), (max-height: 30rem) {
   .ds-topbar,
   .ds-sidebar,
-  .ds-stateline,
   .ds-stickyfoot,
   .ds-bulkbar {
     position: static;

@@ -21,20 +21,15 @@ import {
   Combobox,
   ConsequencePanel,
   DataTable,
-  DecisionButtons,
   Dialog,
-  DiffView,
   Drawer,
   EmptyState,
   EvidenceQuote,
   FilterStrip,
   HelpContent,
-  ImpactPanel,
   JobTray,
   MastheadButton,
   PageHeader,
-  Pagination,
-  ProvenanceTrail,
   RadioGroup,
   SearchDialog,
   SearchTrigger,
@@ -44,16 +39,12 @@ import {
   Skeleton,
   type Sort,
   SplitPane,
-  StateLine,
   Status,
   SubNav,
   Suggested,
   Tabs,
   TextArea,
   TextField,
-  Toggletip,
-  Toolbar,
-  UndoToast,
   Upload,
 } from "../../design/components";
 import { useDisclosure } from "../../design/hooks";
@@ -182,20 +173,15 @@ function ShellAndPage() {
         >
           <SubNav label="Document" items={[{ href: "#", label: "Review", current: true }, { href: "#", label: "Versions" }, { href: "#", label: "Cited by", count: 7 }, { href: "#", label: "Ownership" }]} />
         </PageHeader>
-        <StateLine>Draft 'October integration update' · 18 to decide · Not built · Not checked</StateLine>
-        <StateLine tone="proof">You're reading a replaced version, 'Initial catalogue'. · <a href="#">Read the version in service</a></StateLine>
         <Tabs label="Draft view" tabs={[{ id: "changes", label: "Changes" }, { id: "check", label: "Check" }]} selected={tab} onSelect={setTab}>
           <p>{tab === "changes" ? "Changes against the version in service." : "Build and sample checks."}</p>
         </Tabs>
-        <Toolbar label="Draft actions"><Button>Rename…</Button><Button>Download as Excel</Button><Button variant="quiet" icon={<Trash2 size={14} />}>Delete the draft…</Button></Toolbar>
-        <Pagination page={2} pages={9} onPage={() => {}} />
       </div>
     </Section>
   );
 }
 
 function ActionsAndStatus() {
-  const [undo, setUndo] = useState(true);
   return (
     <Section title="Actions and status">
       <div id="actions" className="gallery-stack">
@@ -213,7 +199,6 @@ function ActionsAndStatus() {
           <Status tone="attention">Needs attention</Status><Status tone="held">Held</Status><Status tone="stopped">Stopped</Status>
         </p>
         <p className="gallery-row"><a href="#">Your work<Badge count={6} label="need you" /></a> <Suggested basis="stated" /> <Suggested basis="inferred" detail="Model fake-catalogue-extractor" /></p>
-        {undo && <UndoToast message="Rejected: Adds the system Dynamics CRM." onUndo={() => setUndo(false)} onDismiss={() => setUndo(false)} />}
         <EmptyState title="Nothing needs you." action={<Button>See everyone's work</Button>}>No re-confirmations are due until 3 Nov.</EmptyState>
         <Skeleton rows={3} label="Reading the library" />
         <JobTray jobs={[
@@ -284,8 +269,6 @@ function DataAndReview() {
             active ? (
               <>
                 <h3 dir="auto">{active.title}</h3>
-                <ProvenanceTrail hops={[{ label: "Version", value: "2 · eligibility.xlsx" }, { label: "Uploaded by", value: active.owner }]} />
-                <DecisionButtons kind="passage" subject={`passage 1 of ${active.title}`} onDecide={() => {}} />
               </>
             ) : null
           }
@@ -293,8 +276,6 @@ function DataAndReview() {
         <BulkActionBar count={selected.size} noun={["document", "documents"]} onClear={() => setSelected(new Set())}>
           <Button>Transfer {selected.size}…</Button>
         </BulkActionBar>
-        <DecisionButtons kind="suggestion" subject="Adds the system Dynamics CRM" onDecide={() => {}} />
-        <DecisionButtons kind="suggestion" subject="Depends on CWOM" state="Accepted by Amina Owner · 8 Oct" onDecide={() => {}} />
       </div>
     </Section>
   );
@@ -305,20 +286,7 @@ function CompareAndProvenance() {
   return (
     <Section title="Compare, impact, provenance">
       <div id="compare" className="gallery-stack">
-        <DiffView
-          fromLabel="Initial catalogue"
-          toLabel="October integration update"
-          changes={[
-            { key: "oh", kind: "added", item: "System", label: "Order Hub", origin: "Suggestion, accepted by Amina Owner" },
-            { key: "cw", kind: "changed", item: "System", label: "CWOM", fields: [{ name: "Owner", from: "Fulfilment squad", to: "Care squad" }, { name: "Landscape area", from: "Order orchestration", to: "Service assurance" }], origin: "Hand edit by Ravi Reviewer" },
-            { key: "ad", kind: "removed", item: "System", label: "Legacy ADSL gateway", origin: "Catalogue file" },
-          ]}
-        />
-        <ImpactPanel title="Mapping impact" state={{ kind: "checked", at: "14:02" }} counts={[{ label: "Requirements that would map differently", value: 3 }, { label: "Features", value: 1 }]} caveat="Only requirements you can see." />
-        <ImpactPanel title="Cited by" state={{ kind: "unknown", why: "Couldn't ask Requirement AI." }} />
-        <ImpactPanel title="Check" state={{ kind: "stale", at: "14:02" }} onCheck={() => {}} />
         <EvidenceQuote text={"System: Order Hub\nCaptures business orders from the web (sample)."} quote="System: Order Hub" source="Integration design (sample) · version 2 · lines 1–12" />
-        <ProvenanceTrail hops={[{ label: "Fact", value: "Order Hub captures business orders" }, { label: "Evidence", value: "lines 1–12", href: "#" }, { label: "Document", value: "Integration design, version 2", href: "#" }, { label: "Catalogue version", value: "October integration update" }, { label: "Decided by", value: "Amina Owner, 8 Oct" }]} />
         {open ? (
           <ConsequencePanel
             tone="danger"
@@ -348,7 +316,6 @@ function OverlaysAndHelp() {
   return (
     <Section title="Overlays and help">
       <div id="overlays" className="gallery-stack">
-        <p>Search index for tables <Toggletip label="Search index for tables">A second index that keeps table rows together, so searches over tables find whole rows.</Toggletip></p>
         <div><Button onClick={() => setDialog(true)}>Open the 409 dialog</Button></div>
         <Dialog open={dialog} title="Someone changed this draft" onClose={() => setDialog(false)} actions={<><Button variant="primary" onClick={() => setDialog(false)}>Reload</Button><Button onClick={() => setDialog(false)}>Review their change</Button></>}>
           Reload to see their change; your unsaved decisions stay listed.

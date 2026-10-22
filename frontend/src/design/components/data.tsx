@@ -1,6 +1,6 @@
 import "./data.css";
 
-import { ArrowDown, ArrowUp, ArrowUpDown, Check, Minus, Plus, RefreshCw } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Check } from "lucide-react";
 import { type KeyboardEvent, type MouseEvent, type ReactNode, type RefObject, useEffect, useId, useRef, useState } from "react";
 
 import { useFocusAfterRender, useStickySize } from "../hooks";
@@ -290,37 +290,6 @@ export function DataTable<T>({
 }
 
 /**
- * The row's decision, in words with its key: a passage (include, exclude,
- * edit) or a suggestion (accept, reject, accept with edits). Shows the decided
- * state instead of buttons once decided.
- */
-export function DecisionButtons({
-  kind,
-  subject,
-  state,
-  onDecide,
-}: {
-  kind: "passage" | "suggestion";
-  subject: string;
-  state?: string;
-  onDecide: (decision: "include" | "exclude" | "edit" | "accept" | "reject" | "accept-edits") => void;
-}) {
-  const options = kind === "passage"
-    ? ([["include", "Include", "i"], ["exclude", "Exclude", "x"], ["edit", "Edit", "e"]] as const)
-    : ([["accept", "Accept", "a"], ["reject", "Reject", "r"], ["accept-edits", "Accept with edits", "e"]] as const);
-  if (state) return <span className="ds-decision__state">{state}</span>;
-  return (
-    <span className="ds-decision" role="group" aria-label={`Decide ${subject}`}>
-      {options.map(([id, label, key]) => (
-        <button key={id} type="button" className="ds-button ds-button--secondary" tabIndex={-1} aria-keyshortcuts={key} onClick={() => onDecide(id)}>
-          {label}
-        </button>
-      ))}
-    </span>
-  );
-}
-
-/**
  * §2.2: a grid's keys, said once under it, with the way to every shortcut
  * (WCAG 3.2.6). Each key is its own <kbd>, so "↑ ↓ j k" reads as four keys.
  */
@@ -367,61 +336,5 @@ export function BulkActionBar({ count, noun, children, onClear }: { count: numbe
         <button type="button" className="ds-button ds-button--link" onClick={onClear}>Clear selection</button>
       </div>
     </>
-  );
-}
-
-export type Change = {
-  key: string;
-  kind: "added" | "changed" | "removed";
-  item: string;
-  label: string;
-  fields?: { name: string; from: ReactNode; to: ReactNode }[];
-  /** Suggestion by …, hand edit, catalogue file (§9). */
-  origin?: ReactNode;
-};
-
-const CHANGE: Record<Change["kind"], { word: string; icon: typeof Plus }> = {
-  added: { word: "Added", icon: Plus },
-  changed: { word: "Changed", icon: RefreshCw },
-  removed: { word: "Removed", icon: Minus },
-};
-
-/**
- * Compare archetype body: counts first, then each change with its kind in an
- * icon and a word (never colour alone, never brand red), from → to values, and
- * origin. Removed items keep full weight.
- */
-export function DiffView({ changes, fromLabel, toLabel, empty = "No differences." }: { changes: Change[]; fromLabel: string; toLabel: string; empty?: string }) {
-  const id = useId();
-  if (changes.length === 0) return <p className="ds-diff__empty">{empty}</p>;
-  const counts = (["added", "changed", "removed"] as const).map((kind) => `${changes.filter((c) => c.kind === kind).length} ${kind}`);
-  return (
-    <div className="ds-diff">
-      <p id={`${id}-sum`} className="ds-diff__summary" role="status">
-        From <bdi>{fromLabel}</bdi> to <bdi>{toLabel}</bdi>: {counts.join(" · ")}
-      </p>
-      <ul className="ds-diff__list" aria-describedby={`${id}-sum`}>
-        {changes.map((change) => {
-          const { word, icon: Icon } = CHANGE[change.kind];
-          return (
-            <li key={`${change.kind}-${change.key}`} className={`ds-diff__item ds-diff__item--${change.kind}`}>
-              <span className="ds-diff__kind"><Icon size={14} aria-hidden="true" /> {word}</span>
-              <span className="ds-diff__what">{change.item}: <bdi>{change.label}</bdi></span>
-              {change.fields && change.fields.length > 0 && (
-                <dl className="ds-diff__fields">
-                  {change.fields.map((field) => (
-                    <div key={field.name}>
-                      <dt>{field.name}</dt>
-                      <dd><bdi>{field.from}</bdi>{" "}<span aria-hidden="true">→</span>{" "}<span className="ds-visually-hidden">changed to</span>{" "}<bdi>{field.to}</bdi></dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
-              {change.origin && <span className="ds-diff__origin">{change.origin}</span>}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
   );
 }

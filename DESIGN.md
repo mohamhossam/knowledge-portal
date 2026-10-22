@@ -210,9 +210,8 @@ is paired with an icon and a word.
 ### Neutral
 
 - **Page White** (#ffffff): the page and every working surface.
-- **Paper** (#fbfaf7) and **Sand** (#f3f2ec): panes, consequence panels, state lines and bands.
-- **e& Beige** (#e6e6dc): the proof tint (a catalogue version not in service) and the evidence
-  highlight.
+- **Paper** (#fbfaf7) and **Sand** (#f3f2ec): panes, consequence panels and bands.
+- **e& Beige** (#e6e6dc): the evidence highlight.
 - **Warm Ink** (#1f1b1a): body text and the ledger rule.
 - **Warm Ink 2** (#4a4542): secondary text, column heads.
 - **e& Grey** (#636363): tertiary text, only on white or sand-or-lighter (6.0:1 on white).
@@ -293,7 +292,7 @@ to the end. Weight never shouts a date.
 - **Spacing:** a 4px grid (4, 8, 12, 16, 20, 24, 32, 48), with 24px between sections.
 - **Density:** comfortable (44px rows, 15px text) or compact (32px rows, 14px text), set per
   person. Automatic is compact on review desks.
-- **Sticky regions:** each sticky region (masthead, state line, bulk or save bar) publishes its
+- **Sticky regions:** each sticky region (masthead, table head, bulk or save bar) publishes its
   measured height. Scroll padding uses those heights, so a focused row is never hidden.
 
 ## Elevation & Depth
@@ -305,8 +304,8 @@ Flat by default. Depth comes from rules and tints:
 - Paper and Sand bands;
 - the maroon-mist selection.
 
-One shadow exists, for things that genuinely float above the page: drawers, the combobox listbox,
-the toggletip, the dialog, and the undo toast.
+One shadow exists, for things that genuinely float above the page: drawers, the combobox listbox
+and the dialog.
 
 ### Shadow Vocabulary
 

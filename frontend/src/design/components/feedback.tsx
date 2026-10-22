@@ -1,6 +1,6 @@
 import "./feedback.css";
 
-import { AlertTriangle, Check, Clock, Flag, Lightbulb, Loader, ShieldAlert, Square, X } from "lucide-react";
+import { AlertTriangle, Check, Clock, Flag, Lightbulb, Loader, ShieldAlert, Square } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { type JobState, JOB_WORDS } from "../words";
@@ -100,25 +100,6 @@ export function Skeleton({ rows = 5, label }: { rows?: number; label: string }) 
     </div>
   );
 }
-
-/**
- * §4: the only toast: an undo window for a decision the API can't reopen.
- * Polite, never steals focus; `z` (in its grid) or the button undoes.
- */
-export function UndoToast({ message, onUndo, onDismiss }: { message: ReactNode; onUndo: () => void; onDismiss?: () => void }) {
-  return (
-    <div className="ds-toast" role="status">
-      <span>{message}</span>
-      <Button variant="secondary" onClick={onUndo}>Undo (z)</Button>
-      {onDismiss && (
-        <button type="button" className="ds-toast__close" aria-label="Dismiss" onClick={onDismiss}>
-          <X size={14} aria-hidden="true" />
-        </button>
-      )}
-    </div>
-  );
-}
-
 
 const JOB_TONE: Record<JobState, StatusTone> = {
   waiting: "neutral",

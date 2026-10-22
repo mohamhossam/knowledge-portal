@@ -73,27 +73,6 @@
   gap: var(--space-4);
 }
 
-.ds-toggletip {
-  position: relative;
-  display: inline-flex;
-}
-
-.ds-toggletip__bubble {
-  position: absolute;
-  inset-block-start: calc(100% + var(--space-1));
-  inset-inline-start: 0;
-  z-index: var(--z-drawer);
-  inline-size: max-content;
-  max-inline-size: 22rem;
-  padding: var(--space-2) var(--space-3);
-  background: var(--overlay-bg);
-  color: var(--color-ink);
-  border: var(--rule-hair) solid var(--color-rule-strong);
-  border-radius: var(--overlay-radius);
-  box-shadow: var(--overlay-shadow);
-  font-size: var(--text-meta);
-}
-
 .ds-shortcuts,
 .ds-help {
   display: grid;

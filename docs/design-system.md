@@ -40,8 +40,8 @@ every component's API, states, keyboard and accessibility behaviour.
 | Layer | File | Holds | May read |
 |---|---|---|---|
 | Primitive | `tokens/primitive.css` | e& primitives (the brief's values, unverified), derived neutrals, charcoal, maroon family, state hues, chart palettes, the architecture diagrams' palettes (light only), type, space, radius, motion, layers | — |
-| Semantic | `tokens/semantic.css` | What a value is *for*: surfaces, ink, rules, action, selected, focus, brand accent, masthead, states, highlight, proof, charts, architecture diagrams (layer tints and inks, footprint, intensity, amounts; light only); type roles; density; reduced motion | primitives |
-| Component | `tokens/component.css` | Per-component knobs: button, field, focus ring, masthead and rail, table, badge, suggested, panel, state line, split pane, overlays, toast, skeleton, quote | semantic |
+| Semantic | `tokens/semantic.css` | What a value is *for*: surfaces, ink, rules, action, selected, focus, brand accent, masthead, states, highlight, charts, architecture diagrams (layer tints and inks, footprint, intensity, amounts; light only); type roles; density; reduced motion | primitives |
+| Component | `tokens/component.css` | Per-component knobs: button, field, focus ring, masthead and rail, table, badge, suggested, panel, split pane, overlays, skeleton, quote | semantic |
 
 **Scoping rule.** A custom property's `var()` resolves *where it is declared*. That is why:
 
@@ -92,7 +92,6 @@ This is generated from the shipped token CSS. The same pairs are asserted in `to
 | Text | `info` on `info-bg` | #2b5a6e / #e4eef1 → **6.38** | #9cc4d4 / #1d2b31 → **7.81** | 4.5 ✓ |
 | Text | `info` on `surface` | #2b5a6e / #ffffff → **7.53** | #9cc4d4 / #1c1917 → **9.38** | 4.5 ✓ |
 | Text | `ink` on `highlight` | #1f1b1a / #e6e6dc → **13.59** | #ede8e1 / #4a443f → **7.87** | 4.5 ✓ |
-| Text | `ink` on `proof` | #1f1b1a / #e6e6dc → **13.59** | #ede8e1 / #35302c → **10.70** | 4.5 ✓ |
 | Non-text | `rule-strong` on `surface` | #8a8579 / #ffffff → **3.68** | #857d74 / #1c1917 → **4.32** | 3.0 ✓ |
 | Non-text | `rule-strong` on `surface-2` | #8a8579 / #f3f2ec → **3.28** | #857d74 / #2a2623 → **3.70** | 3.0 ✓ |
 | Non-text | `focus` on `surface` | #4b0f1e / #ffffff → **15.15** | #e3b3bd / #1c1917 → **9.53** | 3.0 ✓ |
@@ -161,22 +160,19 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   800px the portal's name leaves the bar (the home link still says it) and a long label ends
   in an ellipsis, so everything stays on one line.
 - **`PageHeader`:** one line: the h1 (the record's own name), then `meta` (status as a pill,
-  then facts, a dot between each), then `actions` at the end; `children` (tabs or a state
-  line) take a slim row under it.
+  then facts, a dot between each), then `actions` at the end; `children` (tabs or
+  sub-navigation) take a slim row under it.
   - The h1 has `tabindex=-1` and the document title is set first. From a 48rem-wide main area
     the line never wraps: the facts give way first, then the name ends in an ellipsis, with the
     whole name in its `title` (screen readers always read all of it).
   - `breadcrumbs`, `lead` and `provenance` sit behind an "About this page" button (an icon
     button with a hidden name, `aria-expanded`), so where a page sits and what it is for are
     one press away without costing rows. Esc or a press outside closes it.
-- **`StateLine`:** `plain` or `proof` (a replaced version, on the beige tint). It is sticky,
-  `role="status"`, and publishes `--sticky-state`.
 - **`Breadcrumbs`:** the last crumb is `aria-current="page"`. Record pages put them in
   `PageHeader`'s `breadcrumbs` slot: "Library › the document › Versions".
 - **`SubNav`:** navigation that changes the URL (`aria-current`).
 - **`Tabs`:** ARIA tabs for the same URL. ← → move between tabs, Home/End jump, there is one tab
   stop, and focus follows the selection.
-- **`Toolbar`:** `role="toolbar"`, roving with ← →.
 - **`SplitPane`:** the list beside the detail pane once the main area is 60rem wide, stacked
   below that. Side by side, it fills the window from where it starts (`--split-top`, measured)
   to the sticky foot, and the list and the pane each scroll on their own; the list's table
@@ -201,7 +197,6 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
     into view, so a shared link opens on the record, not the list; a fresh load leaves focus be.
   - **`RecordPlaceholder`:** the record side with nothing chosen: what the list holds, in a line,
     and a useful summary under it (counts, the version's connections), never an empty pane.
-- **`Pagination`:** `aria-current` on the current page; every page button is named "Page n".
 - **`Section`:** the ledger rule and an h2 with an optional count; a labelled `region`.
 
 ### Global search (`search.tsx`)
@@ -239,8 +234,6 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   in the source", plus optional detail. It reads without colour.
 - **`EmptyState`:** what this is, why it is empty, and what to do (§8).
 - **`Skeleton`:** a tint only with no shimmer; `role="status"` and `aria-busy`.
-- **`UndoToast`:** the only toast, used for the delayed-commit window (§4). It is polite and never
-  takes focus.
 - **`JobStatus`, `JobTray`:** jobs ordered by need. Each shows its object, timing, cause and fix,
   with retry and stop named for their job (§6). A job's `busy` press says "Trying again…" or
   "Stopping…" (`aria-busy`) and ignores a second press.
@@ -287,16 +280,8 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
     - Shift+↑/↓ extends the selection.
 
     Grid mode works with NVDA and JAWS, which switch to focus mode inside a grid (§2.1).
-- **`DecisionButtons`:**
-  - **Passage:** include, exclude, edit.
-  - **Suggestion:** accept, reject, accept with edits.
-  - The group is named for its row, and each button has `aria-keyshortcuts`. Once decided, the
-    buttons are replaced by the decided state.
 - **`BulkActionBar`:** appears only with a selection. It says the count, is sticky and measured
   (`--sticky-bottom`), and has "Clear selection".
-- **`DiffView`:** counts first; then each change shows its kind as an icon and a word, from → to
-  values ("changed to" for screen readers), and its origin. Removed items keep full weight, and
-  red is never used.
 
 ### Compare, impact and provenance (`evidence.tsx`)
 
@@ -306,14 +291,36 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   - **Focus:** moves in on appearance; Esc is the safe default.
   - **`tone="danger"`:** rust, with an icon.
   - **Shape:** the ledger rule on top and a 1px frame; never a thick side border.
-- **`ImpactPanel`:** five states: not checked, checking, checked at, out of date (stale), and
-  unknown. Unknown says "unknown, not zero". The panel shows counts first, named items, then the
-  caveat (§11).
-- **`ProvenanceTrail`:** an ordered list of hops (fact → evidence → document version → catalogue
-  version → decided by), in a labelled nav (§10).
 - **`EvidenceQuote`:** the passage with only the quoted line (`quote`) highlighted (beige), in its
   own direction, with the source underneath. `lang` (the document's language) marks the passage
   alone, never the English source line.
+
+### How impact, provenance, diffs and a replaced version are shown
+
+These are the patterns the portal's screens use; there is no separate component for each.
+Recommendation 14 of the 22 October review removed `ImpactPanel`, `ProvenanceTrail`,
+`DiffView`, `StateLine`, `DecisionButtons`, `UndoToast`, `Toolbar`, `Pagination`, `Toggletip`
+and `useDelayedCommit`: no screen used them, and these sections described them as how the
+portal works.
+
+- **Impact:** `ConsequencePanel` beside the action that has it: what happens, who and what it
+  affects (counts first, then named items), reversibility, then the verb. A catalogue version's
+  header says in one sentence what publishing it, or putting it back in service, would change
+  (`catalogue/frame/CatalogueHeader.tsx`).
+- **Provenance:** a fact's own source line and confidence, read against the source register
+  (`catalogue/governance.ts`); the **`Suggested`** mark on anything a model proposed; "Accepted
+  from" on a record a suggestion produced, naming the model, the prompt version, who accepted
+  it and when, and where it was read (`catalogue/AcceptedFrom.tsx`, ADR-0120); and
+  **`EvidenceQuote`** for the passage itself.
+- **Diffs:** the catalogue's change table (`catalogue/draft/ChangeTable.tsx`), used by a draft's
+  changes and by Compare: the counts first, then one row per change with its kind as an icon and
+  a word, never colour; removed rows keep full weight, and red is never used.
+- **A replaced version:** the catalogue header's status says "Replaced", the lead names who
+  published it and when, and links to the version in service; breadcrumbs go through Versions.
+  No page uses a separate tint for it.
+- **Decisions:** a suggestion's accept or reject is sent at once, one after another, and the
+  draft refreshes; there is no undo window (backlog BG3). Focus mode sends nothing until its
+  summary is confirmed.
 
 ### Overlays and help (`overlays.tsx`)
 
@@ -322,8 +329,6 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   Esc closes it.
 - **`Drawer`:** a non-modal side panel (Help, Jobs, Account, upload). Esc closes it. Pair it with
   `useDisclosure` for focus in and back. `id` is for the button that opens it (`aria-controls`).
-- **`Toggletip`:** opened by press, never by hover alone. It is announced politely and closed with
-  Esc (§14).
 - **`ShortcutHelp`:** the widget's keys plus the page-wide keys, with the on/off switch that WCAG
   2.1.4 requires. Each group is named once, by its heading. Each key is its own `<kbd>`: a space
   separates keys, `+` joins keys held together (one `<kbd>` around a `<kbd>` per key), and
@@ -390,9 +395,8 @@ Diagrams section with two seed-shaped examples (CWOM in context, the ownership t
 | Hook | What it does |
 |---|---|
 | `useFocusAfterRender` | Focus after commit. Not `requestAnimationFrame`, which stops in background tabs. |
-| `useStickySize` | A sticky region publishes `--sticky-top`, `--sticky-state` or `--sticky-bottom`, so scroll padding keeps focus clear (§1.1) |
+| `useStickySize` | A sticky region publishes `--sticky-top`, `--sticky-head` or `--sticky-bottom`, so scroll padding keeps focus clear (§1.1) |
 | `useDisclosure` | Focus in on open, back to the opener (or a fallback) on close; `closeTo` sends it to what was said instead |
-| `useDelayedCommit` | Show a decision now, send it after 6s, `undo`, `flush` on leave (§4; BG3) |
 | `rovingKeyDown` | One tab stop with arrow keys for lists and toolbars |
 
 ## 5. Bidi in components
@@ -413,4 +417,4 @@ Screen readers and the testing library trim whitespace at the edges of inline el
 - **Do** put the separating space outside the span, or name the control with one
   `aria-label` / one hidden phrase.
 
-`Badge`, `Pagination`, the outbound link, section counts and the diff all follow this.
+`Badge`, the outbound link, section counts and the change table all follow this.

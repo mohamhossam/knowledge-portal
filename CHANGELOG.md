@@ -210,6 +210,21 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   markup, so their words no longer run together. The squads bench's seat button reads "Edit
   seats of {squad}", its visible "Edit seats" first. `docs/design-system.md` says so.
 
+### Removed
+
+- The design system's unused components, and what the docs said about them (review
+  recommendation 14). `ImpactPanel`, `ProvenanceTrail`, `DiffView`, `StateLine`,
+  `DecisionButtons`, `UndoToast`, `Toolbar`, `Pagination`, `Toggletip` and the
+  `useDelayedCommit` hook were used by no screen, only by their tests and the dev gallery, yet
+  `docs/design-system.md` presented four of them as how impact, provenance, diffs and a
+  replaced version are shown. They go, with their styles, their component tokens, the
+  proof tint and `--sticky-state`, which nothing else used. The design-system document now
+  describes the patterns the screens use (ConsequencePanel, "Accepted from", the Suggested
+  mark, EvidenceQuote, the catalogue's change table, the header's "Replaced" status), and
+  DESIGN.md, the interaction model, the object model, the microcopy and backlog BG3 say that
+  the 6-second undo was never built: a decision is sent at once. The production bundle is
+  unchanged, as none of it shipped.
+
 ## 0.7.0 — 2026-10-21
 
 Reading a document now suggests every kind of catalogue entry a curator decides on: interfaces,

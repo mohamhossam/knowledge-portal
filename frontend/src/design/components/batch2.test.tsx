@@ -4,8 +4,8 @@ import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { Button } from "./actions";
-import { AppShell, Breadcrumbs, MastheadButton, PageHeader, Pagination, Section, SplitPane, StateLine, StickyFooter, SubNav, Tabs, Toolbar } from "./layout";
-import { Dialog, Drawer, HelpContent, ShortcutHelp, Toggletip } from "./overlays";
+import { AppShell, Breadcrumbs, MastheadButton, PageHeader, Section, SplitPane, StickyFooter, SubNav, Tabs } from "./layout";
+import { Dialog, Drawer, HelpContent, ShortcutHelp } from "./overlays";
 import { checkAxeAfterEach } from "../../test/axe";
 
 // Every test's rendered state is also checked by axe (Phase 7).
@@ -149,11 +149,6 @@ describe("page structure", () => {
     expect(screen.queryByRole("button", { name: "About this page" })).not.toBeInTheDocument();
   });
 
-  it("announces a state line as status", () => {
-    render(<StateLine tone="proof">You're reading a replaced version.</StateLine>);
-    expect(screen.getByRole("status")).toHaveTextContent("replaced version");
-  });
-
   it("marks the last breadcrumb as the current page", () => {
     render(<Breadcrumbs items={[{ href: "/library", label: "Library" }, { label: "Product eligibility matrix" }]} />);
     expect(screen.getByRole("navigation", { name: "Breadcrumb" })).toBeInTheDocument();
@@ -181,24 +176,9 @@ describe("page structure", () => {
     expect(screen.getByRole("tabpanel")).toHaveTextContent("b");
   });
 
-  it("roves a toolbar with the arrow keys", async () => {
-    render(<Toolbar label="Bulk actions"><Button>Exclude</Button><Button>Include</Button></Toolbar>);
-    screen.getByRole("button", { name: "Exclude" }).focus();
-    await userEvent.keyboard("{ArrowRight}");
-    expect(screen.getByRole("button", { name: "Include" })).toHaveFocus();
-  });
-
   it("labels the split pane", () => {
     render(<SplitPane list={<p>rows</p>} pane={<p>detail</p>} paneLabel="Passage 1" />);
     expect(screen.getByRole("complementary", { name: "Passage 1" })).toHaveTextContent("detail");
-  });
-
-  it("marks the current page and steps", async () => {
-    const onPage = vi.fn();
-    render(<Pagination page={2} pages={9} onPage={onPage} />);
-    expect(screen.getByRole("button", { name: "Page 2" })).toHaveAttribute("aria-current", "page");
-    await userEvent.click(screen.getByRole("button", { name: /Next/ }));
-    expect(onPage).toHaveBeenCalledWith(3);
   });
 
   it("labels a section by its heading", () => {
@@ -237,17 +217,6 @@ describe("overlays", () => {
     expect(onClose).toHaveBeenCalledOnce();
     expect(screen.getByRole("complementary", { name: "Help" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Close Help" })).toBeInTheDocument();
-  });
-
-  it("opens a toggletip by press, not hover, and closes it with Escape", async () => {
-    render(<Toggletip label="Search index for tables">A second index that keeps table rows together.</Toggletip>);
-    const button = screen.getByRole("button", { name: "About Search index for tables" });
-    await userEvent.hover(button);
-    expect(button).toHaveAttribute("aria-expanded", "false");
-    await userEvent.click(button);
-    expect(screen.getByRole("status")).toHaveTextContent("keeps table rows together");
-    await userEvent.keyboard("{Escape}");
-    expect(button).toHaveAttribute("aria-expanded", "false");
   });
 
   it("lists shortcuts and lets the page-wide ones be turned off (WCAG 2.1.4)", async () => {
