@@ -14,6 +14,7 @@ import { lines } from "../editing";
 import { type SharedEntity, sharedMastery } from "../mastery";
 import { useCatalogueContext } from "../useCatalogue";
 import { useBuild, useSamples } from "../useEditing";
+import { ORPHAN_KINDS, orphanTotal, useCoverage } from "./coverage";
 import { Said } from "./parts";
 import { type SampleResult, useSampleResults } from "./progress";
 
@@ -41,6 +42,7 @@ export function CheckStep() {
     <div className="draft-step">
       <BuildSection release={release} build={build} state={state} />
       <Citations release={release} base={base} />
+      <Coverage release={release} base={base} />
       <Samples release={release} built={state === "built"} />
       <SharedData release={release} />
       <p className="draft-next">
@@ -83,6 +85,47 @@ function Citations({ release, base }: { release: Release; base: string }) {
               </li>
             ))}
           </Lines>
+        </>
+      )}
+    </Section>
+  );
+}
+
+/** What the draft holds that nothing links to (review recommendation 17): each reads as
+ * complete on its own page, yet nothing in the catalogue leads to it. Publishing is not held. */
+function Coverage({ release, base }: { release: Release; base: string }) {
+  const found = useCoverage(release);
+  const total = found.data ? orphanTotal(found.data) : undefined;
+  return (
+    <Section title="What nothing links to" count={total}>
+      {found.isPending ? (
+        <Skeleton label="Reading what the draft links" rows={2} />
+      ) : found.isError ? (
+        <p role="status"><Status tone="attention">This couldn’t be checked: {errorMessage(found.error)}</Status></p>
+      ) : !total ? (
+        <p role="status"><Status tone="done">Every capability, system, interface and term is linked.</Status></p>
+      ) : (
+        <>
+          <p className="draft-lead">
+            Each of these reads as complete on its own page, but nothing in the catalogue leads to it, so nobody finds it by following links.
+            Publishing is not held for them.
+          </p>
+          {ORPHAN_KINDS.filter((kind) => found.data[kind.key].length).map((kind) => (
+            <Section key={kind.key} title={kind.title} count={found.data[kind.key].length} headingLevel={3}>
+              <p className="draft-lead">{kind.settle}</p>
+              <Lines label={kind.title}>
+                {found.data[kind.key].map((item) => {
+                  const system = kind.onSystem === "self" ? item.id : kind.onSystem === "owner" ? item.owner_id : null;
+                  return (
+                    <li key={`${item.owner_id ?? ""}/${item.id}`} dir="auto">
+                      {system ? <RouterLink href={`${base}/systems/${system}`}><bdi>{item.name}</bdi></RouterLink> : <bdi>{item.name}</bdi>}
+                      {item.owner && <span className="draft-detail">{kind.onSystem ? "Of " : "In the vocabulary "}<bdi>{item.owner}</bdi></span>}
+                    </li>
+                  );
+                })}
+              </Lines>
+            </Section>
+          ))}
         </>
       )}
     </Section>

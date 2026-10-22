@@ -74,6 +74,7 @@ from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     BatchUploadResponse,
     CatalogueDiffResponse,
     CatalogueSuggestionsResponse,
+    CoverageResponse,
     CreateVersionRequest,
     DocumentExtractionResponse,
     DocumentPassageResponse,
@@ -339,6 +340,14 @@ def citations(
         )
         for item in knowledge.unregistered_citations(release_id, actor)
     ]
+
+
+@router.get("/releases/{release_id}/coverage", response_model=CoverageResponse)
+def catalogue_coverage(
+    release_id: str, knowledge: KnowledgeDep, actor: KnowledgeActorDep
+) -> CoverageResponse:
+    """What the version holds that nothing links to; publishing is not held for it."""
+    return CoverageResponse.from_domain(knowledge.coverage(release_id, actor))
 
 
 @router.post(

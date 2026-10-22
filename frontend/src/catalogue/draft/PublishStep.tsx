@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 
-import type { Release } from "../../api/client";
+import type { CatalogueCoverage, Release } from "../../api/client";
 import { errorMessage } from "../../api/errors";
 import { ActionGroup, Button, type CheckItem, Checklist, ConsequencePanel, Section } from "../../design/components";
 import { useDisclosure } from "../../design/hooks";
@@ -11,6 +11,7 @@ import { sharedMastery } from "../mastery";
 import { impactVerdict } from "../drafting";
 import { useCatalogueContext, useMappingImpact } from "../useCatalogue";
 import { usePublish, useSamples } from "../useEditing";
+import { ORPHAN_KINDS, orphanTotal, useCoverage } from "./coverage";
 import { type DraftProgress, useDraftProgress, useSampleResults } from "./progress";
 
 /**
@@ -32,12 +33,16 @@ function Publish({ release }: { release: Release }) {
   const impact = useMappingImpact();
   const samples = useSamples().samples.data?.items ?? [];
   const { results } = useSampleResults(release);
+  const coverage = useCoverage(release);
   const confirm = useDisclosure(() => document.getElementById("draft-publish"));
   const name = release.name || "Untitled version";
   const sentence = progress.changes.data ? changeSentence(progress.changes.data) : null;
   const mapped = impact.data ? impact.data.requirements - impact.data.outdated_requirements : null;
   const buildFirst = progress.build !== "built";
-  const items = preflight({ base, release, progress, sentence, mapped, samples: samples.map((item) => item.id ?? item.text), results });
+  const items = preflight({
+    base, release, progress, sentence, mapped, samples: samples.map((item) => item.id ?? item.text), results,
+    coverage: coverage.isError ? "unread" : coverage.data,
+  });
   const blocked = items.find((item) => item.tone === "attention");
 
   return (
@@ -105,7 +110,7 @@ function Publish({ release }: { release: Release }) {
 }
 
 /** The checks before publishing, each with its state in words and the way to settle it. */
-function preflight({ base, release, progress, sentence, mapped, samples, results }: {
+function preflight({ base, release, progress, sentence, mapped, samples, results, coverage }: {
   base: string;
   release: Release;
   progress: DraftProgress;
@@ -113,6 +118,8 @@ function preflight({ base, release, progress, sentence, mapped, samples, results
   mapped: number | null;
   samples: string[];
   results: ReturnType<typeof useSampleResults>["results"];
+  /** What nothing links to; "unread" when it couldn't be checked. */
+  coverage: CatalogueCoverage | "unread" | undefined;
 }): CheckItem[] {
   const step = (to: string, label: string) => <RouterLink href={`${base}/${to}`}>{label}</RouterLink>;
   const { counts } = progress;
@@ -170,6 +177,24 @@ function preflight({ base, release, progress, sentence, mapped, samples, results
       action: step("check", "See Check"),
     });
   }
+  // Orphans are allowed (review recommendation 17): the line says how many, never holds it.
+  const orphans = coverage && coverage !== "unread" ? orphanTotal(coverage) : 0;
+  items.push(
+    coverage === undefined
+      ? { id: "linked", tone: "neutral", word: "Checking", title: "Reading what the draft links…" }
+      : coverage === "unread"
+        ? { id: "linked", tone: "neutral", word: "Not checked", title: "What nothing links to couldn’t be read", action: step("check", "See Check") }
+        : orphans
+          ? {
+            id: "linked",
+            tone: "held",
+            word: "Worth a look",
+            title: `${count(orphans, "item")} nothing links to`,
+            detail: ORPHAN_KINDS.filter((kind) => coverage[kind.key].length).map((kind) => `${kind.title}: ${coverage[kind.key].length}`).join("; "),
+            action: step("check", "See them on Check"),
+          }
+          : { id: "linked", tone: "done", word: "Ready", title: "Every capability, system, interface and term is linked" },
+  );
   if (mapped !== null) {
     items.push({
       id: "mapped",

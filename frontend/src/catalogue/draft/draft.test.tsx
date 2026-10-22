@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { api, type DocumentExtraction, type Release, type Suggestion } from "../../api/client";
+import { api, type CatalogueCoverage, type DocumentExtraction, type Release, type Suggestion } from "../../api/client";
 import { CataloguePage } from "../CataloguePage";
 import { ChangesStep } from "./ChangesStep";
 import { CheckStep } from "./CheckStep";
@@ -43,6 +43,14 @@ const SUGGESTIONS = [
   }),
 ];
 
+const LINKED: CatalogueCoverage = { unlinked_capabilities: [], unused_terms: [], unconsumed_interfaces: [], unplaced_systems: [] };
+const ORPHANS: CatalogueCoverage = {
+  ...LINKED,
+  unlinked_capabilities: [{ id: "tracking", name: "Tracking", owner_id: "cwom", owner: "CWOM" }],
+  unplaced_systems: [{ id: "order-hub", name: "Order Hub", owner_id: null, owner: null }],
+  unused_terms: [{ id: "entity-loyalty", name: "Loyalty", owner_id: "information_entity", owner: "information entity" }],
+};
+
 /** A draft's step, inside the catalogue's own frame, as the app routes it. */
 function renderStep(
   step: string,
@@ -58,6 +66,8 @@ function renderStep(
   vi.spyOn(api, "buildJob").mockResolvedValue(null);
   // Nothing unregistered unless a test says otherwise.
   if (!vi.isMockFunction(api.citations)) vi.spyOn(api, "citations").mockResolvedValue([]);
+  // Everything linked unless a test says otherwise.
+  if (!vi.isMockFunction(api.coverage)) vi.spyOn(api, "coverage").mockResolvedValue(LINKED);
   vi.spyOn(api, "releaseChanges").mockResolvedValue({
     base_release_id: "live", draft_release_id: "d",
     changes: [{ item: "system", key: "order-hub", label: "Order Hub", change: "added", fields: [] }],
@@ -430,6 +440,29 @@ describe("Check: sources it cites but doesn't register", () => {
   });
 });
 
+describe("Check: what nothing links to", () => {
+  const section = async () => (await screen.findByRole("heading", { name: /^What nothing links to/ })).closest("section")!;
+
+  it("lists each kind with how to settle it, opening the system the item is on", async () => {
+    vi.spyOn(api, "coverage").mockResolvedValue(ORPHANS);
+    renderStep("check");
+    const found = within(await section());
+    expect(await found.findByRole("heading", { name: "Capabilities with no concept 1" })).toBeInTheDocument();
+    expect(found.getByRole("link", { name: "Tracking" })).toHaveAttribute("href", "/architecture/versions/d/systems/cwom");
+    expect(found.getByRole("link", { name: "Order Hub" })).toHaveAttribute("href", "/architecture/versions/d/systems/order-hub");
+    // A term has no page of its own: its name and vocabulary, and how to settle it.
+    expect(found.queryByRole("link", { name: "Loyalty" })).toBeNull();
+    expect(found.getByText("information entity")).toBeInTheDocument();
+    expect(found.queryByRole("heading", { name: /Interfaces nobody consumes/ })).toBeNull();
+    expect(found.getByText(/Publishing is not held for them\./)).toBeInTheDocument();
+  });
+
+  it("says so when everything is linked", async () => {
+    renderStep("check");
+    expect(await within(await section()).findByText("Every capability, system, interface and term is linked.")).toBeInTheDocument();
+  });
+});
+
 describe("Publish", () => {
   it("lists the checks first, then publishes through its consequence with what was checked", async () => {
     const publish = vi.spyOn(api, "publish").mockResolvedValue(draft({ status: "published" }));
@@ -440,6 +473,7 @@ describe("Publish", () => {
     expect(within(checks).getByText("Built for matching at this revision")).toBeInTheDocument();
     expect(within(checks).getByText("5 requirements to map again")).toBeInTheDocument();
     expect(within(checks).getByRole("link", { name: "Decide them" })).toHaveAttribute("href", "/architecture/versions/d/decide");
+    expect(within(checks).getByText("Every capability, system, interface and term is linked")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Publish ‘October’…" }));
     const panel = screen.getByRole("region", { name: "Publish ‘October’" });
@@ -452,6 +486,16 @@ describe("Publish", () => {
     await waitFor(() => expect(publish).toHaveBeenCalledWith("d", { expected_revision: 3, rationale: "Compared the samples." }));
     expect(build).not.toHaveBeenCalled();
     expect(await screen.findByText("In service now")).toBeInTheDocument();
+  });
+
+  it("counts what nothing links to as worth a look, never holding publishing", async () => {
+    vi.spyOn(api, "coverage").mockResolvedValue(ORPHANS);
+    renderStep("publish");
+    const checks = await screen.findByRole("list", { name: "Checks before publishing" });
+    expect(await within(checks).findByText("3 items nothing links to")).toBeInTheDocument();
+    expect(within(checks).getByText("Capabilities with no concept: 1; Systems outside the landscape: 1; Terms nothing names: 1")).toBeInTheDocument();
+    expect(within(checks).getByRole("link", { name: "See them on Check" })).toHaveAttribute("href", "/architecture/versions/d/check");
+    expect(screen.getByRole("button", { name: "Publish ‘October’…" })).toBeEnabled();
   });
 
   it("builds first when the draft is not built at its revision", async () => {

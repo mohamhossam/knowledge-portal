@@ -7,6 +7,14 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- The Check step lists what nothing in the draft links to (review recommendation 17):
+  capabilities with no concept and no "none fits" reason, systems outside the landscape,
+  interfaces no system consumes and no journey step or tracking flow goes through, and terms
+  nothing names (a term counts as used when a narrower one is; document types, which the
+  library uses, are left out). Retired items are not listed. Each item opens its system's
+  page where it has one. The publish checklist counts them as worth a look; publishing is
+  not held for them. `GET /architecture-knowledge/releases/{id}/coverage` serves the list
+  to knowledge admins. The committed catalogue has none. Public contract, additive.
 - Accessibility is checked at every layer (review recommendation 15). ESLint runs the
   jsx-a11y rules (`eslint-plugin-jsx-a11y-x`, the fork that supports ESLint 10) on every
   component, tuned so scroll regions may take focus and only pointer handlers count as
@@ -175,6 +183,12 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Changed
 
+- Offerings and journeys a reading would take for one another are refused (review
+  recommendation 17). No two offerings may share an id, code or name, compared ignoring case
+  and punctuation as the suggestion matcher reads them; the message names the offering that
+  already has it. No two journeys may share a name for the same offering, or when one names
+  no offering. Systems, concepts and terms were already unique by label. The committed
+  catalogue has no such pair.
 - `opentelemetry-api` 1.45.0 → 1.45.1 for CVE-2026-114603, which the supply-chain gate
   reported.
 - The five largest modules are split by concern (review recommendation 16); behaviour, the

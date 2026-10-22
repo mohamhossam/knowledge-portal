@@ -447,6 +447,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/releases/{release_id}/coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Catalogue Coverage
+         * @description What the version holds that nothing links to; publishing is not held for it.
+         */
+        get: operations["catalogue_coverage_architecture_knowledge_releases__release_id__coverage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/releases/{release_id}/derived-dependencies": {
         parameters: {
             query?: never;
@@ -3479,6 +3499,20 @@ export interface components {
          * @enum {string}
          */
         CorpusState: "active" | "retired";
+        /**
+         * CoverageResponse
+         * @description What the version holds that nothing links to (review recommendation 17).
+         */
+        CoverageResponse: {
+            /** Unconsumed Interfaces */
+            unconsumed_interfaces: components["schemas"]["OrphanResponse"][];
+            /** Unlinked Capabilities */
+            unlinked_capabilities: components["schemas"]["OrphanResponse"][];
+            /** Unplaced Systems */
+            unplaced_systems: components["schemas"]["OrphanResponse"][];
+            /** Unused Terms */
+            unused_terms: components["schemas"]["OrphanResponse"][];
+        };
         /** CreateVersionRequest */
         CreateVersionRequest: {
             /** Name */
@@ -5280,6 +5314,20 @@ export interface components {
             image_data: string | null;
             /** Location */
             location: string;
+        };
+        /**
+         * OrphanResponse
+         * @description An item nothing links to, with the system or vocabulary it belongs to.
+         */
+        OrphanResponse: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Owner */
+            owner: string | null;
+            /** Owner Id */
+            owner_id: string | null;
         };
         /** OwnedSeatResponse */
         OwnedSeatResponse: {
@@ -7953,6 +8001,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExtractionRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    catalogue_coverage_architecture_knowledge_releases__release_id__coverage_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverageResponse"];
                 };
             };
             /** @description Validation Error */

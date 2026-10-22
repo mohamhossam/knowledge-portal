@@ -570,6 +570,22 @@ def check_offerings(
     ids = [item.id for item in offerings]
     if len(set(ids)) != len(ids):
         raise InvalidKnowledgeError("Product offering ids must be unique.")
+    # Each id, code and name identifies one offering, compared as find_offering and the
+    # suggestion matcher read them; two offerings sharing one would be taken for each other
+    # (review recommendation 17).
+    owners: dict[str, ProductOffering] = {}
+    for offering in offerings:
+        for label in (offering.id, offering.code, offering.name):
+            key = _key(label or "")
+            if not key:
+                continue
+            owner = owners.setdefault(key, offering)
+            if owner.id != offering.id:
+                raise InvalidKnowledgeError(
+                    f"{label!r} already names {owner.name}, so it cannot also name "
+                    f"{offering.name}. Each offering's id, code and name must identify one "
+                    "offering."
+                )
     for offering in offerings:
         codes = [item.code for item in offering.order_types]
         if offering.tracking is not None:

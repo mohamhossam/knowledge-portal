@@ -60,6 +60,7 @@ from knowledge_portal.domain.architecture.change_requests import (
 from knowledge_portal.domain.architecture.channels import Channel
 from knowledge_portal.domain.architecture.citations import SourceReference, source_references
 from knowledge_portal.domain.architecture.concepts import BusinessCapability, CapabilityRef
+from knowledge_portal.domain.architecture.coverage import CatalogueCoverage, Orphan
 from knowledge_portal.domain.architecture.diff import (
     CatalogueDiff,
     ChangedItem,
@@ -3172,3 +3173,36 @@ class UnregisteredCitationResponse(BaseModel):
     facts: int
     # A few of the facts, by kind and name: "Offering component CPE device".
     examples: list[str]
+
+
+class OrphanResponse(BaseModel):
+    """An item nothing links to, with the system or vocabulary it belongs to."""
+
+    id: str
+    name: str
+    owner_id: str | None
+    owner: str | None
+
+
+class CoverageResponse(BaseModel):
+    """What the version holds that nothing links to (review recommendation 17)."""
+
+    unlinked_capabilities: list[OrphanResponse]
+    unused_terms: list[OrphanResponse]
+    unconsumed_interfaces: list[OrphanResponse]
+    unplaced_systems: list[OrphanResponse]
+
+    @classmethod
+    def from_domain(cls, found: CatalogueCoverage) -> CoverageResponse:
+        def listed(items: tuple[Orphan, ...]) -> list[OrphanResponse]:
+            return [
+                OrphanResponse(id=item.id, name=item.name, owner_id=item.owner_id, owner=item.owner)
+                for item in items
+            ]
+
+        return cls(
+            unlinked_capabilities=listed(found.unlinked_capabilities),
+            unused_terms=listed(found.unused_terms),
+            unconsumed_interfaces=listed(found.unconsumed_interfaces),
+            unplaced_systems=listed(found.unplaced_systems),
+        )

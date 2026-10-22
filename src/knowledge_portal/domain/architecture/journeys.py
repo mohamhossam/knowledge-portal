@@ -469,6 +469,23 @@ def check_journeys(
     ids = [item.id for item in journeys]
     if len(set(ids)) != len(ids):
         raise InvalidKnowledgeError("Journey ids must be unique.")
+    # Two journeys the suggestion matcher would take for one cannot both be in a version: a
+    # reading would update whichever it met first (review recommendation 17).
+    named: dict[str, list[Journey]] = {}
+    for journey in journeys:
+        same_name = named.setdefault(journey.name.casefold().strip(), [])
+        other = next((item for item in same_name if same_journey(item, journey)), None)
+        if other is not None:
+            both = f"Journeys {other.id!r} and {journey.id!r} are both named {journey.name!r}"
+            if other.product_id and journey.product_id:
+                raise InvalidKnowledgeError(
+                    f"{both} for the same offering. Rename one, or give each its own offering."
+                )
+            raise InvalidKnowledgeError(
+                f"{both}, and one names no offering, so a reading could mean either. Rename "
+                "one, or give each the offering it is for."
+            )
+        same_name.append(journey)
     by_id = {item.id: item for item in offerings}
     for journey in journeys:
         offering = by_id.get(journey.product_id or "")

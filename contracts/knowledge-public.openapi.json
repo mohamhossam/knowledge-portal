@@ -3946,6 +3946,47 @@
         "title": "CorpusState",
         "type": "string"
       },
+      "CoverageResponse": {
+        "description": "What the version holds that nothing links to (review recommendation 17).",
+        "properties": {
+          "unconsumed_interfaces": {
+            "items": {
+              "$ref": "#/components/schemas/OrphanResponse"
+            },
+            "title": "Unconsumed Interfaces",
+            "type": "array"
+          },
+          "unlinked_capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/OrphanResponse"
+            },
+            "title": "Unlinked Capabilities",
+            "type": "array"
+          },
+          "unplaced_systems": {
+            "items": {
+              "$ref": "#/components/schemas/OrphanResponse"
+            },
+            "title": "Unplaced Systems",
+            "type": "array"
+          },
+          "unused_terms": {
+            "items": {
+              "$ref": "#/components/schemas/OrphanResponse"
+            },
+            "title": "Unused Terms",
+            "type": "array"
+          }
+        },
+        "required": [
+          "unlinked_capabilities",
+          "unused_terms",
+          "unconsumed_interfaces",
+          "unplaced_systems"
+        ],
+        "title": "CoverageResponse",
+        "type": "object"
+      },
       "CreateVersionRequest": {
         "properties": {
           "name": {
@@ -9573,6 +9614,49 @@
           "explanation"
         ],
         "title": "OriginalPreview",
+        "type": "object"
+      },
+      "OrphanResponse": {
+        "description": "An item nothing links to, with the system or vocabulary it belongs to.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "owner_id",
+          "owner"
+        ],
+        "title": "OrphanResponse",
         "type": "object"
       },
       "OwnedSeatResponse": {
@@ -16329,6 +16413,70 @@
           }
         ],
         "summary": "Propose Capability Concepts",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
+    "/architecture-knowledge/releases/{release_id}/coverage": {
+      "get": {
+        "description": "What the version holds that nothing links to; publishing is not held for it.",
+        "operationId": "catalogue_coverage_architecture_knowledge_releases__release_id__coverage_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Catalogue Coverage",
         "tags": [
           "architecture knowledge"
         ]

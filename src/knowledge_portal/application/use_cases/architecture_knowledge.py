@@ -33,6 +33,7 @@ from knowledge_portal.domain.architecture.citations import (
     unregistered_citations,
 )
 from knowledge_portal.domain.architecture.concepts import BusinessCapability
+from knowledge_portal.domain.architecture.coverage import CatalogueCoverage, coverage
 from knowledge_portal.domain.architecture.diff import CatalogueDiff, diff_releases
 from knowledge_portal.domain.architecture.governance import KnowledgeSource, SourceConflict
 from knowledge_portal.domain.architecture.identity import renamed_journey, renamed_offering
@@ -296,6 +297,12 @@ class ManageArchitectureKnowledge:
         """What the version's facts cite that is not in its source register."""
         require_maintainer(actor)
         return unregistered_citations(self.get(release_id))
+
+    def coverage(self, release_id: str, actor: Actor) -> CatalogueCoverage:
+        """What the version holds that nothing links to: unlinked capabilities, unused terms,
+        unconsumed interfaces and unplaced systems."""
+        require_maintainer(actor)
+        return coverage(self.get(release_id))
 
     def rename_offering(
         self, release_id: str, expected_revision: int, old_id: str, new_id: str, actor: Actor

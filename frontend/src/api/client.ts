@@ -143,6 +143,8 @@ type SampleRequirements = Schemas["SampleRequirementsResponse"];
 export type SampleRequirement = Schemas["SampleRequirementSchema"];
 export type ImpactComparison = Schemas["ImpactComparisonResponse"];
 export type UnregisteredCitation = Schemas["UnregisteredCitationResponse"];
+export type CatalogueCoverage = Schemas["CoverageResponse"];
+export type Orphan = Schemas["OrphanResponse"];
 export type DraftUpdate = Schemas["DraftUpdateRequest"];
 /** A change request from Requirement AI waiting in the inbox (requirement-portal ADR-0101, step 7). */
 export type ChangeRequest = Schemas["ChangeRequestResponse"];
@@ -280,6 +282,7 @@ export const api = {
   createDraft: (name: string) => post<Release>("/architecture-knowledge/releases", { name }),
   /** What the version's facts cite that its source register does not hold. */
   citations: (releaseId: string) => apiRequest<UnregisteredCitation[]>(`${releasePath(releaseId)}/citations`),
+  coverage: (releaseId: string) => apiRequest<CatalogueCoverage>(`${releasePath(releaseId)}/coverage`),
   /** A new id for an offering or journey; the old one is kept as a former id. */
   renameEntity: (releaseId: string, kind: "offerings" | "journeys", id: string, body: { expected_revision: number; new_id: string }) =>
     post<Release>(`${releasePath(releaseId)}/${kind}/${encodeURIComponent(id)}/rename`, body),
