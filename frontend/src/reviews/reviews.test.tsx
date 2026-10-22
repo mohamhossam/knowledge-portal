@@ -9,6 +9,9 @@ import { AuthContext, type AuthState } from "../auth/authContext";
 import { architectureOverview, libraryOverview, nameDirectory } from "../home/derive";
 import { DocumentReview } from "./DocumentReview";
 import { YourWork } from "../work/YourWork";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 afterEach(() => vi.restoreAllMocks());
 

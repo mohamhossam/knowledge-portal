@@ -7,6 +7,9 @@ import { api, type CorpusFinding, type CorpusRequirement, type RequirementCorpus
 import { ApiError } from "../api/errors";
 import { FindingsPage } from "./FindingsPage";
 import { RequirementKnowledgeIndex, RequirementsPage } from "./RequirementsPage";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 afterEach(() => vi.restoreAllMocks());
 

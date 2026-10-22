@@ -10,6 +10,9 @@ import { finishedOffering, offeringProblem } from "./editing";
 import { sourceRegister, SourcesContext } from "./governance";
 import { LifecycleSection } from "./LifecycleNotes";
 import { OfferingEditor } from "./OfferingEditor";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 const OFFERING = EXPLORED.products![0]!;
 const [MATRIX, RENEWAL] = OFFERING.lifecycle_notes;

@@ -5,7 +5,7 @@ import { type FormEvent, useMemo, useState } from "react";
 import { api, type CatalogueDocument, type CatalogueFileFormat, type DocumentLanguage, type Release } from "../../api/client";
 import { errorMessage } from "../../api/errors";
 import {
-  ActionGroup, Button, type Column, ConsequencePanel, DataTable, EmptyState, Lines, Section, Select, Status, type StatusTone, TextField,
+  ActionGroup, Button, type Column, ConsequencePanel, DataTable, EmptyState, Lines, Section, Status, type StatusTone, TextField,
   Upload, type UploadItem,
 } from "../../design/components";
 import { useDisclosure } from "../../design/hooks";
@@ -19,7 +19,8 @@ import { saveBlob, useCatalogueFile } from "../useEditing";
 import { ChangeTable } from "./ChangeTable";
 import { Said } from "./parts";
 
-const LANGUAGE: Record<string, string> = { en: "English", ar: "Arabic", mixed: "English and Arabic" };
+// The portal reads English documents only (PRODUCT.md), so every document is sent as English.
+const ENGLISH: DocumentLanguage = "en";
 const MAX_FILES = 20;
 
 /**
@@ -87,7 +88,7 @@ function Documents({ release, draft, actorName }: { release: Release; draft: Dra
         <>
           {document.title}
           <span className="draft-detail" dir="ltr">
-            <bdi>{document.filename}</bdi> · {LANGUAGE[document.language] ?? document.language} · added by <bdi>{actorName(document.uploaded_by)}</bdi>
+            <bdi>{document.filename}</bdi> · added by <bdi>{actorName(document.uploaded_by)}</bdi>
           </span>
         </>
       ),
@@ -207,7 +208,6 @@ const LINE: Record<UploadLine["state"], { state: UploadItem["state"]; word: stri
 function AddDocuments({ draft }: { draft: DraftHook }) {
   const [files, setFiles] = useState<File[]>([]);
   const [title, setTitle] = useState("");
-  const [language, setLanguage] = useState<DocumentLanguage>("en");
   const [tried, setTried] = useState(false);
   const [lines, setLines] = useState<UploadLine[] | null>(null);
   const [said, setSaid] = useState<{ text: string; failed?: boolean } | null>(null);
@@ -238,9 +238,9 @@ function AddDocuments({ draft }: { draft: DraftHook }) {
     setSaid(null);
     setLines(null);
     if (several) {
-      draft.addDocuments.mutate({ files, language }, { onSuccess: (result) => { setLines(result); done(); } });
+      draft.addDocuments.mutate({ files, language: ENGLISH }, { onSuccess: (result) => { setLines(result); done(); } });
     } else {
-      draft.addDocument.mutate({ file: first, title: title.trim(), language }, {
+      draft.addDocument.mutate({ file: first, title: title.trim(), language: ENGLISH }, {
         onSuccess: (document) => {
           setSaid(document ? { text: `‘${document.title}’ was added and is being read.` } : null);
           done();
@@ -275,9 +275,6 @@ function AddDocuments({ draft }: { draft: DraftHook }) {
           ) : (
             <TextField label="Title" maxLength={300} value={title} error={tried && files.length === 1 && !title.trim() ? "Give the document a title." : null} onChange={(event) => setTitle(event.target.value)} />
           )}
-          <Select label={several ? "All written in" : "Written in"} value={language} onChange={(event) => setLanguage(event.target.value as DocumentLanguage)}>
-            {Object.entries(LANGUAGE).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </Select>
         </div>
         <ActionGroup>
           <Button type="submit" variant="primary" busy={pending}>

@@ -8,6 +8,9 @@ import { EXPLORED } from "../explorer/fixtures";
 import { blankSystem } from "./drafting";
 import { Retired } from "./Retired";
 import { SystemEditor } from "./SystemEditor";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 const RELEASE = { ...EXPLORED, revision: 3, status: "draft", documents: [] } as unknown as Release;
 

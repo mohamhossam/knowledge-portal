@@ -14,6 +14,7 @@ test("every route has Search, Jobs, Help and Account in the masthead, in that or
   for (const route of ROUTES) {
     const path = route.path(ids);
     if (path === undefined) continue;
+    await route.prepare?.(page);
     await page.goto(path);
     await settled(page);
     const utilities = page.getByRole("banner").getByRole("button");

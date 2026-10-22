@@ -4,7 +4,10 @@
  * Every route is on the design system, so none may have a serious or
  * critical accessibility issue (a11y.spec.ts).
  */
+import type { Page } from "@playwright/test";
+
 import { apiUrl, OWNER } from "./env";
+import * as mocks from "./mocks";
 
 export type Seeded = {
   reviewDocument?: string;
@@ -24,6 +27,10 @@ export type RouteDef = {
   mask?: string[];
   /** The view only, not the whole page: a review desk renders 200 rows (about 10,000 px). */
   viewOnly?: boolean;
+  /** Records the seed cannot hold, served to the page before it opens (e2e/mocks.ts). */
+  prepare?: (page: Page) => Promise<void>;
+  /** Text only the record shows: proof a prepared mock was read, not answered "not found". */
+  shows?: RegExp;
 };
 
 const at = (path: string) => () => path;
@@ -59,11 +66,15 @@ export const ROUTES: RouteDef[] = [
   { key: "architecture-journeys", path: at("architecture/journeys") },
   { key: "architecture-journey", path: (s) => s.journey && `architecture/journeys/${s.journey}` },
   { key: "architecture-governance", path: at("architecture/governance") },
+  { key: "architecture-governance-item", path: at("architecture/governance/sources/sdd"), prepare: mocks.governance, shows: /Solution design document/ },
   { key: "architecture-domains", path: at("architecture/domains") },
   { key: "architecture-channels", path: at("architecture/channels") },
   { key: "architecture-versions", path: at("architecture/versions") },
   { key: "architecture-compare", path: (s) => s.replaced && `architecture/compare?to=${s.replaced}` },
   { key: "architecture-version", path: (s) => s.replaced && `architecture/versions?version=${s.replaced}` },
+  // A replaced version read as a catalogue of its own, with the header that says so.
+  { key: "architecture-replaced", path: (s) => s.replaced && `architecture/versions/${s.replaced}` },
+  { key: "architecture-replaced-system", path: (s) => s.replaced && s.system && `architecture/versions/${s.replaced}/systems/${s.system}` },
   { key: "architecture-draft", path: (s) => s.draft && `architecture/versions/${s.draft}` },
   // The draft's steps (area 3: rebuilt on the design system).
   { key: "architecture-draft-sources", path: (s) => s.draft && `architecture/versions/${s.draft}/sources` },
@@ -72,6 +83,7 @@ export const ROUTES: RouteDef[] = [
   { key: "architecture-draft-changes", path: (s) => s.draft && `architecture/versions/${s.draft}/changes` },
   { key: "architecture-draft-check", path: (s) => s.draft && `architecture/versions/${s.draft}/check` },
   { key: "architecture-draft-publish", path: (s) => s.draft && `architecture/versions/${s.draft}/publish` },
+  { key: "architecture-draft-evidence", path: (s) => s.draft && `architecture/versions/${s.draft}/evidence/chunk-1?quote=CWOM`, prepare: (page) => mocks.evidence(page, "chunk-1"), shows: /tracks every business order/ },
   { key: "explorer", path: at("explorer") },
   { key: "squads", path: at("squads") },
   { key: "squads-no-squad", path: at("squads?show=none") },
@@ -90,6 +102,10 @@ export const ROUTES: RouteDef[] = [
   { key: "requirement-knowledge-requirements", path: at("requirement-knowledge/requirements") },
   { key: "requirement-knowledge-findings", path: at("requirement-knowledge/findings") },
   { key: "requirement-knowledge-historic", path: at("requirement-knowledge/historic") },
+  // A record of each kind: requirement work's corpus and a historic BRD, served by e2e/mocks.ts.
+  { key: "requirement-knowledge-requirement", path: at("requirement-knowledge/requirements/REQ-1"), prepare: mocks.corpus, shows: /XGPON bundles for small offices/ },
+  { key: "requirement-knowledge-finding", path: at("requirement-knowledge/findings/kf-1"), prepare: mocks.corpus, shows: /Both order XGPON bundles through BCRM/ },
+  { key: "requirement-knowledge-historic-record", path: at("requirement-knowledge/historic/h1"), prepare: mocks.historic, shows: /XGPON bundles \(2024\)/ },
   { key: "not-found", path: at("no-such-page") },
 ];
 

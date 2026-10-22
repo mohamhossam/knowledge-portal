@@ -383,6 +383,9 @@ function Decide() {
 
   const decided = counts.accepted + counts.rejected;
   return (
+    // A row tapped on a narrow screen scrolls its pane into view; the keyboard opens a row with
+    // Enter on the grid itself, so this click handler adds nothing a key lacks.
+    // eslint-disable-next-line jsx-a11y-x/no-static-element-interactions
     <div
       ref={desk}
       className="draft-desk"

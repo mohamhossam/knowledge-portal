@@ -198,7 +198,7 @@ function ActionsAndStatus() {
           <Status tone="neutral">Waiting</Status><Status tone="working">Working</Status><Status tone="done">Done</Status>
           <Status tone="attention">Needs attention</Status><Status tone="held">Held</Status><Status tone="stopped">Stopped</Status>
         </p>
-        <p className="gallery-row"><a href="#">Your work<Badge count={6} label="need you" /></a> <Suggested basis="stated" /> <Suggested basis="inferred" detail="Model fake-catalogue-extractor" /></p>
+        <p className="gallery-row"><a href="#actions">Your work<Badge count={6} label="need you" /></a> <Suggested basis="stated" /> <Suggested basis="inferred" detail="Model fake-catalogue-extractor" /></p>
         <EmptyState title="Nothing needs you." action={<Button>See everyone's work</Button>}>No re-confirmations are due until 3 Nov.</EmptyState>
         <Skeleton rows={3} label="Reading the library" />
         <JobTray jobs={[
@@ -242,7 +242,7 @@ function DataAndReview() {
     return [...shown].sort((a, b) => key(a).localeCompare(key(b)) * (sort.direction === "ascending" ? 1 : -1));
   }, [filter, find, sort]);
   const columns: Column<Row>[] = [
-    { id: "title", header: "Document", cell: (r) => <a href="#">{r.title}</a>, rowHeader: true, sortable: true, bidi: true },
+    { id: "title", header: "Document", cell: (r) => <a href={`#${r.id}`}>{r.title}</a>, rowHeader: true, sortable: true, bidi: true },
     { id: "state", header: "State", cell: (r) => (r.state === "review" ? <Status tone="neutral">Ready for review</Status> : r.state === "service" ? <Status tone="done">In service</Status> : <Status tone="attention">Needs attention</Status>) },
     { id: "owner", header: "Owner", cell: (r) => r.owner },
     { id: "passages", header: "Passages", cell: (r) => r.passages, numeric: true, sortable: true },
@@ -332,7 +332,7 @@ function OverlaysAndHelp() {
           onOpen={() => setSearching(false)}
           groups={query ? [
             { id: "documents", label: "Documents", hits: [{ id: "d", href: "#", title: "XGPON coverage rules (sample)", detail: "Document · owner you · version 2" }] },
-            { id: "systems", label: "Systems", hits: [{ id: "s", href: "#", title: "سياسة التحقق من العنوان (sample)", lang: "ar", detail: "System" }] },
+            { id: "systems", label: "Systems", hits: [{ id: "s", href: "#", title: "Address verification policy (sample)", detail: "System" }] },
             { id: "passages", label: "Passages in service", note: "searching…", hits: [{ id: "p", href: "#", title: "High-speed bundles require XGPON coverage at the address.", detail: "Passage in XGPON coverage rules (sample) · Line 1" }] },
           ] : []}
         />

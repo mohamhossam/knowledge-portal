@@ -4,6 +4,9 @@ import { describe, expect, it, vi } from "vitest";
 import type { Journey, Release } from "../api/client";
 import release from "./model/fixtures/smb-release.json";
 import { JourneyEditor } from "./JourneyEditor";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 const SAMPLE = release as unknown as Release;
 const FULL = SAMPLE.journeys!.find((item) => item.integrations.length > 0)!;

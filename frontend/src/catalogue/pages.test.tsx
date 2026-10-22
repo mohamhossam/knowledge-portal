@@ -8,6 +8,9 @@ import { catalogue } from "./catalogue";
 import { SystemsPage } from "./SystemsPage";
 import type { CatalogueContext } from "./useCatalogue";
 import { VersionsPage } from "./VersionsPage";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 afterEach(() => vi.restoreAllMocks());
 

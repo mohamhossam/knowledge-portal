@@ -531,6 +531,8 @@ export function Tabs<T extends string>({
   };
   return (
     <div className="ds-tabs">
+      {/* The arrow keys bubble from the focused tab; the tabs, not the list, take focus. */}
+      {/* eslint-disable-next-line jsx-a11y-x/interactive-supports-focus */}
       <div role="tablist" aria-label={label} className="ds-tabs__list" onKeyDown={keyDown}>
         {tabs.map((tab) => (
           <button

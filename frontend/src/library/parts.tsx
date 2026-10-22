@@ -7,7 +7,6 @@ import { type ReactNode, type Ref } from "react";
 import { ApiError, errorMessage } from "../api/errors";
 import { Button, Status } from "../design/components";
 import { RouterLink } from "../shell/links";
-import { contentLang } from "./where";
 
 /**
  * An outcome line under an action (§7, §15): polite, and empty until there is
@@ -23,13 +22,13 @@ export function Outcome({ text, failed, focusRef }: { text: string | null | unde
 
 /** Content of either language: isolated, with its language where it can be told (backlog K2). */
 export function Content({ text, children }: { text: string; children?: ReactNode }) {
-  return <bdi lang={contentLang(text)}>{children ?? text}</bdi>;
+  return <bdi>{children ?? text}</bdi>;
 }
 
 /** A document's name as a link to its record. */
 export function DocumentLink({ id, title, hash = "" }: { id: string; title: string; hash?: string }) {
   // Not wrapped in <bdi>: a cell's dir="auto" then sees the title and aligns to its script.
-  return <span dir="auto" lang={contentLang(title)}><RouterLink href={`/library/${encodeURIComponent(id)}${hash}`}>{title}</RouterLink></span>;
+  return <span dir="auto"><RouterLink href={`/library/${encodeURIComponent(id)}${hash}`}>{title}</RouterLink></span>;
 }
 
 /**

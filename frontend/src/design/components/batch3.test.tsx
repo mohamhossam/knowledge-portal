@@ -197,9 +197,8 @@ describe("compare and evidence", () => {
     expect(document.querySelector("blockquote")).toHaveAttribute("dir", "auto");
   });
 
-  it("marks the passage's language on the quote alone, not its source line", () => {
-    render(<EvidenceQuote text="نظام الطلبات" source="Integration design · lines 1–12" lang="ar" />);
-    expect(document.querySelector("blockquote")).toHaveAttribute("lang", "ar");
-    expect(document.querySelector("figcaption")).not.toHaveAttribute("lang");
+  it("leaves the quote to the page's language: content is English", () => {
+    render(<EvidenceQuote text="Order Hub" source="Integration design · lines 1–12" />);
+    expect(document.querySelector("blockquote")).not.toHaveAttribute("lang");
   });
 });

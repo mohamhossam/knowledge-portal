@@ -8,6 +8,9 @@ import { fieldsInWords } from "./drafting";
 import { offeringProblem } from "./editing";
 import { OfferingEditor } from "./OfferingEditor";
 import { TrackingSection } from "./Tracking";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 const OFFERING = EXPLORED.products![0]!;
 const TRACKING = OFFERING.tracking!;

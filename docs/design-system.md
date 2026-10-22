@@ -206,7 +206,7 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
 - **`SearchDialog`:** a modal `<dialog>` named by its field's label, holding one combobox.
   - Results arrive grouped by kind (`SearchGroup`: label, hits, an optional state such as
     "searching…"). Each group is a labelled `group` inside one `listbox`; each hit is an
-    `option` with a title and a detail line, bidi isolated, with `lang` where known.
+    `option` with a title and a detail line, bidi isolated.
   - Focus stays in the field. ↓ ↑ move through every hit across the groups, wrapping
     (`aria-activedescendant`); Enter opens the marked hit; a press opens one too.
   - Esc, Close or a press on the backdrop closes it, and focus goes back to what opened it.
@@ -292,8 +292,8 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   - **`tone="danger"`:** rust, with an icon.
   - **Shape:** the ledger rule on top and a 1px frame; never a thick side border.
 - **`EvidenceQuote`:** the passage with only the quoted line (`quote`) highlighted (beige), in its
-  own direction, with the source underneath. `lang` (the document's language) marks the passage
-  alone, never the English source line.
+  own direction, with the source underneath. The portal reads English documents only
+  (`PRODUCT.md`), so the passage is in the page's language and carries no `lang` of its own.
 
 ### How impact, provenance, diffs and a replaced version are shown
 
@@ -418,3 +418,26 @@ Screen readers and the testing library trim whitespace at the edges of inline el
   `aria-label` / one hidden phrase.
 
 `Badge`, the outbound link, section counts and the change table all follow this.
+
+## 7. How accessibility is checked
+
+Three layers, each failing the build (review recommendation 15):
+
+- **Lint.** `eslint-plugin-jsx-a11y-x` (the maintained fork that runs on ESLint 10), recommended
+  rules, on every `.tsx`. Two rules are tuned to the design system:
+  - a `region` or `tabpanel` may take `tabIndex={0}`, because a scroll region must be reachable
+    by keyboard (WCAG 2.1.1);
+  - only pointer handlers count as interaction on a static element, because a key handler on
+    a container catches keys bubbling from the focused control inside it.
+
+  Every remaining exception is an `eslint-disable-next-line` with its reason beside it.
+- **Components.** Every test file that renders calls `checkAxeAfterEach()`
+  (`src/test/axe.ts`), so each state a test drives is checked. jsdom has no colour, so contrast
+  is left to the token matrix (§3) and the route suite.
+- **Routes.** `e2e/a11y.spec.ts` runs axe (WCAG 2.0 to 2.2, A and AA; serious and critical
+  block) on every route in `e2e/routes.ts`, in the light theme, the dark theme and at 600px.
+  It also checks the states no admin route reaches: the reader's explorer, the "for knowledge
+  admins" page, the sign-in page and the collapsed sidebar. A route whose record the seed lacks
+  fails, never skips. Records the offline stack cannot hold (the requirement corpus, a
+  historic requirement, an evidence passage, a governance source) are served to that one page
+  by `e2e/mocks.ts`, and the test checks the record is on screen before it runs axe.

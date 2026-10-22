@@ -10,6 +10,9 @@ import { asRelease } from "../../catalogue/model/sample";
 import { axe } from "../../test/axe";
 import CatalogueLab from "./CatalogueLab";
 import { type CatalogueSource, catalogueSource } from "./catalogueSource";
+import { checkAxeAfterEach } from "../../test/axe";
+
+checkAxeAfterEach();
 
 /** Renders the lab at `path`; with the sample, waits until it has arrived (it loads on demand). */
 async function open(path: string, source: CatalogueSource = "sample") {

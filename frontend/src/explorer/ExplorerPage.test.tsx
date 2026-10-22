@@ -7,6 +7,9 @@ import { api, type CatalogPlans } from "../api/client";
 import { ApiError } from "../api/errors";
 import { ExplorerPage, NOT_YET } from "./ExplorerPage";
 import { EXPLORED, PLANS } from "./fixtures";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 afterEach(() => vi.restoreAllMocks());
 

@@ -9,6 +9,9 @@ import { offeringProblem } from "./editing";
 import { sourceRegister, SourcesContext } from "./governance";
 import { OfferingEditor } from "./OfferingEditor";
 import { NfrSection, RealisationKey, RealisedAs } from "./Realisation";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 const OFFERING = EXPLORED.products![0]!;
 

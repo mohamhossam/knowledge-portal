@@ -42,10 +42,3 @@ export function citedSource(suggestion: Suggestion, document: { title: string } 
   return fromCatalogue(suggestion) ? location : `${document?.title ?? "A document no longer in the draft"} · ${location}`;
 }
 
-/**
- * A cited document's language as `lang` for its quoted passages (K2): "ar" or "en", never
- * "mixed" (a mixed document's passage is left to the page's language and `dir="auto"`).
- */
-export function documentLang(document: { language: string } | undefined): "ar" | "en" | undefined {
-  return document?.language === "ar" || document?.language === "en" ? document.language : undefined;
-}

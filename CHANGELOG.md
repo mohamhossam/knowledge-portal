@@ -7,6 +7,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Accessibility is checked at every layer (review recommendation 15). ESLint runs the
+  jsx-a11y rules (`eslint-plugin-jsx-a11y-x`, the fork that supports ESLint 10) on every
+  component, tuned so scroll regions may take focus and only pointer handlers count as
+  interaction; each remaining exception carries its reason. Every component test file that
+  renders runs axe after each test (26 more files). The Playwright axe suite now also covers the
+  governance source record, a replaced version and its system, an evidence passage, a corpus
+  requirement and finding, a historic requirement (the records the offline stack cannot hold
+  are mocked for that page alone, `e2e/mocks.ts`), and the reader's explorer, the "for
+  knowledge admins" page, the sign-in page and the collapsed sidebar. A route whose seeded
+  record is missing now fails instead of skipping.
 - Route handlers take the use cases they need, never the container (review recommendation
   12). The 21 handlers that read the container directly (the internal API, the change-request
   routes, the draft's readings and the sign-in configuration) take providers from
@@ -212,6 +222,13 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Removed
 
+- Guessing a text's language (review recommendation 15). The portal reads English only
+  (`PRODUCT.md`), so passages, quotes, search hits and table cells no longer carry a `lang`
+  guessed from their letters or from the document's language. `contentLang`, `langOf`,
+  `isArabic`, `isLatin` and `documentLang` go. Adding a document no longer asks "Written in";
+  it is sent as English. The empty-search hints no longer suggest searching in another
+  language. The API still accepts `ar` and `mixed`, and the Arabic names (`name_ar`) keep their
+  `lang="ar"` until they are retired.
 - The design system's unused components, and what the docs said about them (review
   recommendation 14). `ImpactPanel`, `ProvenanceTrail`, `DiffView`, `StateLine`,
   `DecisionButtons`, `UndoToast`, `Toolbar`, `Pagination`, `Toggletip` and the

@@ -323,6 +323,7 @@ function SamplesEdit({ items, save, onDone }: { items: SampleRequirement[]; save
         error={tried ? problem : null}
         onChange={(event) => setText(event.target.value)}
         // The panel opens on a press of "Edit the samples": its one field is where the reader goes next.
+        // eslint-disable-next-line jsx-a11y-x/no-autofocus
         autoFocus
       />
       <Said text={save.isError ? errorMessage(save.error) : null} failed />

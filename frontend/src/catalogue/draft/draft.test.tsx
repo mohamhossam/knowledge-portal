@@ -10,6 +10,9 @@ import { CheckStep } from "./CheckStep";
 import { DecideStep } from "./DecideStep";
 import { PublishStep } from "./PublishStep";
 import { SourcesStep } from "./SourcesStep";
+import { checkAxeAfterEach } from "../../test/axe";
+
+checkAxeAfterEach();
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -148,8 +151,8 @@ describe("Decide", () => {
     expect(within(pane).getByRole("heading", { level: 2 })).toHaveTextContent("Adds the constraint “Nights only”");
     expect(within(pane).getByText(/Suggested · stated in the source/)).toBeInTheDocument();
     expect(within(pane).getByText("From the document")).toBeInTheDocument();
-    // The quote carries its document's language; the source line under it stays the page's.
-    expect(within(pane).getByText("System: x").closest("blockquote")).toHaveAttribute("lang", "en");
+    // Content is English, so the quote takes the page's language rather than its own.
+    expect(within(pane).getByText("System: x").closest("blockquote")).not.toHaveAttribute("lang");
   });
 
   it("cites a dependency derived from the draft's own catalogue by its place there, not as a document", async () => {

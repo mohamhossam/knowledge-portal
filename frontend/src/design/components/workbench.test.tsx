@@ -2,6 +2,9 @@ import { render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { RecordView, Workbench } from "./workbench";
+import { checkAxeAfterEach } from "../../test/axe";
+
+checkAxeAfterEach();
 
 afterEach(() => vi.restoreAllMocks());
 

@@ -11,6 +11,9 @@ import { conflictsFor, namedSource, questionProblem, sourceRegister, SourcesCont
 import { GovernancePage } from "./GovernancePage";
 import { OfferingsPage } from "./OfferingsPage";
 import type { CatalogueContext } from "./useCatalogue";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 afterEach(() => vi.restoreAllMocks());
 

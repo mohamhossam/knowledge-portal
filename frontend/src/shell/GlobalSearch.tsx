@@ -17,7 +17,6 @@ const EACH = 5;
 
 /** The newest version's number: the outline an admin gets for someone else's document, else the highest uploaded. */
 const newest = (doc: LibraryDocument) => doc.newest?.number ?? Math.max(0, ...doc.versions.map((version) => version.number));
-const arabic = (text: string) => (/[؀-ۿ]/.test(text) ? "ar" : undefined);
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 function usePaused(value: string, ms: number) {
@@ -75,7 +74,6 @@ export function useGlobalSearch(): { trigger: ReactNode; overlay: ReactNode } {
       id: doc.id,
       href: `/library/${encodeURIComponent(doc.id)}`,
       title: doc.title,
-      lang: arabic(doc.title),
       detail: <>Document · owner <bdi>{doc.is_owner ? "you" : doc.owner.display_name}</bdi>{newest(doc) ? <> · version {newest(doc)}</> : null}</>,
     }));
     if (docs.total > EACH) docHits.push({ id: "more", href: `/library?q=${encodeURIComponent(typed)}`, title: `See all ${docs.total} documents matching '${typed}'` });
@@ -103,7 +101,6 @@ export function useGlobalSearch(): { trigger: ReactNode; overlay: ReactNode } {
           id: system.id,
           href: `/architecture/systems/${encodeURIComponent(system.id)}`,
           title: system.name,
-          lang: arabic(system.name),
           detail: <>System{system.aliases.length ? <> · also <bdi>{system.aliases.slice(0, 3).join(", ")}</bdi></> : null}</>,
         })),
       },
@@ -115,7 +112,6 @@ export function useGlobalSearch(): { trigger: ReactNode; overlay: ReactNode } {
           id: offering.id,
           href: `/architecture/offerings/${encodeURIComponent(offering.id)}`,
           title: offering.name,
-          lang: arabic(offering.name),
           detail: <>Offering{offering.code ? <> · <bdi>{offering.code}</bdi></> : null}</>,
         })),
       },
@@ -127,7 +123,6 @@ export function useGlobalSearch(): { trigger: ReactNode; overlay: ReactNode } {
           id: journey.id,
           href: `/architecture/journeys/${encodeURIComponent(journey.id)}`,
           title: journey.name,
-          lang: arabic(journey.name),
           detail: "Customer journey",
         })),
       },
@@ -141,7 +136,6 @@ export function useGlobalSearch(): { trigger: ReactNode; overlay: ReactNode } {
       id: hit.id,
       href: `/library/${encodeURIComponent(hit.document_id)}#passage-${encodeURIComponent(hit.block_id)}`,
       title: excerpt(hit.original_text),
-      lang: hit.language?.startsWith("ar") ? "ar" : arabic(hit.original_text),
       detail: <>Passage in <bdi>{hit.document_title}</bdi> · <bdi>{humanWhere(hit.location)}</bdi></>,
     }));
     if (chunks.length) passageHits.push({ id: "more", href: `/library/search?q=${encodeURIComponent(typed)}`, title: `See every passage for '${typed}'` });
@@ -160,7 +154,7 @@ export function useGlobalSearch(): { trigger: ReactNode; overlay: ReactNode } {
   }
 
   const still = groups.some((group) => group.note === "loading…" || group.note === "searching…");
-  const status = !typed ? "" : found ? `${plural(found, "match", "matches")} for '${typed}'${still ? ", still looking" : ""}.` : still ? "Searching…" : `Nothing matches '${typed}'. Try fewer words, or the name's own language.`;
+  const status = !typed ? "" : found ? `${plural(found, "match", "matches")} for '${typed}'${still ? ", still looking" : ""}.` : still ? "Searching…" : `Nothing matches '${typed}'. Try fewer words.`;
 
   const trigger = <SearchTrigger id="shell-search" label="Search" expanded={open} onClick={() => setOpen(true)} />;
   const overlay = (

@@ -1,5 +1,8 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 // The store is module state: each test loads a fresh copy.
 async function load() {

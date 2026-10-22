@@ -31,6 +31,8 @@ export function StartDraft({ onCancel }: { onCancel: () => void }) {
       <TextField
         label="Name"
         maxLength={80}
+        // Opened by its own button ("Start a draft"), the name is where the person goes next.
+        // eslint-disable-next-line jsx-a11y-x/no-autofocus
         autoFocus
         placeholder="For example: November integration update"
         value={name}

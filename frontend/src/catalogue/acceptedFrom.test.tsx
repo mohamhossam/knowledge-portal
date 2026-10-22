@@ -9,6 +9,9 @@ import { type Accepted, acceptances } from "./accepted";
 import { AcceptedFrom } from "./AcceptedFrom";
 import { catalogue } from "./catalogue";
 import type { CatalogueContext } from "./useCatalogue";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 const RELEASE = { ...EXPLORED, revision: 3, status: "draft", documents: [] } as unknown as Release;
 const NAMES: Record<string, string> = { amina: "Amina Owner", ravi: "Ravi Curator" };

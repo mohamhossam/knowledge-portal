@@ -6,7 +6,7 @@ import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { searchShortcut } from "../words";
 
 /** One result: where it opens, its name, and a line that says what and where it is. */
-export type SearchHit = { id: string; href: string; title: string; detail?: ReactNode; lang?: string };
+export type SearchHit = { id: string; href: string; title: string; detail?: ReactNode };
 
 /** Results of one kind ("Documents", "Systems"), with an optional state beside its name ("searching…"). */
 export type SearchGroup = { id: string; label: string; hits: SearchHit[]; note?: string };
@@ -105,6 +105,8 @@ export function SearchDialog({
   };
 
   return (
+    // A press on the backdrop closes it, as Esc does (onCancel); the click adds no key path.
+    // eslint-disable-next-line jsx-a11y-x/click-events-have-key-events, jsx-a11y-x/no-noninteractive-element-interactions
     <dialog
       ref={ref}
       className="ds-root ds-search"
@@ -166,6 +168,9 @@ export function SearchDialog({
               {group.hits.map((hit) => {
                 const index = hits.indexOf(hit);
                 return (
+                  // An option of the field's listbox: focus stays in the field, whose arrows
+                  // and Enter choose (aria-activedescendant); a press is the pointer's way.
+                  // eslint-disable-next-line jsx-a11y-x/click-events-have-key-events, jsx-a11y-x/interactive-supports-focus
                   <div
                     key={hit.id}
                     id={optionId(group, hit)}
@@ -176,7 +181,7 @@ export function SearchDialog({
                     onMouseMove={() => index !== active && setActive(index)}
                     onClick={() => onOpen(hit)}
                   >
-                    <bdi className="ds-search__title" lang={hit.lang}>{hit.title}</bdi>
+                    <bdi className="ds-search__title">{hit.title}</bdi>
                     {hit.detail && <span className="ds-search__detail">{hit.detail}</span>}
                   </div>
                 );

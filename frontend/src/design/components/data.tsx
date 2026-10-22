@@ -246,6 +246,8 @@ export function DataTable<T>({
             {columns.map(header)}
           </tr>
         </thead>
+        {/* A press anywhere on a row opens its row-header link; the link stays the keyboard way in. */}
+        {/* eslint-disable-next-line jsx-a11y-x/no-noninteractive-element-interactions */}
         <tbody ref={body} onKeyDown={keyDown} onClick={pressRow}>
           {rows.length === 0 ? (
             <tr><td colSpan={columns.length + (selected ? 1 : 0)} className="ds-table__empty">{emptyText}</td></tr>

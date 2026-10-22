@@ -7,6 +7,9 @@ import { api, type ChangeRequest, type Release, type Suggestion } from "../api/c
 import { ChangeRequestInbox } from "./ChangeRequests";
 import { traceLine } from "./inbox";
 import { changeSentence, featureWarnings, lexicon, suggestionGroups, waitsFor } from "./suggestions";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 afterEach(() => vi.restoreAllMocks());
 

@@ -4,6 +4,9 @@ import { describe, expect, it } from "vitest";
 import { AuthContext, type AuthState } from "./authContext";
 import { Gate } from "./Gate";
 import { safeReturnPath } from "./paths";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 function state(overrides: Partial<AuthState>): AuthState {
   return {

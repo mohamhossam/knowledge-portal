@@ -16,7 +16,7 @@ import {
 } from "../suggestions";
 import { useCatalogueContext } from "../useCatalogue";
 import { useDraft } from "../useDraft";
-import { citedSource, documentLang, stateWords } from "./decide";
+import { citedSource, stateWords } from "./decide";
 import { DecisionTree } from "./DecisionTree";
 import { type NodeMark, touching } from "./decisionTreeModel";
 import { type DecideAnswer, type DecideQuestion, decideChoices, decideQuestions, firstSystems } from "./questions";
@@ -196,7 +196,6 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
           {citation?.quote ? (
             <EvidenceQuote
               text={citation.quote}
-              lang={suggestion.change_request ? undefined : documentLang(document)}
               source={<bdi>{suggestion.change_request ? suggestion.change_request.change_request_id : citedSource(suggestion, document, citation.location)}</bdi>}
             />
           ) : (

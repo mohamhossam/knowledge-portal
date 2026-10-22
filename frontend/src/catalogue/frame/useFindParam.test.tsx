@@ -4,6 +4,9 @@ import { BrowserRouter, Link, Route, Routes, useLocation } from "react-router-do
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { useFindParam } from "./useFindParam";
+import { checkAxeAfterEach } from "../../test/axe";
+
+checkAxeAfterEach();
 
 function List() {
   const [find, setFind] = useFindParam();

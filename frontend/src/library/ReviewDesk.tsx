@@ -46,7 +46,7 @@ import {
 } from "./model";
 import { Outcome } from "./parts";
 import { CitingNow } from "./StandingPanel";
-import { contentLang, humanWhere, labelledCells, locationGroup, plural, sheetHeadings, tableCells } from "./where";
+import { humanWhere, labelledCells, locationGroup, plural, sheetHeadings, tableCells } from "./where";
 import { newestVersion } from "./model";
 
 const PAGE = 200;
@@ -474,7 +474,7 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
     <>
       <h2 className="ds-section__title">Passage {current.ordinal}, removed</h2>
       <p className="lib-quiet">{humanWhere(current.where)}</p>
-      <p dir="auto" lang={contentLang(current.basis)} className="lib-passage lib-passage--muted">{current.basis}</p>
+      <p dir="auto" className="lib-passage lib-passage--muted">{current.basis}</p>
       <p>It is in service now and has no counterpart in version {version.number}. Requirement work keeps citing it until version {version.number} is published.</p>
     </>
   ) : (
@@ -505,12 +505,12 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
           }}
         />
       ) : (
-        <div className="lib-passage" dir="auto" lang={contentLang(current.draft.text)}>{text(current)}</div>
+        <div className="lib-passage" dir="auto">{text(current)}</div>
       )}
       {current.basis !== null && current.basis.trim() !== current.draft.text.trim() && (
         <div className="lib-basis">
           <p className="lib-quiet">{basis.kind === "edition" ? `In service now (version ${liveNumber ?? "?"})` : "As read from the file"}</p>
-          <p dir="auto" lang={contentLang(current.basis)} className="lib-passage lib-passage--muted">{current.basis}</p>
+          <p dir="auto" className="lib-passage lib-passage--muted">{current.basis}</p>
         </div>
       )}
       <ActionGroup label={`Decide passage ${current.ordinal}`}>
@@ -752,7 +752,7 @@ export function PassageText({ row, headings }: { row: Row; headings: Map<string,
   const cells = labelledCells(value, row.where, headings);
   if (cells) {
     return (
-      <span className="lib-cells" dir="auto" lang={contentLang(value)}>
+      <span className="lib-cells" dir="auto">
         {cells.map((cell, index) => (
           <span key={`${cell.label}-${index}`} className="lib-cells__cell"><span className="lib-cells__label">{cell.label}</span> <bdi>{cell.value}</bdi></span>
         ))}
@@ -760,7 +760,7 @@ export function PassageText({ row, headings }: { row: Row; headings: Map<string,
     );
   }
   const plain = tableCells(value);
-  return <span lang={contentLang(value)}>{plain ? plain.map((cell) => cell.value).join(" · ") : value}</span>;
+  return <span>{plain ? plain.map((cell) => cell.value).join(" · ") : value}</span>;
 }
 
 function passageColumns(seen: ReadonlySet<string>, headings: Map<string, Map<string, string>>): Column<Row>[] {

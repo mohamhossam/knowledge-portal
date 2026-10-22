@@ -8,6 +8,9 @@ import { api, type Release } from "../api/client";
 import { catalogue } from "./catalogue";
 import { SystemsPage } from "./SystemsPage";
 import type { CatalogueContext } from "./useCatalogue";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 afterEach(() => vi.restoreAllMocks());
 
