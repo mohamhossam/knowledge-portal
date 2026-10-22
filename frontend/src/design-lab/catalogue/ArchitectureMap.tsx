@@ -15,10 +15,9 @@
  */
 import { type CSSProperties, type KeyboardEvent, type ReactNode, memo, useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import { BUS_DOMAIN, SIDE_DOMAINS } from "../../catalogue/model/conventions";
 import { type Catalogue, type Integration, type StepRole, type System, systemOf, type TamDomain } from "../../catalogue/model/model";
 import { monogram, plural, shortFunction } from "./labUtil";
-import { mapRows, type SystemLink } from "./posterModel";
+import { busOf, mapRows, sideOf, type SystemLink } from "./posterModel";
 import { roleName } from "./words";
 
 /** Which layers share a row, top to bottom; the integration layer runs between them as a bus. */
@@ -166,7 +165,9 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
   const rows = useMemo(() => {
     return mapRows(data.domains, (id) => bySystem.has(id));
   }, [bySystem, data]);
-  const numbers = useMemo(() => new Map(rows.flat().filter((id) => id !== BUS_DOMAIN).map((id, index) => [id, String(index + 1).padStart(2, "0")])), [rows]);
+  // The bus and side layers are the version's own (each top domain's layout, review recommendation 10).
+  const busId = busOf(data.domains);
+  const numbers = useMemo(() => new Map(rows.flat().filter((id) => id !== busId).map((id, index) => [id, String(index + 1).padStart(2, "0")])), [rows, busId]);
   const order = useMemo(() => rows.flat().flatMap((id) => bySystem.get(id) ?? []), [rows, bySystem]);
 
   // Measure every card against the map, so curves meet the cards wherever the layout put them.
@@ -399,12 +400,12 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
   };
 
   // Compact (presentation) layout: the side layers leave the stack for a column of their own, so the map is four bands, not five.
-  const sideIds = compact ? SIDE_DOMAINS.filter((id) => bySystem.has(id)) : [];
+  const sideIds = compact ? sideOf(data.domains).filter((id) => bySystem.has(id)) : [];
   const stackRows = rows.map((row) => row.filter((id) => !sideIds.includes(id))).filter((row) => row.length);
   const renderRows = (list: string[][]) =>
     list.map((row) =>
-      row.length === 1 && row[0] === BUS_DOMAIN ? (
-        bus(BUS_DOMAIN)
+      busId !== undefined && row.length === 1 && row[0] === busId ? (
+        bus(busId)
       ) : (
         <div key={row.join("+")} className={`am-row${row.length > 1 ? " am-row--split" : ""}`}>
           {row.map((id) => layer(id, row.length > 1))}

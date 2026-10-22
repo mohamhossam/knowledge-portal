@@ -39,6 +39,11 @@ export type TamDomain = {
   groups: { id: string; name: string }[];
   /** Drawn as a band beneath the domain columns (cross-cutting). */
   band?: boolean;
+  /**
+   * Where the map draws it apart from the order of layers: the bus, the layer the bus runs
+   * under, or a side layer drawn last (review recommendation 10).
+   */
+  layout?: "bus" | "above_bus" | "side";
 };
 
 export type System = {
@@ -319,6 +324,8 @@ export type Catalogue = {
   roleTerms: Record<string, string>;
   /** The channel kind terms of the version's vocabulary: each kind's preferred label. */
   channelKindTerms: Record<string, string>;
+  /** Roles from strongest to weakest, as the version's vocabulary ranks them. */
+  roleRank: StepRole[];
 };
 
 export const EVIDENCE_WORDS: Record<Evidence["status"], string> = {
@@ -328,26 +335,11 @@ export const EVIDENCE_WORDS: Record<Evidence["status"], string> = {
 };
 
 /**
- * When a system plays several roles, the impact lens names the strongest: a business rule,
- * kept here. A role not listed (one the source adds) ranks after these, by code.
+ * Roles from strongest to weakest, as `order` ranks them (the version's own, `roleRank`):
+ * when a system plays several roles, the impact lens names the strongest. A role the order
+ * leaves out (one the source adds) ranks after the rest, by code.
  */
-export const ROLE_RANK: readonly StepRole[] = [
-  "orchestrate",
-  "capture",
-  "activate",
-  "field",
-  "validate",
-  "customer-data",
-  "catalog",
-  "logistics",
-  "bill",
-  "track",
-  "notify",
-  "record",
-];
-
-/** Roles from strongest to weakest (ROLE_RANK, then any other by code). */
-export function byRank(a: StepRole, b: StepRole): number {
-  const rank = (role: StepRole) => (ROLE_RANK.includes(role) ? ROLE_RANK.indexOf(role) : ROLE_RANK.length);
-  return rank(a) - rank(b) || a.localeCompare(b);
+export function byRank(order: readonly StepRole[]): (a: StepRole, b: StepRole) => number {
+  const rank = (role: StepRole) => (order.includes(role) ? order.indexOf(role) : order.length);
+  return (a, b) => rank(a) - rank(b) || a.localeCompare(b);
 }

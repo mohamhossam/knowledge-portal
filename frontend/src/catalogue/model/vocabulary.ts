@@ -1,10 +1,11 @@
 /**
  * The catalogue's controlled vocabulary, as the lab reads it: what a step's role and a
- * channel's kind are called. A role is a code ("ORCHESTRATE", or "orchestrate" once read); its term is
- * the one the activity names (`role_id`), or else `role-<code>` by the vocabulary's own
- * naming ("role-orchestrate", "role-customer-data").
+ * channel's kind are called, and how roles rank. A role is a code ("ORCHESTRATE", or
+ * "orchestrate" once read); a term answers to the codes its labels read as ("Customer data"
+ * is "customer-data").
  */
 import type { Release } from "../../api/client";
+import { LEGACY_ROLE_RANK } from "./conventions";
 
 const ROLE_SCHEME = "responsibility_role";
 
@@ -14,30 +15,51 @@ export function roleCode(value: string | null | undefined): string | undefined {
   return code || undefined;
 }
 
-/** The code a role term stands for: "role-customer-data" is "customer-data". */
-function codeOfTerm(termId: string): string {
-  return termId.startsWith("role-") ? termId.slice("role-".length) : termId;
+type Term = NonNullable<Release["vocabulary"]>[number];
+
+/** The codes a term answers to: each of its labels as a code ("Customer data" is "customer-data"). */
+function codesOf(term: Term): string[] {
+  return [term.pref_label, ...term.alt_labels].flatMap((label) => roleCode(label) ?? []);
+}
+
+/** A vocabulary's terms by code, each with its preferred label: the first term to claim a code keeps it. */
+function termsByCode(release: Pick<Release, "vocabulary">, scheme: string): Record<string, string> {
+  const terms: Record<string, string> = {};
+  for (const term of release.vocabulary ?? []) {
+    if (term.scheme !== scheme) continue;
+    for (const code of codesOf(term)) terms[code] ??= term.pref_label;
+  }
+  return terms;
 }
 
 /** Each role the vocabulary names, by code, with its preferred label. */
-export function roleTerms(release: Release): Record<string, string> {
-  const terms: Record<string, string> = {};
-  for (const term of release.vocabulary ?? []) {
-    if (term.scheme === ROLE_SCHEME) terms[codeOfTerm(term.id)] = term.pref_label;
-  }
-  return terms;
+export function roleTerms(release: Pick<Release, "vocabulary">): Record<string, string> {
+  return termsByCode(release, ROLE_SCHEME);
 }
 
-/** A step's role: its code as the source wrote it, or, without one, the code of the term it names. */
-export function stepRole(role: string | null | undefined, roleId: string | null | undefined): string | undefined {
-  return roleCode(role) ?? (roleId ? codeOfTerm(roleId) : undefined);
+/**
+ * A step's role, read against the vocabulary: its code as the source wrote it, or, without
+ * one, the code of the role term it names (review recommendation 10: by the term's label,
+ * not by a naming convention for its id).
+ */
+export function stepRoleIn(release: Pick<Release, "vocabulary">): (role: string | null | undefined, roleId: string | null | undefined) => string | undefined {
+  const byId = new Map((release.vocabulary ?? []).map((term) => [term.id, term]));
+  return (role, roleId) => roleCode(role) ?? roleCode(roleId ? byId.get(roleId)?.pref_label : undefined);
 }
 
-/** Each channel kind the vocabulary names ("channel-system" is "system"), with its preferred label. */
-export function channelKindTerms(release: Release): Record<string, string> {
-  const terms: Record<string, string> = {};
-  for (const term of release.vocabulary ?? []) {
-    if (term.scheme === "channel_kind") terms[term.id.startsWith("channel-") ? term.id.slice("channel-".length) : term.id] = term.pref_label;
-  }
-  return terms;
+/**
+ * Roles from strongest to weakest, as the vocabulary ranks them (review recommendation 10);
+ * a version saved before roles carried a rank falls back to the order the lab kept.
+ */
+export function roleRank(release: Pick<Release, "vocabulary">): string[] {
+  const ranked = (release.vocabulary ?? [])
+    .filter((term) => term.scheme === ROLE_SCHEME && term.rank != null)
+    .sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))
+    .flatMap((term) => roleCode(term.pref_label) ?? []);
+  return ranked.length ? ranked : [...LEGACY_ROLE_RANK];
+}
+
+/** Each channel kind the vocabulary names, by code ("Self-service" is "self-service"), with its preferred label. */
+export function channelKindTerms(release: Pick<Release, "vocabulary">): Record<string, string> {
+  return termsByCode(release, "channel_kind");
 }

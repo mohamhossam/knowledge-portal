@@ -8,6 +8,7 @@ import type {
   CatalogueDiff, CatalogueSystem, Journey, JourneyActivity, LandscapeDomain, Offering, Relationship, RelationshipKind, Release,
   ReleaseAuditEvent, SourceConfidence,
 } from "../api/client";
+import { roleCode, roleTerms } from "./model/vocabulary";
 
 /** A connection on a sheet's "Depends on" side, the other system as its subject: "Gets data from CWOM". */
 export function dependsHow(kind: RelationshipKind, sheet: string): string {
@@ -41,6 +42,17 @@ export function sentenceCase(text: string): string {
 /** A responsibility's role code in words: "PRIMARY_ORCHESTRATOR" reads "Primary orchestrator". */
 export function roleLabel(role: string): string {
   return sentenceCase(role.replace(/_/g, " "));
+}
+
+/**
+ * A role's name as the version's vocabulary has it (review recommendation 10): the role term
+ * a responsibility links, else the term whose label reads as its code, else the code as
+ * written ("CUSTOMER_DATA" is "Customer data").
+ */
+export function roleNamer(vocabulary: Release["vocabulary"]): (role: string | null | undefined, roleId?: string | null) => string {
+  const byCode = roleTerms({ vocabulary });
+  const byId = new Map((vocabulary ?? []).filter((term) => term.scheme === "responsibility_role").map((term) => [term.id, term.pref_label]));
+  return (role, roleId) => (roleId ? byId.get(roleId) : undefined) ?? byCode[roleCode(role) ?? ""] ?? roleLabel(role ?? "");
 }
 
 /** The same, inside a sentence: "B2B Web calls the API of B2B BFF". */

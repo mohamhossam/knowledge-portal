@@ -7,6 +7,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- The explorer reads the catalogue's taxonomy as data (ADR-0101, Amendment 4, proposed). Its
+  response carries the vocabulary terms and curated vocabularies, the capability domains and
+  the interface records, without who accepted them. Role terms gain a `rank` (strongest
+  first) and top landscape domains a `layout` (`bus`, `above_bus`, `side`). The committed
+  catalogue holds the order and layout the frontend hard-coded, and a version without them
+  falls back to that. Role and channel-kind terms are matched by their labels, not by an id
+  prefix. The explorer names roles by their vocabulary terms, and the Solution Architecture
+  document names a linked interface by its record. YAML, JSON and the workbook carry `rank`
+  (Vocabulary) and `layout` (LandscapeDomains), both optional. Review recommendation 10.
+  Public and internal contracts, additive.
 - Vocabularies are data, on one SKOS base (ADR-0125, proposed). A version holds the
   vocabularies a curator defines beside the seven built-in ones, each covering free-text
   fields: an offering's NFR quality, family, lifecycle and business-rule kind, an activity's

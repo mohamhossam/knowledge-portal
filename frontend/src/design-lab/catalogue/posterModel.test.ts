@@ -10,7 +10,11 @@ const data = fromRelease(asRelease(release));
 const evidence: Evidence = { status: "inferred" };
 const system = (systemId: string): Lane => ({ kind: "system", systemId });
 const call = (from: string, to: string, extra: Partial<Integration> = {}): Integration => ({ id: `${from}-${to}`, step: "1", from: system(from), to: system(to), purpose: "", mode: "not-stated", evidence, ...extra });
-const domain = (id: string, groups = 1): Pick<TamDomain, "id" | "groups"> => ({ id, groups: Array.from({ length: groups }, (_, index) => ({ id: `${id}.${index}`, name: `${id} ${index}` })) });
+const domain = (id: string, groups = 1, layout?: TamDomain["layout"]): Pick<TamDomain, "id" | "groups" | "layout"> => ({
+  id,
+  groups: Array.from({ length: groups }, (_, index) => ({ id: `${id}.${index}`, name: `${id} ${index}` })),
+  ...(layout ? { layout } : {}),
+});
 
 describe("the poster's model", () => {
   it("reads the layers in the version's order, with the bus under the customer layer", () => {
@@ -32,6 +36,13 @@ describe("the poster's model", () => {
     // A layer with no systems leaves its partner to pair with the next; no pair crosses the bus.
     expect(mapRows(data.domains, (id) => has(id) && id !== "product")).toEqual([["market-sales"], ["customer"], ["integration"], ["service", "resource"], ["engaged-party", "enterprise"]]);
     expect(mapRows([domain("a"), domain("b"), domain("c"), domain("d", 5), domain("e")], () => true)).toEqual([["a", "b"], ["c"], ["d"], ["e"]]);
+  });
+
+  it("draws the bus, the layer above it and the side layers where the version's domains say (review recommendation 10)", () => {
+    // Not TAM's ids: the layout is the version's data, not a convention.
+    const domains = [domain("front", 1, "above_bus"), domain("core"), domain("pipes", 1, "bus"), domain("back"), domain("partners", 1, "side")];
+    expect(layerOrder(domains)).toEqual(["front", "pipes", "core", "back", "partners"]);
+    expect(mapRows(domains, () => true)).toEqual([["front"], ["pipes"], ["core", "back"], ["partners"]]);
   });
 
   it("sees every journey through every channel it serves, and keeps each call once", () => {

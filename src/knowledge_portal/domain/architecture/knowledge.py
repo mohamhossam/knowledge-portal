@@ -108,6 +108,17 @@ class CapabilityDomain:
         _check_node(self, "Domain")
 
 
+class LandscapeLayout(StrEnum):
+    """Where the landscape map draws a top domain apart from the order of layers."""
+
+    # The integration layer, drawn as a bus across the map.
+    BUS = "bus"
+    # The layer the bus is drawn under, such as TAM's customer domain.
+    ABOVE_BUS = "above_bus"
+    # Drawn last, side by side, such as TAM's engaged party and enterprise domains.
+    SIDE = "side"
+
+
 @dataclass(frozen=True)
 class LandscapeDomain:
     """Where a system sits in the architecture landscape, such as "Customer › Assisted" (ADR-0094).
@@ -127,9 +138,39 @@ class LandscapeDomain:
     cross_cutting: bool = False
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
+    # Where the landscape map draws a top domain, when not as a layer in the version's order
+    # (review recommendation 10): the bus, the layer the bus runs under, or a side layer.
+    layout: LandscapeLayout | None = None
 
     def __post_init__(self) -> None:
         _check_node(self, "Landscape domain")
+        if self.layout is not None:
+            try:
+                object.__setattr__(self, "layout", LandscapeLayout(self.layout))
+            except ValueError as exc:
+                names = ", ".join(item.value for item in LandscapeLayout)
+                raise InvalidKnowledgeError(
+                    f"{self.name}: a layout is one of {names}, not {self.layout!r}."
+                ) from exc
+            if self.parent_id is not None:
+                raise InvalidKnowledgeError(
+                    f"{self.name}: only a top landscape domain has a place on the map."
+                )
+
+
+def check_layout(domains: tuple[LandscapeDomain, ...]) -> None:
+    """One bus at most, one layer above it at most, and that layer only with a bus."""
+    placed = {
+        layout: [item for item in domains if item.layout is layout] for layout in LandscapeLayout
+    }
+    for layout in (LandscapeLayout.BUS, LandscapeLayout.ABOVE_BUS):
+        if len(placed[layout]) > 1:
+            names = ", ".join(item.name for item in placed[layout])
+            raise InvalidKnowledgeError(f"One landscape domain is the {layout.value}, not {names}.")
+    if placed[LandscapeLayout.ABOVE_BUS] and not placed[LandscapeLayout.BUS]:
+        raise InvalidKnowledgeError(
+            f"{placed[LandscapeLayout.ABOVE_BUS][0].name} sits above a bus no domain is."
+        )
 
 
 class _Node(Protocol):
@@ -695,6 +736,7 @@ class ArchitectureKnowledge:
         check_replacements(self.business_capabilities, "Concept")
         check_replacements(self.vocabulary, "Term", lambda old, new: old.scheme == new.scheme)
         landscape = _check_domains(self.landscape_domains, "Landscape domain")
+        check_layout(self.landscape_domains)
         for system in self.systems:
             if (
                 system.landscape_domain_id is not None

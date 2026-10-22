@@ -97,6 +97,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     KnowledgeDocumentVersion,
     KnowledgeReleaseStatus,
     LandscapeDomain,
+    LandscapeLayout,
     MasteryNote,
     RelationshipKind,
     SystemComponent,
@@ -315,6 +316,8 @@ class VocabularyTermSchema(BaseModel):
     pref_label: Name
     alt_labels: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     notation: Name | None = None
+    # Its place among its scheme's terms, 1 first (review recommendation 10).
+    rank: int | None = Field(default=None, ge=1)
     definition: Text | None = None
     broader_id: Identifier | None = None
     exact_match: Name | None = None
@@ -338,6 +341,7 @@ class VocabularyTermSchema(BaseModel):
             pref_label=term.pref_label,
             alt_labels=list(term.alt_labels),
             notation=term.notation,
+            rank=term.rank,
             definition=term.definition,
             broader_id=term.broader_id,
             exact_match=term.exact_match,
@@ -364,6 +368,7 @@ class VocabularyTermSchema(BaseModel):
             deprecated=self.deprecated,
             replaced_by=self.replaced_by,
             close_match=tuple(self.close_match),
+            rank=self.rank,
         )
 
 
@@ -543,6 +548,8 @@ class LandscapeDomainSchema(BaseModel):
     description: Text | None = None
     # It serves every other domain (the enterprise domain, the integration layer).
     cross_cutting: bool = False
+    # Where the landscape map draws a top domain (review recommendation 10).
+    layout: LandscapeLayout | None = None
 
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
@@ -556,6 +563,7 @@ class LandscapeDomainSchema(BaseModel):
             parent_id=domain.parent_id,
             description=domain.description,
             cross_cutting=domain.cross_cutting,
+            layout=domain.layout,
             accepted=[AcceptedFromSchema.from_domain(item) for item in domain.accepted],
         )
 
@@ -567,6 +575,7 @@ class LandscapeDomainSchema(BaseModel):
             self.parent_id,
             self.description,
             cross_cutting=self.cross_cutting,
+            layout=self.layout,
         )
 
 
@@ -2365,6 +2374,19 @@ class ExplorerReleaseResponse(BaseModel):
     portfolio: list[PortfolioNodeSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
+    # The taxonomy the explorer reads its content by (review recommendation 10): the
+    # vocabularies and their terms (a role's or a channel kind's name, roles by rank), the
+    # business areas, and the interface records journey steps go through.
+    vocabulary: list[VocabularyTermSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
+    schemes: list[ConceptSchemeSchema] = Field(default_factory=list, max_length=MAX_CATALOGUE_ITEMS)
+    capability_domains: list[CapabilityDomainSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
+    interfaces: list[SystemInterfaceSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
 
     @classmethod
     def from_domain(cls, release: ArchitectureKnowledge) -> ExplorerReleaseResponse:
@@ -2392,6 +2414,12 @@ class ExplorerReleaseResponse(BaseModel):
                 SourceReferenceSchema.from_domain(item) for item in source_references(release)
             ],
             portfolio=[PortfolioNodeSchema.from_domain(item) for item in release.portfolio],
+            vocabulary=[VocabularyTermSchema.from_domain(item) for item in release.vocabulary],
+            schemes=[ConceptSchemeSchema.from_domain(item) for item in release.schemes],
+            capability_domains=[
+                CapabilityDomainSchema.from_domain(item) for item in release.capability_domains
+            ],
+            interfaces=[SystemInterfaceSchema.from_domain(item) for item in release.interfaces],
         )
 
 

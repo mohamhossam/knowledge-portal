@@ -245,9 +245,15 @@ class VocabularyTerm:
     accepted: tuple[AcceptedFrom, ...] = ()
     # Outside references near enough to read across, though not the same (SKOS closeMatch).
     close_match: tuple[str, ...] = ()
+    # Its place among its scheme's terms, 1 first, where their order means something: roles
+    # run from strongest to weakest, so a system that plays several is named by its strongest
+    # (review recommendation 10). None leaves it after the ranked ones.
+    rank: int | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Term id"))
+        if self.rank is not None and (isinstance(self.rank, bool) or self.rank < 1):
+            raise InvalidKnowledgeError(f"{self.pref_label}: a rank is a whole number from 1.")
         object.__setattr__(self, "scheme", scheme_id(self.scheme))
         object.__setattr__(self, "pref_label", required(self.pref_label, "Term label"))
         object.__setattr__(
@@ -282,12 +288,20 @@ def check_vocabulary(
     Returns the terms by id, for checking what fields name.
     """
     known = names or SCHEME_NAMES
+    ranked: dict[tuple[str, int], VocabularyTerm] = {}
     for term in terms:
         if term.scheme not in known:
             raise InvalidKnowledgeError(
                 f"{term.pref_label} is in the vocabulary {term.scheme!r}, which is not in the "
                 "catalogue."
             )
+        if term.rank is not None:
+            other = ranked.setdefault((term.scheme, term.rank), term)
+            if other is not term:
+                raise InvalidKnowledgeError(
+                    f"{other.pref_label} and {term.pref_label} both rank {term.rank} among the "
+                    f"{scheme_name(term.scheme, known)} terms; each rank names one."
+                )
     return check_tree(
         terms,
         kind="term",

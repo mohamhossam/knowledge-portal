@@ -6,7 +6,7 @@
  * version does not hold, and a section the catalogue cannot hold yet says so.
  */
 import type { CatalogPlans, ExplorerRelease, Journey, SourceConfidence } from "../../api/client";
-import { CONFIDENCE, COVERAGE, LAYERS, concerns, orderedSteps, roleLabel, sentenceCase } from "../../catalogue/catalogue";
+import { CONFIDENCE, COVERAGE, LAYERS, concerns, orderedSteps, roleNamer, sentenceCase } from "../../catalogue/catalogue";
 import { byLevel, levelTag, questionLine, questionOf, sourceRegister, withLevel } from "../../catalogue/governance";
 import { count } from "../../home/format";
 import { falling, formatAmount } from "../plans";
@@ -86,18 +86,21 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
   const from = (link: Link) => by(step.get(link.from_activity) ?? ({} as Step));
   const to = (link: Link) => by(step.get(link.to_activity) ?? ({} as Step));
   const handOver = (link: Link) => `${name(from(link))} → ${name(to(link))}`;
+  // An interface by its record's name where a step or flow links one (review recommendations 8 and 10).
+  const records = new Map((release.interfaces ?? []).map((item) => [item.id, item.name]));
+  const linkInterface = (link: Link): string | null | undefined => (link.interface_id ? records.get(link.interface_id) : undefined) ?? link.interface;
+  const flowInterface = (flow: NonNullable<typeof tracked>["flows"][number]): string | null | undefined =>
+    ("interface_id" in flow && flow.interface_id ? records.get(flow.interface_id) : undefined) ?? ("interface" in flow ? flow.interface : null) ?? (flow.readFor ? flow.label : null);
+  const roleName = roleNamer(release.vocabulary);
   const interfaces = unique(
-    [
-      ...links.map((link) => link.interface),
-      ...(tracked?.flows ?? []).map((flow) => ("interface" in flow ? flow.interface : null) ?? (flow.readFor ? flow.label : null)),
-    ].filter((item): item is string => !!item?.trim()),
+    [...links.map(linkInterface), ...(tracked?.flows ?? []).map(flowInterface)].filter((item): item is string => !!item?.trim()),
   );
   const title = `${offering.name}: ${orderType.name}${channel ? `, through ${channel.name}` : ""}`;
   const scenarioLine = `${orderType.name} · ${channel ? channel.name : "every channel"}`;
   const role = (item: Involvement): string[] => [
     ...(item.performs.length ? [`Performs ${item.performs.length === 1 ? "step" : "steps"} ${item.performs.join(", ")}`] : []),
     ...(item.supports.length ? [`Supports ${item.supports.length === 1 ? "step" : "steps"} ${item.supports.join(", ")}`] : []),
-    ...unique(item.parts.map(({ part, responsibility }) => `${responsibility.role ? roleLabel(responsibility.role) : "Responsible"} for ${part.name}`)),
+    ...unique(item.parts.map(({ part, responsibility }) => `${responsibility.role ? roleName(responsibility.role, responsibility.role_id) : "Responsible"} for ${part.name}`)),
     ...(item.tracks ? ["Takes part in order tracking"] : []),
   ];
   const domain = (systemId: string): string => {
@@ -379,7 +382,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
         layer("cfs"),
         layer("rfs"),
         layer("resource"),
-        responsibilities.length ? lines(unique(responsibilities.map((item) => `${name(item.system_id)}${item.role ? ` (${roleLabel(item.role).toLocaleLowerCase()})` : ""}`))) : { text: "None named (gap)", due: true },
+        responsibilities.length ? lines(unique(responsibilities.map((item) => `${name(item.system_id)}${item.role ? ` (${roleName(item.role, item.role_id).toLocaleLowerCase()})` : ""}`))) : { text: "None named (gap)", due: true },
         evidence(part),
       ];
     }),
@@ -424,7 +427,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
         ["Purpose", system?.description || "The catalogue records no description (gap)."],
         ["Its part in this order", lines(role(item))],
         ["Sits in", domain(item.systemId)],
-        ["Responsibilities", lines(item.parts.map(({ part, responsibility }) => `${responsibility.role ? roleLabel(responsibility.role) : "Responsible"} for ${part.name}${responsibility.description ? `: ${responsibility.description}` : ""}`), "No part names it as responsible in this order.")],
+        ["Responsibilities", lines(item.parts.map(({ part, responsibility }) => `${responsibility.role ? roleName(responsibility.role, responsibility.role_id) : "Responsible"} for ${part.name}${responsibility.description ? `: ${responsibility.description}` : ""}`), "No part names it as responsible in this order.")],
         ["Steps", lines([...performed.map((each) => `${each.number} ${each.name}`), ...steps.filter((each) => each.supporting_system_ids.includes(item.systemId)).map((each) => `${each.number} supports: ${each.name}`)], "No step of the journey names it.")],
         ["Components handled", lines(unique(item.parts.map(({ part }) => part.name)), "None in this order.")],
         ["Inputs", lines(unique([...inbound.map((link) => `From ${name(from(link))}: ${link.payload || link.interaction || "not described"}`), ...performed.map((each) => each.input).filter((value): value is string => !!value)]), "No hand-over reaches it in this scenario.")],
@@ -477,8 +480,8 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
     table(
       columns(["Interface", 34], ["Used between", 40], ["Steps", 26]),
       interfaces.map((each) => {
-        const uses = links.filter((link) => link.interface === each);
-        const flows = (tracked?.flows ?? []).filter((flow) => ("interface" in flow ? flow.interface : null) === each || (flow.readFor && flow.label === each));
+        const uses = links.filter((link) => linkInterface(link) === each);
+        const flows = (tracked?.flows ?? []).filter((flow) => flowInterface(flow) === each);
         return [
           each,
           lines(unique([...uses.map(handOver), ...flows.map((flow) => `${name(flow.from_system_id)} → ${name(flow.to_system_id)} (order tracking)`)])),

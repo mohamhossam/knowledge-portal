@@ -8,7 +8,7 @@
  * kinds, never English: the lab's words.ts names them.
  */
 import type { Release, SourceReference } from "../../api/client";
-import { BAND_DOMAINS, parseDrop, parseProposition, parseQuestion } from "./conventions";
+import { ABOVE_BUS_DOMAIN, BAND_DOMAINS, BUS_DOMAIN, parseDrop, parseProposition, parseQuestion, SIDE_DOMAINS } from "./conventions";
 import {
   type Activity,
   type ActivityCall,
@@ -28,8 +28,9 @@ import {
   type Point,
   type Source,
   type Step,
+  type TamDomain,
 } from "./model";
-import { channelKindTerms, roleTerms, stepRole } from "./vocabulary";
+import { channelKindTerms, roleRank, roleTerms, stepRoleIn } from "./vocabulary";
 
 type ApiJourney = NonNullable<Release["journeys"]>[number];
 type ApiOrderType = NonNullable<Release["products"]>[number]["order_types"][number];
@@ -72,14 +73,19 @@ function performer(activity: ApiJourney["activities"][number]): Performer {
 }
 
 /** A journey's activities, flow and calls, mapped once. A call's id is stable across the channels' views. */
-function journeyOf(journey: ApiJourney, channels: string[], evidence: (item: { confidence?: string | null; source?: string | null }) => Evidence): Journey {
+function journeyOf(
+  journey: ApiJourney,
+  channels: string[],
+  evidence: (item: { confidence?: string | null; source?: string | null }) => Evidence,
+  roleOf: (role: string | null | undefined, roleId: string | null | undefined) => string | undefined,
+): Journey {
   const activities: Activity[] = journey.activities.map((item) => ({
     number: item.number,
     name: item.name,
     performer: performer(item),
     channels: item.channels,
     mainTrack: item.main_track,
-    role: stepRole(item.role, item.role_id),
+    role: roleOf(item.role, item.role_id),
     etom: item.etom ?? undefined,
     detail: item.description ?? undefined,
     ponr: item.point_of_no_return ?? undefined,
@@ -141,18 +147,31 @@ function sourcesOf(release: Release): Source[] {
   }));
 }
 
-/** The TAM domains, each with its groups, and whether it is a cross-cutting band. */
+/** Where TAM draws a domain, by id, for a version whose domains name no layout. */
+function conventionalLayout(id: string): TamDomain["layout"] {
+  if (id === BUS_DOMAIN) return "bus";
+  if (id === ABOVE_BUS_DOMAIN) return "above_bus";
+  return SIDE_DOMAINS.includes(id) ? "side" : undefined;
+}
+
+/** The TAM domains, each with its groups, whether it is a cross-cutting band, and where the map draws it. */
 function domainsOf(landscape: NonNullable<Release["landscape_domains"]>): Catalogue["domains"] {
   const tops = landscape.filter((item) => !item.parent_id);
   // A version saved before the service marked cross-cutting domains marks none: then they are known by id.
   const marked = landscape.some((item) => item.cross_cutting);
-  return tops.map((top) => ({
-    id: top.id,
-    name: top.name,
-    scope: top.description ?? "",
-    groups: landscape.filter((item) => item.parent_id === top.id).map((item) => ({ id: item.id, name: item.name })),
-    band: marked ? top.cross_cutting : BAND_DOMAINS.includes(top.id),
-  }));
+  // Likewise a version saved before domains named their place on the map (review recommendation 10).
+  const placed = landscape.some((item) => item.layout);
+  return tops.map((top) => {
+    const layout = placed ? top.layout ?? undefined : conventionalLayout(top.id);
+    return {
+      id: top.id,
+      name: top.name,
+      scope: top.description ?? "",
+      groups: landscape.filter((item) => item.parent_id === top.id).map((item) => ({ id: item.id, name: item.name })),
+      band: marked ? top.cross_cutting : BAND_DOMAINS.includes(top.id),
+      ...(layout ? { layout } : {}),
+    };
+  });
 }
 
 /** The systems, each placed in its domain and group. */
@@ -254,10 +273,11 @@ function orderTypesOf(products: NonNullable<Release["products"]>): Catalogue["or
 
 /** The journeys, each seen through the channels its order type is sold through. */
 function journeysOf(release: Release, offerings: Offering[], evidence: EvidenceOf): Journey[] {
+  const roleOf = stepRoleIn(release);
   return (release.journeys ?? []).map((journey) => {
     const offering = offerings.find((item) => item.id === journey.product_id);
     const support = offering?.orderTypes.find((type) => type.code === journey.order_type_code);
-    return journeyOf(journey, support?.channels ?? [], evidence);
+    return journeyOf(journey, support?.channels ?? [], evidence, roleOf);
   });
 }
 
@@ -313,6 +333,7 @@ export function fromRelease(release: Release): Catalogue {
     findings: findingsOf(release, products, evidence),
     roleTerms: roleTerms(release),
     channelKindTerms: channelKindTerms(release),
+    roleRank: roleRank(release),
   };
 }
 

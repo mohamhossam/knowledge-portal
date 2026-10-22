@@ -132,6 +132,7 @@ _TERM_FIELDS = (
     "pref_label",
     "alt_labels",
     "notation",
+    "rank",
     "definition",
     "broader_id",
     "exact_match",
@@ -664,7 +665,7 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
 
     def domains(
         release: ArchitectureKnowledge, landscape: bool
-    ) -> dict[str, tuple[str, tuple[str, str, str, str, str]]]:
+    ) -> dict[str, tuple[str, tuple[str, str, str, str, str, str]]]:
         tree = release.landscape_domains if landscape else release.capability_domains
         path = release.landscape_path if landscape else release.domain_path
         return {
@@ -676,6 +677,7 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                     item.parent_id or "",
                     item.description or "",
                     "yes" if isinstance(item, LandscapeDomain) and item.cross_cutting else "",
+                    (item.layout or "") if isinstance(item, LandscapeDomain) else "",
                 ),
             )
             for item in tree
@@ -697,7 +699,14 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                     tuple(
                         field
                         for field, before, after in zip(
-                            ("name", "name_ar", "parent", "description", "cross_cutting"),
+                            (
+                                "name",
+                                "name_ar",
+                                "parent",
+                                "description",
+                                "cross_cutting",
+                                "layout",
+                            ),
                             previous_domain[1],
                             value,
                             strict=True,

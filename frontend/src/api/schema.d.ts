@@ -3725,6 +3725,8 @@ export interface components {
          *     Architecture document (step 7).
          */
         ExplorerReleaseResponse: {
+            /** Capability Domains */
+            capability_domains?: components["schemas"]["CapabilityDomainSchema"][];
             /** Change History */
             change_history?: components["schemas"]["ChangeRequestRecordSchema"][];
             /** Channels */
@@ -3733,6 +3735,8 @@ export interface components {
             conflicts?: components["schemas"]["SourceConflictSchema"][];
             /** Id */
             id: string;
+            /** Interfaces */
+            interfaces?: components["schemas"]["SystemInterfaceSchema"][];
             /** Journeys */
             journeys?: components["schemas"]["JourneySchema"][];
             /** Landscape Domains */
@@ -3747,12 +3751,16 @@ export interface components {
             published_at?: string | null;
             /** Relationships */
             relationships: components["schemas"]["SystemRelationshipSchema"][];
+            /** Schemes */
+            schemes?: components["schemas"]["ConceptSchemeSchema"][];
             /** Source References */
             source_references?: components["schemas"]["SourceReferenceSchema"][];
             /** Sources */
             sources?: components["schemas"]["KnowledgeSourceSchema"][];
             /** Systems */
             systems: components["schemas"]["SystemDefinitionSchema"][];
+            /** Vocabulary */
+            vocabulary?: components["schemas"]["VocabularyTermSchema"][];
         };
         /** ExtractionRevision */
         ExtractionRevision: {
@@ -4599,6 +4607,7 @@ export interface components {
             description?: string | null;
             /** Id */
             id: string;
+            layout?: components["schemas"]["LandscapeLayout"] | null;
             /** Name */
             name: string;
             /** Name Ar */
@@ -4606,6 +4615,12 @@ export interface components {
             /** Parent Id */
             parent_id?: string | null;
         };
+        /**
+         * LandscapeLayout
+         * @description Where the landscape map draws a top domain apart from the order of layers.
+         * @enum {string}
+         */
+        LandscapeLayout: "bus" | "above_bus" | "side";
         /**
          * LibraryAdminAction
          * @enum {string}
@@ -6940,6 +6955,8 @@ export interface components {
             notation?: string | null;
             /** Pref Label */
             pref_label: string;
+            /** Rank */
+            rank?: number | null;
             /** Replaced By */
             replaced_by?: string | null;
             /** Scheme */

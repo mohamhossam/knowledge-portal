@@ -221,7 +221,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "source",
     ),
     DOMAINS: _DOMAIN_HEADERS,
-    LANDSCAPE: (*_DOMAIN_HEADERS, "cross_cutting"),
+    # layout (optional): bus, above_bus or side, where the map draws a top domain.
+    LANDSCAPE: (*_DOMAIN_HEADERS, "cross_cutting", "layout"),
     PRODUCTS: (
         "product_id",
         "name",
@@ -570,6 +571,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "replaced_by",
         # Outside references near enough to read across, by ; (SKOS closeMatch).
         "close_match",
+        # Its place among its scheme's terms, 1 first, such as roles strongest first.
+        "rank",
     ),
     INTERFACES: (
         "interface_id",
@@ -680,7 +683,9 @@ _INSTRUCTIONS = (
     (
         "LandscapeDomains (optional): where systems sit, such as Customer; parent_id makes a "
         "sub-domain such as Customer > Assisted; cross_cutting yes for one that serves every "
-        "other domain, such as the integration layer.",
+        "other domain, such as the integration layer; layout (optional, top domains) bus for "
+        "the integration layer the map draws as a bus, above_bus for the layer it runs under, "
+        "side for one drawn last beside another.",
     ),
     ("Systems description and landscape_domain_id (optional): what it is for, and where.",),
     (
@@ -813,7 +818,8 @@ _INSTRUCTIONS = (
     ),
     (
         "Concepts and Vocabulary close_match (optional): outside references near enough to "
-        "read across, by ;; exact_match is the one that means the same.",
+        "read across, by ;; exact_match is the one that means the same. Vocabulary rank "
+        "(optional): a term's place in its scheme, 1 first, such as roles strongest first.",
     ),
     (
         "Vocabulary scheme information_entity: the data systems master or read, such as "
@@ -1258,11 +1264,27 @@ def _terms(entries: list[dict[str, Any]]) -> list[VocabularyTerm]:
                     _optional_text(item.get("source"), where, "source"),
                     **_retirement(item, where),
                     close_match=_text_list(item.get("close_match"), where, "close_match"),
+                    rank=_rank(item.get("rank"), where),
                 )
             )
         except InvalidKnowledgeError as exc:
             raise _located(where, exc) from exc
     return terms
+
+
+def _rank(value: object, where: str) -> int | None:
+    """A term's rank as a file writes it: a whole number, or nothing."""
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool):
+        raise InvalidKnowledgeError(f"{where}: rank must be a whole number.")
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.strip().isdigit():
+        return int(value.strip())
+    raise InvalidKnowledgeError(f"{where}: rank must be a whole number.")
 
 
 def _term_mapping(term: VocabularyTerm) -> dict[str, Any]:
@@ -1277,6 +1299,7 @@ def _term_mapping(term: VocabularyTerm) -> dict[str, Any]:
             broader=term.broader_id,
             exact_match=term.exact_match,
             close_match=list(term.close_match),
+            rank=term.rank,
         ),
         **_sourced(term),
         **_retired(term),
@@ -2533,6 +2556,11 @@ def _domain_mapping(item: CapabilityDomain | LandscapeDomain) -> dict[str, Any]:
             if isinstance(item, LandscapeDomain) and item.cross_cutting
             else {}
         ),
+        **(
+            {"layout": item.layout.value}
+            if isinstance(item, LandscapeDomain) and item.layout
+            else {}
+        ),
     }
 
 
@@ -3388,11 +3416,23 @@ def _sheet_domains[DomainT: (CapabilityDomain, LandscapeDomain)](
 def _cross_cutting(
     domains: list[LandscapeDomain], entries: Iterator[tuple[int, dict[str, Any]]], where: str
 ) -> list[LandscapeDomain]:
-    """The landscape domains, each marked cross-cutting when its entry says so (no by default)."""
+    """The landscape domains, each marked cross-cutting when its entry says so (no by default),
+    and with the place on the map it names, if any (review recommendation 10)."""
     marked = []
     for domain, (number, cells) in zip(domains, entries, strict=True):
-        crossing = _flag(cells.get("cross_cutting"), f"{where} {number}", "cross_cutting", False)
-        marked.append(replace(domain, cross_cutting=True) if crossing else domain)
+        place = f"{where} {number}"
+        crossing = _flag(cells.get("cross_cutting"), place, "cross_cutting", False)
+        layout = _optional_text(cells.get("layout"), place, "layout")
+        try:
+            marked.append(
+                replace(
+                    domain,
+                    cross_cutting=bool(crossing),
+                    layout=layout,  # type: ignore[arg-type]
+                )
+            )
+        except InvalidKnowledgeError as exc:
+            raise _located(place, exc) from exc
     return marked
 
 
@@ -3888,7 +3928,10 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
     ):
         for domain in tree:
             crossing = (
-                (_yes(domain.cross_cutting) if domain.cross_cutting else None,)
+                (
+                    _yes(domain.cross_cutting) if domain.cross_cutting else None,
+                    domain.layout.value if domain.layout else None,
+                )
                 if isinstance(domain, LandscapeDomain)
                 else ()
             )
@@ -3948,6 +3991,7 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 _yes(term.deprecated) if term.deprecated else None,
                 term.replaced_by,
                 f"{_LIST_SEPARATOR} ".join(term.close_match),
+                term.rank,
             ),
         )
     for interface in release.interfaces if release is not None else ():

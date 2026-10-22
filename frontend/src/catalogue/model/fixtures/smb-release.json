@@ -2105,6 +2105,7 @@
    "parent_id": null,
    "description": "Leads, opportunities, quotes, discounts and sales recommendations.",
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2114,6 +2115,7 @@
    "parent_id": "market-sales",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2123,6 +2125,7 @@
    "parent_id": "market-sales",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2132,6 +2135,7 @@
    "parent_id": null,
    "description": "Product catalogues, offer design and catalogue automation.",
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2141,6 +2145,7 @@
    "parent_id": "product",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2150,6 +2155,7 @@
    "parent_id": "product",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2159,6 +2165,7 @@
    "parent_id": null,
    "description": "Engagement channels, customer data, customer orders, order tracking, problems and bills.",
    "cross_cutting": false,
+   "layout": "above_bus",
    "accepted": []
   },
   {
@@ -2168,6 +2175,7 @@
    "parent_id": "customer",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2177,6 +2185,7 @@
    "parent_id": "customer",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2186,6 +2195,7 @@
    "parent_id": "customer",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2195,6 +2205,7 @@
    "parent_id": "customer",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2204,6 +2215,7 @@
    "parent_id": "customer",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2213,6 +2225,7 @@
    "parent_id": "customer",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2222,6 +2235,7 @@
    "parent_id": null,
    "description": "Service order management, service activation and service quality.",
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2231,6 +2245,7 @@
    "parent_id": "service",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2240,6 +2255,7 @@
    "parent_id": "service",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2249,6 +2265,7 @@
    "parent_id": "service",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2258,6 +2275,7 @@
    "parent_id": null,
    "description": "Network activation, inventory, numbers, feasibility and field work.",
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2267,6 +2285,7 @@
    "parent_id": "resource",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2276,6 +2295,7 @@
    "parent_id": "resource",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2285,6 +2305,7 @@
    "parent_id": "resource",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2294,6 +2315,7 @@
    "parent_id": null,
    "description": "Government bodies, identity and document services, partners and vendors.",
    "cross_cutting": false,
+   "layout": "side",
    "accepted": []
   },
   {
@@ -2303,6 +2325,7 @@
    "parent_id": "engaged-party",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2312,6 +2335,7 @@
    "parent_id": "engaged-party",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2321,6 +2345,7 @@
    "parent_id": null,
    "description": "Cross-cutting: notification, documents, IT service management, single sign-on.",
    "cross_cutting": true,
+   "layout": "side",
    "accepted": []
   },
   {
@@ -2330,6 +2355,7 @@
    "parent_id": "enterprise",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   },
   {
@@ -2339,6 +2365,7 @@
    "parent_id": null,
    "description": "The bus and gateways every domain talks through.",
    "cross_cutting": true,
+   "layout": "bus",
    "accepted": []
   },
   {
@@ -2348,6 +2375,7 @@
    "parent_id": "integration",
    "description": null,
    "cross_cutting": false,
+   "layout": null,
    "accepted": []
   }
  ],
@@ -21584,6 +21612,7 @@
     "Fulfilment"
    ],
    "notation": null,
+   "rank": null,
    "definition": "The end-to-end process of providing what a customer ordered, on time and correctly.",
    "broader_id": null,
    "exact_match": null,
@@ -21600,6 +21629,7 @@
    "pref_label": "Selling",
    "alt_labels": [],
    "notation": null,
+   "rank": null,
    "definition": "Taking the customer from interest to a feasible, agreed order.",
    "broader_id": "etom-fulfillment",
    "exact_match": null,
@@ -21616,6 +21646,7 @@
    "pref_label": "Order Handling",
    "alt_labels": [],
    "notation": null,
+   "rank": null,
    "definition": "Accepting, validating, tracking and closing the customer's order.",
    "broader_id": "etom-fulfillment",
    "exact_match": null,
@@ -21632,6 +21663,7 @@
    "pref_label": "Service Configuration & Activation",
    "alt_labels": [],
    "notation": null,
+   "rank": null,
    "definition": "Configuring and activating the services an order needs.",
    "broader_id": "etom-fulfillment",
    "exact_match": null,
@@ -21648,6 +21680,7 @@
    "pref_label": "Resource Provisioning",
    "alt_labels": [],
    "notation": null,
+   "rank": null,
    "definition": "Allocating, installing and configuring the resources services run on.",
    "broader_id": "etom-fulfillment",
    "exact_match": null,
@@ -21664,6 +21697,7 @@
    "pref_label": "Supplier/Partner Requisition Management",
    "alt_labels": [],
    "notation": null,
+   "rank": null,
    "definition": "Ordering what an order needs from suppliers and partners, and tracking it.",
    "broader_id": "etom-fulfillment",
    "exact_match": null,
@@ -21680,6 +21714,7 @@
    "pref_label": "Assurance",
    "alt_labels": [],
    "notation": null,
+   "rank": null,
    "definition": "Keeping delivered services working as promised.",
    "broader_id": null,
    "exact_match": null,
@@ -21696,6 +21731,7 @@
    "pref_label": "Problem Handling",
    "alt_labels": [],
    "notation": null,
+   "rank": null,
    "definition": "Receiving, tracking and resolving the problems a customer reports.",
    "broader_id": "etom-assurance",
    "exact_match": null,
@@ -21714,6 +21750,7 @@
     "Billing"
    ],
    "notation": null,
+   "rank": null,
    "definition": "Rating, charging and billing what a customer uses, and collecting payment.",
    "broader_id": null,
    "exact_match": null,
@@ -21732,6 +21769,7 @@
     "CRM"
    ],
    "notation": null,
+   "rank": null,
    "definition": "Knowing the customer and handling every interaction with them.",
    "broader_id": null,
    "exact_match": null,
@@ -21748,6 +21786,7 @@
    "pref_label": "Customer Interface Management",
    "alt_labels": [],
    "notation": null,
+   "rank": null,
    "definition": "Managing the contacts between the customer and the operator, in any channel.",
    "broader_id": "etom-customer-relationship-management",
    "exact_match": null,
@@ -21764,6 +21803,7 @@
    "pref_label": "Assisted",
    "alt_labels": [],
    "notation": null,
+   "rank": null,
    "definition": "An order a sales agent, a shop or the back office places for the customer.",
    "broader_id": null,
    "exact_match": null,
@@ -21782,6 +21822,7 @@
     "Digital self-service"
    ],
    "notation": null,
+   "rank": null,
    "definition": "An order the customer places themselves, on the web or in an app.",
    "broader_id": null,
    "exact_match": null,
@@ -21800,6 +21841,7 @@
     "System to system"
    ],
    "notation": null,
+   "rank": null,
    "definition": "An order another system raises, such as a portability or contract event.",
    "broader_id": null,
    "exact_match": null,
@@ -21818,6 +21860,7 @@
     "Captures"
    ],
    "notation": null,
+   "rank": 2,
    "definition": "Takes in the order, or facts the order needs, from the customer or the field.",
    "broader_id": null,
    "exact_match": null,
@@ -21834,6 +21877,7 @@
    "pref_label": "Catalog",
    "alt_labels": [],
    "notation": null,
+   "rank": 7,
    "definition": "Supplies the offer, its rules and its eligibility from the product catalogue.",
    "broader_id": null,
    "exact_match": null,
@@ -21850,6 +21894,7 @@
    "pref_label": "Customer data",
    "alt_labels": [],
    "notation": null,
+   "rank": 6,
    "definition": "Keeps the customer's account and party record.",
    "broader_id": null,
    "exact_match": null,
@@ -21866,6 +21911,7 @@
    "pref_label": "Validate",
    "alt_labels": [],
    "notation": null,
+   "rank": 5,
    "definition": "Checks that the order, the customer or the site qualifies.",
    "broader_id": null,
    "exact_match": null,
@@ -21884,6 +21930,7 @@
     "Orchestrates"
    ],
    "notation": null,
+   "rank": 1,
    "definition": "Splits the order into sub-orders and drives each to completion.",
    "broader_id": null,
    "exact_match": null,
@@ -21904,6 +21951,7 @@
     "Provisions"
    ],
    "notation": null,
+   "rank": 3,
    "definition": "Configures and activates the service or resource on the network.",
    "broader_id": null,
    "exact_match": null,
@@ -21922,6 +21970,7 @@
     "Installation"
    ],
    "notation": null,
+   "rank": 4,
    "definition": "Schedules and records the work done at the customer's site.",
    "broader_id": null,
    "exact_match": null,
@@ -21938,6 +21987,7 @@
    "pref_label": "Logistics",
    "alt_labels": [],
    "notation": null,
+   "rank": 8,
    "definition": "Ships, delivers or collects equipment.",
    "broader_id": null,
    "exact_match": null,
@@ -21954,6 +22004,7 @@
    "pref_label": "Bill",
    "alt_labels": [],
    "notation": null,
+   "rank": 9,
    "definition": "Starts, changes or stops billing for what was delivered.",
    "broader_id": null,
    "exact_match": null,
@@ -21970,6 +22021,7 @@
    "pref_label": "Track",
    "alt_labels": [],
    "notation": null,
+   "rank": 10,
    "definition": "Shows the order's progress to the customer and to the operator.",
    "broader_id": null,
    "exact_match": null,
@@ -21986,6 +22038,7 @@
    "pref_label": "Notify",
    "alt_labels": [],
    "notation": null,
+   "rank": 11,
    "definition": "Tells the customer, or another party, that something happened.",
    "broader_id": null,
    "exact_match": null,
@@ -22002,6 +22055,7 @@
    "pref_label": "Record",
    "alt_labels": [],
    "notation": null,
+   "rank": 12,
    "definition": "Keeps the record of what was delivered, such as the inventory.",
    "broader_id": null,
    "exact_match": null,
@@ -22023,6 +22077,7 @@
     "Returns"
    ],
    "notation": null,
+   "rank": null,
    "definition": "Sets a component's options up on the delivering system, such as applying a firewall policy on the CPE or creating the self-service portal organisation.",
    "broader_id": null,
    "exact_match": null,
@@ -22042,6 +22097,7 @@
     "SSO"
    ],
    "notation": null,
+   "rank": null,
    "definition": "Signs users in to a component, such as SAML single sign-on into the self-service portal.",
    "broader_id": null,
    "exact_match": null,
@@ -22060,6 +22116,7 @@
     "Suggests"
    ],
    "notation": null,
+   "rank": null,
    "definition": "Proposes the fitting option for an order, such as the equipment model by bandwidth.",
    "broader_id": null,
    "exact_match": null,
@@ -22078,6 +22135,7 @@
     "Product Catalog"
    ],
    "notation": "TMF620",
+   "rank": null,
    "definition": null,
    "broader_id": null,
    "exact_match": null,
@@ -22094,6 +22152,7 @@
    "pref_label": "Trouble Ticket",
    "alt_labels": [],
    "notation": "TMF621",
+   "rank": null,
    "definition": null,
    "broader_id": null,
    "exact_match": null,
@@ -22110,6 +22169,7 @@
    "pref_label": "Product Ordering",
    "alt_labels": [],
    "notation": "TMF622",
+   "rank": null,
    "definition": null,
    "broader_id": null,
    "exact_match": null,
@@ -22128,6 +22188,7 @@
     "Customer"
    ],
    "notation": "TMF629",
+   "rank": null,
    "definition": null,
    "broader_id": null,
    "exact_match": null,
@@ -22144,6 +22205,7 @@
    "pref_label": "Party Management",
    "alt_labels": [],
    "notation": "TMF632",
+   "rank": null,
    "definition": null,
    "broader_id": null,
    "exact_match": null,
@@ -22162,6 +22224,7 @@
     "Product Inventory Management"
    ],
    "notation": "TMF637",
+   "rank": null,
    "definition": null,
    "broader_id": null,
    "exact_match": null,
@@ -22178,6 +22241,7 @@
    "pref_label": "Service Ordering",
    "alt_labels": [],
    "notation": "TMF641",
+   "rank": null,
    "definition": null,
    "broader_id": null,
    "exact_match": null,
@@ -22194,6 +22258,7 @@
    "pref_label": "Product Offering Qualification",
    "alt_labels": [],
    "notation": "TMF679",
+   "rank": null,
    "definition": null,
    "broader_id": null,
    "exact_match": null,
@@ -22210,6 +22275,7 @@
    "pref_label": "Communication",
    "alt_labels": [],
    "notation": "TMF681",
+   "rank": null,
    "definition": null,
    "broader_id": null,
    "exact_match": null,
@@ -22230,6 +22296,7 @@
     "Contact"
    ],
    "notation": null,
+   "rank": null,
    "definition": "A person or organisation the operator deals with, and how to reach them (SID Party).",
    "broader_id": null,
    "exact_match": "SID Party ABE",
@@ -22248,6 +22315,7 @@
     "Customer profile"
    ],
    "notation": null,
+   "rank": null,
    "definition": "A party the operator sells to, with its segment and status (SID Customer).",
    "broader_id": null,
    "exact_match": "SID Customer ABE",
@@ -22267,6 +22335,7 @@
     "Account"
    ],
    "notation": null,
+   "rank": null,
    "definition": "The account a customer's products are billed to (SID Customer Account).",
    "broader_id": null,
    "exact_match": "SID Customer Bill ABE",
@@ -22285,6 +22354,7 @@
     "Invoice"
    ],
    "notation": null,
+   "rank": null,
    "definition": "What a billing account is charged for a period (SID Customer Bill).",
    "broader_id": null,
    "exact_match": "SID Customer Bill ABE",
@@ -22304,6 +22374,7 @@
     "Package code"
    ],
    "notation": null,
+   "rank": null,
    "definition": "What is sold: an offering with its prices, eligibility rules and package codes (SID Product Offering).",
    "broader_id": null,
    "exact_match": "SID Product Offering ABE",
@@ -22324,6 +22395,7 @@
     "Subscription"
    ],
    "notation": null,
+   "rank": null,
    "definition": "An offering as a customer has it: an instance in the product inventory (SID Product).",
    "broader_id": null,
    "exact_match": "SID Product ABE",
@@ -22343,6 +22415,7 @@
     "Order"
    ],
    "notation": null,
+   "rank": null,
    "definition": "A customer's request to add, change or remove products (SID Customer Order).",
    "broader_id": null,
    "exact_match": "SID Customer Order ABE",
@@ -22362,6 +22435,7 @@
     "Milestone"
    ],
    "notation": null,
+   "rank": null,
    "definition": "A step an order has reached, as tracked and shown to the customer.",
    "broader_id": "entity-product-order",
    "exact_match": null,
@@ -22378,6 +22452,7 @@
    "pref_label": "Service order",
    "alt_labels": [],
    "notation": null,
+   "rank": null,
    "definition": "The order that provisions the services behind a product order (SID Service Order).",
    "broader_id": null,
    "exact_match": "SID Service Order ABE",
@@ -22398,6 +22473,7 @@
     "SIM"
    ],
    "notation": null,
+   "rank": null,
    "definition": "A physical or logical resource a service runs on: a CPE, a SIM, a number (SID Resource).",
    "broader_id": null,
    "exact_match": "SID Resource ABE",
@@ -22417,6 +22493,7 @@
     "MSISDN"
    ],
    "notation": null,
+   "rank": null,
    "definition": "A number assigned to a customer, ported in or out.",
    "broader_id": "entity-resource",
    "exact_match": "SID Logical Resource ABE",
@@ -22435,6 +22512,7 @@
     "Field work order"
    ],
    "notation": null,
+   "rank": null,
    "definition": "Work a technician does on site: installing a CPE or an access point.",
    "broader_id": null,
    "exact_match": "SID Work Order ABE",
@@ -22454,6 +22532,7 @@
     "Ticket"
    ],
    "notation": null,
+   "rank": null,
    "definition": "A customer's reported problem and its handling (SID Customer Problem).",
    "broader_id": null,
    "exact_match": "SID Customer Problem ABE",
@@ -22474,6 +22553,7 @@
     "Establishment card"
    ],
    "notation": null,
+   "rank": null,
    "definition": "A document a customer gives as proof: a trade licence, an ID, an establishment card.",
    "broader_id": null,
    "exact_match": null,
@@ -22493,6 +22573,7 @@
     "Solution design document"
    ],
    "notation": null,
+   "rank": null,
    "definition": "How a solution is built: its systems, integrations and data, such as an SDD.",
    "broader_id": null,
    "exact_match": null,
@@ -22511,6 +22592,7 @@
     "HLD"
    ],
    "notation": null,
+   "rank": null,
    "definition": "The shape of a solution before its detail: its parts and how they connect.",
    "broader_id": null,
    "exact_match": null,
@@ -22529,6 +22611,7 @@
     "Workflow book"
    ],
    "notation": null,
+   "rank": null,
    "definition": "How work flows step by step, such as a workflow book of an order journey.",
    "broader_id": null,
    "exact_match": null,
@@ -22547,6 +22630,7 @@
     "Product spec"
    ],
    "notation": null,
+   "rank": null,
    "definition": "What an offering is and how it is sold and fulfilled.",
    "broader_id": null,
    "exact_match": null,
@@ -22563,6 +22647,7 @@
    "pref_label": "Contract",
    "alt_labels": [],
    "notation": null,
+   "rank": null,
    "definition": "An agreement with a customer, vendor or partner.",
    "broader_id": null,
    "exact_match": null,
@@ -22579,6 +22664,7 @@
    "pref_label": "Policy",
    "alt_labels": [],
    "notation": null,
+   "rank": null,
    "definition": "A rule the business has to follow, and why.",
    "broader_id": null,
    "exact_match": null,
@@ -22597,6 +22683,7 @@
     "How-to"
    ],
    "notation": null,
+   "rank": null,
    "definition": "How to do something, for the people who do it.",
    "broader_id": null,
    "exact_match": null,
@@ -22613,6 +22700,7 @@
    "pref_label": "Other",
    "alt_labels": [],
    "notation": null,
+   "rank": null,
    "definition": "A document none of the other types describes.",
    "broader_id": null,
    "exact_match": null,

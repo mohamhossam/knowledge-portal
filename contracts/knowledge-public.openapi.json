@@ -4796,6 +4796,14 @@
       "ExplorerReleaseResponse": {
         "description": "The version in service as the explorer reads it: its content, never its documents,\nindex, version history or who accepted what (requirement-portal ADR-0101, ADR-0120).\nThe change requests applied to it are part of its content, for the Solution\nArchitecture document (step 7).",
         "properties": {
+          "capability_domains": {
+            "items": {
+              "$ref": "#/components/schemas/CapabilityDomainSchema"
+            },
+            "maxItems": 5000,
+            "title": "Capability Domains",
+            "type": "array"
+          },
           "change_history": {
             "items": {
               "$ref": "#/components/schemas/ChangeRequestRecordSchema"
@@ -4823,6 +4831,14 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "interfaces": {
+            "items": {
+              "$ref": "#/components/schemas/SystemInterfaceSchema"
+            },
+            "maxItems": 5000,
+            "title": "Interfaces",
+            "type": "array"
           },
           "journeys": {
             "items": {
@@ -4887,6 +4903,14 @@
             "title": "Relationships",
             "type": "array"
           },
+          "schemes": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptSchemeSchema"
+            },
+            "maxItems": 5000,
+            "title": "Schemes",
+            "type": "array"
+          },
           "source_references": {
             "items": {
               "$ref": "#/components/schemas/SourceReferenceSchema"
@@ -4909,6 +4933,14 @@
             },
             "maxItems": 5000,
             "title": "Systems",
+            "type": "array"
+          },
+          "vocabulary": {
+            "items": {
+              "$ref": "#/components/schemas/VocabularyTermSchema"
+            },
+            "maxItems": 5000,
+            "title": "Vocabulary",
             "type": "array"
           }
         },
@@ -7480,6 +7512,16 @@
             "title": "Id",
             "type": "string"
           },
+          "layout": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LandscapeLayout"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "name": {
             "maxLength": 300,
             "title": "Name",
@@ -7516,6 +7558,16 @@
         ],
         "title": "LandscapeDomainSchema",
         "type": "object"
+      },
+      "LandscapeLayout": {
+        "description": "Where the landscape map draws a top domain apart from the order of layers.",
+        "enum": [
+          "bus",
+          "above_bus",
+          "side"
+        ],
+        "title": "LandscapeLayout",
+        "type": "string"
       },
       "LibraryAdminAction": {
         "enum": [
@@ -14271,6 +14323,18 @@
             "maxLength": 300,
             "title": "Pref Label",
             "type": "string"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
           },
           "replaced_by": {
             "anyOf": [
