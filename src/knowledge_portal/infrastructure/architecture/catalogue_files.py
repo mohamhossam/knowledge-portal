@@ -1465,6 +1465,9 @@ _EVENT_KINDS = {
     "internal status": "statuses",
     "fallout": "fallout",
 }
+# The lists a product's tracking gathers from the TrackingFlows, TrackingChannels and
+# TrackingEvents sheets.
+_TRACKING_LISTS = ("flows", "channels", "milestones", "statuses", "fallout")
 _AUDIENCE_KINDS = frozenset({"audience", "audiences", "who it is for"})
 
 
@@ -2986,14 +2989,7 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
     def tracking(cells: dict[str, object], where: str) -> dict[str, Any]:
         owner = offering(cells, where)
         if owner.get("tracking") is None:
-            owner["tracking"] = {
-                "_where": where,
-                "flows": [],
-                "channels": [],
-                "milestones": [],
-                "statuses": [],
-                "fallout": [],
-            }
+            owner["tracking"] = {"_where": where, **{key: [] for key in _TRACKING_LISTS}}
         found: dict[str, Any] = owner["tracking"]
         return found
 
@@ -3051,9 +3047,12 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
         where = f"{TRACKING} row {number}"
         if offering(cells, where).get("tracking") is not None:
             raise InvalidKnowledgeError(f"{where}: a product's tracking is one row.")
+        # A column named for one of the lists is ignored like any other unknown column; the
+        # tracking sheets below append to those lists.
         tracking(cells, where).update(
             {
-                **cells,
+                **{key: value for key, value in cells.items() if key not in _TRACKING_LISTS},
+                "_where": where,
                 "order_types": list(_split(cells.get("order_types"), where, "order_types")),
             }
         )
