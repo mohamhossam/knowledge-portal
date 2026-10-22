@@ -183,6 +183,12 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Changed
 
+- `ROADMAP.md` says what is open, then what each stage delivered in a line (review
+  recommendation 18). The full delivery record moved, unchanged, to
+  `docs/history/roadmap-to-v0.7.0.md`. `docs/ux/ia/route-map.md` is marked superseded by
+  `frontend/src/app/App.tsx`, with which of its routes were adopted, which were not, and which
+  the app serves that it never listed. `docs/operations/branch-protection.md` says what to
+  require on `main`; turning it on is the repository owner's step in GitHub's settings.
 - Offerings and journeys a reading would take for one another are refused (review
   recommendation 17). No two offerings may share an id, code or name, compared ignoring case
   and punctuation as the suggestion matcher reads them; the message names the offering that

@@ -1,6 +1,23 @@
 # Route map — current → proposed, with redirects
 
-> **HYPOTHESIS.** This depends on the IA in `navigation.md` and is validated by the tree test.
+> **Superseded (2026-10-22, review recommendation 18).** This was the proposal; the routes the
+> app serves are in `frontend/src/app/App.tsx`, and that file is the source of truth. Kept as
+> the record of what was proposed. Checked against `App.tsx` on 2026-10-22:
+>
+> - **Adopted:** `/` as Your work (with "everyone" as a scope), `/reminders` → `/`,
+>   `/library/:id/focus`, `/library/:id/cited-by`, the draft workspace's five steps with
+>   `/suggestions` → `decide`, `…/decide/focus`, and the 404 page.
+> - **Not adopted:** `/library/:id/passages/:blockId`; `/architecture/areas` (it stays
+>   `/architecture/domains`); `/architecture/versions/compare` (it stays `/architecture/compare`);
+>   the draft's `…/edit/…` pages (hand edits stay at `/architecture/versions/:id/…`);
+>   `/ownership` and its pages (they stay `/squads`); the `/help` pages (help stays a panel).
+>   `/library/:id/citations` was not renamed: it is a page of its own beside `cited-by`.
+> - **Served but not in this map:** `/architecture/map`, `/architecture/concepts`,
+>   `/architecture/golden-set`, `/architecture/governance/:register/:itemId`, `/library/:id/about`,
+>   `/squads/assign`, `/squads/tree`, `/squads/products` and `/squads/systems/:id`.
+>
+> Originally marked **HYPOTHESIS**: it depended on the IA in `navigation.md`, to be validated
+> by the tree test.
 
 **Rules:**
 - Every current URL resolves. A changed URL gets a client-side `<Navigate replace>` that

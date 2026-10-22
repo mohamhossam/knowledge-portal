@@ -16,7 +16,7 @@ It is one of three repositories:
 > **Status: the portal is complete and released (v0.7.0).** The API, worker, schema, data
 > import, images and CI are in place. The browser app ships every curation screen on its
 > design system ("The Calm Ledger", `DESIGN.md`), with sign-in, the no-access page and the
-> read-only Product Architecture Explorer. See `ROADMAP.md` for what each stage delivered.
+> read-only Product Architecture Explorer. See `ROADMAP.md` for what is open and what each stage delivered.
 
 ## Run it offline
 
