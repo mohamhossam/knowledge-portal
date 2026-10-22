@@ -175,6 +175,8 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Changed
 
+- `opentelemetry-api` 1.45.0 → 1.45.1 for CVE-2026-114603, which the supply-chain gate
+  reported.
 - The five largest modules are split by concern (review recommendation 16); behaviour, the
   API and both contracts are unchanged.
   - `catalogue_files.py` (4,357 lines) is a package by format: field readers, YAML/JSON
