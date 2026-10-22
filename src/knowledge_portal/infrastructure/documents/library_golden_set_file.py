@@ -24,6 +24,7 @@ from knowledge_portal.application.use_cases.library_evaluation import (
     LibraryGoldenDocument,
     LibraryGoldenSet,
 )
+from knowledge_portal.infrastructure.json_reading import trimmed_text
 
 # An upload with a generic type is read by its extension, as the portal reads one.
 GENERIC_TYPE = "application/octet-stream"
@@ -83,10 +84,6 @@ def _unique(values: list[str], where: str) -> None:
         raise LibraryGoldenSetFileError(f"{where} names the same entry twice.")
 
 
-def _text(value: str | None) -> str | None:
-    return value.strip() or None if value is not None else None
-
-
 def _file(raw: _Document, where: str, folder: Path) -> tuple[str, bytes]:
     name = (raw.file or "").strip()
     relative = PurePosixPath(name)
@@ -123,9 +120,9 @@ def _document(raw: _Document, folder: Path) -> LibraryGoldenDocument:
         raw.id.strip(),
         raw.title.strip(),
         filename,
-        _text(raw.mime_type) or GENERIC_TYPE,
+        trimmed_text(raw.mime_type) or GENERIC_TYPE,
         content,
-        _text(raw.product),
+        trimmed_text(raw.product),
         raw.withdrawn,
     )
 
@@ -148,11 +145,11 @@ def _case(raw: _Case, documents: dict[str, LibraryGoldenDocument]) -> LibraryGol
             raise LibraryGoldenSetFileError(f"{where} expects a withdrawn document: {title!r}.")
         if item.passage is not None and not item.passage.strip():
             raise LibraryGoldenSetFileError(f"{where} expects a blank passage.")
-        expected.append(ExpectedHit(title, _text(item.passage)))
+        expected.append(ExpectedHit(title, trimmed_text(item.passage)))
     if len(set(expected)) != len(expected):
         raise LibraryGoldenSetFileError(f"{where} expects the same passage twice.")
     products = {documents[item.document_title].product for item in expected} - {None}
-    product = _text(raw.product) or (
+    product = trimmed_text(raw.product) or (
         next(iter(products)) if len(products) == 1 else SEVERAL_PRODUCTS if products else None
     )
     return LibraryGoldenCase(

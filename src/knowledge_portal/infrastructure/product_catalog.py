@@ -31,6 +31,12 @@ from knowledge_portal.domain.architecture.plans import (
     PlanPrice,
     PriceKind,
 )
+from knowledge_portal.infrastructure.json_reading import (
+    UnreadableValue,
+    bounded_list,
+    mapping,
+    trimmed_text,
+)
 
 MAX_PLANS = 50
 MAX_PRICES = 50
@@ -42,43 +48,16 @@ _KINDS = {
 }
 
 
-class _Unusable(Exception):
-    """The catalog's answer cannot be read; reported as the catalog being unavailable."""
-
-
-def _object(value: object) -> Mapping[str, Any]:
-    if not isinstance(value, Mapping):
-        raise _Unusable("expected an object")
-    return value
-
-
-def _text(value: object) -> str | None:
-    if value is None:
-        return None
-    if not isinstance(value, str | int | float) or isinstance(value, bool):
-        raise _Unusable("expected text")
-    text = str(value).strip()
-    return text or None
-
-
-def _list(value: object, limit: int) -> list[Any]:
-    if value is None:
-        return []
-    if not isinstance(value, list):
-        raise _Unusable("expected a list")
-    return value[:limit]
-
-
 def _terms(raw: Mapping[str, Any]) -> tuple[str, ...]:
     """The commitments stated on an offering: "24 months", or the term's name."""
     terms = []
-    for item in _list(raw.get("productOfferingTerm"), MAX_PRICES):
-        term = _object(item)
+    for item in bounded_list(raw.get("productOfferingTerm"), MAX_PRICES):
+        term = mapping(item)
         duration = term.get("duration")
         if isinstance(duration, Mapping) and duration.get("amount") is not None:
-            units = _text(duration.get("units")) or ""
-            terms.append(f"{_text(duration.get('amount'))} {units}".strip())
-        elif name := _text(term.get("name")):
+            units = trimmed_text(duration.get("units")) or ""
+            terms.append(f"{trimmed_text(duration.get('amount'))} {units}".strip())
+        elif name := trimmed_text(term.get("name")):
             terms.append(name)
     return tuple(dict.fromkeys(terms))
 
@@ -100,16 +79,16 @@ class Tmf620ProductCatalog:
         if raw is None:
             return None
         try:
-            found = _object(raw)
+            found = mapping(raw)
             return CatalogOffering(
-                id=_text(found.get("id")) or code,
-                name=_text(found.get("name")) or code,
+                id=trimmed_text(found.get("id")) or code,
+                name=trimmed_text(found.get("name")) or code,
                 read_at=self._clock.now(),
-                lifecycle=_text(found.get("lifecycleStatus")),
+                lifecycle=trimmed_text(found.get("lifecycleStatus")),
                 plans=self._plans(found),
                 terms=_terms(found),
             )
-        except (_Unusable, InvalidKnowledgeError, InvalidOperation, ValueError) as exc:
+        except (UnreadableValue, InvalidKnowledgeError, InvalidOperation, ValueError) as exc:
             raise ServiceUnavailableError(
                 f"The product catalog returned an unusable offering for {code!r}."
             ) from exc
@@ -141,29 +120,29 @@ class Tmf620ProductCatalog:
         return found
 
     def _plans(self, offering: Mapping[str, Any]) -> tuple[CatalogPlan, ...]:
-        bundled = _list(offering.get("bundledProductOffering"), MAX_PLANS)
+        bundled = bounded_list(offering.get("bundledProductOffering"), MAX_PLANS)
         if not (offering.get("isBundle") is True and bundled):
             return (self._plan(offering),)
         plans = []
         for reference in bundled:
-            plan_id = _text(_object(reference).get("id"))
+            plan_id = trimmed_text(mapping(reference).get("id"))
             if plan_id is None:
-                raise _Unusable("a bundled offering without an id")
+                raise UnreadableValue("a bundled offering's id", None)
             child = self._get(f"/productOffering/{quote(plan_id, safe='')}")
             if child is not None:
-                plans.append(self._plan(_object(child)))
+                plans.append(self._plan(mapping(child)))
         return tuple(plans)
 
     def _plan(self, raw: Mapping[str, Any]) -> CatalogPlan:
         prices = (
-            self._price(_object(item))
-            for item in _list(raw.get("productOfferingPrice"), MAX_PRICES)
+            self._price(mapping(item))
+            for item in bounded_list(raw.get("productOfferingPrice"), MAX_PRICES)
         )
         return CatalogPlan(
-            id=_text(raw.get("id")) or "",
-            name=_text(raw.get("name")) or "",
-            description=_text(raw.get("description")),
-            lifecycle=_text(raw.get("lifecycleStatus")),
+            id=trimmed_text(raw.get("id")) or "",
+            name=trimmed_text(raw.get("name")) or "",
+            description=trimmed_text(raw.get("description")),
+            lifecycle=trimmed_text(raw.get("lifecycleStatus")),
             prices=tuple(price for price in prices if price is not None),
             terms=_terms(raw),
         )
@@ -173,33 +152,33 @@ class Tmf620ProductCatalog:
         states no amount of its own is left out."""
         raw = reference
         if "price" not in reference and "priceType" not in reference:
-            price_id = _text(reference.get("id"))
+            price_id = trimmed_text(reference.get("id"))
             if price_id is None:
-                raise _Unusable("a price reference without an id")
+                raise UnreadableValue("a price reference's id", None)
             fetched = self._get(f"/productOfferingPrice/{quote(price_id, safe='')}")
             if fetched is None:
                 return None
-            raw = _object(fetched)
+            raw = mapping(fetched)
         money = raw.get("price")
         if not isinstance(money, Mapping):
             return None
         value = money.get("value", money.get("amount"))
-        kind = _KINDS.get((_text(raw.get("priceType")) or "").replace(" ", "").casefold())
+        kind = _KINDS.get((trimmed_text(raw.get("priceType")) or "").replace(" ", "").casefold())
         if value is None or kind is None:
             return None
         period = None
         if kind is PriceKind.RECURRING:
-            every = _text(raw.get("recurringChargePeriodLength")) or "1"
-            unit = _text(raw.get("recurringChargePeriodType"))
+            every = trimmed_text(raw.get("recurringChargePeriodLength")) or "1"
+            unit = trimmed_text(raw.get("recurringChargePeriodType"))
             period = f"{every} {unit}" if unit else None
         measure = raw.get("unitOfMeasure")
         return PlanPrice(
-            name=_text(raw.get("name")) or kind.value.replace("_", " ").capitalize(),
+            name=trimmed_text(raw.get("name")) or kind.value.replace("_", " ").capitalize(),
             kind=kind,
             amount=Decimal(str(value)),
-            currency=_text(money.get("unit")) or _text(money.get("currency")) or "",
+            currency=trimmed_text(money.get("unit")) or trimmed_text(money.get("currency")) or "",
             period=period,
-            unit=_text(measure.get("units")) if isinstance(measure, Mapping) else None,
+            unit=trimmed_text(measure.get("units")) if isinstance(measure, Mapping) else None,
         )
 
 

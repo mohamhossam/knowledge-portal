@@ -7,12 +7,14 @@ from datetime import datetime
 from smb_kernel.persistence.connector import DbConnection as DbConnection
 
 from knowledge_portal.application.errors import PersistenceError
+from knowledge_portal.infrastructure.json_reading import UnreadableValue, integer
 
 
 def _integer(value: object) -> int:
-    if not isinstance(value, int):
-        raise PersistenceError("Stored revision number must be an integer.")
-    return value
+    try:
+        return integer(value)
+    except UnreadableValue as exc:
+        raise PersistenceError("Stored revision number must be an integer.") from exc
 
 
 def _datetime(value: object) -> datetime:

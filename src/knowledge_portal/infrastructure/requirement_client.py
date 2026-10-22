@@ -46,6 +46,12 @@ from knowledge_portal.application.ports.requirement_historic_citations import (
 from knowledge_portal.application.ports.source_impact import DependencyImpactPage
 from knowledge_portal.domain.document.reference import PublishedReference
 from knowledge_portal.domain.identity.entities import ActorId
+from knowledge_portal.infrastructure.json_reading import (
+    flag,
+    optional_integer,
+    optional_text,
+    text,
+)
 
 _CITATION = TypeAdapter(PublishedReference)
 _COUNTS = TypeAdapter(tuple[MappingCount, ...])
@@ -90,11 +96,7 @@ class HttpRequirementDependents:
         )
         try:
             items = tuple(_dependent(item) for item in body["items"])
-            next_offset = body["next_offset"]
-            if next_offset is not None and (
-                not isinstance(next_offset, int) or isinstance(next_offset, bool)
-            ):
-                raise TypeError("expected a whole number or nothing")
+            next_offset = optional_integer(body["next_offset"])
         except ServiceUnavailableError:
             raise
         except (KeyError, TypeError, ValueError) as exc:
@@ -104,40 +106,16 @@ class HttpRequirementDependents:
 
 def _dependent(item: Any) -> RequirementDependent:
     return RequirementDependent(
-        _text(item["requirement_id"]),
-        _text(item["requirement_title"]),
-        _optional_text(item.get("analysis_id")),
-        _optional_whole(item.get("round_number")),
-        _flag(item.get("current", True)),
-        _text(item["target_id"]),
-        _text(item["statement"]),
+        text(item["requirement_id"]),
+        text(item["requirement_title"]),
+        optional_text(item.get("analysis_id")),
+        optional_integer(item.get("round_number")),
+        flag(item.get("current", True)),
+        text(item["target_id"]),
+        text(item["statement"]),
         ProposalStatus(item["status"]),
         _decode(_CITATION, item["lineage"]["citation"], "dependents"),
     )
-
-
-def _text(value: object) -> str:
-    if not isinstance(value, str):
-        raise TypeError("expected text")
-    return value
-
-
-def _optional_text(value: object) -> str | None:
-    return None if value is None else _text(value)
-
-
-def _optional_whole(value: object) -> int | None:
-    if value is None:
-        return None
-    if not isinstance(value, int) or isinstance(value, bool):
-        raise TypeError("expected a whole number")
-    return value
-
-
-def _flag(value: object) -> bool:
-    if not isinstance(value, bool):
-        raise TypeError("expected true or false")
-    return value
 
 
 class HttpRequirementImpact:

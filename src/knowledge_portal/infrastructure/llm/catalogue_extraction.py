@@ -89,6 +89,7 @@ from knowledge_portal.domain.architecture.tracking import (
     TrackingEvent,
     TrackingFlow,
 )
+from knowledge_portal.infrastructure.json_reading import trimmed_text
 from knowledge_portal.infrastructure.llm.prompts.catalogue_extraction_prompt import (
     DETAILED_SYSTEM_PROMPT,
     LEAN_SYSTEM_PROMPT,
@@ -730,10 +731,6 @@ def domain_key(name: str, parent: str | None = None) -> str:
     return slug(f"{parent} {name}" if parent else name)
 
 
-def _text(value: str | None) -> str | None:
-    return (value or "").strip() or None
-
-
 def _trust(value: str | None) -> SourceConfidence | None:
     return SourceConfidence(value) if value else None
 
@@ -756,7 +753,7 @@ def _nfrs(items: list[NfrOutput]) -> tuple[OfferingNfr, ...]:
             nfr = OfferingNfr(
                 item.quality,
                 item.coverage,  # type: ignore[arg-type]
-                _text(item.statement),
+                trimmed_text(item.statement),
                 _trust(item.confidence),
             )
         except InvalidKnowledgeError:
@@ -804,7 +801,7 @@ def _tracking(
             system(flow.from_system) or "",
             system(flow.to_system) or "",
             flow.what,
-            _text(flow.interface),
+            trimmed_text(flow.interface),
         )
         for flow in read.flows
     ]
@@ -814,10 +811,10 @@ def _tracking(
         channel = _built(
             TrackingChannel,
             key,
-            correlation_key=_text(item.correlation_key),
+            correlation_key=trimmed_text(item.correlation_key),
             ui_system_id=system(item.tracked_in),
             read_system_id=system(item.read_from),
-            read_interface=_text(item.read_over),
+            read_interface=trimmed_text(item.read_over),
         )
         if channel is not None:
             channels.setdefault(key.casefold(), channel)
@@ -828,19 +825,21 @@ def _tracking(
             event = _built(
                 TrackingEvent,
                 item.label,
-                _text(item.detail),
+                trimmed_text(item.detail),
                 system(item.system) if systems else None,
             )
             if event is not None:
                 found.setdefault(event.label.casefold(), event)
         return tuple(found.values())
 
-    fallout = [_built(FalloutCase, case.trigger, _text(case.handling)) for case in read.fallout]
+    fallout = [
+        _built(FalloutCase, case.trigger, trimmed_text(case.handling)) for case in read.fallout
+    ]
     tracking = _built(
         OrderTracking,
         order_types=codes,
-        scope_note=_text(read.scope_note),
-        not_applicable_note=_text(read.not_applicable_note),
+        scope_note=trimmed_text(read.scope_note),
+        not_applicable_note=trimmed_text(read.not_applicable_note),
         flows=tuple(item for item in flows if item is not None),
         channels=tuple(channels.values()),
         milestones=events(read.milestones, systems=True),
@@ -860,8 +859,8 @@ def _block(item: NoteBlockOutput) -> NoteBlock | None:
     return _built(
         NoteBlock,
         kind,
-        title=_text(item.title),
-        text=_text(item.text) if kind is NoteBlockKind.TEXT else None,
+        title=trimmed_text(item.title),
+        text=trimmed_text(item.text) if kind is NoteBlockKind.TEXT else None,
         items=_clean(item.items) if kind is NoteBlockKind.LIST else (),
         columns=tuple(column.strip() for column in item.columns) if table else (),
         rows=tuple(tuple(row) for row in item.rows) if table else (),
@@ -883,8 +882,8 @@ def _lifecycle_notes(
             LifecycleNote,
             slug(item.title),
             item.title,
-            kind=_text(item.kind),
-            summary=_text(item.summary),
+            kind=trimmed_text(item.kind),
+            summary=trimmed_text(item.summary),
             order_types=codes,
             channels=_names(item.channels),
             blocks=tuple(block for block in map(_block, item.blocks) if block is not None),
@@ -915,7 +914,7 @@ def _offering(item: DetailedChangeOutput, names: _SystemNames) -> ProductOfferin
                 code,
                 title,
                 order.enabled is not False,
-                _text(order.description),
+                trimmed_text(order.description),
                 _trust(order.confidence),
                 channels=_names(order.channels),
             )
@@ -949,11 +948,11 @@ def _offering(item: DetailedChangeOutput, names: _SystemNames) -> ProductOfferin
         component = OfferingComponent(
             slug(part.code or title),
             title,
-            code=_text(part.code),
-            kind=_text(part.type),
+            code=trimmed_text(part.code),
+            kind=trimmed_text(part.type),
             mandatory=part.mandatory,
             customer_visible=part.customer_visible,
-            description=_text(part.description),
+            description=trimmed_text(part.description),
             responsibilities=tuple(duties.values()),
             confidence=_trust(part.confidence),
             realisation=_realisation(part.realisation),
@@ -964,7 +963,8 @@ def _offering(item: DetailedChangeOutput, names: _SystemNames) -> ProductOfferin
     def points(items: list[PointOutput]) -> tuple[OfferingPoint, ...]:
         found = {item.name.strip().casefold(): item for item in items if item.name.strip()}
         return tuple(
-            OfferingPoint(item.name.strip(), _text(item.description)) for item in found.values()
+            OfferingPoint(item.name.strip(), trimmed_text(item.description))
+            for item in found.values()
         )
 
     plans: dict[str, OfferingPlan] = {}
@@ -975,19 +975,19 @@ def _offering(item: DetailedChangeOutput, names: _SystemNames) -> ProductOfferin
             if stated is not None:
                 facts.setdefault(stated.name.casefold(), stated)
         made = _built(
-            OfferingPlan, plan.name.strip(), tuple(facts.values()), _text(plan.description)
+            OfferingPlan, plan.name.strip(), tuple(facts.values()), trimmed_text(plan.description)
         )
         if made is not None:
             plans.setdefault(made.name.casefold(), made)
-    offering_code = _text(read.code)
+    offering_code = trimmed_text(read.code)
     return ProductOffering(
         id=slug(offering_code or name),
         name=name,
         code=offering_code,
-        family=_text(read.family),
-        version=_text(read.version),
-        lifecycle=_text(read.lifecycle),
-        proposition=_text(read.proposition),
+        family=trimmed_text(read.family),
+        version=trimmed_text(read.version),
+        lifecycle=trimmed_text(read.lifecycle),
+        proposition=trimmed_text(read.proposition),
         rules=tuple(dict.fromkeys(rule.strip() for rule in read.rules if rule.strip())),
         order_types=tuple(orders),
         components=tuple(parts.values()),
@@ -1006,7 +1006,7 @@ def _journey(item: DetailedChangeOutput, names: _SystemNames) -> Journey:
     activities it has; the offering, order type and systems are resolved when accepted."""
     read = item.journey
     name = (item.name or item.system).strip()
-    product = _text(read.product) if read else None
+    product = trimmed_text(read.product) if read else None
     steps: dict[str, Activity] = {}
     rules: list[FlowRule] = []
     for step in read.steps if read else []:
@@ -1019,7 +1019,7 @@ def _journey(item: DetailedChangeOutput, names: _SystemNames) -> Journey:
         steps[number] = Activity(
             number,
             title,
-            track=_text(step.track),
+            track=trimmed_text(step.track),
             performing_system_id=names.resolve(performer) if performer else None,
             supporting_system_ids=tuple(
                 dict.fromkeys(
@@ -1028,24 +1028,30 @@ def _journey(item: DetailedChangeOutput, names: _SystemNames) -> Journey:
                     if plain_name(other)
                 )
             ),
-            system_function=_text(step.function),
+            system_function=trimmed_text(step.function),
             channels=_names(step.channels),
             channel_entry=entry,
         )
     for rule in read.rules if read else []:
         start, end = rule.from_step.strip(), rule.to_step.strip()
-        rejoin = _text(rule.rejoin) if rule.kind == "parallel" else None
+        rejoin = trimmed_text(rule.rejoin) if rule.kind == "parallel" else None
         if start in steps and end in steps and (rejoin is None or rejoin in steps):
             rules.append(
                 FlowRule(
-                    FlowRuleKind(rule.kind), start, end, _text(rule.condition), None, None, rejoin
+                    FlowRuleKind(rule.kind),
+                    start,
+                    end,
+                    trimmed_text(rule.condition),
+                    None,
+                    None,
+                    rejoin,
                 )
             )
     return Journey(
         id=slug(f"{product} {name}" if product else name),
         name=name,
         product_id=product,
-        order_type_code=_text(read.order_type) if read and product else None,
+        order_type_code=trimmed_text(read.order_type) if read and product else None,
         activities=tuple(steps.values()),
         flow_rules=tuple(rules),
     )
@@ -1063,9 +1069,9 @@ def _channel(item: DetailedChangeOutput, names: _SystemNames) -> Channel:
     return Channel(
         slug(name),
         name,
-        kind=_text(item.channel_kind),
+        kind=trimmed_text(item.channel_kind),
         entry_system_id=names.resolve(entry) if entry else None,
-        description=_text(item.text),
+        description=trimmed_text(item.text),
         confidence=SourceConfidence.CONFIRMED,
     )
 
@@ -1086,7 +1092,7 @@ def _interface(item: DetailedChangeOutput, names: _SystemNames) -> SystemInterfa
         exposer_id,
         style=InterfaceStyle(item.interface_style or "unspecified"),
         consumer_ids=(consumer_id,) if consumer_id and consumer_id != exposer_id else (),
-        description=_text(item.text),
+        description=trimmed_text(item.text),
         confidence=SourceConfidence.CONFIRMED,
     )
 
@@ -1098,7 +1104,7 @@ def _capability_domain(item: DetailedChangeOutput) -> CapabilityDomain:
         raise InvalidKnowledgeError("A capability domain needs its name.")
     parent = (item.parent_domain or "").strip() or None
     return CapabilityDomain(
-        domain_key(name, parent), name, parent_id=parent, description=_text(item.text)
+        domain_key(name, parent), name, parent_id=parent, description=trimmed_text(item.text)
     )
 
 
@@ -1114,7 +1120,7 @@ def _portfolio_node(item: DetailedChangeOutput) -> PortfolioNode:
         name,
         level,
         parent_id=parent,
-        description=_text(item.text),
+        description=trimmed_text(item.text),
         confidence=SourceConfidence.CONFIRMED,
     )
 
@@ -1131,8 +1137,8 @@ def _knowledge_source(item: DetailedChangeOutput) -> KnowledgeSource:
         title,
         SourceLevel(item.source_level or "L3"),
         short=short,
-        version=_text(item.source_version),
-        authority=_text(item.text),
+        version=trimmed_text(item.source_version),
+        authority=trimmed_text(item.text),
     )
 
 
@@ -1143,7 +1149,7 @@ def _source_conflict(item: DetailedChangeOutput) -> SourceConflict:
     if not title or len(item.conflict_sides) != 2:
         raise InvalidKnowledgeError("A conflict needs its title and its two sides.")
     a, b = (
-        ConflictSide(side.source.strip(), side.statement.strip(), _text(side.reference))
+        ConflictSide(side.source.strip(), side.statement.strip(), trimmed_text(side.reference))
         for side in item.conflict_sides
     )
     return SourceConflict(
@@ -1152,7 +1158,7 @@ def _source_conflict(item: DetailedChangeOutput) -> SourceConflict:
         a,
         b,
         scope=tuple(ConflictScope(name) for name in dict.fromkeys(_clean(item.affected_offerings))),
-        difference=_text(item.text),
+        difference=trimmed_text(item.text),
         confidence=SourceConfidence.CONFIRMED,
     )
 
@@ -1176,7 +1182,7 @@ def _realisation_record(item: DetailedChangeOutput, names: _SystemNames) -> Real
         name,
         system_ids=(names.resolve(system),) if system else (),
         realised_by=() if layer is RealisationLayer.RESOURCE else below,
-        description=_text(item.text),
+        description=trimmed_text(item.text),
         confidence=SourceConfidence.CONFIRMED,
     )
 
