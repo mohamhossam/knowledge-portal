@@ -1178,6 +1178,7 @@
             "type": "string"
           },
           "language": {
+            "default": "en",
             "maxLength": 20,
             "title": "Language",
             "type": "string"
@@ -1191,7 +1192,6 @@
         "required": [
           "file",
           "title",
-          "language",
           "expected_revision"
         ],
         "title": "Body_upload_document_architecture_knowledge_releases__release_id__documents_post",
@@ -1213,6 +1213,7 @@
             "type": "array"
           },
           "language": {
+            "default": "en",
             "maxLength": 20,
             "title": "Language",
             "type": "string"
@@ -1220,7 +1221,6 @@
         },
         "required": [
           "files",
-          "language",
           "expected_revision"
         ],
         "title": "Body_upload_documents_architecture_knowledge_releases__release_id__documents_batch_post",

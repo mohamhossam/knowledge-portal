@@ -2642,7 +2642,10 @@ export interface components {
             expected_revision: number;
             /** File */
             file: string;
-            /** Language */
+            /**
+             * Language
+             * @default en
+             */
             language: string;
             /** Title */
             title: string;
@@ -2653,7 +2656,10 @@ export interface components {
             expected_revision: number;
             /** Files */
             files: string[];
-            /** Language */
+            /**
+             * Language
+             * @default en
+             */
             language: string;
         };
         /**
