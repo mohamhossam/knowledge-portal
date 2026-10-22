@@ -2,14 +2,14 @@
  * Global search's matching (Ctrl+K): names the portal already holds, matched
  * in the browser. Every word typed must appear; a name that starts with the
  * query comes first, then one with a word that starts with it, then the rest,
- * each in name order. Arabic and Latin names alike: matching ignores case and
- * diacritics.
+ * each in name order. Matching ignores case and accents ("Société" is "societe").
  */
 
 const fold = (text: string) =>
   text
     .normalize("NFKD")
-    .replace(/[̀-ًͯ-ٰٟ]/g, "")
+    // The Latin accents NFKD splits off; the Arabic marks it also dropped went with English only.
+    .replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase();
 
 export function words(query: string): string[] {
