@@ -13,25 +13,29 @@ from typing import Any
 from knowledge_portal.domain.architecture.journeys import CallTiming, call_timing
 from knowledge_portal.domain.architecture.knowledge import InvalidKnowledgeError, RelationshipKind
 from knowledge_portal.domain.architecture.products import SourceConfidence
+from knowledge_portal.infrastructure.json_reading import UnreadableValue, trimmed_text
 
 _KINDS = ", ".join(kind.value for kind in RelationshipKind)
 _LIST_SEPARATOR = ";"
 
 
 def _text(value: object, where: str, field: str) -> str:
-    if value is None or (isinstance(value, str) and not value.strip()):
+    found = _optional_text(value, where, field)
+    if found is None:
         raise InvalidKnowledgeError(f"{where}: {field} is required.")
-    if isinstance(value, float) and value.is_integer():
-        return str(int(value))
-    if not isinstance(value, str | int | float):
-        raise InvalidKnowledgeError(f"{where}: {field} must be text.")
-    return str(value).strip()
+    return found
 
 
 def _optional_text(value: object, where: str, field: str) -> str | None:
-    if value is None or (isinstance(value, str) and not value.strip()):
-        return None
-    return _text(value, where, field)
+    # A workbook cell holds 12 as 12.0 and TRUE as a boolean: each reads as the text it shows.
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    elif isinstance(value, bool):
+        value = str(value)
+    try:
+        return trimmed_text(value)
+    except UnreadableValue as exc:
+        raise InvalidKnowledgeError(f"{where}: {field} must be text.") from exc
 
 
 def _timing(value: object, where: str) -> CallTiming | None:
