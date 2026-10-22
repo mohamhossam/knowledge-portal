@@ -26,7 +26,7 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   prefix. The explorer names roles by their vocabulary terms, and the Solution Architecture
   document names a linked interface by its record. YAML, JSON and the workbook carry `rank`
   (Vocabulary) and `layout` (LandscapeDomains), both optional. Review recommendation 10.
-  Public and internal contracts, additive.
+  Public contract, additive; the internal contract is unchanged.
 - Vocabularies are data, on one SKOS base (ADR-0125, proposed). A version holds the
   vocabularies a curator defines beside the seven built-in ones, each covering free-text
   fields: an offering's NFR quality, family, lifecycle and business-rule kind, an activity's
