@@ -3,7 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { useAuth } from "../auth/authContext";
 import { NoAccess } from "../auth/Gate";
-import { CALLBACK_PATH, REQUIREMENT_APP_URL, SILENT_CALLBACK_PATH } from "../auth/paths";
+import { CALLBACK_PATH, SILENT_CALLBACK_PATH } from "../auth/paths";
 import { ActionGroup, AppShell, Button, Drawer, MastheadButton, Select } from "../design/components";
 import { useDisclosure } from "../design/hooks";
 import { RouterLink } from "../shell/links";
@@ -11,7 +11,7 @@ import { ExplorerPage } from "./ExplorerPage";
 
 /**
  * The portal for someone signed in who is not a knowledge admin: the explorer
- * and nothing else (requirement-portal ADR-0101). The binding keeps the
+ * and nothing else (ADR-0101). The binding keeps the
  * masthead but not the index of tables, which only admins can open; any other
  * address says why it is closed and where to read instead.
  */
@@ -29,7 +29,7 @@ export function ReaderApp() {
 
 /**
  * The reader's frame: the masthead without the areas bar (AppShell's reader
- * variant), the way back to Requirement AI, and their account.
+ * variant) and their account.
  */
 function ReaderShell() {
   const auth = useAuth();
@@ -42,7 +42,6 @@ function ReaderShell() {
       product="Knowledge Portal"
       reader
       link={RouterLink}
-      outbound={REQUIREMENT_APP_URL === null ? undefined : { href: REQUIREMENT_APP_URL, label: "Requirement AI" }}
       utilities={
         actor ? (
           <MastheadButton

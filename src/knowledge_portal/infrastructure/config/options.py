@@ -166,7 +166,7 @@ DEFAULT_REQUEST_MAX_BODY_BYTES = 2 * 1024 * 1024
 
 
 class ProductCatalogProvider(Enum):
-    """Where plans and prices are read from (requirement-portal ADR-0101)."""
+    """Where plans and prices are read from (ADR-0101)."""
 
     NONE = "none"
     FAKE = "fake"

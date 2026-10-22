@@ -1,4 +1,4 @@
-"""The durable inbox of change requests from Requirement AI, one row per final approval."""
+"""The durable inbox of change requests apps send, one row per final approval."""
 
 from __future__ import annotations
 

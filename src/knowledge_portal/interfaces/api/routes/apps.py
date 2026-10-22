@@ -1,12 +1,13 @@
-"""This service's /internal routes, for requirement work only (requirement-portal ADR-0099).
+"""The knowledge base's API for apps, under /apps/v2 (ADR-0126).
 
-Every route needs the `requirements` service token. The request and response
-bodies are the shared contract values themselves: `ArchitectureQuery`,
+Any app registered in APP_CLIENT_IDS or APP_TOKENS may call it, under the name it was
+registered with; no app is named here. The request and response bodies are the
+contract values themselves: `ArchitectureQuery`,
 `ArchitectureKnowledgeMatch`, `AssessmentQuery`, `ArchitectureAssessment`,
 `PrecedentReceipt`, `ReferenceEvidence`, `DeliveryReceipt` and `KnowledgeEvent`, plus
 the read-only viewers' `CitedPassage` and `EvidenceChunk`, and a published historic
 requirement's content, read a page at a time (ADR-0102, amendment 1).
-`contracts/knowledge-internal.openapi.json` is the committed contract.
+`contracts/knowledge-apps.openapi.json` is the committed contract.
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ from knowledge_portal.application.ports.requirement_assessment import Architectu
 from knowledge_portal.application.use_cases.cited_passages import CitedPassage, PassageCitation
 from knowledge_portal.domain.historic.historic_requirement import CONTENT_PAGE_MAX, ContentPart
 from knowledge_portal.interfaces.api.dependencies import (
+    AppDep,
     ArchitectureMatchDep,
     CitedPassagesDep,
     HistoricImportsDep,
@@ -38,7 +40,11 @@ from knowledge_portal.interfaces.api.dependencies import (
     ReferenceKnowledgeDep,
     RequirementAssessmentDep,
     SystemReviewsDep,
-    require_service_caller,
+    require_app,
+)
+from knowledge_portal.interfaces.api.schemas.app_queries import (
+    ArchitectureQuery,
+    AssessmentQuery,
 )
 from knowledge_portal.interfaces.api.schemas.change_requests import (
     ApprovedBacklogRequest,
@@ -53,13 +59,11 @@ from knowledge_portal.interfaces.api.schemas.historic import (
     HistoricPassageEntry,
     HistoricPassagesPage,
 )
-from knowledge_portal.interfaces.api.schemas.internal_queries import (
-    ArchitectureQuery,
-    AssessmentQuery,
-)
 from knowledge_portal.interfaces.api.schemas.precedents import PrecedentBody
 
-router = APIRouter(prefix="/internal", dependencies=[Depends(require_service_caller)])
+# The path carries the contract's MAJOR version: a breaking change is served under the next.
+APPS_PREFIX = "/apps"
+router = APIRouter(prefix=f"{APPS_PREFIX}/v2", dependencies=[Depends(require_app)])
 
 
 class SearchRequest(BaseModel):
@@ -94,7 +98,8 @@ def assess(query: AssessmentQuery, assessment: RequirementAssessmentDep) -> Arch
 def record_precedent(
     body: PrecedentBody, response: Response, precedents: RecordPrecedentDep
 ) -> PrecedentReceipt:
-    """A Requirement Owner's decision on the suggested verdict (ontology plan Phase 5).
+    """A person's decision on the suggested verdict, made in the sending app (ontology plan
+    Phase 5).
 
     Kept once per analysis: a later decision replaces it, and the same one delivered again,
     or an older one arriving late, answers 200 and changes nothing. The release must be
@@ -146,12 +151,12 @@ def passage(
     responses={200: {"description": "The same approval was delivered before."}},
 )
 def receive_change_request(
-    body: ApprovedBacklogRequest, response: Response, receive: ReceiveChangeRequestDep
+    body: ApprovedBacklogRequest, response: Response, receive: ReceiveChangeRequestDep, app: AppDep
 ) -> ChangeRequestReceipt:
     """An approved backlog, kept once per final approval for a knowledge admin to read into a
-    draft (requirement-portal ADR-0101, step 7). Delivering the same approval again answers
+    draft, with the name of the app that sent it. Delivering the same approval again answers
     200 with the first change request; the same approval for another subject is a 409."""
-    item, created = receive.execute(body.to_backlog())
+    item, created = receive.execute(body.to_backlog(), app)
     if not created:
         response.status_code = 200
     return ChangeRequestReceipt(
@@ -167,7 +172,7 @@ def receive_change_request(
     },
 )
 def receive_delivery(
-    body: DeliveryRequest, response: Response, deliveries: ReceiveDeliveryDep
+    body: DeliveryRequest, response: Response, deliveries: ReceiveDeliveryDep, app: AppDep
 ) -> DeliveryReceipt:
     """A published Epic closed or removed in the work-item tracker (ontology plan Phase 7).
 
@@ -176,10 +181,10 @@ def receive_delivery(
     the Epic's catalogue changes still waiting and answers 200 with their ids. The same
     delivery id for another body is a 409."""
     if body.state is DeliveryState.REMOVED:
-        withdrawn = deliveries.removed(body.requirement_id, body.epic.external_id)
+        withdrawn = deliveries.removed(body.requirement_id, body.epic.external_id, app)
         response.status_code = 200
         return DeliveryReceipt(change_request_id=None, created=False, withdrawn=list(withdrawn))
-    item, created = deliveries.closed(body.to_delivery())
+    item, created = deliveries.closed(body.to_delivery(), app)
     if not created:
         response.status_code = 200
     return DeliveryReceipt(change_request_id=item.id, created=created, withdrawn=[])
@@ -270,16 +275,16 @@ def _event(event: KnowledgeEvent) -> dict[str, Any]:
     }
 
 
-# The internal contract's version (review recommendation 11), MAJOR.MINOR.PATCH: a breaking
-# change raises MAJOR (and needs a coordinated requirement-portal release), an additive one
-# raises MINOR, a description-only one may raise PATCH. CI checks it against the base branch's
-# contract (scripts/check_internal_contract.py, interfaces/api/contract_compat.py). 1.0.0 is the
-# first version that means something: until then the file carried FastAPI's default, 0.1.0.
-INTERNAL_CONTRACT_VERSION = "1.0.0"
+# The app API's version, MAJOR.MINOR.PATCH: a breaking change raises MAJOR (served under a new
+# path, released with the apps that call it), an additive one raises MINOR, a description-only
+# one may raise PATCH. CI checks it against the base branch's contract
+# (scripts/check_app_contract.py, interfaces/api/contract_compat.py). 2.0.0 is the internal
+# API's 1.0.0 opened to any app under /apps/v2 (ADR-0126).
+APP_CONTRACT_VERSION = "2.0.0"
 
 
 def contract_openapi() -> dict[str, Any]:
-    """This internal API on its own: the contract requirement work builds against."""
-    application = FastAPI(title="Knowledge service internal API", version=INTERNAL_CONTRACT_VERSION)
+    """The app API on its own: the contract apps build against."""
+    application = FastAPI(title="Knowledge base API for apps", version=APP_CONTRACT_VERSION)
     application.include_router(router)
     return application.openapi()

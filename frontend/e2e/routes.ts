@@ -46,9 +46,6 @@ export const ROUTES: RouteDef[] = [
   { key: "library-review-focus", path: (s) => s.reviewDocument && `library/${s.reviewDocument}/focus` },
   { key: "library-document", path: (s) => s.serviceDocument && `library/${s.serviceDocument}`, mask: [".ds-provenance", ".review-line__text", ".ds-facts dd:first-of-type"] },
   { key: "library-versions", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/versions`, mask: [".ds-provenance", ".review-line__text", "tbody td:nth-child(3)", "tbody th"] },
-  { key: "library-cited-by", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/cited-by`, mask: [".ds-provenance", ".review-line__text"] },
-  // The old address, kept working until area 10 makes it a redirect.
-  { key: "library-citations", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/citations`, mask: [".ds-provenance", ".review-line__text"] },
   { key: "library-ownership", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/ownership`, mask: [".ds-provenance", ".review-line__text", "tbody th"] },
   { key: "library-about", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/about`, mask: [".ds-provenance", ".review-line__text"] },
   // The architecture catalogue.
@@ -98,14 +95,9 @@ export const ROUTES: RouteDef[] = [
   { key: "squads-squads", path: at("squads/squads") },
   { key: "squads-people", path: at("squads/people") },
   { key: "squads-history", path: at("squads/history") },
-  { key: "requirement-knowledge", path: at("requirement-knowledge") },
-  { key: "requirement-knowledge-requirements", path: at("requirement-knowledge/requirements") },
-  { key: "requirement-knowledge-findings", path: at("requirement-knowledge/findings") },
-  { key: "requirement-knowledge-historic", path: at("requirement-knowledge/historic") },
-  // A record of each kind: requirement work's corpus and a historic BRD, served by e2e/mocks.ts.
-  { key: "requirement-knowledge-requirement", path: at("requirement-knowledge/requirements/REQ-1"), prepare: mocks.corpus, shows: /XGPON bundles for small offices/ },
-  { key: "requirement-knowledge-finding", path: at("requirement-knowledge/findings/kf-1"), prepare: mocks.corpus, shows: /Both order XGPON bundles through BCRM/ },
-  { key: "requirement-knowledge-historic-record", path: at("requirement-knowledge/historic/h1"), prepare: mocks.historic, shows: /XGPON bundles \(2024\)/ },
+  { key: "historic", path: at("historic") },
+  // A historic BRD's record, served by e2e/mocks.ts.
+  { key: "historic-record", path: at("historic/h1"), prepare: mocks.historic, shows: /XGPON bundles \(2024\)/ },
   { key: "not-found", path: at("no-such-page") },
 ];
 

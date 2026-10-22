@@ -111,7 +111,7 @@ function ConfirmForm({ panelRef, title, owner, busy, error, onSubmit, onCancel }
       <h2 id={`${id}-title`} tabIndex={-1} className="ds-consequence__title">Confirm <bdi>'{title}'</bdi> is still right</h2>
       <p className="ds-consequence__happens">
         {owner === null
-          ? "Its version in service stays as it is. Confirming starts its re-confirmation cycle again, and requirement work stops flagging citations of it as overdue."
+          ? "Its version in service stays as it is. Confirming starts its re-confirmation cycle again."
           : `For ${owner}, who owns it. Its version in service stays as it is; the confirmation names you and your reason, and is kept in its admin record.`}
       </p>
       {owner !== null && (

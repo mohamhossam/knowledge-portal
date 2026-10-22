@@ -9,7 +9,7 @@ import { useCatalogueContext } from "./useCatalogue";
 
 /**
  * Where orders are placed: each channel, the system that takes its orders in,
- * and the order types that can be placed through it (requirement-portal ADR-0101).
+ * and the order types that can be placed through it (ADR-0101).
  */
 export function ChannelsPage() {
   const { book, base, editable } = useCatalogueContext();

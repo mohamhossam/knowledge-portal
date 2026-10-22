@@ -107,9 +107,9 @@ class CandidateKind(StrEnum):
     PRODUCT = "product"
     # A whole journey: its activities, rules and integrations, reviewed as one (ADR-0096).
     JOURNEY = "journey"
-    # Where orders are placed, and the system that takes them in (requirement-portal ADR-0101).
+    # Where orders are placed, and the system that takes them in (ADR-0101).
     CHANNEL = "channel"
-    # A question an approved feature puts to an offering (requirement-portal ADR-0101, step 7).
+    # A question an approved feature puts to an offering (ADR-0101, step 7).
     QUESTION = "question"
     # A business capability concept and the capabilities it covers, from the backfill (ADR-0114).
     CONCEPT = "concept"
@@ -433,7 +433,7 @@ class CandidateCitation:
 @dataclass(frozen=True)
 class ChangeRequestCitation:
     """The change request and approved feature a suggestion comes from, when it does not
-    come from a document (requirement-portal ADR-0101, step 7)."""
+    come from a document (ADR-0101, step 7)."""
 
     change_request_id: str
     feature_id: str
@@ -2314,7 +2314,11 @@ def change_request_source(incoming: IncomingChangeRequest) -> KnowledgeSource:
     trace = incoming.trace
     return KnowledgeSource(
         id=incoming.id,
-        title=f"Requirement AI change request: {incoming.title}",
+        title=(
+            f"Change request from {incoming.sent_by}: {incoming.title}"
+            if incoming.sent_by
+            else f"Change request: {incoming.title}"
+        ),
         level=SourceLevel.L2,
         short=incoming.id,
         version=str(trace.breakdown_revision),

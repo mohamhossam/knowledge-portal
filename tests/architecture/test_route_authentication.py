@@ -1,10 +1,10 @@
 """Every HTTP operation resolves an authenticated actor unless it is a public probe.
 
-Internal operations (ADR-0099) are the one other kind: they resolve an
-authenticated *service* caller instead, and never a user.
+App operations (ADR-0126) are the one other kind: they resolve an authenticated
+*app* instead, and never a user.
 
 The product architecture explorer's read operations resolve a signed-in user
-without requiring the knowledge_admin role (requirement-portal ADR-0101). They
+without requiring the knowledge_admin role (ADR-0101). They
 are listed here, so opening another operation to non-admins is a deliberate
 change to this list.
 
@@ -19,7 +19,7 @@ from fastapi.routing import APIRoute, iter_route_contexts
 from knowledge_portal.interfaces.api.dependencies import (
     get_current_actor,
     get_signed_in_actor,
-    require_service_caller,
+    require_app,
 )
 from knowledge_portal.interfaces.api.main import create_app
 
@@ -52,14 +52,14 @@ def _service_operations() -> list[tuple[str, str, bool, bool]]:
     for context in iter_route_contexts(application.routes):
         if not isinstance(context.original_route, APIRoute):
             continue
-        if not str(context.path).startswith("/internal"):
+        if not str(context.path).startswith("/apps"):
             continue
         for method in sorted(context.methods or ()):
             found.append(
                 (
                     method,
                     str(context.path),
-                    _resolves(context.dependant, require_service_caller),
+                    _resolves(context.dependant, require_app),
                     _resolves_actor(context.dependant),
                 )
             )
@@ -73,7 +73,7 @@ def _operations() -> list[tuple[str, str, bool]]:
     for context in iter_route_contexts(application.routes):
         if not isinstance(context.original_route, APIRoute):
             continue
-        if str(context.path).startswith("/internal"):
+        if str(context.path).startswith("/apps"):
             continue
         authenticated = _resolves_actor(context.dependant)
         for method in sorted(context.methods or ()):
@@ -94,10 +94,10 @@ def test_every_operation_requires_an_authenticated_actor() -> None:
     )
 
 
-def test_every_internal_operation_requires_a_service_caller_and_no_user() -> None:
+def test_every_app_operation_requires_an_app_and_no_user() -> None:
     operations = _service_operations()
 
-    assert operations, "No internal operations were discovered."
+    assert operations, "No app operations were discovered."
     assert all(service and not user for _, _, service, user in operations), [
         (method, path) for method, path, service, user in operations if not service or user
     ]

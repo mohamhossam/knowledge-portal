@@ -10,16 +10,18 @@ from time import perf_counter
 
 from fastapi import FastAPI, Request, Response
 from smb_kernel.http.body_limit import BodyLimits, RequestBodyLimit
-from smb_kernel.http.service_auth import INTERNAL_PREFIX, InternalRouteGuard
+from smb_kernel.http.service_auth import InternalRouteGuard
 from smb_kernel.observability.correlation import correlation_scope
 from starlette.middleware.base import RequestResponseEndpoint
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from knowledge_portal.infrastructure.config.settings import Settings
-from knowledge_portal.interfaces.api.composition.identity import build_internal_verifier
+from knowledge_portal.interfaces.api.composition.identity import build_app_verifier
 from knowledge_portal.interfaces.api.container import Container, build_container
 from knowledge_portal.interfaces.api.error_envelope import enveloped, send_error
 from knowledge_portal.interfaces.api.error_handlers import register_error_handlers
+from knowledge_portal.interfaces.api.routes.apps import APPS_PREFIX
+from knowledge_portal.interfaces.api.routes.apps import router as apps_router
 from knowledge_portal.interfaces.api.routes.architecture_knowledge import (
     job_router as architecture_job_router,
 )
@@ -33,10 +35,6 @@ from knowledge_portal.interfaces.api.routes.identity import (
     public_router as public_identity_router,
 )
 from knowledge_portal.interfaces.api.routes.identity import router as identity_router
-from knowledge_portal.interfaces.api.routes.internal import router as internal_router
-from knowledge_portal.interfaces.api.routes.knowledge_center import (
-    router as knowledge_center_router,
-)
 from knowledge_portal.interfaces.api.routes.library import router as library_router
 from knowledge_portal.interfaces.api.routes.library import search_router
 from knowledge_portal.interfaces.api.routes.organisation import router as organisation_router
@@ -56,13 +54,11 @@ def _route_template(request: Request) -> str:
     return str(getattr(route, "path", "unmatched"))
 
 
-class InternalAccess:
-    """Service access to /internal (requirement-portal ADR-0099, ADR-0104), per deployment.
+class AppAccess:
+    """Apps' access to /apps (ADR-0126), per deployment.
 
-    With neither REQUIREMENT_SERVICE_TOKEN nor REQUIREMENT_SERVICE_CLIENT_ID the
-    internal API is not served: every /internal path answers 404. With either,
-    the kernel's guard admits only requirement work, naming the caller
-    "requirements".
+    With no app in APP_TOKENS or APP_CLIENT_IDS the app API is not served: every /apps path
+    answers 404. Otherwise the kernel's guard admits only a registered app, under its name.
     """
 
     def __init__(self, app: ASGIApp) -> None:
@@ -73,8 +69,8 @@ class InternalAccess:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         path: str = scope.get("path", "")
-        internal = path == INTERNAL_PREFIX or path.startswith(INTERNAL_PREFIX + "/")
-        if scope["type"] != "http" or not internal:
+        apps = path == APPS_PREFIX or path.startswith(APPS_PREFIX + "/")
+        if scope["type"] != "http" or not apps:
             await self._app(scope, receive, send)
             return
         guard = self._guard_for(scope["app"].state.container.settings)
@@ -87,16 +83,20 @@ class InternalAccess:
 
     def _guard_for(self, settings: Settings) -> InternalRouteGuard | None:
         key = (
-            settings.requirement_service_token,
-            settings.requirement_service_client_id,
+            tuple(settings.app_tokens.items()),
+            settings.app_client_ids,
             settings.oidc_issuer_url,
             settings.oidc_allowed_algorithms,
         )
         if key != self._key:
             self._resources.close()
             self._resources = ExitStack()
-            verifier = build_internal_verifier(settings, self._resources)
-            self._guard = None if verifier is None else InternalRouteGuard(self._app, verifier)
+            verifier = build_app_verifier(settings, self._resources)
+            self._guard = (
+                None
+                if verifier is None
+                else InternalRouteGuard(self._app, verifier, prefix=APPS_PREFIX)
+            )
             self._key = key
         return self._guard
 
@@ -144,7 +144,7 @@ def create_app(container_factory: Callable[[], Container] = build_container) -> 
     # Registered before the trace middleware, so it runs inside it: a refused
     # body still gets a correlation ID, a log line and a metric.
     application.add_middleware(RequestBodyLimit, limits=_body_limits)
-    application.add_middleware(InternalAccess)
+    application.add_middleware(AppAccess)
 
     @application.middleware("http")
     async def trace_request(request: Request, call_next: RequestResponseEndpoint) -> Response:
@@ -238,13 +238,13 @@ def create_app(container_factory: Callable[[], Container] = build_container) -> 
         architecture_job_router,
         organisation_router,
         explorer_router,
-        knowledge_center_router,
         reviews_router,
         historic_router,
         golden_runs_router,
     ):
         application.include_router(router)
-    application.include_router(internal_router, include_in_schema=False)
+    # The app API has its own contract (contracts/knowledge-apps.openapi.json).
+    application.include_router(apps_router, include_in_schema=False)
     return application
 
 

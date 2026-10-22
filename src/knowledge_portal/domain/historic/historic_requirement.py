@@ -40,7 +40,7 @@ REASON_MAX = 2000
 # A curator links at most this many root work items to one historic Requirement.
 ROOTS_MAX = 50
 BRDS_MAX = 10
-# Requirement work reads a publication's content a page at a time (ADR-0102, amendment 1).
+# An app reads a publication's content a page at a time (ADR-0102, amendment 1).
 CONTENT_PAGE_MAX = 200
 
 
@@ -375,7 +375,7 @@ class HistoricRequirement:
             pending_refresh=None,
         )
 
-    # --- What requirement work receives -------------------------------------------------
+    # --- What an app receives ---------------------------------------------------------
 
     def _content(self) -> dict[str, object]:
         breakdown = self.breakdown
@@ -465,7 +465,7 @@ class HistoricRequirement:
     def citable_state(self) -> dict[str, object]:
         """The event payload: a reference to the published state, or none once withdrawn.
 
-        It names the publication, not its content: requirement work reads the passages and
+        It names the publication, not its content: an app reads the passages and
         work items a page at a time, so no event is ever large (ADR-0102, amendment 1)."""
         published = self.status is HistoricStatus.PUBLISHED and self.publications
         latest = self.publications[-1] if self.publications else None

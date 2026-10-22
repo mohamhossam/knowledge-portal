@@ -2,8 +2,8 @@
 
 The body ceiling bounds a whole request; these bound each field inside it, so
 an over-long value is a 422 naming the field before any use case runs. Several
-of these fields reach a model prompt. The sizes match requirement-portal's
-intake limits, so text moving between the portals fits both.
+of these fields reach a model prompt. The sizes match what the first app
+that read it accepts, so text moving between them fits both.
 
 `tests/architecture/test_request_bounds.py` fails on any request string or list
 without a maximum.

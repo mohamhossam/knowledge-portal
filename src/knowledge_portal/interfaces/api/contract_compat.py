@@ -1,9 +1,9 @@
 """Whether one OpenAPI contract can replace another, and what version that takes.
 
-The internal contract is public API for requirement-portal (AGENTS.md §2.1): it changes only
-additively, or with a coordinated release. Review recommendation 11 found that rule had
-nothing to pin against, so this module compares two versions of a contract and says what
-changed:
+The app contract is public API for every app that reads the knowledge base (AGENTS.md §2.1):
+it changes only additively, or with a new MAJOR version released with its apps. Review
+recommendation 11 found that rule had nothing to pin against, so this module compares two
+versions of a contract and says what changed:
 
 - **breaking**: something a caller relies on is gone or means another thing. An operation,
   parameter, response or schema is removed; a type changes; a request needs a field, a

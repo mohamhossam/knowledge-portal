@@ -1092,7 +1092,7 @@
         "type": "object"
       },
       "ApprovedBacklogRequest": {
-        "description": "requirement-portal's approved-backlog export, schema 1.x, as delivered.",
+        "description": "An app's approved-backlog export, schema 1.x, as delivered.",
         "properties": {
           "epic": {
             "$ref": "#/components/schemas/ExportEpic"
@@ -1896,7 +1896,7 @@
         "type": "object"
       },
       "AssessmentQuery": {
-        "description": "A requirement as requirement-portal holds it: its text and its analysed facts.",
+        "description": "A requirement as the asking app holds it: its text and its analysed facts.",
         "properties": {
           "declared_systems": {
             "default": [],
@@ -3183,7 +3183,7 @@
         "type": "object"
       },
       "ExportOfferingDraft": {
-        "description": "The offering and journey `POST /internal/architecture/assess` drafted for a new-offering\nverdict, as requirement-portal kept them (ontology plan Phase 9). Each is checked here as\nthe catalogue checks one; whether it fits the draft is the reading's question.",
+        "description": "The offering and journey `POST /apps/v2/architecture/assess` drafted for a new-offering\nverdict, as the app kept them (ontology plan Phase 9). Each is checked here as\nthe catalogue checks one; whether it fits the draft is the reading's question.",
         "properties": {
           "based_on": {
             "anyOf": [
@@ -5452,7 +5452,7 @@
         "type": "object"
       },
       "OfferingPlan": {
-        "description": "A plan of the offering as its sources describe it.\n\nCharacteristics are named rather than fixed fields, so any product's plans\nfit. What a plan costs is read live from the product catalog (requirement-portal\nADR-0101), never stored here.",
+        "description": "A plan of the offering as its sources describe it.\n\nCharacteristics are named rather than fixed fields, so any product's plans\nfit. What a plan costs is read live from the product catalog (ADR-0101), never stored\nhere.",
         "properties": {
           "characteristics": {
             "default": [],
@@ -5903,7 +5903,7 @@
         "type": "object"
       },
       "OrderTrackingSchema": {
-        "description": "How an offering's orders are tracked once placed (requirement-portal ADR-0101).",
+        "description": "How an offering's orders are tracked once placed (ADR-0101).",
         "properties": {
           "channels": {
             "default": [],
@@ -6440,7 +6440,7 @@
         "type": "object"
       },
       "PrecedentDecision": {
-        "description": "What the reviewer did with the suggested verdict (requirement-portal ADR-0115).",
+        "description": "What the reviewer did with the suggested verdict (ADR-0115).",
         "enum": [
           "accepted",
           "overridden",
@@ -8299,15 +8299,15 @@
     }
   },
   "info": {
-    "title": "Knowledge service internal API",
-    "version": "1.0.0"
+    "title": "Knowledge base API for apps",
+    "version": "2.0.0"
   },
   "openapi": "3.1.0",
   "paths": {
-    "/internal/architecture/assess": {
+    "/apps/v2/architecture/assess": {
       "post": {
         "description": "A whole requirement's product verdict, systems, gaps and owners (ontology plan Phase 3).\n\nWith no verdict yet, the answer carries the questions to ask instead.",
-        "operationId": "assess_internal_architecture_assess_post",
+        "operationId": "assess_apps_v2_architecture_assess_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8343,9 +8343,9 @@
         "summary": "Assess"
       }
     },
-    "/internal/architecture/match": {
+    "/apps/v2/architecture/match": {
       "post": {
-        "operationId": "match_internal_architecture_match_post",
+        "operationId": "match_apps_v2_architecture_match_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8381,10 +8381,10 @@
         "summary": "Match"
       }
     },
-    "/internal/architecture/precedents": {
+    "/apps/v2/architecture/precedents": {
       "post": {
-        "description": "A Requirement Owner's decision on the suggested verdict (ontology plan Phase 5).\n\nKept once per analysis: a later decision replaces it, and the same one delivered again,\nor an older one arriving late, answers 200 and changes nothing. The release must be\npublished (404 otherwise); systems and concepts it does not hold are left out, and the\nsystems are named in the receipt.",
-        "operationId": "record_precedent_internal_architecture_precedents_post",
+        "description": "A person's decision on the suggested verdict, made in the sending app (ontology plan\nPhase 5).\n\nKept once per analysis: a later decision replaces it, and the same one delivered again,\nor an older one arriving late, answers 200 and changes nothing. The release must be\npublished (404 otherwise); systems and concepts it does not hold are left out, and the\nsystems are named in the receipt.",
+        "operationId": "record_precedent_apps_v2_architecture_precedents_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8423,10 +8423,10 @@
         "summary": "Record Precedent"
       }
     },
-    "/internal/architecture/releases/{release_id}/evidence/{chunk_id}": {
+    "/apps/v2/architecture/releases/{release_id}/evidence/{chunk_id}": {
       "get": {
         "description": "Evidence of a published release; a draft answers 404. A system's own record says when\nthat system falls due for review (Knowledge Center D).",
-        "operationId": "evidence_internal_architecture_releases__release_id__evidence__chunk_id__get",
+        "operationId": "evidence_apps_v2_architecture_releases__release_id__evidence__chunk_id__get",
         "parameters": [
           {
             "in": "path",
@@ -8472,10 +8472,10 @@
         "summary": "Evidence"
       }
     },
-    "/internal/change-requests": {
+    "/apps/v2/change-requests": {
       "post": {
-        "description": "An approved backlog, kept once per final approval for a knowledge admin to read into a\ndraft (requirement-portal ADR-0101, step 7). Delivering the same approval again answers\n200 with the first change request; the same approval for another subject is a 409.",
-        "operationId": "receive_change_request_internal_change_requests_post",
+        "description": "An approved backlog, kept once per final approval for a knowledge admin to read into a\ndraft, with the name of the app that sent it. Delivering the same approval again answers\n200 with the first change request; the same approval for another subject is a 409.",
+        "operationId": "receive_change_request_apps_v2_change_requests_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8514,10 +8514,10 @@
         "summary": "Receive Change Request"
       }
     },
-    "/internal/change-requests/deliveries": {
+    "/apps/v2/change-requests/deliveries": {
       "post": {
         "description": "A published Epic closed or removed in the work-item tracker (ontology plan Phase 7).\n\nA closure is kept once per delivery id as a catalogue change, for a knowledge admin to\nread into a draft; it replaces one of the same Epic still waiting. A removal withdraws\nthe Epic's catalogue changes still waiting and answers 200 with their ids. The same\ndelivery id for another body is a 409.",
-        "operationId": "receive_delivery_internal_change_requests_deliveries_post",
+        "operationId": "receive_delivery_apps_v2_change_requests_deliveries_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8556,9 +8556,9 @@
         "summary": "Receive Delivery"
       }
     },
-    "/internal/events": {
+    "/apps/v2/events": {
       "get": {
-        "operationId": "events_internal_events_get",
+        "operationId": "events_apps_v2_events_get",
         "parameters": [
           {
             "in": "query",
@@ -8593,7 +8593,7 @@
                     "additionalProperties": true,
                     "type": "object"
                   },
-                  "title": "Response Events Internal Events Get",
+                  "title": "Response Events Apps V2 Events Get",
                   "type": "array"
                 }
               }
@@ -8614,10 +8614,10 @@
         "summary": "Events"
       }
     },
-    "/internal/historic-requirements/{historic_requirement_id}/items": {
+    "/apps/v2/historic-requirements/{historic_requirement_id}/items": {
       "get": {
         "description": "A published historic requirement's Epics, Features and User Stories, a page at a time.",
-        "operationId": "historic_items_internal_historic_requirements__historic_requirement_id__items_get",
+        "operationId": "historic_items_apps_v2_historic_requirements__historic_requirement_id__items_get",
         "parameters": [
           {
             "in": "path",
@@ -8697,10 +8697,10 @@
         "summary": "Historic Items"
       }
     },
-    "/internal/historic-requirements/{historic_requirement_id}/passages": {
+    "/apps/v2/historic-requirements/{historic_requirement_id}/passages": {
       "get": {
         "description": "A published historic requirement's BRD passages, a page at a time. An older\npublication answers 409; a withdrawn or unknown record 404 (ADR-0102, amendment 1).",
-        "operationId": "historic_passages_internal_historic_requirements__historic_requirement_id__passages_get",
+        "operationId": "historic_passages_apps_v2_historic_requirements__historic_requirement_id__passages_get",
         "parameters": [
           {
             "in": "path",
@@ -8780,10 +8780,10 @@
         "summary": "Historic Passages"
       }
     },
-    "/internal/library/passages": {
+    "/apps/v2/library/passages": {
       "get": {
         "description": "A cited passage, only while its publication is live (409 otherwise).",
-        "operationId": "passage_internal_library_passages_get",
+        "operationId": "passage_apps_v2_library_passages_get",
         "parameters": [
           {
             "in": "query",
@@ -8866,9 +8866,9 @@
         "summary": "Passage"
       }
     },
-    "/internal/library/published": {
+    "/apps/v2/library/published": {
       "get": {
-        "operationId": "published_internal_library_published_get",
+        "operationId": "published_apps_v2_library_published_get",
         "responses": {
           "200": {
             "content": {
@@ -8884,9 +8884,9 @@
         "summary": "Published"
       }
     },
-    "/internal/library/retrieve": {
+    "/apps/v2/library/retrieve": {
       "post": {
-        "operationId": "retrieve_internal_library_retrieve_post",
+        "operationId": "retrieve_apps_v2_library_retrieve_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8905,7 +8905,7 @@
                   "items": {
                     "$ref": "#/components/schemas/ReferenceEvidence"
                   },
-                  "title": "Response Retrieve Internal Library Retrieve Post",
+                  "title": "Response Retrieve Apps V2 Library Retrieve Post",
                   "type": "array"
                 }
               }
@@ -8926,9 +8926,9 @@
         "summary": "Retrieve"
       }
     },
-    "/internal/library/search": {
+    "/apps/v2/library/search": {
       "post": {
-        "operationId": "search_internal_library_search_post",
+        "operationId": "search_apps_v2_library_search_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8947,7 +8947,7 @@
                   "items": {
                     "$ref": "#/components/schemas/ReferenceEvidence"
                   },
-                  "title": "Response Search Internal Library Search Post",
+                  "title": "Response Search Apps V2 Library Search Post",
                   "type": "array"
                 }
               }

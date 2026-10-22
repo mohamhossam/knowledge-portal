@@ -1,15 +1,14 @@
-"""Change requests from Requirement AI: kept as delivered, read into a draft by a person
-(requirement-portal ADR-0101, step 7).
+"""Change requests apps send: kept as delivered, read into a draft by a person (ADR-0126).
 
-requirement-portal sends an approved backlog when its final approval is recorded. It is
-kept once per approval. A knowledge admin then reads it into the draft (starting one if
+An app sends an approved backlog when its final approval is recorded. It is kept once per
+approval, with the app's name. A knowledge admin then reads it into the draft (starting one if
 none is open), where each approved feature becomes a suggested open question on the
 offering it names, or dismisses it. When the decided product impact is a new offering, the
 offering and journey the assessment drafted (ontology plan Phase 9) become two suggestions
 as well. The reading is fixed rules, not a model: what the
 approved backlog says, matched to the draft by id, then by name.
 
-When the Epic closes, requirement-portal sends what it delivered (ontology plan Phase 7),
+When the Epic closes, the app sends what it delivered (ontology plan Phase 7),
 kept once per closure as a catalogue change. Reading one suggests that each delivered
 system realises the concepts the requirement needed and the catalogue lacked, and asks
 which component of the offering now delivers them. A removed Epic withdraws one still
@@ -93,7 +92,7 @@ class ChangeRequestNotFoundError(Exception):
 
 @dataclass(frozen=True)
 class DeliveredBacklog:
-    """An approved backlog as requirement-portal sends it, before it has an id here."""
+    """An approved backlog as an app sends it, before it has an id here."""
 
     approval_id: str
     subject_fingerprint: str
@@ -117,14 +116,17 @@ def _most_named(backlog: DeliveredBacklog) -> str:
 
 
 class ReceiveChangeRequest:
-    """Behind the internal route requirement-portal delivers to."""
+    """Behind the app route an app delivers approved backlogs to."""
 
     def __init__(self, inbox: ChangeRequestInboxPort, clock: ClockPort) -> None:
         self._inbox = inbox
         self._clock = clock
 
-    def execute(self, backlog: DeliveredBacklog) -> tuple[IncomingChangeRequest, bool]:
-        """Keep it once per approval; returns it and whether it is new."""
+    def execute(
+        self, backlog: DeliveredBacklog, app: str | None = None
+    ) -> tuple[IncomingChangeRequest, bool]:
+        """Keep it once per approval, with the app that sent it; returns it and whether it is
+        new."""
         now = self._clock.now()
         day = (backlog.trace.approved_at or now).date()
         item = IncomingChangeRequest(
@@ -137,13 +139,14 @@ class ReceiveChangeRequest:
             received_at=now,
             reason=backlog.reason,
             draft=backlog.draft,
+            sent_by=app,
         )
         return self._inbox.receive(item)
 
 
 @dataclass(frozen=True)
 class DeliveredEpic:
-    """What a closed Epic delivered, as requirement-portal sends it, before it has an id here.
+    """What a closed Epic delivered, as an app sends it, before it has an id here.
 
     The features are the delivered ones; those not delivered are in the trace.
     """
@@ -163,13 +166,15 @@ def delivery_approval(delivery_id: str) -> str:
 
 
 class ReceiveDelivery:
-    """Behind the internal route requirement-portal sends closed and removed Epics to."""
+    """Behind the app route an app sends closed and removed Epics to."""
 
     def __init__(self, inbox: ChangeRequestInboxPort, clock: ClockPort) -> None:
         self._inbox = inbox
         self._clock = clock
 
-    def closed(self, delivered: DeliveredEpic) -> tuple[IncomingChangeRequest, bool]:
+    def closed(
+        self, delivered: DeliveredEpic, app: str | None = None
+    ) -> tuple[IncomingChangeRequest, bool]:
         """Keep it once per closure; returns it and whether it is new. A new closure replaces
         one of the same Epic still waiting, so the Epic is counted once."""
         now = self._clock.now()
@@ -185,17 +190,23 @@ class ReceiveDelivery:
             reason=delivered.reason,
             kind=ChangeRequestKind.CATALOGUE_CHANGE,
             delivery=delivered.delivery,
+            sent_by=app,
         )
         kept, created = self._inbox.receive(item)
         if created:
             self._close_earlier(kept, "A later closure of its Epic replaced it.")
         return kept, created
 
-    def removed(self, requirement_id: str, epic_external_id: str) -> tuple[str, ...]:
-        """Withdraw the Epic's catalogue changes still waiting; returns their ids."""
+    def removed(
+        self, requirement_id: str, epic_external_id: str, app: str | None = None
+    ) -> tuple[str, ...]:
+        """Withdraw the Epic's catalogue changes still waiting; returns their ids. An app
+        takes back only its own: one another app sent is left as it is."""
         withdrawn: list[str] = []
         now = self._clock.now()
         for item in self._waiting(requirement_id, epic_external_id):
+            if app is not None and item.sent_by not in (None, app):
+                continue
             try:
                 self._inbox.save(item.withdraw(now), item.status)
             except ChangeRequestConflictError:

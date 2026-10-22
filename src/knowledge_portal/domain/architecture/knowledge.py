@@ -580,14 +580,13 @@ class ArchitectureKnowledge:
     products: tuple[ProductOffering, ...] = ()
     # The activities that fulfil an offering's orders, and who performs them (ADR-0096).
     journeys: tuple[Journey, ...] = ()
-    # Where orders are placed, and the system each is entered through (requirement-portal
-    # ADR-0101, step 3).
+    # Where orders are placed, and the system each is entered through (ADR-0101, step 3).
     channels: tuple[Channel, ...] = ()
     # The sources the knowledge is read from, each with its level, and where they
-    # contradict each other (requirement-portal ADR-0101, step 5).
+    # contradict each other (ADR-0101, step 5).
     sources: tuple[KnowledgeSource, ...] = ()
     conflicts: tuple[SourceConflict, ...] = ()
-    # The change requests applied to it, newest last (requirement-portal ADR-0101, step 7).
+    # The change requests applied to it, newest last (ADR-0101, step 7).
     change_history: tuple[ChangeRequestRecord, ...] = ()
     # The product portfolio its offerings sit in, such as Enterprise › Fixed › SMB.
     portfolio: tuple[PortfolioNode, ...] = ()

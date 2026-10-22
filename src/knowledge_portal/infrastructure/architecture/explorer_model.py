@@ -4,7 +4,7 @@ The explorer (``smb-ai-requirement-agent``, ``tools/architecture-explorer``) kep
 hand-curated model in one JSON file, schema 6. This reads it once into the catalogue
 file's JSON shape (``catalogue_files.content_from_mapping``). An admin then previews
 the file against a draft and imports it, and from then on the catalogue is the only
-home of these facts (requirement-portal ADR-0101).
+home of these facts (ADR-0101).
 
 It is a seed, not a sync. Nothing is invented: a fact the catalogue cannot hold yet
 (information objects, the capability library, and so on) is counted in the
@@ -297,7 +297,7 @@ class _Reader:
             **self._governance(product),
         }
 
-    # Governance (requirement-portal ADR-0101, step 5) -------------------------
+    # Governance (ADR-0101, step 5) -------------------------
 
     @staticmethod
     def _source(item: Mapping[str, Any]) -> dict[str, Any]:

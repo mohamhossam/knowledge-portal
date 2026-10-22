@@ -82,7 +82,7 @@ TOKEN_BUDGET = ChunkBudget(
 LEGACY_BYTE_BUDGET = ChunkBudget(
     maximum=768, target=512, smallest_break=384, label=256, field_heading=160, context=1536
 )
-# The evidence `retrieve` hands to requirement work, in tokens (about 8,000 bytes of English).
+# The evidence `retrieve` hands to an app, in tokens (about 8,000 bytes of English).
 EVIDENCE_TOKEN_BUDGET = 2100
 NO_ARABIC_SEARCH = "The library holds English documents only; search in English."
 

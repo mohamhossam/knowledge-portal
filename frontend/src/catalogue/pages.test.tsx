@@ -127,16 +127,13 @@ describe("VersionsPage", () => {
     vi.spyOn(api, "releases").mockResolvedValue([release("old"), release("live")]);
     vi.spyOn(api, "releaseAudit").mockResolvedValue([]);
     vi.spyOn(api, "changeRequests").mockResolvedValue([]);
-    vi.spyOn(api, "mappingImpact").mockResolvedValue({
-      active_release_id: "live", requirements: 5, features: 0, stories: 0, outdated_requirements: 2, outdated_features: 0, outdated_stories: 0,
-    });
     vi.spyOn(api, "releaseChanges").mockResolvedValue({
       base_release_id: "live", draft_release_id: "old",
       changes: [{ item: "relationship", change: "removed", key: "k", label: "K", fields: [] }],
     });
   };
 
-  it("lists every version newest first, each with its state, and says what waits from Requirement AI", async () => {
+  it("lists every version newest first, each with its state, and says what change requests wait", async () => {
     mockVersions();
     renderAt("/architecture/versions", <Route path="versions" element={<VersionsPage />} />);
     const list = within(await screen.findByRole("list", { name: "Catalogue versions, newest first" }));
@@ -145,7 +142,7 @@ describe("VersionsPage", () => {
     expect(rows[0]).toHaveTextContent("In service");
     expect(rows[1]).toHaveTextContent("Replaced");
     expect(rows[1]).toHaveAttribute("href", "/architecture/versions?version=old");
-    expect(await screen.findByText("No change request has come from Requirement AI yet.")).toBeInTheDocument();
+    expect(await screen.findByText("No change request has come from a connected app yet.")).toBeInTheDocument();
   });
 
   it("carries the change requests in the draft's record, where they are read into", async () => {
@@ -153,8 +150,8 @@ describe("VersionsPage", () => {
     vi.mocked(api.releases).mockResolvedValue([release("next", { status: "draft", name: "October" } as Partial<Release>), release("old"), release("live")]);
     renderAt("/architecture/versions?version=next", <Route path="versions" element={<VersionsPage />} />);
     const record = within(await screen.findByRole("article", { name: "October" }));
-    expect(record.getByRole("heading", { level: 3, name: "Change requests from Requirement AI" })).toBeInTheDocument();
-    expect(await record.findByText("No change request has come from Requirement AI yet.")).toBeInTheDocument();
+    expect(record.getByRole("heading", { level: 3, name: "Change requests" })).toBeInTheDocument();
+    expect(await record.findByText("No change request has come from a connected app yet.")).toBeInTheDocument();
   });
 
   it("puts a replaced version back only with a reason, naming what it would change", async () => {
@@ -166,7 +163,7 @@ describe("VersionsPage", () => {
     expect(screen.getByText("Nothing was published before it: it is the first version.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Put it back in service…" }));
     expect(await screen.findByText(/it would remove 1 connection/)).toBeInTheDocument();
-    expect(await screen.findByText(/3 requirements mapped with the version in service/)).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Put ‘Initial’ back in service" })).toHaveTextContent("Requirements would be mapped against ‘Initial’ from then on.");
     const putBack = screen.getByRole("button", { name: "Put it back in service" });
     // Without a reason nothing happens; the field says what it needs.
     fireEvent.click(putBack);

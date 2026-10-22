@@ -280,7 +280,7 @@ TOKEN = "r" * 40
 REQUIREMENTS = {"Authorization": f"Bearer {TOKEN}"}
 OWNER = {"X-Fake-Actor-Id": "fake-owner"}
 READER = {"X-Fake-Actor-Id": "fake-reviewer"}
-ROUTE = "/internal/architecture/precedents"
+ROUTE = "/apps/v2/architecture/precedents"
 SUMMARY = "/architecture-knowledge/precedents/summary"
 BODY: dict[str, Any] = {
     "precedent_id": "ana-1",
@@ -299,7 +299,7 @@ BODY: dict[str, Any] = {
 @pytest.fixture
 def served() -> Any:
     container: Container = build_container(
-        replace(FAKE_PROVIDER_SETTINGS, requirement_service_token=TOKEN)
+        replace(FAKE_PROVIDER_SETTINGS, app_tokens={"requirements": TOKEN})
     )
     with TestClient(create_app(lambda: container)) as client:
         yield client

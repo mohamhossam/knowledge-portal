@@ -1,6 +1,6 @@
 ---
 name: Knowledge portal
-description: The requirement platform's curation desk in e& calm, a ruled ledger for reviewed, attributable knowledge.
+description: A stand-alone knowledge base's curation desk in e& calm, a ruled ledger for reviewed, attributable knowledge.
 colors:
   e-and-red: "#e00800"
   e-and-maroon: "#4b0f1e"
@@ -261,10 +261,10 @@ to the end. Weight never shouts a date.
 ## Layout
 
 - **The frame:**
-  - a slim, sticky 36px brand bar: logo and product, search in the middle, Requirement AI and the
-    utilities at the end;
+  - a slim, sticky 36px brand bar: logo and product, search in the middle, the utilities at the
+    end; it links out to no other app;
   - a collapsible sidebar on Paper: To do first, then the "Look up" areas (Library, Catalogue,
-    Ownership, Requirements), then Explorer and Re-confirmations apart. 13rem with labels from
+    Ownership, Historic), then Explorer and Re-confirmations apart. 13rem with labels from
     1440px, 3.5rem with icons below that, and the person's own choice wins once made;
   - the page, with a fluid gutter (16–40px);
   - a one-line page head: the record's own name, its status pill and facts, the actions at the

@@ -30,7 +30,6 @@ describe("Gate", () => {
   it("tells a signed-in person without the role where to go instead", () => {
     gate(state({ denied: true }));
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("This portal is for knowledge admins");
-    expect(screen.getByRole("link", { name: "Go to Requirement AI" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("link", { name: "product architecture explorer" })).toHaveAttribute("href", "/explorer");
     expect(screen.queryByText("The tables")).not.toBeInTheDocument();
   });

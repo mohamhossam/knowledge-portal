@@ -1,9 +1,9 @@
 # Deployment
 
-The knowledge portal deploys on its own (requirement-portal ADR-0104).
+The knowledge portal is a stand-alone knowledge base (ADR-0126): people curate and read it in the
+browser, and other apps read it through its app API. It calls no other app.
 `deploy/compose.production.yaml` is the reference deployment: one host, every process in its own
-container, running the images a release published. Requirement work is optional; connect it
-when both are deployed.
+container, running the images a release published.
 
 ## What runs
 
@@ -15,7 +15,7 @@ when both are deployed.
 | `api` | The knowledge API, HTTP only |
 | `worker` | Library ingestion and catalogue jobs; scale with `--scale worker=N` |
 | `web` | The browser app, nginx serving its base path (`/knowledge/` in released images) |
-| `edge` | The only published port (`KNOWLEDGE_PORT`, default `8090`): `/knowledge-api/` to `api`, `/knowledge-api/internal` refused, every other path to `web` |
+| `edge` | The only published port (`KNOWLEDGE_PORT`, default `8090`): `/knowledge-api/` to `api` (the app API at `/knowledge-api/apps/v2`), every other path to `web` |
 
 Put TLS in front of `edge`. The API, worker, database, scanner and metrics ports
 (`9464` on `api` and `worker`) stay on the private network.
@@ -36,7 +36,7 @@ file is larger than its `StreamMaxLength`, a catalogue upload is refused with 50
    ```
 
    `deploy/production.env` is ignored by Git. It holds the sign-in settings, the model provider
-   and its key, and requirement work's address and tokens when connected.
+   and its key, and the apps registered to read the knowledge base.
 3. Choose the database password and start:
 
    ```bash
@@ -50,21 +50,19 @@ file is larger than its `StreamMaxLength`, a catalogue upload is refused with 50
    Set `LLM_CONFIG_PATH=/app/config/llm.yaml` in `production.env` to use them, or point
    `KNOWLEDGE_LLM_CONFIG_DIR` at another directory.
 4. Open `https://<host>/knowledge/`. Curation needs the `knowledge_admin` role; the explorer is
-   open to anyone signed in (requirement-portal ADR-0101).
+   open to anyone signed in (ADR-0101).
 
 To upgrade, change `KNOWLEDGE_IMAGE_TAG` and run `up -d` again; `migrate` runs before the new
 API and worker start.
 
 ## Sign-in
 
-The portal signs people in through an OIDC issuer, normally the Keycloak realm requirement work
-uses, so people keep one account. Its own entities live in this repository
-(`deploy/keycloak/knowledge-portal.json`, requirement-portal ADR-0104):
+The portal signs people in through an OIDC issuer: a Keycloak realm of its own, or one it shares
+with other apps so people keep one account. Its own entities live in this repository
+(`deploy/keycloak/knowledge-portal.json`):
 
 - the public browser client `knowledge-spa`, with PKCE, which puts the audience `knowledge-api`
   and the realm roles (claim `roles`) into its tokens;
-- the confidential client `knowledge-service`, the portal's own credential for requirement
-  work's internal API (see "Service credentials");
 - the roles `knowledge_admin` (opens the portal and curates it), `knowledge_reader` and
   `knowledge_maintainer` (the architecture and squad catalogues);
 - the groups `knowledge-admins`, `knowledge-readers` and `knowledge-maintainers`, which grant them.
@@ -72,78 +70,84 @@ uses, so people keep one account. Its own entities live in this repository
 Add them to the realm once, with a Keycloak administrator's account:
 
 ```bash
-export KEYCLOAK_URL=https://login.example.com KEYCLOAK_REALM=requirement-ai
+export KEYCLOAK_URL=https://login.example.com KEYCLOAK_REALM=platform
 export KEYCLOAK_ADMIN=... KEYCLOAK_ADMIN_PASSWORD=...
 export KNOWLEDGE_APP_ORIGIN=https://knowledge.example.com    # where people open the portal
 python deploy/keycloak/apply.py --dry-run                     # shows what it would add
 python deploy/keycloak/apply.py
 ```
 
-Entities that already exist, such as those an earlier requirement-portal realm import created,
-are kept; `--overwrite` replaces them, for example after the portal moves to another origin.
-Then set `OIDC_ISSUER_URL` to the realm (`https://login.example.com/realms/requirement-ai`) in
+Entities that already exist, such as those an earlier realm import created, are kept;
+`--overwrite` replaces them, for example after the portal moves to another origin. A realm that
+still holds the `knowledge-service` client from before ADR-0126 can drop it: the portal no
+longer calls any app. Then set `OIDC_ISSUER_URL` to the realm (`https://login.example.com/realms/platform`) in
 `production.env`, and `CSP_IDENTITY_ORIGINS` to the issuer's origin. Put people in
 `knowledge-admins` to let them in.
 
 A separate realm works the same way: create it, and run the script with its name.
 
-## Connect requirement work
+## Register an app
 
-The two services call each other's `/internal` routes with two tokens (requirement-portal
-ADR-0099), or each with its own client (see "Service credentials"). Each portal's edge refuses `/internal`, so the calls travel on a private network,
-never through an edge.
+Any app may read the knowledge base through its app API, `/apps/v2` (ADR-0126): architecture
+match and assessment, library search, retrieval and cited passages, published evidence, historic
+requirements and the event feed, and it may send change requests, closed Epics and verdict
+decisions. `contracts/knowledge-apps.openapi.json`, published with each release, is the
+contract. An app reaches it through the portal's address, `https://<host>/knowledge-api/apps/v2`,
+or, on the same Docker host, on a private network (below).
 
-| Setting in `production.env` | Value |
-|---|---|
-| `REQUIREMENT_API_BASE_URL` | requirement work's API on the private network |
-| `KNOWLEDGE_SERVICE_TOKEN` | the token this portal presents there; the same value on both sides |
-| `REQUIREMENT_SERVICE_TOKEN` | the token requirement work presents here; the same value on both sides |
+Each app is registered under a name, and is admitted only with its own credential. What it
+sends, such as a change request, keeps that name. With no app registered the app API is not
+served: every `/apps` path answers 404.
 
-Each token is 32 or more characters (`openssl rand -hex 32`). Set the address and
-`KNOWLEDGE_SERVICE_TOKEN` together or not at all. An empty `REQUIREMENT_SERVICE_TOKEN` turns
-this portal's internal API off.
+**With the app's own client at the issuer (preferred, and the one to use through the public
+address).** The knowledge base then holds no secret of the app's.
 
-**On one Docker host**, both deployments join one external network. Layer
-`deploy/compose.peer.yaml` over the manifest; this portal is then `http://knowledge-api:8000`
-on that network, and requirement work is `http://requirement-api:8000`:
+1. At the issuer, give the app a confidential client with a service account, no browser flows,
+   and an audience mapper that adds `knowledge-apps` to its access tokens. In Keycloak: client
+   authentication on, standard flow and direct access grants off, service accounts on, and a
+   mapper of type "Audience" with included custom audience `knowledge-apps`.
+2. Add the client id to `APP_CLIENT_IDS` in `production.env`, comma-separated with any others,
+   and keep `OIDC_ISSUER_URL` set to that issuer (HTTPS). The app is named after its client id.
+3. The app asks the issuer for a token with the client-credentials grant and sends it as
+   `Authorization: Bearer <token>`. Tokens are renewed before they expire; if the issuer cannot
+   be reached, the app API answers 503 to a token it cannot check.
+
+**With a shared token.** Add `name=token` to `APP_TOKENS`, comma-separated with any others; each
+token is 32 or more characters (`openssl rand -hex 32`) and belongs to one app. Prefer this on a
+private network only: anyone holding the token is that app.
+
+Names are lower-case letters, digits, `.`, `_` and `-`. An app may hold both while it moves from
+a token to its client; it is admitted with either.
+
+**On one Docker host**, an app can call the API without going through the edge. Layer
+`deploy/compose.apps.yaml` over the manifest; the app joins the same external network and calls
+`http://knowledge-api:8000/apps/v2`:
 
 ```bash
-docker network create platform-internal      # once per host
-docker compose -f deploy/compose.production.yaml -f deploy/compose.peer.yaml up -d
+docker network create knowledge-apps      # once per host
+docker compose -f deploy/compose.production.yaml -f deploy/compose.apps.yaml up -d
 ```
 
-`PEER_NETWORK` names another network. **On separate hosts**, skip the override and set
-`REQUIREMENT_API_BASE_URL` to a private address that reaches requirement work's API directly.
+`KNOWLEDGE_APPS_NETWORK` names another network.
 
-Each side keeps working while the other is stopped, and reports it as unavailable where it
-needs it.
+### Upgrading from the internal API (contract 1.x)
 
-The portal's links to requirement work, such as "Requirement AI", go where `REQUIREMENT_PORTAL_URL`
-says (for example `https://requirements.example.com/`); `web` fills it into each page when it
-starts. Unset in this manifest, the links are left out.
+Before ADR-0126 the same operations were requirement work's alone, under `/internal`, and this
+portal also called requirement work. The app API is contract 2.0.0, a breaking change released
+with requirement-portal:
 
-## Service credentials
+| Before | Now |
+|---|---|
+| `/internal/...` (refused at the edge) | `/apps/v2/...` (through the edge, or the private network) |
+| `REQUIREMENT_SERVICE_TOKEN=<token>` | `APP_TOKENS=requirements=<token>` (any name) |
+| `REQUIREMENT_SERVICE_CLIENT_ID=requirement-service` | `APP_CLIENT_IDS=requirement-service` |
+| audience `knowledge-internal` on requirement work's client | audience `knowledge-apps` |
+| `REQUIREMENT_API_BASE_URL`, `KNOWLEDGE_SERVICE_TOKEN`, `KNOWLEDGE_SERVICE_CLIENT_ID`/`_SECRET` | removed: the portal calls no app |
+| `REQUIREMENT_PORTAL_URL` on `web` | removed: the portal links to no app |
+| `deploy/compose.peer.yaml`, network `platform-internal` | `deploy/compose.apps.yaml`, network `knowledge-apps` |
 
-With the shared tokens, each portal holds the other's secret too. Per-direction credentials
-(requirement-portal ADR-0104) give each portal only its own: a confidential client at the OIDC
-issuer, which grants it short-lived tokens through the client-credentials grant. The receiving
-portal checks them against the issuer's signing keys and holds no secret at all.
-
-| Direction | Keycloak client | Settings in `production.env` |
-|---|---|---|
-| This portal calls requirement work | `knowledge-service`, audience `requirement-internal` (`deploy/keycloak/knowledge-portal.json`) | `KNOWLEDGE_SERVICE_CLIENT_ID=knowledge-service` and `KNOWLEDGE_SERVICE_CLIENT_SECRET` |
-| Requirement work calls this portal | `requirement-service`, audience `knowledge-internal` (requirement-portal's realm file) | `REQUIREMENT_SERVICE_CLIENT_ID=requirement-service` |
-
-1. Run `deploy/keycloak/apply.py` (see "Sign-in") to add `knowledge-service`, and copy the secret
-   Keycloak generated for it (Clients, `knowledge-service`, Credentials). The file stores none.
-2. Set the settings above, with `OIDC_ISSUER_URL` set to the realm. Requirement work sets its own
-   client's ID and secret, and `KNOWLEDGE_SERVICE_CLIENT_ID`.
-3. With client credentials, they are used in place of `KNOWLEDGE_SERVICE_TOKEN`. `/internal`
-   admits either `REQUIREMENT_SERVICE_TOKEN` or a granted token while both are set, so the two
-   portals can move over one at a time. Remove the shared tokens once both use their clients.
-
-Tokens are renewed before they expire. If the issuer cannot be reached, calls to requirement
-work report it as unavailable, and `/internal` answers 503 to a granted token it cannot check.
+The API refuses to start while any removed setting is still set, and names its replacement, so
+an upgrade cannot silently lose an app.
 
 ## Its own hostname
 
@@ -161,8 +165,7 @@ docker compose -f deploy/compose.production.yaml up -d web
 
 The API stays at `/knowledge-api/` either way. Keep sign-in in step: run
 `deploy/keycloak/apply.py --overwrite` with `KNOWLEDGE_APP_PATH=` (empty for the root) so the
-client's redirect URIs match, and point requirement work's `VITE_KNOWLEDGE_PORTAL_URL` at the new
-address.
+client's redirect URIs match, and tell the apps that read it the new address.
 
 ## Moving over from requirement-portal's deployment
 
@@ -190,8 +193,8 @@ deployment:
    docker compose -f deploy/compose.production.yaml up -d
    ```
 
-4. Point requirement work's `KNOWLEDGE_API_BASE_URL` and `VITE_KNOWLEDGE_PORTAL_URL` at this
-   deployment. requirement-portal's cutover change removes its `knowledge-*` containers;
-   keep the old volume until this deployment has run cleanly.
+4. Point requirement work at this deployment's app API (see "Register an app").
+   requirement-portal's cutover change removes its `knowledge-*` containers; keep the old
+   volume until this deployment has run cleanly.
 
 Users sign in again once when the portal moves to a new origin.

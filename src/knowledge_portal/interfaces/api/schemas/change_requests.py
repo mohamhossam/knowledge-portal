@@ -1,16 +1,16 @@
-"""HTTP shapes for change requests from Requirement AI (requirement-portal ADR-0101, step 7).
+"""HTTP shapes for change requests apps send (ADR-0126).
 
-The internal route takes requirement-portal's approved-backlog export (schema 1.x) as it
-is written, but declares only what a change request needs. Every other field is ignored,
-so additions within 1.x pass, and what is not declared is never stored: the approver's
-email above all.
+The app route takes the approved-backlog export (schema 1.x, as requirement work first
+wrote it) as it is written, but declares only what a change request needs. Every other
+field is ignored, so additions within 1.x pass, and what is not declared is never stored:
+the approver's email above all.
 
 From export schema 1.6, an approved backlog whose decided product impact is a new offering
 also carries the offering and journey the assessment drafted (ontology plan Phase 9), in the
 catalogue's own shapes, so they are checked as any catalogue edit is.
 
-A closed or removed Epic (ontology plan Phase 7) comes to its own internal route, as
-`DeliveryRequest`: what requirement-portal read from the work-item tracker and the
+A closed or removed Epic (ontology plan Phase 7) comes to its own app route, as
+`DeliveryRequest`: what the app read from the work-item tracker and the
 decided product impact, with the catalogue changes it implies already worked out.
 """
 
@@ -155,8 +155,8 @@ class ExportEpic(BaseModel):
 
 
 class ExportOfferingDraft(BaseModel):
-    """The offering and journey `POST /internal/architecture/assess` drafted for a new-offering
-    verdict, as requirement-portal kept them (ontology plan Phase 9). Each is checked here as
+    """The offering and journey `POST /apps/v2/architecture/assess` drafted for a new-offering
+    verdict, as the app kept them (ontology plan Phase 9). Each is checked here as
     the catalogue checks one; whether it fits the draft is the reading's question."""
 
     offering: ProductOfferingSchema
@@ -186,7 +186,7 @@ class ExportProductImpact(BaseModel):
 
 
 class ApprovedBacklogRequest(BaseModel):
-    """requirement-portal's approved-backlog export, schema 1.x, as delivered."""
+    """An app's approved-backlog export, schema 1.x, as delivered."""
 
     schema_version: str = Field(min_length=1, max_length=20)
     manifest: ExportManifest
@@ -599,6 +599,11 @@ class ChangeRequestResponse(BaseModel):
     delivery: DeliveryResponse | None
     # Only on an approved backlog whose decided product impact is a new offering.
     draft: OfferingDraftResponse | None = None
+    sent_by: str | None = Field(
+        default=None,
+        description="The app that sent it, by its registered name; null if kept before apps "
+        "were named.",
+    )
 
     @classmethod
     def from_domain(cls, item: IncomingChangeRequest) -> ChangeRequestResponse:
@@ -639,6 +644,7 @@ class ChangeRequestResponse(BaseModel):
             dismissal_reason=item.dismissal_reason,
             delivery=DeliveryResponse.from_domain(item),
             draft=OfferingDraftResponse.from_domain(item.draft),
+            sent_by=item.sent_by,
         )
 
 

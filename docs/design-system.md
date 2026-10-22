@@ -130,7 +130,7 @@ component is passed in (`link`), so the system stays router-agnostic (vercel-com
   - **What it does:**
     - skip links ("Skip to content", "Skip to navigation");
     - the slim maroon brand bar (36px): logo slot and product at the start, `search` in the
-      middle, the outbound "Requirement AI" link and `utilities` at the end;
+      middle and `utilities` at the end. It links out to no other app (ADR-0126);
     - the sidebar: `navigation` and `secondaryNavigation` items with `current`, `count` and an
       `icon`. Items sharing a `group` sit under a small heading ("Look up"), a labelled list
       each. It is 13rem wide with labels, or 3.5rem with icons only (the label shows beside
@@ -417,7 +417,7 @@ Screen readers and the testing library trim whitespace at the edges of inline el
 - **Do** put the separating space outside the span, or name the control with one
   `aria-label` / one hidden phrase.
 
-`Badge`, the outbound link, section counts and the change table all follow this.
+`Badge`, section counts and the change table all follow this.
 
 ## 7. How accessibility is checked
 
@@ -438,6 +438,6 @@ Three layers, each failing the build (review recommendation 15):
   block) on every route in `e2e/routes.ts`, in the light theme, the dark theme and at 600px.
   It also checks the states no admin route reaches: the reader's explorer, the "for knowledge
   admins" page, the sign-in page and the collapsed sidebar. A route whose record the seed lacks
-  fails, never skips. Records the offline stack cannot hold (the requirement corpus, a
-  historic requirement, an evidence passage, a governance source) are served to that one page
+  fails, never skips. Records the offline stack cannot hold (a historic requirement, an
+  evidence passage, a governance source) are served to that one page
   by `e2e/mocks.ts`, and the test checks the record is on screen before it runs axe.

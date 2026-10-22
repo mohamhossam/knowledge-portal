@@ -53,7 +53,7 @@ export function RunPanel({ info, runs, onStarted }: { info: GoldenSetInfo; runs:
   return (
     <div className="golden-run">
       <Select label="Mapper" value={mapper} onChange={(event) => setMapper(event.target.value as Mapper)}>
-        <option value="assess">The assessment (what requirement work calls now)</option>
+        <option value="assess">The assessment (the mapper in use now)</option>
         <option value="match">Today's per-item match (the older baseline)</option>
       </Select>
       <Checkbox

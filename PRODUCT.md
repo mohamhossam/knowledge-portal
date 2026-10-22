@@ -17,28 +17,29 @@ A mixed curation team, every member holding the `knowledge_admin` role:
   and reference documents, review what extraction read from them, publish approved passages,
   and withdraw or replace them.
 
-Everyone else in the organisation never opens this portal. They read citations and
-architecture evidence through read-only viewers in requirement-portal.
+Everyone else in the organisation reads the published catalogue in the explorer, open to
+anyone signed in, or reads the knowledge base through the apps they work in, which call its
+app API.
 
 ## Product Purpose
 
-The knowledge portal is where the organisation's shared knowledge is curated before
-requirement work relies on it. Requirement authors cite published library passages, and
-architecture mapping matches requirements against the active catalogue release. What is
-published here decides what those tools can cite and map against.
+The knowledge portal is a stand-alone knowledge base: where the organisation's shared
+knowledge is curated before anyone relies on it. People read it in the explorer; apps, such
+as requirement-portal, read it through its app API: they cite published library passages and
+match work against the active catalogue release. What is published here decides what they can
+cite and match against. The knowledge base knows no app: it calls none, shows no app's data
+and links to none (ADR-0126).
 
-Success means that what requirement work relies on is reviewed, attributable and current. Every
-published passage was approved by its owner. Every catalogue change reaches requirement work
-only through a named, published release. Withdrawing or replacing a source shows its owner
-exactly which requirements depended on it.
+Success means that what people and apps rely on is reviewed, attributable and current. Every
+published passage was approved by its owner. Every catalogue change reaches a reader only
+through a named, published release, announced on the event feed apps follow.
 
 ## Positioning
 
 It is a curation desk, not a document store or a wiki. Nothing an extractor or a model
 suggests is published until a person reviews it. Every change carries provenance: who approved
-it, from which document version, in which release. Changes are made with their downstream
-impact in view: which requirements cite a document, and how a draft release would change
-existing architecture mappings.
+it, from which document version, in which release. Changes are made with their impact in view: how a draft release differs from the one in
+service, and what sample requirements it would match differently.
 
 ## Operating Context
 
@@ -54,9 +55,10 @@ existing architecture mappings.
   catalogue files (an Excel template, YAML and CSV).
 - **Background work.** Ingestion, index builds, catalogue reading and impact previews run as
   jobs that take seconds to minutes and can fail, be retried or be cancelled.
-- **Served under `/knowledge/`** on the same host as requirement-portal, with its API at
-  `/knowledge-api/`. Sign-in uses the platform's OIDC provider (client `knowledge-spa`). There
-  are offline fake personas for development.
+- **Served under `/knowledge/`**, or at the root of its own hostname, with its API at
+  `/knowledge-api/` and the app API at `/knowledge-api/apps/v2`. Sign-in uses an OIDC provider
+  (client `knowledge-spa`), its own realm or one shared with other apps. There are offline fake
+  personas for development.
 
 ## Capabilities and Constraints
 
@@ -67,10 +69,7 @@ existing architecture mappings.
   - approval and publication of a revision;
   - index builds, previewed and then activated;
   - withdrawal and replacement;
-  - ownership transfer, with its history;
-  - dependencies: which requirements cite a document;
-  - a read-only source-impact view. Retain-or-revise decisions are recorded in
-    requirement-portal, not here.
+  - ownership transfer, with its history.
 - **Library search:** search over published passages, with exact citations.
 - **Architecture catalogue:** draft releases built from architecture documents and catalogue
   files.
@@ -82,7 +81,9 @@ existing architecture mappings.
   - an evidence passage for each catalogue fact.
 - **Squad catalogue:** squads, value streams, products and people, system ownership, and an
   audit history.
-- **Access:** every screen requires `knowledge_admin`. Anyone else gets a "no access" page.
+- **Access:** every curation screen requires `knowledge_admin`; the explorer is open to anyone
+  signed in. Anyone else gets a "no access" page. Apps are registered by an operator and read
+  through the app API, never through a person's sign-in.
 - **Stack:** React + Vite + TypeScript, served under `base: "/knowledge/"`. The API contract is
   `contracts/knowledge-public.openapi.json`.
 - **Its own design system.** Do not reuse requirement-portal's Working Paper tokens,
@@ -90,9 +91,8 @@ existing architecture mappings.
 
 ## Brand Commitments
 
-- It is part of the requirement platform, beside requirement-portal (product name
-  "Requirement AI"). Users move between the two through links. The two share one sign-in and
-  should feel like one family, but they have distinct design systems.
+- It stands on its own: a knowledge base with its own name and design system, not part of any
+  app's interface. Apps that read it link to it as they choose; it links to none of them.
 - The portal is English only: its interface and the content it curates.
 - **Brand: e& in calm mode.**
   - Mostly calm neutrals (white and beige-derived tints, warm greys), with maroon for actions,

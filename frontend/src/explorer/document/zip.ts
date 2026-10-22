@@ -1,6 +1,6 @@
 /**
  * A ZIP archive of named parts, enough for an Office Open XML package
- * (requirement-portal ADR-0101, step 6). Entries are deflated with the
+ * (ADR-0101, step 6). Entries are deflated with the
  * browser's own CompressionStream where it has one, and stored otherwise;
  * Word reads both. No dependency: the format is small and fixed.
  */

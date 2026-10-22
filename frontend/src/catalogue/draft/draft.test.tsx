@@ -72,9 +72,6 @@ function renderStep(
     base_release_id: "live", draft_release_id: "d",
     changes: [{ item: "system", key: "order-hub", label: "Order Hub", change: "added", fields: [] }],
   } as never);
-  vi.spyOn(api, "mappingImpact").mockResolvedValue({
-    active_release_id: "live", requirements: 7, features: 0, stories: 0, outdated_requirements: 2, outdated_features: 0, outdated_stories: 0,
-  });
   vi.spyOn(api, "samples").mockResolvedValue({ revision: 1, updated_at: null, updated_by: null, items: [{ id: "s1", text: "Order Hub takes orders" }] });
   let revision = release.revision;
   const decide = vi.spyOn(api, "decide").mockImplementation(async () => ({ ...release, revision: ++revision }) as Release);
@@ -286,7 +283,7 @@ describe("Decide", () => {
     expect(listed).toHaveLength(3);
     // The one with a possible match needs a person: it is not in the set.
     expect(within(panel).queryByText(/Dynamics CRM/)).toBeNull();
-    expect(within(panel).getByText(/Nothing reaches requirement work until the draft is published/)).toBeInTheDocument();
+    expect(within(panel).getByText(/Nothing is in service until the draft is published/)).toBeInTheDocument();
 
     // Not yet: nothing is sent.
     fireEvent.click(within(panel).getByRole("button", { name: "Not yet" }));
@@ -500,7 +497,6 @@ describe("Publish", () => {
     const checks = await screen.findByRole("list", { name: "Checks before publishing" });
     await waitFor(() => expect(within(checks).getByText("4 suggestions wait undecided")).toBeInTheDocument());
     expect(within(checks).getByText("Built for matching at this revision")).toBeInTheDocument();
-    expect(within(checks).getByText("5 requirements to map again")).toBeInTheDocument();
     expect(within(checks).getByRole("link", { name: "Decide them" })).toHaveAttribute("href", "/architecture/versions/d/decide");
     expect(within(checks).getByText("Every capability, system, interface and term is linked")).toBeInTheDocument();
 

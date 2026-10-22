@@ -104,14 +104,6 @@
   flex: 1 1 32rem;
 }
 
-.lib-toolbar__find > .ds-field {
-  margin: 0;
-}
-
-.lib-toolbar__find {
-  flex: 0 1 18rem;
-}
-
 /* Retrying stopped work across owners */
 .lib-retry {
   display: flex;

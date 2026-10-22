@@ -1,11 +1,11 @@
-"""Bounded request bodies for the internal match and assess routes.
+"""Bounded request bodies for the apps' match and assess routes.
 
 The wire shape and the component names in
-`contracts/knowledge-internal.openapi.json` stay exactly the application's
+`contracts/knowledge-apps.openapi.json` stay exactly the application's
 `ArchitectureQuery` and `AssessmentQuery`; these add the field maxima the
 interface boundary owes (AGENTS section 17), because every text item reaches a
-model prompt. The sizes are far above anything requirement-portal sends, so
-the added constraints only document and enforce what already holds.
+model prompt. The sizes are far above anything an app needs to send, so the
+added constraints only document and enforce what already holds.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ class ArchitectureQuery(BaseModel):
 
 
 class AssessmentQuery(BaseModel):
-    """A requirement as requirement-portal holds it: its text and its analysed facts."""
+    """A requirement as the asking app holds it: its text and its analysed facts."""
 
     text: tuple[Text, ...] = Field(max_length=MAX_ITEMS)
     declared_systems: tuple[Identifier, ...] = Field(default=(), max_length=MAX_ITEMS)

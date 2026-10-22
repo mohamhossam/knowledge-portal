@@ -1,4 +1,4 @@
-"""Plans and prices, as the product catalog states them (requirement-portal ADR-0101).
+"""Plans and prices, as the product catalog states them (ADR-0101).
 
 The product catalog is the system of record for what an offering costs. The explorer reads
 it live, by the offering's code; nothing here is stored in the knowledge catalogue, so a

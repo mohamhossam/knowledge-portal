@@ -83,7 +83,6 @@ export default function Gallery() {
       <AppShell
         homeHref="#top"
         product="Knowledge portal · Design system"
-        outbound={{ href: "#", label: "Requirement AI" }}
         navigation={nav}
         banner={
           <span className="gallery-controls" role="group" aria-label="Gallery settings (not part of the design)">
@@ -167,10 +166,10 @@ function ShellAndPage() {
           title="Product eligibility matrix (sample)"
           documentTitle="Design system"
           meta={<><Status tone="neutral">Ready for review</Status><span>Owner Amina Owner</span></>}
-          provenance="Not in service. Requirement work can't cite it until a review is approved."
+          provenance="Not in service. It can't be cited until a review is approved."
           actions={<Button variant="quiet">Withdraw…</Button>}
         >
-          <SubNav label="Document" items={[{ href: "#", label: "Review", current: true }, { href: "#", label: "Versions" }, { href: "#", label: "Cited by", count: 7 }, { href: "#", label: "Ownership" }]} />
+          <SubNav label="Document" items={[{ href: "#", label: "Review", current: true }, { href: "#", label: "Versions" }, { href: "#", label: "Ownership" }]} />
         </PageHeader>
         <Tabs label="Draft view" tabs={[{ id: "changes", label: "Changes" }, { id: "check", label: "Check" }]} selected={tab} onSelect={setTab}>
           <p>{tab === "changes" ? "Changes against the version in service." : "Build and sample checks."}</p>
@@ -290,10 +289,10 @@ function CompareAndProvenance() {
           <ConsequencePanel
             tone="danger"
             title="Withdraw 'XGPON coverage rules (sample)'"
-            happens="Requirement work can no longer cite this document."
-            affects={<p>7 requirements cite it now (only requirements you can see). They'll be asked to keep or revise their citation in Requirement AI.</p>}
+            happens="Nothing can cite this document any more."
+            affects={<p>Every version of it leaves search at once (sample).</p>}
             reversibility="You can return it to service later from this page."
-            reason={{ label: "Why are you withdrawing it?", hint: "The requirement owners see this." }}
+            reason={{ label: "Why are you withdrawing it?", hint: "Kept with the document." }}
             confirmLabel="Withdraw 'XGPON coverage rules (sample)'"
             keepLabel="Keep it in service"
             onConfirm={() => setOpen(false)}

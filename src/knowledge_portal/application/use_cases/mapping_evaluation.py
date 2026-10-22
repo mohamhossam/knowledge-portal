@@ -146,7 +146,7 @@ class ReleaseSourcePort(Protocol):
 
 
 class MatchedImpact(ImpactMapperPort):
-    """Today's mapper: `/internal/architecture/match` as requirement-portal calls it.
+    """Today's mapper: `/apps/v2/architecture/match` as an app calls it.
 
     It gives no verdict. Its nearest stand-in is the offering the text names
     (`product_contexts`, ADR-0097): naming one is read as a change to that offering, naming
@@ -175,7 +175,7 @@ class MatchedImpact(ImpactMapperPort):
 
 
 class AssessedImpact(ImpactMapperPort):
-    """The assessment (ontology plan Phase 3): `/internal/architecture/assess`.
+    """The assessment (ontology plan Phase 3): `/apps/v2/architecture/assess`.
 
     Its verdict and its offering, when the verdict is about one, are the assessment's own;
     its concepts are every concept a need was linked to.

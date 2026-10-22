@@ -1,4 +1,4 @@
-"""What a requirement does to the product portfolio (requirement-portal ADR-0115).
+"""What a requirement does to the product portfolio (ADR-0115).
 
 A requirement either changes an offering the release already has, adds a plan to one, or
 needs a new offering, in an existing product family or in a new product line. The four

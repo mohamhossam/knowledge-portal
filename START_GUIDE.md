@@ -5,15 +5,17 @@ background workers and its browser app under `/knowledge/`. The portal is where 
 admins curate the shared reference library, the architecture catalogue and the squad
 catalogue.
 
-It is one of three repositories, and you need only this one to start:
+It is a stand-alone knowledge base (ADR-0126): people curate and read it in the browser, and
+other apps read it through its app API. You need only this repository to start:
 
 - **knowledge-portal** (this repository): the knowledge service and its browser app.
-- [**requirement-portal**](https://github.com/mohamhossam/requirement-portal): requirement work,
-  its review UI and the whole-platform Docker deployment. Optional here; section 8 runs it beside
-  this portal.
 - [**platform-kernel**](https://github.com/mohamhossam/platform-kernel): the shared library
   `smb_kernel`. `uv sync` installs its pinned release for you. Clone it only to change it
   (section 10).
+
+Apps that read the knowledge base, such as
+[requirement-portal](https://github.com/mohamhossam/requirement-portal), are optional here;
+section 8 lets one read it.
 
 Out of the box everything runs offline: in-memory storage, fake AI models and fake sign-in. You
 need no API key, no database and no external account.
@@ -25,8 +27,8 @@ need no API key, no database and no external account.
 | See the portal with sample content, offline | API, demo seed and browser app | 3–4 |
 | Keep your data across restarts | PostgreSQL | 6 |
 | Run the portal in containers, with only Docker installed | `deploy/compose.local.yaml` | 7 |
-| Work with requirement work connected | Both portals side by side | 8 |
-| Run the whole platform in containers, or deploy it | requirement-portal's Docker stack | requirement-portal `START_GUIDE.md`, sections 2–3 |
+| Let an app read the knowledge base | The app API, `/apps/v2` | 8 |
+| Deploy it | `deploy/compose.production.yaml` | `docs/operations/deployment.md` |
 
 ## 2. Prerequisites
 
@@ -287,7 +289,7 @@ with durable storage and real malware scanning.
 | `api` | The knowledge API (HTTP only) |
 | `worker` | Library ingestion and catalogue jobs |
 | `web` | The browser app, nginx serving `/knowledge/` |
-| `edge` | nginx on `127.0.0.1:8090`: `/knowledge-api/` to `api`, internal routes blocked, everything else to `web` |
+| `edge` | nginx on `127.0.0.1:8090`: `/knowledge-api/` to `api` (the app API at `/knowledge-api/apps/v2`), everything else to `web` |
 
 This stack is for one machine. A shared deployment is `deploy/compose.production.yaml`, which
 runs the released images on their own (`docs/operations/deployment.md`).
@@ -383,20 +385,16 @@ Pass `--no-build` on every `up` while these are set. Otherwise a build replaces 
 image with one from your checkout under the release's name. A release can be older than your
 checkout.
 
-## 8. Run beside requirement-portal
+## 8. Let an app read it
 
-On its own, the portal uses offline stand-ins for requirement work: no requirement cites
-anything and nothing is mapped. To connect the two services, clone
-[requirement-portal](https://github.com/mohamhossam/requirement-portal) next to this repository
-and start it with its launcher (its `START_GUIDE.md`, section 4). Its API listens on `8000` and
-its review UI on `5173`, so the two portals do not collide.
+Other apps read the knowledge base through its app API, `/apps/v2` (ADR-0126); the portal
+itself calls no app, so it runs the same with or without them. The contract is
+`contracts/knowledge-apps.openapi.json`. The app API is served only once an app is registered.
 
-The services call each other's internal API with two shared tokens, each 32 or more characters.
-Generate two:
+Register an app with a token of its own, 32 or more characters:
 
 ```bash
-openssl rand -hex 32   # token A
-openssl rand -hex 32   # token B
+openssl rand -hex 32
 ```
 
 ```powershell
@@ -404,31 +402,31 @@ openssl rand -hex 32   # token B
 [guid]::NewGuid().ToString('N') + [guid]::NewGuid().ToString('N')
 ```
 
-Use the same two values on both sides:
+Add it to `.env` under a name for the app, and restart the API:
 
-| Setting | knowledge-portal (`.env` here) | requirement-portal (its `.env`) |
-|---|---|---|
-| Where the other service is | `REQUIREMENT_API_BASE_URL=http://127.0.0.1:8000` | `KNOWLEDGE_API_BASE_URL=http://127.0.0.1:8100` |
-| The token requirement work presents | `REQUIREMENT_SERVICE_TOKEN=<token A>` | `REQUIREMENT_SERVICE_TOKEN=<token A>` |
-| The token the knowledge service presents | `KNOWLEDGE_SERVICE_TOKEN=<token B>` | `KNOWLEDGE_SERVICE_TOKEN=<token B>` |
+```bash
+APP_TOKENS=my-app=<token>
+```
 
-Set `REQUIREMENT_API_BASE_URL` and `KNOWLEDGE_SERVICE_TOKEN` together or not at all. Leaving
-`REQUIREMENT_SERVICE_TOKEN` empty turns this service's internal API off.
+The app sends it as a bearer token. For example, with the demo seed loaded:
 
-Start this portal's API first, then requirement-portal's launcher; its ready banner names the
-knowledge service it reached. Each side keeps working while the other is stopped, and reports it
-as unavailable where it needs it.
+```bash
+curl -s -H "Authorization: Bearer <token>" http://127.0.0.1:8100/apps/v2/library/published
+curl -s -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"query": "coverage"}' http://127.0.0.1:8100/apps/v2/library/search
+```
 
-| Address | What |
-|---|---|
-| `http://127.0.0.1:5173` | requirement-portal's review UI |
-| `http://localhost:5174/knowledge/` | This portal. Open it directly: in development the review UI's **Open knowledge portal** link points at its own server, which does not serve this portal |
+Change requests and other things an app sends keep its name (`my-app`). Several apps are
+comma-separated: `APP_TOKENS=my-app=<token>,another=<token>`.
 
-With fake sign-in on both sides, Amina Owner and Ravi Reviewer are knowledge admins in both
-portals.
+To let requirement-portal read it, give it a token of its own the same way and point its
+knowledge settings at `http://127.0.0.1:8100/apps/v2`; it needs a release that speaks the app
+API (contract 2.0). Its API listens on `8000` and its review UI on `5173`, so the two do not
+collide. With fake sign-in on both sides, Amina Owner and Ravi Reviewer are knowledge admins
+here.
 
-To deploy the two side by side, each runs its own stack, and they meet on a private network
-(`docs/operations/deployment.md`, "Connect requirement work").
+In a deployment, register each app's client at the OIDC issuer instead
+(`docs/operations/deployment.md`, "Register an app").
 
 ## 9. Use a real AI provider
 
@@ -581,5 +579,4 @@ Check your network or corporate proxy settings in Docker, then build again.
 - `.env.example`: every setting, with its meaning.
 - `ROADMAP.md`: delivery status.
 - `AGENTS.md`: the engineering rules.
-- requirement-portal `START_GUIDE.md`: the whole platform, including the Docker stack and
-  deployment.
+- `docs/operations/deployment.md`: deploying the portal, and registering the apps that read it.

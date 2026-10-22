@@ -11,7 +11,7 @@ import type { Scenario } from "./scenario";
 
 /**
  * The scenario as a Solution Architecture document, written in the browser
- * from the version on screen (requirement-portal ADR-0101, step 6). Plans are
+ * from the version on screen (ADR-0101, step 6). Plans are
  * read through the same query the Plans and prices section uses, so a read
  * already made is not made again. Anyone who can read the explorer can take it.
  */

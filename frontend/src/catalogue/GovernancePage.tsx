@@ -36,7 +36,7 @@ const at = (base: string, register: Register, id: string) => `${base}/governance
 
 /**
  * Where the catalogue's knowledge comes from, and where its sources disagree
- * (requirement-portal ADR-0101, step 5), on the workbench (UX rebuild,
+ * (ADR-0101, step 5), on the workbench (UX rebuild,
  * phase 3). Its three registers are lists of records, so they share one
  * narrow list, grouped by register: the conflicts between sources first (each
  * needs a decision), then the sources by level, then the change requests
@@ -235,7 +235,7 @@ function Summary({ release, edit }: { release: Release; edit: (key: Editing) => 
           </div>
           <div>
             <dt>Change requests applied</dt>
-            <dd><strong>{history.length}</strong><span>From Requirement AI and the original explorer</span></dd>
+            <dd><strong>{history.length}</strong><span>From connected apps and the original explorer</span></dd>
           </div>
         </dl>
       </section>
@@ -391,7 +391,7 @@ function ChangeRecordView({ record }: { record: ChangeRecord }) {
       meta={
         <>
           <span className="offering-id">{record.id}</span>
-          <span>{record.origin === "explorer" ? "Drafted in the original explorer" : "From Requirement AI"}</span>
+          <span>{record.origin === "explorer" ? "Drafted in the original explorer" : "From a connected app"}</span>
         </>
       }
       lead={record.reason ? <>Why: {record.reason}</> : undefined}

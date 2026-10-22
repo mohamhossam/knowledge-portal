@@ -5,8 +5,8 @@
  * without a browser: a document awaits review when its newest version has been
  * read and no publication was approved from it (a version's ingestion stage
  * stays "ready_for_review" after approval, so the stage alone cannot say); a catalogue draft needs someone while it
- * holds proposed suggestions, and is disrupted when its build or a reading failed; a system needs an owner when no
- * squad holds it; and requirement work's corpus needs someone when indexing stopped or a finding has stood a month.
+ * holds proposed suggestions, and is disrupted when its build or a reading failed; and a system needs an owner when no
+ * squad holds it.
  */
 import type {
   Actor,
@@ -19,7 +19,6 @@ import type {
   Release,
   ReleaseDeliveries,
   ReleasePrecedents,
-  RequirementCorpus,
   SystemStanding,
 } from "../api/client";
 import { jobReason, reading } from "../catalogue/suggestions";
@@ -205,7 +204,7 @@ export function libraryOverview(documents: LibraryDocument[]): Overview {
       notes.push({
         id,
         text: `Last confirmed still right by ${review.reviewer.display_name} on ${formatDay(review.last_reviewed_at)}; ${
-          overdue ? "it fell due" : "it falls due"} for re-confirmation on ${formatDay(review.due_at)}. It stays in service meanwhile; once overdue, requirement work flags citations of it.`,
+          overdue ? "it fell due" : "it falls due"} for re-confirmation on ${formatDay(review.due_at)}. It stays in service meanwhile.`,
       });
       lines.push(line(overdue ? "delayed" : "due", overdue ? REVIEW_STATUS.overdue : REVIEW_STATUS.due_soon, reviewSince(review), id));
       if (overdue) reviewsOverdue += 1;
@@ -236,7 +235,7 @@ export function libraryOverview(documents: LibraryDocument[]): Overview {
     ],
     edition: latest
       ? { text: `Edition of ${formatDay(latest.at)} · ${count(inService, "document")} in service${lastChange(changed)}`, note: "latest" }
-      : { text: `Nothing published yet. Requirement work can cite only what is published here.${changed ? ` Last change ${formatDay(changed)}.` : ""}` },
+      : { text: `Nothing published yet. Only what is published here can be cited.${changed ? ` Last change ${formatDay(changed)}.` : ""}` },
     next: yoursToReview > 0
       ? { to: "/library", label: `${count(yoursToReview, "document")} ${yoursToReview === 1 ? "awaits" : "await"} your review` }
       : due > 0
@@ -313,7 +312,7 @@ export function architectureOverview(
   if (active) {
     notes.push({
       id: "edition",
-      text: `Published by ${nameOf(active.published_by)} on ${formatDay(active.published_at)}, revision ${active.revision}. Requirement work maps new requirements against this edition.${
+      text: `Published by ${nameOf(active.published_by)} on ${formatDay(active.published_at)}, revision ${active.revision}. New requirements are mapped against this edition.${
         decisions ? ` ${decisions.note}` : ""}${delivered ? ` ${delivered.note}` : ""}`,
     });
   }
@@ -419,7 +418,7 @@ export function architectureOverview(
     edition: active
       ? { text: `Edition ‘${active.name ?? active.id}’ in force${lastChange(changed?.at ?? null, changed?.what)}`, note: "edition" }
       : {
-          text: `No edition is in force. Requirement work maps against nothing until a release is published.${
+          text: `No edition is in force. Nothing is mapped until a release is published.${
             changed ? ` Last change ${formatDay(changed.at)}, ${changed.what}.` : ""}`,
         },
     next: firstFailed && firstFailure
@@ -608,134 +607,5 @@ export function squadOverview(
       : { label: active ? "Every system in force has an owning squad." : "No edition is in force, so no system needs an owner yet." },
     extent: { value: organisation.squads.length, label: count(organisation.squads.length, "squad") },
     alert: alertOf(null, unowned.length > 0 ? `${unowned.length} with no squad` : null),
-  };
-}
-
-// Table 4 ----------------------------------------------------------------------
-
-/** Requirement work, where its owners act on what Table 4 reports. */
-const REQUIREMENT_WORK_LEAVES = "opens requirement work";
-
-// Table 4's own pages, filtered to what a row counts.
-const REQUIREMENTS = "/requirement-knowledge/requirements";
-const FINDINGS = "/requirement-knowledge/findings";
-const STOPPED = `${REQUIREMENTS}?state=failed`;
-const OVERDUE = `${FINDINGS}?age=over_30_days`;
-const AWAITING = `${FINDINGS}?age=from_7_to_30_days`;
-const HISTORIC = "/requirement-knowledge/historic";
-
-/** How many historic Requirements stand in each state (Knowledge Center E). */
-type HistoricTally = { draft: number; published: number; withdrawn: number; refresh_waiting: number };
-
-/**
- * Requirement work's corpus, in counts (requirement-portal ADR-0099, Amendment 1). Its teams
- * decide findings and retry indexing there, so the table's next decision leads there.
- */
-export function requirementOverview(
-  corpus: RequirementCorpus,
-  /** Requirement work's address, or null when this deployment runs without it. */
-  requirementWork: string | null,
-  /** Historic Requirements, kept here in the knowledge portal; none until read. */
-  historic: HistoricTally | null = null,
-): Overview {
-  const ages = corpus.open_findings;
-  const open = ages.under_7_days + ages.from_7_to_30_days + ages.over_30_days;
-  const notes: DerivedNote[] = [{
-    id: "source",
-    text: "Requirement work keeps the requirements and their findings, and answers this table in counts. Its Requirements and Findings pages name them. The figures are as of the time in the masthead.",
-  }];
-  const lines: Line[] = [];
-  const row = (key: string, rank: Rank, name: string, status: string, value: number, to: string, note?: string) =>
-    lines.push({ key, rank, name, to, cells: { status, count: String(value) }, note });
-
-  if (corpus.rebuild_required) {
-    notes.push({
-      id: "rebuild",
-      text: "The embedding model changed. Until the index is rebuilt in requirement work, no requirement is screened against the others.",
-    });
-    lines.push({ key: "rebuild", rank: "delayed", name: "Requirement index", cells: { status: "Rebuild required", count: "—" }, note: "rebuild" });
-  }
-  if (corpus.failed > 0) {
-    notes.push({
-      id: "failed",
-      text: "Indexing stops after three failed attempts on the same change. A knowledge admin retries it from the Requirements page, its team from the requirement, or a later change starts it afresh.",
-    });
-    row("failed", "delayed", "Requirements that stopped indexing", "Indexing failed", corpus.failed, STOPPED, "failed");
-  }
-  if (ages.over_30_days > 0) {
-    notes.push({
-      id: "findings",
-      text: "A possible duplicate or contradiction stays open until the requirements' owners decide it on the Knowledge step. One left over a month is overdue.",
-    });
-    row("over30", "delayed", "Findings open over 30 days", "Overdue", ages.over_30_days, OVERDUE, "findings");
-  }
-  if (ages.from_7_to_30_days > 0) row("over7", "due", "Findings open 7 to 30 days", "Awaiting owners", ages.from_7_to_30_days, AWAITING);
-  // A finding this week is screening at its normal pace: in progress, not yet anyone's concern.
-  if (ages.under_7_days > 0) row("recent", "running", "Findings open under 7 days", "With their owners", ages.under_7_days, `${FINDINGS}?age=under_7_days`);
-  if (corpus.waiting > 0) row("waiting", "running", "Requirements waiting to be indexed", "Indexing", corpus.waiting, `${REQUIREMENTS}?state=waiting`);
-  if (historic && historic.draft > 0) {
-    notes.push({
-      id: "historic",
-      text: "Old BRDs imported with their Azure DevOps breakdown wait as drafts until a curator links their work items and publishes them. Requirement work reads only published ones, as prior art.",
-    });
-    row("historic", "due", "Historic requirements in draft", "Awaiting a curator", historic.draft, `${HISTORIC}?status=draft`, "historic");
-  }
-  if (historic && historic.refresh_waiting > 0) {
-    notes.push({
-      id: "refresh",
-      text: "A published historic requirement read again from Azure DevOps keeps its published breakdown until a curator accepts or discards what changed.",
-    });
-    row("refresh", "due", "Historic requirements with a newer read", "Refresh waiting", historic.refresh_waiting, `${HISTORIC}?status=published`, "refresh");
-  }
-
-  const present = (items: (string | null)[]) => items.filter((item): item is string => item !== null);
-  // The index's clause: the same troubles, as short as a timetable's margin note.
-  const brief = present([
-    corpus.failed > 0 ? `${corpus.failed} stopped indexing` : null,
-    ages.over_30_days > 0 ? `${ages.over_30_days} overdue` : null,
-  ]);
-  const leave = (label: string): Next =>
-    requirementWork === null ? { label } : { href: requirementWork, leaves: REQUIREMENT_WORK_LEAVES, label };
-
-  return {
-    lines,
-    notes: inReadingOrder(notes, "source", lines),
-    totals: [
-      { key: "requirements", label: "Requirements", value: String(corpus.requirements) },
-      { key: "current", label: "Indexed and current", value: String(corpus.current) },
-      { key: "duplicates", label: "Of them closed as duplicates", value: String(corpus.duplicates) },
-      { key: "retired", label: "Of them retired", value: String(corpus.retired) },
-      { key: "open", label: "Open findings", value: String(open) },
-      ...(historic ? [{ key: "historic", label: "Historic requirements published", value: String(historic.published) }] : []),
-    ],
-    edition: {
-      text: corpus.rebuild_required
-        ? `${count(corpus.requirements, "requirement")} · the index must be rebuilt`
-        : `${count(corpus.requirements, "requirement")}, ${corpus.current} indexed and current`,
-      note: "source",
-    },
-    // A rebuild is requirement work's to start; overdue findings an admin can nudge from here.
-    next: corpus.rebuild_required
-      ? leave("Rebuild the requirement index in requirement work")
-      : ages.over_30_days > 0
-        ? { to: OVERDUE, label: ages.over_30_days === 1 ? "Ask the owners to decide the overdue finding" : `Ask the owners to decide the ${ages.over_30_days} overdue findings` }
-        : corpus.failed > 0
-          ? { to: STOPPED, label: `Retry the ${count(corpus.failed, "requirement")} that stopped indexing` }
-          : ages.from_7_to_30_days > 0
-            ? { to: AWAITING, label: `${count(ages.from_7_to_30_days, "finding")} ${ages.from_7_to_30_days === 1 ? "awaits its" : "await their"} owners` }
-            : historic && historic.refresh_waiting > 0
-              ? { to: `${HISTORIC}?status=published`, label: `Accept or discard the newer read of ${count(historic.refresh_waiting, "historic requirement")}` }
-              : historic && historic.draft > 0
-                ? { to: `${HISTORIC}?status=draft`, label: `Link and publish the ${count(historic.draft, "historic requirement")} in draft` }
-                : { label: "Nothing in requirement knowledge awaits anyone." },
-    extent: { value: corpus.requirements, label: count(corpus.requirements, "requirement") },
-    alert: alertOf(
-      corpus.rebuild_required ? "rebuild required" : brief.length > 0 ? brief.join(", ") : null,
-      clause([
-        ages.from_7_to_30_days > 0 ? `${count(ages.from_7_to_30_days, "finding")} awaiting owners` : "",
-        historic && historic.draft > 0 ? `${historic.draft} historic in draft` : "",
-        historic && historic.refresh_waiting > 0 ? `${historic.refresh_waiting} historic refresh${historic.refresh_waiting === 1 ? "" : "es"} waiting` : "",
-      ]),
-    ),
   };
 }

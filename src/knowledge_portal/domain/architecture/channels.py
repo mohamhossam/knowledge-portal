@@ -3,7 +3,7 @@
 A channel is where an order is placed. Its entry system, when the catalogue knows it, is the
 catalogued system that takes the order in. A journey step can say it is performed by the
 channel's entry system: then it is performed by whichever channel the order came through
-(requirement-portal ADR-0101, step 3).
+(ADR-0101, step 3).
 """
 
 from __future__ import annotations

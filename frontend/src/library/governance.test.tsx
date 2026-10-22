@@ -41,7 +41,6 @@ function documentWithBuild(extra: Partial<LibraryDocument> = {}): LibraryDocumen
 
 function renderVersions(document: LibraryDocument) {
   const activate = vi.fn();
-  vi.spyOn(api, "dependencies").mockResolvedValue({ items: [{ proposal_id: "p1", requirement_id: "req-1", requirement_title: "Fibre bundle ordering" }], next_offset: null } as never);
   const mutation = { mutate: vi.fn(), isPending: false, isError: false, error: null };
   const context = {
     document,
@@ -73,8 +72,8 @@ describe("VersionsPage", () => {
     expect(screen.getByText("Built; waiting to be activated")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Activate it…" }));
     const panel = screen.getByRole("region", { name: "Activate the search index for tables" });
-    // The consequence comes before the verb (§5): who cites it now (only those you can see), then the button.
-    expect(await within(panel).findByText(/requirement you can see cites the version in service/)).toHaveTextContent("Their owners are told the source changed");
+    // The consequence comes before the verb (§5): what it replaces, then the button.
+    expect(within(panel).getByText(/It replaces the index in service/)).toHaveTextContent("citations come from, its 9 passages from then on");
     expect(activate).not.toHaveBeenCalled();
     await userEvent.click(within(panel).getByRole("button", { name: "Activate it" }));
     expect(activate).toHaveBeenCalledWith({ buildId: "build", manifest: "m".repeat(64) }, expect.anything());
@@ -122,49 +121,5 @@ Passage ${id}.`, context_locations: locations,
     fireEvent.click(toggles[0]!);
     expect(screen.getByText("Before.")).toBeInTheDocument();
     expect(screen.getByText("Passage a.")).toHaveClass("lib-context__cited");
-  });
-});
-
-describe("CitationsPage", () => {
-  it("shows proposals and source impact with rows, linking each requirement into requirement work", async () => {
-    const citation = { version_number: 1, location: "Line 2", publication_id: "old" };
-    vi.spyOn(api, "dependencies").mockResolvedValue({
-      items: [{
-        requirement_id: "req-1", requirement_title: "Fibre bundle ordering", proposal_id: "p1", statement: "Confirm coverage first.",
-        status: "accepted", current_analysis: true, round_number: 2, publication_current: false, citation,
-      }],
-      next_offset: null,
-    } as never);
-    vi.spyOn(api, "sourceImpact").mockResolvedValue({
-      items: [{
-        dependency: {
-          id: "dep-1", requirement_id: "req-1", requirement_title: "Fibre bundle ordering", target_kind: "story",
-          statement: "As a seller I confirm coverage.", active: true, lineage: { citation, via: ["Feature: Ordering"] },
-        },
-        publication_current: false, needs_review: true, publication_state: "3:withdrawn",
-        decisions: [{ decision: "retain_historical", reason: "Earlier rollout.", actor: amina, recorded_at: "2026-10-02T00:00:00Z" }],
-      }],
-      next_offset: null,
-    } as never);
-    const { CitationsPage } = await import("./CitationsPage");
-    const context = { document: documentWithBuild(), hook: {}, review: {}, setReview: vi.fn(), dirty: 0 } as unknown as DocumentContext;
-    render(
-      <QueryClientProvider client={new QueryClient()}>
-        <MemoryRouter>
-          <Routes>
-            <Route element={<Outlet context={context} />}>
-              <Route path="*" element={<CitationsPage />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </QueryClientProvider>,
-    );
-    expect(await screen.findByText("Cites a replaced version; its owner should reconcile it.")).toBeInTheDocument();
-    // A link into Requirement AI says it leaves the portal.
-    expect(screen.getAllByRole("link", { name: "Fibre bundle ordering (opens Requirement AI)" })[0]).toHaveAttribute("href", "/requirements/req-1");
-    expect(await screen.findByText("Source changed; awaiting its owner")).toBeInTheDocument();
-    expect(screen.getByText("Feature: Ordering").closest("span")).toHaveTextContent("Through Feature: Ordering · version 1, Line 2");
-    expect(screen.getByText("Earlier rollout.").closest("td")).toHaveTextContent(/^Kept by Amina Owner, 2 Oct 2026/);
-    expect(screen.getByText(/1 item waits for that decision/)).toBeInTheDocument();
   });
 });

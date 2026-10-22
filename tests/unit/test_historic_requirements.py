@@ -12,7 +12,6 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 from smb_kernel.documents.model import DocumentEvidenceBlock, EvidenceBlockKind
-from smb_kernel.errors import ServiceUnavailableError
 from smb_kernel.time.fixed import FixedClock
 
 from knowledge_portal.application.ports.ado_work_items import AdoWorkItemSourcePort
@@ -21,10 +20,6 @@ from knowledge_portal.application.ports.historic_requirements import (
     HistoricRequirementNotFoundError,
 )
 from knowledge_portal.application.ports.knowledge_events import HISTORIC_REQUIREMENT_CHANGED
-from knowledge_portal.application.ports.requirement_historic_citations import (
-    HistoricCitation,
-    HistoricCitationPage,
-)
 from knowledge_portal.application.use_cases.architecture_documents import (
     IncomingFile,
     UploadOutcome,
@@ -62,12 +57,7 @@ from knowledge_portal.infrastructure.config.options import (
     PersistenceProvider,
 )
 from knowledge_portal.infrastructure.config.settings import Settings
-from knowledge_portal.infrastructure.requirement_client import (
-    FakeArchitectureMappingStats,
-    FakeRequirementDependents,
-    FakeRequirementImpact,
-)
-from knowledge_portal.interfaces.api.container import Container, RequirementWork, build_container
+from knowledge_portal.interfaces.api.container import Container, build_container
 from knowledge_portal.interfaces.api.main import create_app
 from tests.word_table_fixtures import DOCX_MIME, word_document, word_paragraph
 
@@ -527,7 +517,7 @@ def _served(clock: FixedClock) -> Container:
             llm_provider=LLMProvider.FAKE,
             library_scan_mode="offline",
             ado_provider=AdoProvider.FAKE,
-            requirement_service_token="r" * 40,
+            app_tokens={"requirements": "r" * 40},
         ),
         clock=clock,
     )
@@ -538,7 +528,7 @@ def test_requirement_work_reads_a_publication_a_page_at_a_time(clock: FixedClock
     historic_id = _linked(container)
     record = container.historic_imports.get(historic_id)
     container.historic_imports.publish(historic_id, record.version, CURATOR)
-    base = f"/internal/historic-requirements/{historic_id}"
+    base = f"/apps/v2/historic-requirements/{historic_id}"
     with TestClient(create_app(lambda: container)) as client:
         assert client.get(f"{base}/items?publication=1").status_code == 401
         first = client.get(f"{base}/items?publication=1&limit=2", headers=SERVICE)
@@ -554,7 +544,7 @@ def test_requirement_work_reads_a_publication_a_page_at_a_time(clock: FixedClock
             client.get(f"{base}/items?publication=1&limit=201", headers=SERVICE).status_code == 422
         )
         assert client.get(f"{base}/items?publication=0", headers=SERVICE).status_code == 422
-        missing = "/internal/historic-requirements/missing/items?publication=1"
+        missing = "/apps/v2/historic-requirements/missing/items?publication=1"
         assert client.get(missing, headers=SERVICE).status_code == 404
 
 
@@ -563,7 +553,7 @@ def test_a_draft_is_not_read_by_requirement_work(clock: FixedClock) -> None:
     historic_id = _linked(container)
     with TestClient(create_app(lambda: container)) as client:
         answer = client.get(
-            f"/internal/historic-requirements/{historic_id}/passages?publication=1",
+            f"/apps/v2/historic-requirements/{historic_id}/passages?publication=1",
             headers=SERVICE,
         )
         assert answer.status_code == 404
@@ -587,109 +577,3 @@ def test_the_event_payload_is_pinned_for_requirement_work(container: Container) 
     if not EXAMPLE.exists() or EXAMPLE.read_text(encoding="utf-8") != text:
         EXAMPLE.write_text(text, encoding="utf-8")
         pytest.fail(f"{EXAMPLE.name} was stale and has been rewritten; commit it.")
-
-
-# --- Where requirement work cites them (E2b) -----------------------------------------------
-
-
-class _Citations:
-    """Requirement work answering, or not, with one Requirement citing each record."""
-
-    def __init__(self) -> None:
-        self.down = False
-        self.asked: list[tuple[str, ...]] = []
-
-    def counts(self, historic_ids: tuple[str, ...]) -> dict[str, int]:
-        if self.down:
-            raise ServiceUnavailableError("Requirement work is down.")
-        self.asked.append(historic_ids)
-        return dict.fromkeys(historic_ids, 1)
-
-    def citations(self, historic_id: str, offset: int, limit: int) -> HistoricCitationPage:
-        if self.down:
-            raise ServiceUnavailableError("Requirement work is down.")
-        cited = HistoricCitation("R-1", "Fibre bundles", "Mona Adel", NOW, True, False, False)
-        return HistoricCitationPage((cited,), None)
-
-
-def _citing(clock: FixedClock, citations: _Citations) -> Container:
-    return build_container(
-        Settings(
-            llm_provider=LLMProvider.FAKE,
-            library_scan_mode="offline",
-            ado_provider=AdoProvider.FAKE,
-        ),
-        clock=clock,
-        requirement_work=RequirementWork(
-            FakeRequirementDependents(),
-            FakeArchitectureMappingStats(),
-            FakeRequirementImpact(),
-            historic_citations=citations,
-        ),
-    )
-
-
-def test_the_list_counts_citations_of_published_records_only(clock: FixedClock) -> None:
-    citations = _Citations()
-    container = _citing(clock, citations)
-    imports = container.historic_imports
-    historic_id = _linked(container)
-    record = imports.get(historic_id)
-    imports.publish(historic_id, record.version, CURATOR)
-    draft_id = _started(container, brd("Old_tariffs.docx", "Tariffs for 2019."))
-    page = imports.list(None, "", 0, 10)
-    # A draft has never been published, so requirement work is not asked about it.
-    assert citations.asked == [(historic_id,)]
-    assert page.citations == {historic_id: 1}
-    assert draft_id not in page.citations
-    # The list still loads when requirement work cannot answer; it just has no counts.
-    citations.down = True
-    assert imports.list(None, "", 0, 10).citations == {}
-
-
-def test_the_record_says_who_cites_it(clock: FixedClock) -> None:
-    citations = _Citations()
-    container = _citing(clock, citations)
-    historic_id = _linked(container)
-    record = container.historic_imports.get(historic_id)
-    container.historic_imports.publish(historic_id, record.version, CURATOR)
-    with TestClient(create_app(lambda: container)) as client:
-        listed = client.get("/historic-requirements").json()
-        assert [item["citations"] for item in listed["items"]] == [1]
-        cited = client.get(f"/historic-requirements/{historic_id}/citations")
-        assert cited.status_code == 200
-        assert cited.headers["cache-control"] == "private, no-store"
-        assert cited.json() == {
-            "total": 1,
-            "items": [
-                {
-                    "requirement_id": "R-1",
-                    "title": "Fibre bundles",
-                    "owner": "Mona Adel",
-                    "checked_at": "2026-10-06T09:00:00Z",
-                    "current": True,
-                    "retired": False,
-                    "duplicate": False,
-                }
-            ],
-            "next_offset": None,
-        }
-        assert client.get("/historic-requirements/missing/citations").status_code == 404
-        limit = {"limit": 101}
-        assert (
-            client.get(f"/historic-requirements/{historic_id}/citations", params=limit).status_code
-            == 422
-        )
-        observer = {"X-Fake-Actor-Id": "fake-observer"}
-        assert (
-            client.get(
-                f"/historic-requirements/{historic_id}/citations", headers=observer
-            ).status_code
-            == 403
-        )
-        citations.down = True
-        assert [
-            item["citations"] for item in client.get("/historic-requirements").json()["items"]
-        ] == [None]
-        down = client.get(f"/historic-requirements/{historic_id}/citations")
-        assert down.status_code == 503

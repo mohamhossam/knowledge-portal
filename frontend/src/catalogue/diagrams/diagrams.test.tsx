@@ -138,7 +138,6 @@ function Where() {
 
 function renderMap(path: string) {
   vi.spyOn(api, "changeRequests").mockResolvedValue([] as never);
-  vi.spyOn(api, "mappingImpact").mockResolvedValue({ outdated_requirements: 0 } as never);
   const context: CatalogueContext = { book: catalogue(release()), base: "/architecture", inService: true, actorName: () => "Amina Owner" };
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>

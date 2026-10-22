@@ -1,6 +1,6 @@
 /**
  * The solution overview a Solution Architecture document opens with
- * (requirement-portal ADR-0101, step 6): the journey's stages left to right,
+ * (ADR-0101, step 6): the journey's stages left to right,
  * each with the systems that perform its steps, and the order's tracking
  * beneath. Drawn as SVG from the scenario, then rasterised in the browser.
  */

@@ -101,7 +101,7 @@ describe("GovernancePage", () => {
 
     open("/architecture/governance/changes/CR-20261003-Business_Pro_Plus", false);
     record = within(screen.getByRole("article"));
-    expect(record.getByText("From Requirement AI")).toBeInTheDocument();
+    expect(record.getByText("From a connected app")).toBeInTheDocument();
     expect(record.queryByText("Asked by")).not.toBeInTheDocument();
     expect(record.getByText("REQ-2026-0412, revision 3, approved by Layla Haddad on 3 Oct 2026")).toBeInTheDocument();
     expect(record.getByText("4 Oct 2026")).toBeInTheDocument();

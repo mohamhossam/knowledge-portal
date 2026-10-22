@@ -84,7 +84,7 @@ function DeliveryFacts({ item, delivery }: { item: ChangeRequest; delivery: Deli
 const STATE_TONE = { waiting: "attention", read: "done", dismissed: "stopped" } as const;
 
 /**
- * The approved backlogs requirement-portal sent (requirement-portal ADR-0101, step 7), on the
+ * The approved backlogs connected apps sent (ADR-0101, step 7), on the
  * Versions page: what each asks, where it comes from, and reading it into the draft or
  * dismissing it.
  */
@@ -155,10 +155,11 @@ export function ChangeRequestInbox({ releases, actorName, headingLevel = 2 }: {
     },
     {
       id: "from",
-      header: "From Requirement AI",
+      header: "Origin",
       cell: (item) => (
         <>
           <span dir="auto">{traceLine(item.trace)}</span>
+          {item.sent_by && <span className="cat-detail">Sent by <bdi>{item.sent_by}</bdi></span>}
           {item.delivery ? (
             <DeliveryFacts item={item} delivery={item.delivery} />
           ) : (
@@ -242,10 +243,10 @@ export function ChangeRequestInbox({ releases, actorName, headingLevel = 2 }: {
   return (
     <Section
       headingLevel={headingLevel}
-      title={<>Change requests from Requirement AI{waiting > 0 && <>{" "}<span className="ds-section__count">{waiting} waiting</span></>}</>}
+      title={<>Change requests{waiting > 0 && <>{" "}<span className="ds-section__count">{waiting} waiting</span></>}</>}
     >
       <p className="cat-lead">
-        Requirement AI sends a requirement’s approved backlog here once it is approved, and what its Epic delivered once the Epic is
+        A connected app sends a requirement’s approved backlog here once it is approved, and what its Epic delivered once the Epic is
         closed. Reading one into the draft turns it into suggestions: questions for the offerings it names, a drafted offering and
         journey, or the capabilities delivered. Nothing reaches the catalogue until it is accepted.
       </p>
@@ -258,12 +259,12 @@ export function ChangeRequestInbox({ releases, actorName, headingLevel = 2 }: {
         </p>
       ) : (
         <DataTable
-          caption="Change requests from Requirement AI, newest first"
+          caption="Change requests from connected apps, newest first"
           captionHidden
           columns={columns}
           rows={inbox.data}
           rowId={(item) => item.id}
-          emptyText="No change request has come from Requirement AI yet."
+          emptyText="No change request has come from a connected app yet."
         />
       )}
     </Section>

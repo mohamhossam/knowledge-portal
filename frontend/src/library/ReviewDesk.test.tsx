@@ -5,10 +5,9 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { api, type LibraryDocument } from "../api/client";
-import { ApiError } from "../api/errors";
 import { checkAxeAfterEach } from "../test/axe";
-import { CitationsPage } from "./CitationsPage";
 import { DocumentPage, MainPage } from "./DocumentPage";
+import { VersionsPage } from "./VersionsPage";
 
 checkAxeAfterEach();
 
@@ -48,7 +47,7 @@ type Saved = { block_id: string; text: string; included: boolean; exclusion_reas
 function matrix({ revisions = [] as { id: string; explanation?: string; passages: Saved[] }[], extra = {} as Partial<LibraryDocument> } = {}): LibraryDocument {
   return {
     id: "d", title: "Product matrix", owner: amina, version: 4, can_edit: true, is_owner: true,
-    published_id: null, publications: [], review_fingerprint: revisions.length ? "f" : null, build_fingerprint: null, review: null, citations: 0,
+    published_id: null, publications: [], review_fingerprint: revisions.length ? "f" : null, build_fingerprint: null, review: null,
     acting_as_admin: null, newest: null,
     versions: [{
       id: "v1", number: 1, stage: "ready_for_review", filename: "matrix.xlsx", mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -66,7 +65,6 @@ function matrix({ revisions = [] as { id: string; explanation?: string; passages
 
 function openDocument(document: LibraryDocument, path = "/library/d") {
   vi.spyOn(api, "libraryDocument").mockResolvedValue(document);
-  vi.spyOn(api, "dependencies").mockResolvedValue({ items: [], next_offset: null } as never);
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <MemoryRouter initialEntries={[path]}>
@@ -74,7 +72,7 @@ function openDocument(document: LibraryDocument, path = "/library/d") {
           <Routes>
             <Route path="library/:documentId" element={<DocumentPage />}>
               <Route index element={<MainPage />} />
-              <Route path="cited-by" element={<CitationsPage />} />
+              <Route path="versions" element={<VersionsPage />} />
             </Route>
           </Routes>
         </main>
@@ -263,7 +261,7 @@ describe("the review desk", { timeout: 20_000 }, () => {
     await userEvent.click(screen.getByRole("button", { name: "Approve and publish…" }));
     const panel = screen.getByRole("region", { name: "Publish version 1" });
     const text = panel.textContent ?? "";
-    expect(text).toContain("Requirement work can cite its 3 passages once they are indexed.");
+    expect(text).toContain("Its 3 passages can be cited once they are indexed.");
     expect(text.indexOf("You looked at")).toBeLessThan(text.indexOf("Publish version 1", text.indexOf("You looked at")));
     expect(text).toContain("You looked at 4 of 4 passages, and 2 of the 2 flagged. It is kept with the approval.");
     // The saved summary is there to read or change; unchanged, nothing is saved again.
@@ -274,7 +272,7 @@ describe("the review desk", { timeout: 20_000 }, () => {
       expected_version: 4, revision_id: "r1", fingerprint: "f", coverage: { passages: 4, seen: 4, flagged: 2, flagged_seen: 2 },
     }));
     expect(review).not.toHaveBeenCalled();
-    const said = await screen.findByText("Published. Requirement work can cite it once it is indexed; Jobs shows the indexing.");
+    const said = await screen.findByText("Published. It can be cited once it is indexed; Jobs shows the indexing.");
     await waitFor(() => expect(said).toHaveFocus());
   });
 
@@ -426,11 +424,10 @@ describe("unsaved decisions kept in the tab (critique run 2, P1)", { timeout: 20
 
 describe("the document's tabs", { timeout: 20_000 }, () => {
   it("focuses the tab panel's heading on a tab change, not the record's h1 (model §1)", async () => {
-    vi.spyOn(api, "sourceImpact").mockResolvedValue({ items: [], next_offset: null } as never);
     openDocument(matrix());
     await screen.findByRole("grid", { name: /Passages of version 1/ });
-    await userEvent.click(within(screen.getByRole("navigation", { name: "This document" })).getByRole("link", { name: "Cited by" }));
-    await waitFor(() => expect(screen.getByRole("heading", { level: 2, name: /Requirements citing it/ })).toHaveFocus());
+    await userEvent.click(within(screen.getByRole("navigation", { name: "This document" })).getByRole("link", { name: "Versions" }));
+    await waitFor(() => expect(screen.getByRole("heading", { level: 2, name: /Files uploaded/ })).toHaveFocus());
   });
 });
 
@@ -440,29 +437,19 @@ describe("withdraw and return to service", { timeout: 20_000 }, () => {
     return { ...document, published_id: "p", publications: [{ id: "p", version_id: "v1", revision_id: "r1", fingerprint: "f", withdrawn_at: null, activated_at: "2026-10-08T09:00:00Z", built_at: "2026-10-08T09:00:00Z", requires_activation: false, indexing_attempts: 1, chunk_count: 4, approved_at: "2026-10-08T09:00:00Z", approved_by: amina, chunking_policy: "structure" }] } as unknown as LibraryDocument;
   };
 
-  it("says who cites it before the button that withdraws it, and needs a reason (2.3)", async () => {
+  it("says what withdrawing does before the button that withdraws it, and needs a reason (2.3)", async () => {
     openDocument(inService());
-    vi.spyOn(api, "dependencies").mockResolvedValue({
-      items: [{ proposal_id: "p1", requirement_id: "r1", requirement_title: "Fibre bundle order" }], next_offset: null,
-    } as never);
     const withdraw = vi.spyOn(api, "withdraw").mockResolvedValue(inService());
     await userEvent.click(await screen.findByRole("button", { name: "Withdraw…" }));
     const panel = screen.getByRole("region", { name: "Withdraw 'Product matrix'" });
-    const cites = await within(panel).findByText(/requirement you can see cites it now/);
+    const happens = within(panel).getByText(/Nothing can cite this document any more/);
     const button = within(panel).getByRole("button", { name: "Withdraw 'Product matrix'" });
-    expect(cites.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(happens.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     await userEvent.click(button);
     expect(withdraw).not.toHaveBeenCalled();
     await userEvent.type(within(panel).getByRole("textbox", { name: /Why is it no longer safe/ }), "Superseded by the new policy");
     await userEvent.click(button);
     await waitFor(() => expect(withdraw).toHaveBeenCalledWith("d", { expected_version: 4, reason: "Superseded by the new policy" }));
-  });
-
-  it("says the count is unknown, not zero, when Requirement AI doesn't answer", async () => {
-    openDocument(inService());
-    vi.spyOn(api, "dependencies").mockRejectedValue(new ApiError(502, "Requirement AI is unreachable."));
-    await userEvent.click(await screen.findByRole("button", { name: "Withdraw…" }));
-    expect(await screen.findByText(/The count is unknown, not zero\./)).toBeInTheDocument();
   });
 
   it("returns a withdrawn document to service by publishing its last approved review again", async () => {

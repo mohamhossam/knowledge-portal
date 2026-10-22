@@ -5,7 +5,7 @@ import { type ReactNode, useEffect } from "react";
 
 import { ActionGroup, Button, Status } from "../design/components";
 import { useAuth } from "./authContext";
-import { BASE, REQUIREMENT_APP_URL } from "./paths";
+import { BASE } from "./paths";
 
 /** Where a signed-in reader who is not an admin reads the catalogue in service. */
 const EXPLORER_URL = `${BASE}/explorer`;
@@ -14,7 +14,7 @@ const EXPLORER_URL = `${BASE}/explorer`;
  * Nobody reaches a table until the portal knows who they are and that they
  * are a knowledge admin. Each refusal says why and where to go instead.
  * Someone signed in without the role gets `readers`: the explorer, which
- * anyone signed in may read (requirement-portal ADR-0101).
+ * anyone signed in may read (ADR-0101).
  */
 export function Gate({ children, readers }: { children: ReactNode; readers?: ReactNode }) {
   const auth = useAuth();
@@ -38,15 +38,7 @@ export function Notice({ title, busy = false, children }: { title: string; busy?
   return (
     <div className="ds-root gate">
       <main id="main" className="gate__main" aria-busy={busy || undefined}>
-        <p className="gate__portal">
-          {REQUIREMENT_APP_URL !== null && (
-            <>
-              <a href={REQUIREMENT_APP_URL}>Requirement AI</a>
-              <span aria-hidden="true">·</span>
-            </>
-          )}
-          Knowledge portal
-        </p>
+        <p className="gate__portal">Knowledge portal</p>
         <h1 className="gate__title">{title}</h1>
         <div className="gate__body">{children}</div>
       </main>
@@ -64,14 +56,10 @@ export function NoAccess() {
       </p>
       <p>
         You can still read the <a href={EXPLORER_URL}>product architecture explorer</a>: for each
-        offering and order type, the journey and the systems that take part. Citations and
-        architecture evidence also open, read-only, from each requirement in Requirement AI.
+        offering and order type, the journey and the systems that take part.
       </p>
       <p>To curate, ask your platform administrator to add you to the knowledge-admins group.</p>
       <ActionGroup>
-        {REQUIREMENT_APP_URL !== null && (
-          <a className="ds-button ds-button--primary" href={REQUIREMENT_APP_URL}>Go to Requirement AI</a>
-        )}
         {auth?.config?.mode === "oidc" && (
           <Button variant="tertiary" icon={<LogOut size={14} />} onClick={() => void auth.signOut()}>
             Sign out
@@ -89,8 +77,8 @@ function SignIn() {
     <Notice title={auth?.sessionExpired ? "Your session has ended" : "Sign in to the knowledge portal"}>
       {auth?.error && <p role="alert"><Status tone="attention">{auth.error}</Status></p>}
       <p>
-        Use the same account you use for Requirement AI. Knowledge admins curate here; anyone
-        signed in can read the product architecture explorer.
+        Knowledge admins curate here; anyone signed in can read the product architecture
+        explorer.
       </p>
       <ActionGroup>
         {choices.length > 0 ? choices.map((choice) => (

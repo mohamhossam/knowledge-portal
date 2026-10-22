@@ -1,17 +1,17 @@
-"""Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
+"""Change requests apps send (ADR-0126; first built for requirement work, its ADR-0101, step 7).
 
-When a breakdown's final approval is recorded, requirement-portal sends its approved
-backlog here. It waits in an inbox as an incoming change request until a knowledge admin
-reads it into a draft, where each approved feature becomes a suggested open question on
-the offering it names, or dismisses it. Nothing it carries reaches the catalogue without
-a person accepting it.
+When a breakdown's final approval is recorded, an app sends its approved backlog here, and
+the change request keeps the app's name. It waits in an inbox as an incoming change request
+until a knowledge admin reads it into a draft, where each approved feature becomes a
+suggested open question on the offering it names, or dismisses it. Nothing it carries
+reaches the catalogue without a person accepting it.
 
 Accepting from a change request registers it as a source (level L2, its approval trace as
 its authority) and records it in the version's change history, as the original explorer
 recorded an applied change request.
 
 A delivered change (ontology plan Phase 7) lands in the same inbox. When the Epic a
-requirement was published as closes in the work-item tracker, requirement-portal sends what
+requirement was published as closes in the work-item tracker, the app sends what
 was delivered: the Features closed as done, the catalogue changes the decided product impact
 implies for them, and the systems the assessment predicted. It is read into a draft as
 suggestions like any other, and a removed Epic withdraws one still waiting.
@@ -40,7 +40,10 @@ from knowledge_portal.domain.architecture.invariants import (
 class ChangeOrigin(StrEnum):
     """Where a change request came from."""
 
-    # Sent by requirement-portal when a breakdown's final approval was recorded.
+    # Sent by an app, through the app API, when a breakdown's final approval was recorded
+    # (ADR-0126).
+    APP = "app"
+    # Sent by requirement work before apps were named; kept as recorded.
     REQUIREMENT_AI = "requirement-ai"
     # Drafted in the original explorer and carried over with its model.
     EXPLORER = "explorer"
@@ -100,11 +103,9 @@ class RequirementTrace:
             raise InvalidKnowledgeError("A breakdown revision is numbered from 1.")
 
     def sentence(self) -> str:
-        """ "Requirement AI requirement REQ-2026-0412, revision 3, approved by Layla Haddad
-        on 3 October 2026"."""
-        parts = [
-            f"Requirement AI requirement {self.requirement_id}, revision {self.breakdown_revision}"
-        ]
+        """ "Requirement REQ-2026-0412, revision 3, approved by Layla Haddad on 3 October
+        2026"."""
+        parts = [f"Requirement {self.requirement_id}, revision {self.breakdown_revision}"]
         if self.approved_by or self.approved_at:
             when = ""
             if self.approved_at:
@@ -122,7 +123,7 @@ class ChangeItem:
     kind: str
     summary: str
     status: ChangeItemStatus = ChangeItemStatus.RECORDED
-    # The approved feature it comes from, for a change request from Requirement AI.
+    # The approved feature it comes from, for a change request an app sent.
     feature_id: str | None = None
 
     def __post_init__(self) -> None:
@@ -399,8 +400,9 @@ class IncomingFeature:
         return f"{self.name}: {self.outcome}" if self.outcome else self.name
 
 
-# Who dismisses a catalogue change whose Epic was removed.
-WITHDRAWN_BY = "requirement-ai"
+# Who dismisses a catalogue change whose Epic was removed, when the app that sent it has no
+# name: one kept before apps were named (ADR-0126).
+WITHDRAWN_BY = "the app that sent it"
 
 
 class ChangeRequestStateError(Exception):
@@ -433,9 +435,13 @@ class IncomingChangeRequest:
     # The offering and journey drafted for a new-offering verdict, as the decided product
     # impact sent them; only on an approved backlog (ontology plan Phase 9).
     draft: OfferingDraft | None = None
+    # The app that sent it, by the name it is registered under; None on one kept before apps
+    # were named (ADR-0126).
+    sent_by: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "kind", ChangeRequestKind(self.kind))
+        object.__setattr__(self, "sent_by", optional(self.sent_by, "Sent by"))
         if self.draft is not None and self.kind is not ChangeRequestKind.APPROVED_BACKLOG:
             raise InvalidKnowledgeError("Only an approved backlog carries a drafted offering.")
         if (self.delivery is None) != (self.kind is ChangeRequestKind.APPROVED_BACKLOG):
@@ -492,9 +498,8 @@ class IncomingChangeRequest:
         at: datetime,
         reason: str = "Its Epic was removed in the work-item tracker, so it was not delivered.",
     ) -> IncomingChangeRequest:
-        """A catalogue change requirement-portal took back: its Epic was removed, or closed
-        again later."""
-        return self.dismiss(reason, WITHDRAWN_BY, at)
+        """A catalogue change its app took back: its Epic was removed, or closed again later."""
+        return self.dismiss(reason, self.sent_by or WITHDRAWN_BY, at)
 
     def hits(self) -> DeliveryHits | None:
         """The delivery hit rate's counts; None for an approved backlog."""
@@ -519,7 +524,7 @@ class IncomingChangeRequest:
         return ChangeRequestRecord(
             id=self.id,
             title=self.title,
-            origin=ChangeOrigin.REQUIREMENT_AI,
+            origin=ChangeOrigin.APP,
             requester=self.trace.approved_by,
             reason=self.reason,
             created_at=self.received_at,

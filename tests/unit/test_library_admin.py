@@ -16,9 +16,7 @@ import pytest
 from smb_kernel.documents.text_extractor import SafeDocumentTextExtractor
 from smb_kernel.time.fixed import FixedClock
 
-from knowledge_portal.application.errors import ServiceUnavailableError
 from knowledge_portal.application.ports.library_admin import LibraryAdminAction
-from knowledge_portal.application.ports.requirement_dependents import RequirementDependentsPage
 from knowledge_portal.application.use_cases.document_library import (
     CHUNKING_POLICY,
     DocumentLibrary,
@@ -119,19 +117,11 @@ def library() -> Library:
         InMemoryActorDirectory((NEW_OWNER,)),
         transactions,
         clock,
-        _NoDependents(),
         stewardship,
     )
     admin = AdministerLibraryDocument(repository, store, record, stewardship, transactions, clock)
     retry = BulkRetryLibrary(repository, stewardship, transactions)
     return Library(clock, documents, knowledge, governance, admin, store, repository, retry)
-
-
-class _NoDependents:
-    def proposals(
-        self, actor_id: ActorId, document_id: str, offset: int, limit: int
-    ) -> RequirementDependentsPage:
-        raise AssertionError("Not asked in these tests.")
 
 
 def _awaiting_review(library: Library) -> LibraryDocument:
@@ -400,51 +390,3 @@ def test_bulk_retry_indexes_again_only_stopped_approvals(library: Library) -> No
     assert again.publications[-1].indexing_error is None
     with pytest.raises(AuthorizationDeniedError):
         library.retry.execute(LibraryRetryScope.INDEXING, NOT_ADMIN)
-
-
-class _Citations:
-    def __init__(self, counts: dict[str, int] | None) -> None:
-        self._counts = counts
-        self.asked: list[tuple[str, ...]] = []
-
-    def counts(self, document_ids: tuple[str, ...]) -> dict[str, int]:
-        self.asked.append(document_ids)
-        if self._counts is None:
-            raise ServiceUnavailableError("Requirement work is down.")
-        return {document_id: self._counts.get(document_id, 0) for document_id in document_ids}
-
-
-def _listing(citations: _Citations) -> tuple[DocumentLibrary, str]:
-    lock = RLock()
-    repository = InMemoryDocumentLibrary(lock)
-    transactions = InMemoryTransactionManager(lock)
-    transactions.enroll(repository)
-    documents = DocumentLibrary(
-        repository,
-        InMemoryDocumentStorage(),
-        SafeDocumentTextExtractor(),
-        OfflineDocumentScanner(),
-        transactions,
-        FixedClock(NOW),
-        100000,
-        citations=citations,
-    )
-    document = documents.submit(
-        "Policy", UploadDocumentInput("p.txt", "text/plain", b"Coverage."), "cited", owner()
-    )
-    return documents, document.id
-
-
-def test_the_list_says_how_many_requirements_cite_each_document() -> None:
-    citations = _Citations({})
-    documents, document_id = _listing(citations)
-    citations._counts = {document_id: 4}
-    (row,) = documents.list(ADMIN)
-    assert row.citations == 4
-    assert citations.asked == [(document_id,)]
-
-
-def test_the_list_still_loads_when_requirement_work_cannot_count() -> None:
-    documents, _ = _listing(_Citations(None))
-    (row,) = documents.list(ADMIN)
-    assert row.citations is None

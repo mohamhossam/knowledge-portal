@@ -24,9 +24,9 @@ from knowledge_portal.infrastructure.identity.fake_identity import (
     FakeIdentityProvider,
 )
 
-# The audience a token the OIDC issuer grants requirement work must carry to reach
-# this service's internal API. Requirement work's service client adds it.
-INTERNAL_AUDIENCE = "knowledge-internal"
+# The audience a token the OIDC issuer grants an app must carry to reach the app API.
+# Each app's own client adds it (docs/operations/deployment.md, "Register an app").
+APPS_AUDIENCE = "knowledge-apps"
 
 
 def build_identity(
@@ -57,20 +57,18 @@ def build_identity(
     )
 
 
-def build_internal_verifier(
-    settings: Settings, resources: ExitStack
-) -> ServiceCallerVerifier | None:
-    """Who may call /internal: requirement work, named "requirements" (ADR-0099).
+def build_app_verifier(settings: Settings, resources: ExitStack) -> ServiceCallerVerifier | None:
+    """Who may call /apps: each registered app, under its own name (ADR-0126).
 
-    It proves itself with the shared REQUIREMENT_SERVICE_TOKEN, with a token the
-    OIDC issuer granted its client REQUIREMENT_SERVICE_CLIENT_ID
-    (requirement-portal ADR-0104), or with either while a deployment moves over.
-    With neither configured there is no caller, and the internal API is not served.
+    An app proves itself with its own token in APP_TOKENS, named there, or with a token
+    the OIDC issuer granted its client in APP_CLIENT_IDS, named after the client id, or
+    with either while it moves over. With no app registered there is no caller, and the
+    app API is not served.
     """
     verifiers: list[ServiceCallerVerifier] = []
-    if settings.requirement_service_token is not None:
-        verifiers.append(ServiceTokenVerifier({"requirements": settings.requirement_service_token}))
-    if settings.requirement_service_client_id is not None:
+    if settings.app_tokens:
+        verifiers.append(ServiceTokenVerifier(dict(settings.app_tokens)))
+    if settings.app_client_ids:
         keys = OidcSigningKeys(
             settings.oidc_issuer_url,
             resources.enter_context(httpx.Client(timeout=10)),
@@ -82,8 +80,8 @@ def build_internal_verifier(
         verifiers.append(
             ServiceJwtVerifier(
                 keys,
-                INTERNAL_AUDIENCE,
-                {settings.requirement_service_client_id: "requirements"},
+                APPS_AUDIENCE,
+                {client_id: client_id for client_id in settings.app_client_ids},
                 allowed_algorithms=settings.oidc_allowed_algorithms,
             )
         )

@@ -2,9 +2,9 @@
 
 No route handler takes the container: each takes the providers in `dependencies.py` for
 what it uses, so a handler cannot reach an adapter the container happens to hold. And the
-refusals the auth layer used to answer as ``{"detail": ...}`` (the internal API when it is
-not served, the kernel guard's missing token, FastAPI's unknown path or method) answer
-``{code, message, correlation_id}`` like every other error, so a refused internal call can be
+refusals the auth layer used to answer as ``{"detail": ...}`` (the app API when it is not
+served, the kernel guard's missing token, FastAPI's unknown path or method) answer
+``{code, message, correlation_id}`` like every other error, so a refused app call can be
 traced to its log line.
 """
 
@@ -23,7 +23,7 @@ from starlette.types import Message
 
 from knowledge_portal.application.errors import AuthenticationRequiredError
 from knowledge_portal.interfaces.api.container import build_container
-from knowledge_portal.interfaces.api.dependencies import get_container, require_service_caller
+from knowledge_portal.interfaces.api.dependencies import get_container, require_app
 from knowledge_portal.interfaces.api.error_envelope import enveloped
 from knowledge_portal.interfaces.api.main import create_app
 from tests.conftest import FAKE_PROVIDER_SETTINGS
@@ -40,7 +40,7 @@ def _client(**settings: Any) -> Iterator[TestClient]:
 
 @pytest.fixture
 def served() -> Iterator[TestClient]:
-    yield from _client(requirement_service_token=TOKEN)
+    yield from _client(app_tokens={"requirements": TOKEN})
 
 
 @pytest.fixture
@@ -78,8 +78,8 @@ def test_no_handler_takes_the_container(served: TestClient) -> None:
 # One error shape -------------------------------------------------------------------------------
 
 
-def test_a_refused_internal_call_can_be_traced(served: TestClient) -> None:
-    response = served.get("/internal/events", headers={"X-Request-ID": "trace-me-1"})
+def test_a_refused_app_call_can_be_traced(served: TestClient) -> None:
+    response = served.get("/apps/v2/events", headers={"X-Request-ID": "trace-me-1"})
 
     assert response.status_code == 401
     _is_envelope(response)
@@ -88,17 +88,17 @@ def test_a_refused_internal_call_can_be_traced(served: TestClient) -> None:
     assert response.headers["WWW-Authenticate"] == "Bearer"
 
 
-def test_an_admitted_internal_call_is_answered_as_before(served: TestClient) -> None:
-    response = served.get("/internal/events", headers={"Authorization": f"Bearer {TOKEN}"})
+def test_an_admitted_app_call_is_answered_as_before(served: TestClient) -> None:
+    response = served.get("/apps/v2/events", headers={"Authorization": f"Bearer {TOKEN}"})
 
     assert response.status_code == 200
     assert isinstance(response.json(), list)
 
 
-def test_an_internal_api_not_served_answers_not_found_in_the_one_shape(
+def test_an_app_api_not_served_answers_not_found_in_the_one_shape(
     unserved: TestClient,
 ) -> None:
-    response = unserved.get("/internal/events")
+    response = unserved.get("/apps/v2/events")
 
     assert response.status_code == 404
     _is_envelope(response)
@@ -119,8 +119,8 @@ def test_the_second_wall_refuses_with_the_catalogue_s_own_error() -> None:
     class Unchecked:
         scope: dict[str, Any] = {}
 
-    with pytest.raises(AuthenticationRequiredError, match="needs a service token"):
-        require_service_caller(Unchecked())  # type: ignore[arg-type]
+    with pytest.raises(AuthenticationRequiredError, match="needs its token"):
+        require_app(Unchecked())  # type: ignore[arg-type]
 
 
 def test_only_a_detail_refusal_is_rewritten() -> None:

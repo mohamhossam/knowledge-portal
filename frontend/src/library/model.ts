@@ -2,7 +2,7 @@
  * The review of one library document, as pure data.
  *
  * The page compares the working copy (the newest version and its draft
- * review) against what requirement work cites today: the passages of the
+ * review) against what can be cited today: the passages of the
  * publication in service. With nothing in service, it compares against the
  * extraction itself. Passages of an older version are matched to the new
  * version's blocks by their extracted content, then by where they sit
@@ -378,7 +378,7 @@ type Standing =
   | { kind: "withdrawn"; publication: Publication }
   | { kind: "none" };
 
-/** Where the document stands with requirement work: what it can cite from it today. */
+/** Where the document stands: what can be cited from it today. */
 export function standing(document: LibraryDocument): Standing {
   const live = livePublication(document);
   if (live) {

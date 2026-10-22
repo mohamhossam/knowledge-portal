@@ -331,8 +331,8 @@ class PublishingDocumentLibrary:
     """A library repository that publishes each document's citable state as it changes.
 
     Every add and save (a claim included) writes a `reference_document_changed`
-    event in the same transaction. Requirement work keeps its own copy of each
-    document's citable state, caught up by polling the outbox (ADR-0099).
+    event in the same transaction. An app may keep its own copy of each document's
+    citable state, caught up by polling the feed (`/apps/v2/events`, ADR-0126).
     """
 
     def __init__(
@@ -346,7 +346,7 @@ class PublishingDocumentLibrary:
         self._review_cycle = review_cycle
 
     def _publish(self, document: LibraryDocument) -> None:
-        # Requirement work flags a citation once this day has passed (Knowledge Center D).
+        # An app flags a citation once this day has passed (Knowledge Center D).
         last = document.last_review()
         due = None if last is None else (last[0] + self._review_cycle).date()
         state = document.citable_state(due)

@@ -1,0 +1,25 @@
+# Optional: lets apps on the same Docker host call the knowledge base's app API
+# (/apps/v2, ADR-0126) on a private network, without going through the edge.
+# Apps on other hosts call it through the portal's address instead, at
+# /knowledge-api/apps/v2. Either way an app is admitted only if it is registered
+# in APP_TOKENS or APP_CLIENT_IDS (docs/operations/deployment.md, "Register an
+# app"). Layer it over compose.production.yaml:
+#
+#   docker network create knowledge-apps          # once per host
+#   docker compose -f deploy/compose.production.yaml -f deploy/compose.apps.yaml up -d
+#
+# An app joins the same network and reaches the API as http://knowledge-api:8000.
+# The knowledge base calls no app, so nothing else joins it.
+
+services:
+  api:
+    networks:
+      default:
+      apps:
+        aliases:
+          - knowledge-api
+
+networks:
+  apps:
+    name: ${KNOWLEDGE_APPS_NETWORK:-knowledge-apps}
+    external: true

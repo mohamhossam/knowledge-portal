@@ -90,7 +90,7 @@ export function useJobs() {
       jobs.push(tries >= ATTEMPT_LIMIT
         ? tables
           ? { ...indexing, state: "attention", timing: `Attempt ${tries} of ${ATTEMPT_LIMIT}`, cause: publication.indexing_error ?? "Building stopped after three attempts.", fixLabel: doc.is_owner ? "Discard it and build again" : undefined }
-          : { ...indexing, state: "attention", timing: `Attempt ${tries} of ${ATTEMPT_LIMIT}`, cause: publication.indexing_error ?? "Indexing stopped after three attempts. Requirement work can't cite it yet.", retry: doc.is_owner ? "retry-indexing" : undefined }
+          : { ...indexing, state: "attention", timing: `Attempt ${tries} of ${ATTEMPT_LIMIT}`, cause: publication.indexing_error ?? "Indexing stopped after three attempts. It can't be cited yet.", retry: doc.is_owner ? "retry-indexing" : undefined }
         : { ...indexing, state: "working", timing: tries > 0 ? `Attempt ${tries + 1} of ${ATTEMPT_LIMIT}` : tables ? "Building…" : "Indexing…" });
     }
     return jobs;

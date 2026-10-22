@@ -48,10 +48,10 @@ jobs:
           uv sync --locked --extra dev
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
-      - name: Internal contract regenerated and versioned against what it replaces
-        # Review recommendation 11: the committed contract is what the code generates, and a
-        # change to /internal/* raises its version as far as the change needs (breaking: MAJOR,
-        # additive: MINOR) against the pull request's base, or the commit a push replaces.
+      - name: App contract regenerated and versioned against what it replaces
+        # Review recommendation 11, ADR-0126: the committed contract is what the code generates,
+        # and a change to /apps/* raises its version as far as the change needs (breaking:
+        # MAJOR, additive: MINOR) against the pull request's base, or the commit a push replaces.
         env:
           BASE_REF: ${{ github.base_ref }}
           BEFORE: ${{ github.event.before }}
@@ -63,7 +63,7 @@ jobs:
           elif [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
             git fetch --no-tags --depth=1 origin "$BEFORE" && base="$BEFORE"
           fi
-          python scripts/check_internal_contract.py --base "$base"
+          python scripts/check_app_contract.py --base "$base"
 
       - name: pytest with coverage
         # The floor lives in pyproject.toml ([tool.coverage.report] fail_under)
@@ -185,8 +185,8 @@ jobs:
           # The deployment's issuer reaches the policy; the placeholder never ships.
           curl -fsS http://127.0.0.1:8080/knowledge/ | grep -q 'connect-src .self. https://login.example.test'
           ! curl -fsS http://127.0.0.1:8080/knowledge/library | grep -q '__CSP_IDENTITY_ORIGINS__'
-          # Requirement work's address is filled in too: the platform's root unless set.
-          curl -fsS http://127.0.0.1:8080/knowledge/ | grep -q 'name="requirement-portal-url" content="/"'
+          # The knowledge base names no other app: nothing links out of it.
+          ! curl -fsS http://127.0.0.1:8080/knowledge/ | grep -q 'requirement-portal-url'
           test "$(curl -s -o /dev/null -w '%{redirect_url}' http://127.0.0.1:8080/)" = "http://127.0.0.1:8080/knowledge/"
           curl -fsSI http://127.0.0.1:8080/knowledge/ | grep -i "frame-ancestors 'none'"
           asset=$(curl -fsS http://127.0.0.1:8080/knowledge/ | grep -o '/knowledge/assets/[^"]*\.js' | head -1)
@@ -199,10 +199,10 @@ jobs:
           docker compose -f deploy/compose.local.yaml config -q
           export KNOWLEDGE_IMAGE_TAG=ci KNOWLEDGE_POSTGRES_PASSWORD=ci
           docker compose -f deploy/compose.production.yaml config -q
-          docker network create platform-internal
-          docker compose -f deploy/compose.production.yaml -f deploy/compose.peer.yaml config -q
+          docker network create knowledge-apps
+          docker compose -f deploy/compose.production.yaml -f deploy/compose.apps.yaml config -q
 
-      - name: The edge serves the app and refuses /internal
+      - name: The edge serves the app and passes the app API to the API
         run: |
           docker network create edge-ci
           docker network connect --alias web edge-ci web
@@ -214,8 +214,8 @@ jobs:
           for attempt in $(seq 1 20); do curl -fsS http://127.0.0.1:8090/health && break; sleep 1; done
           curl -fsS http://127.0.0.1:8090/knowledge/ | grep -q '<title>Knowledge portal</title>'
           test "$(curl -s -o /dev/null -w '%{redirect_url}' http://127.0.0.1:8090/)" = "http://127.0.0.1:8090/knowledge/"
-          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8090/knowledge-api/internal/events)" = 404
-          curl -sI http://127.0.0.1:8090/knowledge-api/internal/events | grep -i "x-content-type-options: nosniff"
+          # No API runs here: the edge forwards the app API to it (a gateway error), never to `web`.
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8090/knowledge-api/apps/v2/events)" = 502
 
   web-image-root:
     # The same image built for the root of the portal's own hostname (ADR-0104).
@@ -228,14 +228,14 @@ jobs:
       - name: Build the image for the root path
         run: DOCKER_BUILDKIT=1 docker build -f deploy/web/Dockerfile --build-arg KNOWLEDGE_BASE_PATH=/ -t "$IMAGE" .
 
-      - name: Serves the app at / with requirement work's address from the container
+      - name: Serves the app at / with the issuer from the container
         run: |
           docker run -d --name web --read-only -p 8080:8080 \
             --tmpfs /tmp:uid=101,gid=101 --tmpfs /etc/nginx/conf.d:uid=101,gid=101 \
-            -e REQUIREMENT_PORTAL_URL=https://requirements.example.test/ "$IMAGE"
+            -e CSP_IDENTITY_ORIGINS=https://login.example.test "$IMAGE"
           for attempt in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/health && break; sleep 1; done
           curl -fsS http://127.0.0.1:8080/ | grep -q '<title>Knowledge portal</title>'
-          curl -fsS http://127.0.0.1:8080/library | grep -q 'content="https://requirements.example.test/"'
+          curl -fsS http://127.0.0.1:8080/library | grep -q 'connect-src .self. https://login.example.test'
           asset=$(curl -fsS http://127.0.0.1:8080/ | grep -o '"/assets/[^"]*\.js' | head -1 | tr -d '"')
           test -n "$asset"
           curl -fsSI "http://127.0.0.1:8080$asset" | grep -i "immutable"

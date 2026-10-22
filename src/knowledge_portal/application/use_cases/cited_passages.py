@@ -1,6 +1,6 @@
-"""The exact published passage a requirement cites (requirement-portal ADR-0099).
+"""The exact published passage a requirement cites (ADR-0099).
 
-Requirement work shows it read-only to any member of the citing requirement,
+An app shows it read-only to any of its users who may see the citing requirement,
 so only the live publication's included passages are ever returned: a working
 extraction, an excluded passage or a withdrawn publication never is.
 """
@@ -25,7 +25,7 @@ class CitedPassage:
     section_path: tuple[str, ...]
     label: str
     text: str
-    # When its document falls due for review again (Knowledge Center D); requirement work
+    # When its document falls due for review again (Knowledge Center D); an app
     # shows "not reviewed since" once it has passed. Never a reason to withhold the passage.
     review_due_on: date | None = None
 

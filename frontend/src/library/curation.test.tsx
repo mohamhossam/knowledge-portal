@@ -34,7 +34,7 @@ function outline(extra: Partial<LibraryDocument> = {}): LibraryDocument {
   return {
     id: "d1", title: "Coverage policy", owner: amina, version: 3, can_edit: false, is_owner: false,
     published_id: null, review_fingerprint: null, build_fingerprint: null, versions: [], publications: [],
-    acting_as_admin: null, citations: 2,
+    acting_as_admin: null,
     newest: { id: "v1", number: 1, stage: "ready_for_review", uploaded_at: "2026-10-05T09:00:00Z", uploaded_by: amina },
     ...extra,
   } as unknown as LibraryDocument;
@@ -56,8 +56,8 @@ describe("the library list", () => {
   it("groups the documents by where they stand, what needs someone first", async () => {
     vi.spyOn(api, "libraryDocuments").mockResolvedValue([
       outline(),
-      outline({ id: "d2", title: "Billing rules", citations: null, newest: { ...outline().newest!, id: "v2", stage: "failed", error: "Row 2 is short." } }),
-      outline({ id: "d3", title: "Old tariffs", citations: 0, newest: { ...outline().newest!, id: "v3", stage: "queued" } }),
+      outline({ id: "d2", title: "Billing rules", newest: { ...outline().newest!, id: "v2", stage: "failed", error: "Row 2 is short." } }),
+      outline({ id: "d3", title: "Old tariffs", newest: { ...outline().newest!, id: "v3", stage: "queued" } }),
     ]);
     render(wrap(<LibraryPage />));
     const ready = await screen.findByRole("list", { name: /^Ready for review/ });
@@ -72,27 +72,25 @@ describe("the library list", () => {
     expect(screen.getByRole("button", { name: "Try reading it again…" })).toBeInTheDocument();
   });
 
-  it("shows the chosen document's summary, with how many requirements cite it and the way into its review", async () => {
+  it("shows the chosen document's summary, with where it stands and the way into its review", async () => {
     vi.spyOn(api, "libraryDocuments").mockResolvedValue([
       outline(),
-      outline({ id: "d2", title: "Billing rules", citations: null, newest: { ...outline().newest!, id: "v2", stage: "failed", error: "Row 2 is short." } }),
+      outline({ id: "d2", title: "Billing rules", newest: { ...outline().newest!, id: "v2", stage: "failed", error: "Row 2 is short." } }),
     ]);
     render(wrap(<LibraryPage />, "/library?doc=d1"));
     const record = await screen.findByRole("article", { name: "Coverage policy" });
-    expect(within(record).getByRole("link", { name: "2 requirements" })).toHaveAttribute("href", "/library/d1/cited-by");
+    expect(within(record).getByText("Not yet: nothing approved")).toBeInTheDocument();
     expect(within(record).getByRole("link", { name: "Open the review" })).toHaveAttribute("href", "/library/d1");
     expect(screen.getByRole("link", { name: /^Coverage policy/ })).toHaveAttribute("aria-current", "page");
   });
 
-  it("says why a document needs attention, and that Requirement AI couldn't count its citations", async () => {
+  it("says why a document needs attention", async () => {
     vi.spyOn(api, "libraryDocuments").mockResolvedValue([
-      outline({ id: "d2", title: "Billing rules", citations: null, newest: { ...outline().newest!, id: "v2", stage: "failed", error: "Row 2 is short." } }),
+      outline({ id: "d2", title: "Billing rules", newest: { ...outline().newest!, id: "v2", stage: "failed", error: "Row 2 is short." } }),
     ]);
     render(wrap(<LibraryPage />, "/library?doc=d2"));
     const record = await screen.findByRole("article", { name: "Billing rules" });
     expect(within(record).getByText("Row 2 is short.")).toBeInTheDocument();
-    // Unknown, never "None".
-    expect(within(record).getByText("Requirement AI didn't say")).toBeInTheDocument();
   });
 
   it("filters by state and owner from the address", async () => {

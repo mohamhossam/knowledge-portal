@@ -3,13 +3,11 @@ import { useMemo } from "react";
 
 import { api, type CatalogueSuggestions } from "../api/client";
 import { useAuth } from "../auth/authContext";
-import { REQUIREMENT_APP_URL } from "../auth/paths";
 import { SYSTEM_REVIEWS_KEY } from "../reviews/review";
 import {
   architectureOverview,
   libraryOverview,
   nameDirectory,
-  requirementOverview,
   squadOverview,
   type DraftJobs,
   type Overview,
@@ -24,14 +22,13 @@ type OverviewState = {
   library: TableState;
   architecture: TableState;
   squads: TableState;
-  requirements: TableState;
   /** When the oldest answer on the page was fetched: the page is valid as of then. */
   validAt: Date | null;
   refreshing: boolean;
   refresh: () => void;
 };
 
-/** Everything the home's four tables read, fetched together and derived. */
+/** Everything the home's three tables read, fetched together and derived. */
 export function useOverview(): OverviewState {
   // Builds and readings are a maintainer's to see; for anyone else Table 2 shows no failures.
   const maintainer = useAuth()?.actor?.roles?.includes("knowledge_maintainer") ?? false;
@@ -61,12 +58,6 @@ export function useOverview(): OverviewState {
       queryFn: () => api.extractions(draft.id),
     })),
   });
-  const corpus = useQuery({ queryKey: ["knowledge-center", "requirement-corpus"], queryFn: api.requirementCorpus });
-  // Historic Requirements are this portal's own; their counts sit beside the corpus on Table 4.
-  const historic = useQuery({
-    queryKey: ["historic", "list", "counts"],
-    queryFn: async () => (await api.historicList({})).counts,
-  });
   // Where each system in service stands for review; nothing to read until a version is in service.
   const standings = useQuery({ queryKey: SYSTEM_REVIEWS_KEY, queryFn: api.systemReviews, enabled: Boolean(active.data) });
   // How reviewers decided suggested verdicts (ontology plan Phase 5): a maintainer's to see.
@@ -85,7 +76,7 @@ export function useOverview(): OverviewState {
   // hold Table 2 back: until they answer, or if they fail, the table shows no such counts.
   const precedentQueries = maintainer ? [precedents, deliveries] : [];
 
-  const all = [documents, releases, active, organisation, audit, actors, corpus, historic, standings, ...precedentQueries, ...suggestions, ...builds, ...readings];
+  const all = [documents, releases, active, organisation, audit, actors, standings, ...precedentQueries, ...suggestions, ...builds, ...readings];
   const fetchedAt = all.map((query) => query.dataUpdatedAt).filter((at) => at > 0);
   const nameOf = useMemo(() => nameDirectory(actors.data), [actors.data]);
 
@@ -130,17 +121,10 @@ export function useOverview(): OverviewState {
       ? { status: "ready", overview: squadOverview(organisation.data, active.data ?? null, audit.data, nameOf) }
       : { status: "loading" };
 
-  const requirements: TableState = corpus.isError
-    ? { status: "error", error: corpus.error, retry: () => void corpus.refetch() }
-    : corpus.data
-      ? { status: "ready", overview: requirementOverview(corpus.data, REQUIREMENT_APP_URL, historic.data ?? null) }
-      : { status: "loading" };
-
   return {
     library,
     architecture,
     squads,
-    requirements,
     validAt: fetchedAt.length > 0 ? new Date(Math.min(...fetchedAt)) : null,
     refreshing: all.some((query) => query.isFetching),
     refresh: () => all.forEach((query) => void query.refetch()),

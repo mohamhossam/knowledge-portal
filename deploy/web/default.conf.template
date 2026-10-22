@@ -8,12 +8,10 @@
 # app's paths here unchanged and serves /knowledge-api/ itself, so this server
 # holds static files only.
 #
-# The page's Content-Security-Policy names the OIDC issuer, and the page names
-# where requirement work is; only the deployment knows either. The image is
-# built with placeholders that the container's CSP_IDENTITY_ORIGINS
-# (space-separated origins, or empty offline) and REQUIREMENT_PORTAL_URL (an
-# address, or empty to leave out every link to it) replace in every HTML
-# response. The image renders this template at start-up.
+# The page's Content-Security-Policy names the OIDC issuer, which only the
+# deployment knows. The image is built with a placeholder that the container's
+# CSP_IDENTITY_ORIGINS (space-separated origins, or empty offline) replaces in
+# every HTML response. The image renders this template at start-up.
 server {
     listen 8080;
     server_tokens off;
@@ -54,7 +52,6 @@ server {
         alias /usr/share/nginx/html/;
         add_header Cache-Control "no-cache" always;
         sub_filter "__CSP_IDENTITY_ORIGINS__" "${CSP_IDENTITY_ORIGINS}";
-        sub_filter "__REQUIREMENT_PORTAL_URL__" "${REQUIREMENT_PORTAL_URL}";
         sub_filter_once off;
         try_files $uri __BASE__index.html;
     }
@@ -64,7 +61,6 @@ server {
         alias /usr/share/nginx/html/index.html;
         add_header Cache-Control "no-cache" always;
         sub_filter "__CSP_IDENTITY_ORIGINS__" "${CSP_IDENTITY_ORIGINS}";
-        sub_filter "__REQUIREMENT_PORTAL_URL__" "${REQUIREMENT_PORTAL_URL}";
         sub_filter_once off;
     }
 }

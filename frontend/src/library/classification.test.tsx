@@ -42,7 +42,7 @@ function doc(extra: Partial<LibraryDocument> = {}): LibraryDocument {
   return {
     id: "d1", title: "Coverage policy", owner: amina, version: 3, can_edit: true, is_owner: true,
     published_id: null, review_fingerprint: null, build_fingerprint: null, versions: [], publications: [],
-    acting_as_admin: null, citations: 0, newest: null, document_type: null, topics: [],
+    acting_as_admin: null, newest: null, document_type: null, topics: [],
     ...extra,
   } as unknown as LibraryDocument;
 }

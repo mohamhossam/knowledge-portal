@@ -15,7 +15,6 @@ import { type Drafts, latestRevision, livePublication, newestVersion, passagePro
 import { Outcome } from "./parts";
 import { approveReason } from "./approval";
 import { PassageText } from "./ReviewDesk";
-import { CitingNow } from "./StandingPanel";
 import { plural, sheetHeadings } from "./where";
 
 type Choice = "keep" | "exclude" | "accept" | "noted";
@@ -141,7 +140,7 @@ function Run({ document, version, back, base }: { document: LibraryDocument; ver
         said={said}
         onSaid={setSaid}
         onPublished={() => {
-          announce("Published. Requirement work can cite it once it is indexed; Jobs shows the indexing.");
+          announce("Published. It can be cited once it is indexed; Jobs shows the indexing.");
           navigate(base);
         }}
         hook={hook}
@@ -401,7 +400,7 @@ function Summary({ document, version, questions, answers, onBack, said, onSaid, 
       <section className="ds-focus__part" aria-labelledby="focus-published">
         <h2 id="focus-published" className="ds-focus__part-title">What is published</h2>
         <p>
-          <strong className="ds-num">{included.toLocaleString("en")}</strong> of {plural(rows.filter((row) => row.draft).length, "passage")}, which requirement work can cite once they are indexed.
+          <strong className="ds-num">{included.toLocaleString("en")}</strong> of {plural(rows.filter((row) => row.draft).length, "passage")}, which can be cited once they are indexed.
         </p>
         {accepted.length > 0 && (
           <Lines label="Accepted as they stand">
@@ -409,11 +408,7 @@ function Summary({ document, version, questions, answers, onBack, said, onSaid, 
           </Lines>
         )}
         {live ? (
-          <CitingNow
-            documentId={document.id}
-            list={false}
-            lead={(count, one, none) => <>It replaces version {liveNumber ?? "?"} in service, which <strong className="ds-num">{count}</strong> {one ? "requirement" : "requirements"} you can see {one ? "cites" : "cite"}{none ? "" : ". Their owners are told the source changed"}</>}
-          />
+          <p>It replaces version {liveNumber ?? "?"} in service.</p>
         ) : (
           <p>No version of it is in service yet.</p>
         )}

@@ -17,7 +17,6 @@ from knowledge_portal.application.errors import (
     DocumentExtractionTimeoutError,
     DocumentNotFoundError,
     DocumentVersionConflictError,
-    ServiceUnavailableError,
     UnsupportedDocumentError,
 )
 from knowledge_portal.application.ports.document_library import (
@@ -25,9 +24,6 @@ from knowledge_portal.application.ports.document_library import (
     DocumentScannerPort,
 )
 from knowledge_portal.application.ports.library_admin import AdminGrant, LibraryAdminAction
-from knowledge_portal.application.ports.requirement_citations import (
-    RequirementCitationCountsPort,
-)
 from knowledge_portal.application.ports.transaction_manager import TransactionManagerPort
 from knowledge_portal.application.use_cases.documents import (
     UploadDocumentInput,
@@ -136,8 +132,6 @@ class LibraryView:
     acting_as_admin: AdminGrant | None = None
     # For an admin who neither owns it nor holds a grant: where its newest version stands.
     newest: VersionOutline | None = None
-    # Requirements citing it now, across the portfolio; None when requirement work can't say.
-    citations: int | None = None
     # When it was last confirmed and when it falls due again; None while nothing is in service.
     review: ReviewStanding | None = None
     # Its type and topics, by catalogue id (ADR-0123).
@@ -163,10 +157,8 @@ class DocumentLibrary:
         clock: ClockPort,
         max_file_bytes: int,
         stewardship: LibraryStewardship | None = None,
-        citations: RequirementCitationCountsPort | None = None,
         review_cycle: timedelta = timedelta(days=180),
     ) -> None:
-        self._citations = citations
         self._review_cycle = review_cycle
         self._stewardship = stewardship or LibraryStewardship.owner_only(clock)
         self._repository = repository
@@ -338,18 +330,7 @@ class DocumentLibrary:
             if KNOWLEDGE_ADMIN in actor.roles
             else self._repository.list_visible(actor.id.value, offset, limit)
         )
-        views = tuple(self._reviewed(d, self._visible(d, actor)) for d in documents)
-        counts = self._citation_counts(tuple(view.id for view in views))
-        return tuple(replace(view, citations=counts.get(view.id)) for view in views)
-
-    def _citation_counts(self, document_ids: tuple[str, ...]) -> dict[str, int]:
-        """Counts for the library list; the list still loads when requirement work is down."""
-        if self._citations is None or not document_ids:
-            return {}
-        try:
-            return self._citations.counts(document_ids)
-        except ServiceUnavailableError:
-            return {}
+        return tuple(self._reviewed(d, self._visible(d, actor)) for d in documents)
 
     def submit(
         self,

@@ -1,6 +1,6 @@
 """An offering's plans and prices, read live from the product catalog by its code.
 
-The explorer shows what the catalog says now (requirement-portal ADR-0101); the knowledge
+The explorer shows what the catalog says now (ADR-0101); the knowledge
 catalogue never holds a copy. Anyone who may read the explorer may read these.
 """
 

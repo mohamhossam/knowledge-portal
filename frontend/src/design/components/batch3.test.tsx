@@ -168,10 +168,10 @@ describe("compare and evidence", () => {
       <ConsequencePanel
         tone="danger"
         title="Withdraw 'XGPON coverage rules'"
-        happens="Requirement work can no longer cite this document."
-        affects="7 requirements cite it now (only requirements you can see)."
+        happens="Nothing can cite this document any more."
+        affects="Every version of it leaves search at once."
         reversibility="You can return it to service later."
-        reason={{ label: "Why are you withdrawing it?", hint: "The requirement owners see this." }}
+        reason={{ label: "Why are you withdrawing it?", hint: "Kept with the document." }}
         confirmLabel="Withdraw 'XGPON coverage rules'"
         keepLabel="Keep it in service"
         onConfirm={onConfirm}

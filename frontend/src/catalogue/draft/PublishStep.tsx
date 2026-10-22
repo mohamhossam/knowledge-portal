@@ -9,7 +9,7 @@ import { RouterLink } from "../../shell/links";
 import { changeSentence } from "../catalogue";
 import { sharedMastery } from "../mastery";
 import { impactVerdict } from "../drafting";
-import { useCatalogueContext, useMappingImpact } from "../useCatalogue";
+import { useCatalogueContext } from "../useCatalogue";
 import { usePublish, useSamples } from "../useEditing";
 import { ORPHAN_KINDS, orphanTotal, useCoverage } from "./coverage";
 import { type DraftProgress, useDraftProgress, useSampleResults } from "./progress";
@@ -30,17 +30,15 @@ function Publish({ release }: { release: Release }) {
   const navigate = useNavigate();
   const progress = useDraftProgress(release);
   const publish = usePublish(release);
-  const impact = useMappingImpact();
   const samples = useSamples().samples.data?.items ?? [];
   const { results } = useSampleResults(release);
   const coverage = useCoverage(release);
   const confirm = useDisclosure(() => document.getElementById("draft-publish"));
   const name = release.name || "Untitled version";
   const sentence = progress.changes.data ? changeSentence(progress.changes.data) : null;
-  const mapped = impact.data ? impact.data.requirements - impact.data.outdated_requirements : null;
   const buildFirst = progress.build !== "built";
   const items = preflight({
-    base, release, progress, sentence, mapped, samples: samples.map((item) => item.id ?? item.text), results,
+    base, release, progress, sentence, samples: samples.map((item) => item.id ?? item.text), results,
     coverage: coverage.isError ? "unread" : coverage.data,
   });
   const blocked = items.find((item) => item.tone === "attention");
@@ -52,7 +50,7 @@ function Publish({ release }: { release: Release }) {
       </Section>
       <Section title="Put it in service">
         <p className="draft-lead">
-          Publishing puts it in service at once: requirement work maps against it from its next look at the catalogue.
+          Publishing puts it in service at once: requirements are mapped against it from then on.
         </p>
         {confirm.open ? (
           <ConsequencePanel
@@ -61,18 +59,11 @@ function Publish({ release }: { release: Release }) {
             happens={<>It goes into service at once{sentence ? <>, and would {sentence}</> : null}.</>}
             affects={
               <>
-                {mapped !== null && (
-                  <p>
-                    {mapped
-                      ? <><strong className="ds-num">{count(mapped, "requirement")}</strong> mapped with the version in service will show as mapped with an earlier version, for their owners to map again.</>
-                      : "No requirement has been mapped with the version in service yet."}
-                  </p>
-                )}
                 {progress.counts.waiting > 0 && <p>{count(progress.counts.waiting, "suggestion")} still {progress.counts.waiting === 1 ? "waits" : "wait"} undecided and {progress.counts.waiting === 1 ? "is" : "are"} left out.</p>}
                 {buildFirst && <p>It isn't built at this revision, so it is built first, which can take a few minutes.</p>}
               </>
             }
-            reversibility="You can put the version in service now back from Versions; requirement work then maps against it again."
+            reversibility="You can put the version in service now back from Versions."
             reason={{ label: "What did you check?", hint: "Kept in the version's history, for whoever reads it next." }}
             confirmLabel={buildFirst ? "Build it, then publish" : "Publish it"}
             busyLabel={buildFirst ? "Building, then publishing…" : "Publishing…"}
@@ -110,12 +101,11 @@ function Publish({ release }: { release: Release }) {
 }
 
 /** The checks before publishing, each with its state in words and the way to settle it. */
-function preflight({ base, release, progress, sentence, mapped, samples, results, coverage }: {
+function preflight({ base, release, progress, sentence, samples, results, coverage }: {
   base: string;
   release: Release;
   progress: DraftProgress;
   sentence: string | null;
-  mapped: number | null;
   samples: string[];
   results: ReturnType<typeof useSampleResults>["results"];
   /** What nothing links to; "unread" when it couldn't be checked. */
@@ -164,7 +154,7 @@ function preflight({ base, release, progress, sentence, mapped, samples, results
       ? { id: "changes", tone: "neutral", word: "Checking", title: "Comparing with the version in service…" }
       : progress.changes.data.changes.length
         ? { id: "changes", tone: "neutral", word: "Changes", title: sentence ? `It would ${sentence}` : count(progress.changes.data.changes.length, "change"), action: step("changes", "See every change") }
-        : { id: "changes", tone: "held", word: "Worth a look", title: "Its contents match the version in service", detail: "Publishing it changes nothing requirement work sees." },
+        : { id: "changes", tone: "held", word: "Worth a look", title: "Its contents match the version in service", detail: "Publishing it changes nothing that can be read." },
   );
   const unexplained = sharedMastery(release).filter((item) => item.unexplained);
   if (unexplained.length) {
@@ -195,14 +185,5 @@ function preflight({ base, release, progress, sentence, mapped, samples, results
           }
           : { id: "linked", tone: "done", word: "Ready", title: "Every capability, system, interface and term is linked" },
   );
-  if (mapped !== null) {
-    items.push({
-      id: "mapped",
-      tone: "neutral",
-      word: "Affects",
-      title: mapped ? `${count(mapped, "requirement")} to map again` : "No requirement mapped yet",
-      detail: mapped ? "Requirements mapped with the version in service show as mapped with an earlier version, for their owners to map again." : undefined,
-    });
-  }
   return items;
 }

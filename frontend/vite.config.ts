@@ -15,9 +15,8 @@ const apiProxy = {
 };
 
 /**
- * Served under KNOWLEDGE_BASE_PATH: /knowledge/ unless set, as on the platform's
- * origin beside requirement work, or / on the portal's own hostname
- * (requirement-portal ADR-0104). Its API is /knowledge-api/.
+ * Served under KNOWLEDGE_BASE_PATH: /knowledge/ unless set, or / on the portal's own
+ * hostname. Its API is /knowledge-api/.
  */
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");

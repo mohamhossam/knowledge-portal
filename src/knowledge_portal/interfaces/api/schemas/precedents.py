@@ -1,6 +1,6 @@
 """HTTP shapes for decided verdicts (ontology plan Phase 5).
 
-`PrecedentBody` is what requirement-portal sends when a Requirement Owner decides the
+`PrecedentBody` is what an app sends when a Requirement Owner decides the
 suggested verdict. `PrecedentSummariesResponse` is what a knowledge admin reads: counts
 per release and the concepts most overridden, never a requirement's text.
 """
@@ -40,7 +40,7 @@ class PrecedentSystemBody(BaseModel):
 class PrecedentBody(BaseModel):
     """A verdict decision on one requirement analysis."""
 
-    # requirement-portal's analysis id; a later decision on it replaces the earlier one.
+    # The app's analysis id; a later decision on it replaces the earlier one.
     precedent_id: RequiredIdentifier
     requirement_id: RequiredIdentifier
     # "analysis-id@version": the analysis version decided.

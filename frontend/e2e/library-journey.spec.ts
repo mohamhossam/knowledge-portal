@@ -78,6 +78,6 @@ test("2.2 keyboard only: exclude the hidden sheet with a reason, then approve an
   await page.keyboard.press("Tab");
   await expect(page.locator(":focus")).toHaveText("Publish version 1");
   await page.keyboard.press("Enter");
-  const said = page.getByText("Published. Requirement work can cite it once it is indexed; Jobs shows the indexing.");
+  const said = page.getByText("Published. It can be cited once it is indexed; Jobs shows the indexing.");
   await expect(said).toBeFocused();
 });

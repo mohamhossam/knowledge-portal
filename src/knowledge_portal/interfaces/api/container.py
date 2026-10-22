@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import multiprocessing
 from collections.abc import Callable, Mapping
-from contextlib import ExitStack, closing
-from dataclasses import dataclass, field, replace
+from contextlib import ExitStack
+from dataclasses import dataclass, replace
 from datetime import timedelta
 from typing import Protocol
 
@@ -25,7 +25,6 @@ from smb_kernel.documents.ports import DocumentStoragePort
 from smb_kernel.documents.process_resources import child_process_resource_limiter
 from smb_kernel.documents.scanner import ClamAvDocumentScanner, OfflineDocumentScanner
 from smb_kernel.http.client import InternalHttpClient
-from smb_kernel.http.client_credentials import ClientCredentialsTokenSource
 from smb_kernel.identity.ports import IdentityProviderPort
 from smb_kernel.observability.metrics import MeteredTransport, Metrics
 from smb_kernel.time.clock import ClockPort
@@ -33,21 +32,9 @@ from smb_kernel.time.system import SystemClock
 
 from knowledge_portal.application.ports.actor_directory import ActorDirectoryPort
 from knowledge_portal.application.ports.architecture_knowledge import ArchitectureKnowledgePort
-from knowledge_portal.application.ports.architecture_mapping_stats import (
-    ArchitectureMappingStatsPort,
-)
 from knowledge_portal.application.ports.knowledge_events import KnowledgeEventOutboxPort
 from knowledge_portal.application.ports.product_catalog import ProductCatalogPort
 from knowledge_portal.application.ports.requirement_assessment import RequirementAssessmentPort
-from knowledge_portal.application.ports.requirement_citations import (
-    RequirementCitationCountsPort,
-)
-from knowledge_portal.application.ports.requirement_corpus import RequirementCorpusPort
-from knowledge_portal.application.ports.requirement_dependents import RequirementDependentsPort
-from knowledge_portal.application.ports.requirement_historic_citations import (
-    RequirementHistoricCitationsPort,
-)
-from knowledge_portal.application.ports.source_impact import RequirementImpactPort
 from knowledge_portal.application.ports.transaction_manager import TransactionManagerPort
 from knowledge_portal.application.use_cases.architecture_comparison import (
     CompareArchitectureImpact,
@@ -62,9 +49,6 @@ from knowledge_portal.application.use_cases.architecture_explorer import Explore
 from knowledge_portal.application.use_cases.architecture_jobs import ArchitectureJobs
 from knowledge_portal.application.use_cases.architecture_knowledge import (
     ManageArchitectureKnowledge,
-)
-from knowledge_portal.application.use_cases.architecture_mapping_impact import (
-    ReportMappingImpact,
 )
 from knowledge_portal.application.use_cases.architecture_preview import (
     PreviewArchitectureImpact,
@@ -130,12 +114,6 @@ from knowledge_portal.application.use_cases.reference_knowledge import (
     ReferenceKnowledge,
     StructureAwareChunks,
 )
-from knowledge_portal.application.use_cases.requirement_corpus import (
-    ActOnRequirementCorpus,
-    NudgeFindingOwners,
-    ReadRequirementCorpus,
-)
-from knowledge_portal.application.use_cases.source_impact import DocumentSourceImpact
 from knowledge_portal.application.use_cases.vocabulary_cleanup import CleanUpVocabulary
 from knowledge_portal.domain.identity.entities import ActorProfile
 from knowledge_portal.infrastructure.config.options import (
@@ -155,20 +133,6 @@ from knowledge_portal.infrastructure.product_catalog import (
     CachedProductCatalog,
     FakeProductCatalog,
     Tmf620ProductCatalog,
-)
-from knowledge_portal.infrastructure.requirement_client import (
-    FakeArchitectureMappingStats,
-    FakeRequirementCitationCounts,
-    FakeRequirementCorpus,
-    FakeRequirementDependents,
-    FakeRequirementHistoricCitations,
-    FakeRequirementImpact,
-    HttpArchitectureMappingStats,
-    HttpRequirementCitationCounts,
-    HttpRequirementCorpus,
-    HttpRequirementDependents,
-    HttpRequirementHistoricCitations,
-    HttpRequirementImpact,
 )
 from knowledge_portal.interfaces.api.composition.architecture import (
     build_architecture,
@@ -229,12 +193,11 @@ class Container:
     library_review: ConfirmLibraryReview
     system_reviews: SystemReviews
     review_reminders: ReviewReminders
-    document_source_impact: DocumentSourceImpact
     cited_passages: CitedPassages
     reference_knowledge: ReferenceKnowledge
     architecture_knowledge: ArchitectureKnowledgePort
     requirement_assessment: RequirementAssessmentPort
-    # Decided verdicts from requirement work, and their counts (ontology plan Phase 5).
+    # Decided verdicts apps send, and their counts (ontology plan Phase 5).
     record_precedent: RecordPrecedent
     precedent_summaries: ReadPrecedentSummaries
     manage_architecture_knowledge: ManageArchitectureKnowledge
@@ -244,10 +207,6 @@ class Container:
     preview_architecture_impact: PreviewArchitectureImpact
     manage_sample_requirements: ManageSampleRequirements
     compare_architecture_impact: CompareArchitectureImpact
-    report_mapping_impact: ReportMappingImpact
-    read_requirement_corpus: ReadRequirementCorpus
-    nudge_finding_owners: NudgeFindingOwners
-    act_on_requirement_corpus: ActOnRequirementCorpus
     upload_knowledge_document: UploadKnowledgeDocument
     upload_architecture_documents: UploadArchitectureDocuments
     read_knowledge_document: ReadKnowledgeDocument
@@ -256,7 +215,7 @@ class Container:
     clean_up_vocabulary: CleanUpVocabulary
     suggest_derived_dependencies: SuggestDerivedDependencies
     suggest_component_capabilities: SuggestComponentCapabilities
-    # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
+    # Change requests apps send (ADR-0126).
     receive_change_request: ReceiveChangeRequest
     receive_delivery: ReceiveDelivery
     delivery_summaries: ReadDeliverySummaries
@@ -272,33 +231,17 @@ class Container:
     background_workers: Mapping[str, BackgroundWorker]
 
 
-@dataclass(frozen=True)
-class RequirementWork:
-    """What this service reads from requirement work, over HTTP or from fakes."""
-
-    dependents: RequirementDependentsPort
-    mapping_stats: ArchitectureMappingStatsPort
-    impact: RequirementImpactPort
-    corpus: RequirementCorpusPort = field(default_factory=FakeRequirementCorpus)
-    citations: RequirementCitationCountsPort = field(default_factory=FakeRequirementCitationCounts)
-    historic_citations: RequirementHistoricCitationsPort = field(
-        default_factory=FakeRequirementHistoricCitations
-    )
-
-
 def build_container(
     settings: Settings | None = None,
     *,
     clock: ClockPort | None = None,
     identity_provider: IdentityProviderPort | None = None,
-    requirement_work: RequirementWork | None = None,
 ) -> Container:
     with ExitStack() as resources:
         container = _build_container(
             settings if settings is not None else Settings.from_env(),
             clock if clock is not None else SystemClock(),
             identity_provider,
-            requirement_work,
             resources,
         )
         owned = resources.pop_all()
@@ -309,7 +252,6 @@ def _build_container(
     settings: Settings,
     clock: ClockPort,
     identity_override: IdentityProviderPort | None,
-    requirement_override: RequirementWork | None,
     resources: ExitStack,
 ) -> Container:
     metrics = Metrics()
@@ -320,7 +262,6 @@ def _build_container(
         settings, resources, clock, retrieval.embeddings, retrieval.tokenizer
     )
     identity = build_identity(settings, resources, persistence.actor_directory, identity_override)
-    requirement_work = requirement_override or _requirement_work(settings, resources, metrics)
     # One scanner, shared by the library, historic imports and architecture uploads.
     scanner = (
         OfflineDocumentScanner()
@@ -368,12 +309,9 @@ def _build_container(
         clock,
         settings.document_max_file_bytes,
         stewardship,
-        requirement_work.citations,
         timedelta(days=settings.knowledge_review_cycle_days),
     )
-    historic = build_historic(
-        settings, persistence, clock, extractor, scanner, requirement_work.historic_citations
-    )
+    historic = build_historic(settings, persistence, clock, extractor, scanner)
     golden_runs = GoldenSetRuns(
         persistence.golden_job_repository,
         ArchitectureJobExecution.QUEUED,
@@ -422,7 +360,6 @@ def _build_container(
             persistence.actor_directory,
             persistence.transaction_manager,
             clock,
-            requirement_work.dependents,
             stewardship,
         ),
         library_admin=AdministerLibraryDocument(
@@ -447,11 +384,6 @@ def _build_container(
             clock,
             review_cycle,
         ),
-        document_source_impact=DocumentSourceImpact(
-            persistence.library_repository,
-            requirement_work.impact,
-            persistence.transaction_manager,
-        ),
         cited_passages=CitedPassages(persistence.library_repository, review_cycle),
         reference_knowledge=reference_knowledge,
         architecture_knowledge=architecture.knowledge,
@@ -471,12 +403,6 @@ def _build_container(
         manage_sample_requirements=ManageSampleRequirements(persistence.sample_requirements, clock),
         compare_architecture_impact=CompareArchitectureImpact(
             architecture.manage, architecture.preview_impact, architecture.knowledge
-        ),
-        read_requirement_corpus=ReadRequirementCorpus(requirement_work.corpus),
-        nudge_finding_owners=NudgeFindingOwners(requirement_work.corpus),
-        act_on_requirement_corpus=ActOnRequirementCorpus(requirement_work.corpus),
-        report_mapping_impact=ReportMappingImpact(
-            persistence.architecture_repository, requirement_work.mapping_stats
         ),
         upload_knowledge_document=architecture.upload_document,
         upload_architecture_documents=architecture.upload_documents,
@@ -503,7 +429,7 @@ def _build_container(
 def _product_catalog(
     settings: Settings, resources: ExitStack, metrics: Metrics, clock: ClockPort
 ) -> ProductCatalogPort | None:
-    """The product catalog plans and prices are read from, live (requirement-portal ADR-0101)."""
+    """The product catalog plans and prices are read from, live (ADR-0101)."""
     provider = settings.product_catalog_provider
     catalog: ProductCatalogPort
     if provider is ProductCatalogProvider.NONE:
@@ -525,59 +451,6 @@ def _product_catalog(
         )
         catalog = Tmf620ProductCatalog(client, clock, settings.product_catalog_code_field)
     return CachedProductCatalog(catalog, clock, settings.product_catalog_cache_seconds)
-
-
-def _requirement_work(
-    settings: Settings, resources: ExitStack, metrics: Metrics
-) -> RequirementWork:
-    """Requirement work's internal API when configured; otherwise deterministic fakes."""
-    url = settings.requirement_service_url
-    if url is None:
-        return RequirementWork(
-            FakeRequirementDependents(), FakeArchitectureMappingStats(), FakeRequirementImpact()
-        )
-    http = resources.enter_context(
-        httpx.Client(transport=MeteredTransport(metrics, "requirements", httpx.HTTPTransport()))
-    )
-    client = InternalHttpClient(
-        url,
-        _service_token(settings, resources, settings.knowledge_service_token or ""),
-        service="requirements",
-        http=http,
-    )
-    return RequirementWork(
-        HttpRequirementDependents(client),
-        HttpArchitectureMappingStats(client),
-        HttpRequirementImpact(client),
-        HttpRequirementCorpus(client),
-        HttpRequirementCitationCounts(client),
-        HttpRequirementHistoricCitations(client),
-    )
-
-
-def _service_token(
-    settings: Settings, resources: ExitStack, shared: str
-) -> str | Callable[[], str]:
-    """How this service proves itself to requirement work (requirement-portal ADR-0104).
-
-    With its own client at the OIDC issuer, the issuer grants it short-lived
-    tokens and this service holds no secret of requirement work's; otherwise it
-    presents the shared token, `shared`.
-    """
-    client_id = settings.knowledge_service_client_id
-    secret = settings.knowledge_service_client_secret
-    if client_id is not None and secret is not None:
-        return resources.enter_context(
-            closing(
-                ClientCredentialsTokenSource(
-                    settings.oidc_issuer_url,
-                    client_id,
-                    secret,
-                    client=httpx.Client(timeout=10),
-                )
-            )
-        )
-    return shared
 
 
 def _library_extractor(settings: Settings) -> BoundedSubprocessDocumentExtractor:

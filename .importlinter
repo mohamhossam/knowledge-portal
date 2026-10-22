@@ -96,7 +96,6 @@ forbidden_modules =
     knowledge_portal.infrastructure.identity
     knowledge_portal.infrastructure.documents
     knowledge_portal.infrastructure.jobs
-    knowledge_portal.infrastructure.requirement_client
 allow_indirect_imports = True
 
 [importlinter:contract:infrastructure_not_interfaces]
@@ -124,8 +123,8 @@ forbidden_modules =
 allow_indirect_imports = True
 
 [importlinter:contract:requirement_work_is_a_peer]
-# Each portal reaches the other only over HTTP, through its published internal
-# contract (requirement-portal ADR-0099, ADR-0104); neither imports the other's code.
+# The knowledge base knows no client app: an app such as requirement work reads it over
+# its published app API; nothing here imports an app's code.
 name = The knowledge portal never imports requirement work
 type = forbidden
 source_modules =

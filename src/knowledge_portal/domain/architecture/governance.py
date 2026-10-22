@@ -1,5 +1,5 @@
 """Where the catalogue's knowledge comes from, and where its sources disagree
-(requirement-portal ADR-0101, step 5).
+(ADR-0101, step 5).
 
 Sources are registered once, each with its level: L1 the canonical landscape every product
 rests on, L2 a primary source for its scope, L3 a baseline carried forward from an earlier

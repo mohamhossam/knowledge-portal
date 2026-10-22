@@ -2,7 +2,7 @@
 
 The ids are the same as requirement-portal's offline personas, so the two agree
 on who is who when run together without an identity provider. Nothing depends
-on that: each portal runs alone with its own (requirement-portal ADR-0104).
+on that: each portal runs alone with its own (ADR-0104).
 """
 
 from smb_kernel.identity.fake import FakeIdentityProvider as KernelFakeIdentityProvider

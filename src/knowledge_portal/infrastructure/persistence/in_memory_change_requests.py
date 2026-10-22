@@ -1,4 +1,4 @@
-"""Isolated offline inbox of change requests from Requirement AI."""
+"""Isolated offline inbox of change requests apps send."""
 
 from __future__ import annotations
 

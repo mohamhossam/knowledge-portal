@@ -5,6 +5,43 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ## Unreleased
 
+### Changed: a knowledge base other apps read (ADR-0126) — breaking
+
+- **The knowledge portal reads no other app.** It no longer calls requirement work: the
+  requirement-corpus workbench ("Requirement knowledge": corpus, findings, nudges, retire and
+  reinstate, reindex), a library document's "Cited by" page (dependencies and source impact),
+  the library's and historic records' citation counts, and the catalogue's mapped-requirement
+  counts are gone, with their routes (`/knowledge-center/*`,
+  `/library/documents/{id}/dependencies` and `/source-impact`,
+  `/historic-requirements/{id}/citations`, `/architecture-knowledge/mapping-impact`) and the
+  pinned `contracts/requirement-internal.openapi.json`. Those screens showed requirement work's
+  own data; they belong there.
+- **It links to no app.** The web image no longer fills in `REQUIREMENT_PORTAL_URL`, and the
+  shell, sign-in page, explorer and records carry no link to requirement work (the shell's
+  outbound link slot is gone from the design system too). Copy that named requirement work
+  now says what it means: "It can be cited once it is indexed", "Change requests from
+  connected apps".
+- **Historic requirements have their own place**, "Historic" in the sidebar, at `/historic`
+  (`g r` goes there); the old `/requirement-knowledge/historic` addresses redirect to it.
+- **The internal API is the app API, for any app.** `/internal/*` is now `/apps/v2/*`, with its
+  contract `contracts/knowledge-apps.openapi.json` at 2.0.0 (was
+  `knowledge-internal.openapi.json`, 1.0.0); the operations and bodies are unchanged. Each app
+  is registered under its own name: `APP_CLIENT_IDS` (its client at the issuer, tokens for the
+  audience `knowledge-apps`, was `knowledge-internal`) and/or `APP_TOKENS` (`name=token`).
+  It is served through the edge at `/knowledge-api/apps/v2` as well as on a private network
+  (`deploy/compose.apps.yaml`, was `compose.peer.yaml`).
+- **What an app sends keeps its name.** A change request or closed Epic records `sent_by`; an
+  app takes back only its own; a change request reads into a draft as "Change request from
+  <app>: …", and its trace as "Requirement REQ-…, revision n" (was "Requirement AI
+  requirement …"). History recorded before keeps its `requirement-ai` origin; new entries are
+  `app`.
+- **Settings:** `REQUIREMENT_SERVICE_TOKEN`, `REQUIREMENT_SERVICE_CLIENT_ID`,
+  `REQUIREMENT_API_BASE_URL`, `KNOWLEDGE_SERVICE_TOKEN` and `KNOWLEDGE_SERVICE_CLIENT_ID`/`_SECRET`
+  are gone; the API refuses to start while one is set and names its replacement. The
+  `knowledge-service` Keycloak client is gone.
+- **Upgrading:** release with requirement-portal's move to `/apps/v2` and the `knowledge-apps`
+  audience (`docs/operations/deployment.md`, "Upgrading from the internal API").
+
 ### Added
 
 - The Check step lists what nothing in the draft links to (review recommendation 17):

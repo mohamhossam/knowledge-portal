@@ -1,5 +1,5 @@
 import { type ComponentProps, type ComponentType, lazy, type ReactNode, Suspense, use, useEffect } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import { CALLBACK_PATH, SILENT_CALLBACK_PATH } from "../auth/paths";
 import { ExplorerPage } from "../explorer/ExplorerPage";
@@ -44,7 +44,6 @@ const SearchPage = library.page("SearchPage");
 const DocumentPage = library.page("DocumentPage");
 const MainPage = library.page("MainPage");
 const VersionsPage = library.page("VersionsPage");
-const CitationsPage = library.page("CitationsPage");
 const OwnershipPage = library.page("OwnershipPage");
 const ClassificationPage = library.page("ClassificationPage");
 const ReviewFocus = library.page("ReviewFocus");
@@ -123,19 +122,15 @@ const SquadListPage = ownership.page("SquadListPage");
 const PeoplePage = ownership.page("PeoplePage");
 const HistoryPage = ownership.page("HistoryPage");
 
-/** Requirements: what requirement work holds, its findings and the historic requirements. */
-const requirements = routeGroup(async () => {
-  const [index, findings, historic] = await Promise.all([
-    import("../requirements/RequirementsPage"),
-    import("../requirements/FindingsPage"),
-    import("../historic/HistoricPage"),
-  ]);
-  return { ...index, ...findings, ...historic };
-});
-const RequirementKnowledgeIndex = requirements.page("RequirementKnowledgeIndex");
-const RequirementsPage = requirements.page("RequirementsPage");
-const FindingsPage = requirements.page("FindingsPage");
-const HistoricPage = requirements.page("HistoricPage");
+/** Historic requirements: old BRDs with their Azure DevOps breakdown. */
+const historic = routeGroup(() => import("../historic/HistoricPage"));
+const HistoricPage = historic.page("HistoricPage");
+
+/** A historic requirement's old address, under the requirement workbench that went (ADR-0126). */
+function OldHistoricRecord() {
+  const { historicId = "" } = useParams();
+  return <Navigate to={`/historic/${encodeURIComponent(historicId)}`} replace />;
+}
 
 /** A catalogue version's pages, the same for the version in service and any other. */
 const catalogueRoutes = (
@@ -201,21 +196,15 @@ export function App() {
         <Route path="library" element={<Loading><LibraryPage /></Loading>} />
         {/* Re-confirmations are confirmed on To do now (UX rebuild, phase 2). */}
         <Route path="reminders" element={<Navigate to="/" replace />} />
-        {/* The overview folded into Requirements (UX rebuild, phase 3); its address keeps working. */}
-        <Route path="requirement-knowledge" element={<RequirementKnowledgeIndex />} />
-        <Route path="requirement-knowledge/requirements" element={<RequirementsPage />} />
-        <Route path="requirement-knowledge/requirements/:requirementId" element={<RequirementsPage />} />
-        <Route path="requirement-knowledge/findings" element={<FindingsPage />} />
-        <Route path="requirement-knowledge/findings/:findingId" element={<FindingsPage />} />
-        <Route path="requirement-knowledge/historic" element={<HistoricPage />} />
-        <Route path="requirement-knowledge/historic/:historicId" element={<HistoricPage />} />
+        <Route path="historic" element={<HistoricPage />} />
+        <Route path="historic/:historicId" element={<HistoricPage />} />
+        {/* Bookmarks from before the requirement workbench went (ADR-0126). */}
+        <Route path="requirement-knowledge/historic" element={<Navigate to="/historic" replace />} />
+        <Route path="requirement-knowledge/historic/:historicId" element={<OldHistoricRecord />} />
         <Route path="library/search" element={<Loading><SearchPage /></Loading>} />
         <Route path="library/:documentId" element={<Loading><DocumentPage /></Loading>}>
           <Route index element={<Loading><MainPage /></Loading>} />
           <Route path="versions" element={<Loading><VersionsPage /></Loading>} />
-          <Route path="cited-by" element={<Loading><CitationsPage /></Loading>} />
-          {/* The old address keeps working until area 10 turns it into a redirect. */}
-          <Route path="citations" element={<Loading><CitationsPage /></Loading>} />
           <Route path="ownership" element={<Loading><OwnershipPage /></Loading>} />
           <Route path="about" element={<Loading><ClassificationPage /></Loading>} />
           {/* The review one question at a time (UX rebuild, phase 2): the shell hides its sidebar. */}

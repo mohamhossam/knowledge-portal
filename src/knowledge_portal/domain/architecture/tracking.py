@@ -1,4 +1,4 @@
-"""How an order is tracked once it is placed (requirement-portal ADR-0101, step 4).
+"""How an order is tracked once it is placed (ADR-0101, step 4).
 
 An offering's sources may say how its orders are tracked: the order types tracking is
 specified for, the system-to-system flows that carry order and milestone events, how each

@@ -10,13 +10,12 @@ import {
   Status, Workbench,
 } from "../design/components";
 import { count } from "../home/format";
-import { searchOf } from "../requirements/knowledge";
-import { ListBody } from "../requirements/ListBody";
-import { RequirementsHeader } from "../requirements/RequirementsHeader";
 import { RouterLink } from "../shell/links";
-import { HISTORIC_PATH, RANK_TONE, citedBy, historicHref, standing, useHistoric, useHistoricList } from "./historic";
+import { HISTORIC_PATH, RANK_TONE, historicHref, searchOf, standing, useHistoric, useHistoricList } from "./historic";
+import { HistoricHeader } from "./HistoricHeader";
 import { HistoricRecord } from "./HistoricRecord";
 import { ImportBrds } from "./ImportBrds";
+import { ListBody } from "./ListBody";
 
 const ALL = "all";
 const STATUSES: { id: HistoricStatus; label: string }[] = [
@@ -27,19 +26,15 @@ const STATUSES: { id: HistoricStatus; label: string }[] = [
 
 const isStatus = (value: string | null): value is HistoricStatus => value === "draft" || value === "published" || value === "withdrawn";
 
-/** "1 BRD · 3 work items · cited by 2". */
+/** "1 BRD · 3 work items". */
 function detail(item: HistoricSummary): string {
-  return [
-    count(item.brds, "BRD"),
-    item.work_items > 0 ? count(item.work_items, "work item") : null,
-    item.citations ? `cited by ${citedBy(item.citations)}` : null,
-  ].filter(Boolean).join(" · ");
+  return [count(item.brds, "BRD"), item.work_items > 0 ? count(item.work_items, "work item") : null].filter(Boolean).join(" · ");
 }
 
 /**
  * Historic requirements on the workbench (UX rebuild, phase 3): old BRDs imported with their
  * Azure DevOps breakdown, grouped by where they stand, beside the record of the one chosen.
- * Drafts wait on a curator; published ones reach requirement work as prior art. With none
+ * Drafts wait on a curator; published ones are reference knowledge, read as prior art. With none
  * chosen, the record side says what waits and offers the import.
  */
 export function HistoricPage() {
@@ -139,7 +134,6 @@ export function HistoricPage() {
       </ListTools>
       <ListBody
         pages={pages}
-        source="The knowledge service"
         empty={
           query || status ? (
             <>No historic requirement matches. <Button variant="link" onClick={() => setParams(new URLSearchParams(), { replace: true })}>Show all</Button></>
@@ -153,7 +147,7 @@ export function HistoricPage() {
 
   return (
     <>
-      <RequirementsHeader page="historic" record={historicId !== undefined ? chosen.data?.title : undefined} />
+      <HistoricHeader record={historicId !== undefined ? chosen.data?.title : undefined} />
       <Workbench listLabel="Historic requirements" chosen={historicId !== undefined || importing} list={list} record={record} />
     </>
   );
@@ -166,7 +160,7 @@ function HistoricOverview({ total, counts, notice, onImport }: {
   notice?: string;
   onImport: () => void;
 }) {
-  const said = notice && <p className="rk-said" role="status"><Status tone="done">{notice}</Status></p>;
+  const said = notice && <p className="hist-said" role="status"><Status tone="done">{notice}</Status></p>;
   if (counts === undefined) return <Skeleton label="Reading historic requirements" rows={3} />;
   if (total === 0) {
     return (
@@ -177,7 +171,7 @@ function HistoricOverview({ total, counts, notice, onImport }: {
           action={<Button variant="primary" icon={<Upload size={16} />} data-import onClick={onImport}>Import BRDs</Button>}
         >
           Import old BRDs as Word or PDF files. Each becomes a draft: you link the Azure DevOps work items it was delivered as,
-          then publish it, and requirement work reads it as prior art for new requirements.
+          then publish it as reference knowledge, read as prior art for new requirements.
         </EmptyState>
       </>
     );
@@ -185,19 +179,19 @@ function HistoricOverview({ total, counts, notice, onImport }: {
   return (
     <RecordPlaceholder title={`${count(total ?? 0, "historic requirement")}. Choose one to read its record.`}>
       {said}
-      <ul className="rk-lines">
+      <ul className="hist-lines">
         {counts.draft > 0 && (
           <li>
             <RouterLink href={`${HISTORIC_PATH}?status=draft`}>Link and publish the drafts</RouterLink>
-            <span className="rk-lines__status">Awaiting a curator</span>
-            <span className="rk-lines__count">{counts.draft}</span>
+            <span className="hist-lines__status">Awaiting a curator</span>
+            <span className="hist-lines__count">{counts.draft}</span>
           </li>
         )}
         {counts.refresh_waiting > 0 && (
           <li>
             <RouterLink href={`${HISTORIC_PATH}?status=published`}>Accept or discard the newer reads</RouterLink>
-            <span className="rk-lines__status">Refresh waiting</span>
-            <span className="rk-lines__count">{counts.refresh_waiting}</span>
+            <span className="hist-lines__status">Refresh waiting</span>
+            <span className="hist-lines__count">{counts.refresh_waiting}</span>
           </li>
         )}
       </ul>

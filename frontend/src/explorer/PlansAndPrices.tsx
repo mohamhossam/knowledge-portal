@@ -9,7 +9,7 @@ import { falling, formatAmount } from "./plans";
 
 /**
  * An offering's plans and prices, read live from the product catalog by the
- * offering's code (requirement-portal ADR-0101). The knowledge catalogue keeps
+ * offering's code (ADR-0101). The knowledge catalogue keeps
  * no copy, so the section says which catalog it read and when.
  */
 export function PlansAndPrices({ offering, level = 3 }: { offering: Offering; headingId?: string; level?: 2 | 3 }) {

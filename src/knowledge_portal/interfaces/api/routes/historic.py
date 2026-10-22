@@ -15,7 +15,6 @@ from knowledge_portal.application.use_cases.architecture_documents import (
     IncomingFile,
 )
 from knowledge_portal.application.use_cases.historic_requirements import (
-    CITATIONS_PAGE_MAX,
     PAGE_MAX,
     HistoricImports,
 )
@@ -26,7 +25,6 @@ from knowledge_portal.interfaces.api.dependencies import (
     require_authenticated_actor,
 )
 from knowledge_portal.interfaces.api.schemas.historic import (
-    CitedByResponse,
     HistoricDetail,
     HistoricImportResponse,
     HistoricPageResponse,
@@ -92,19 +90,6 @@ def shared_roots(historic_id: str, imports: ImportsDep) -> SharedRootsResponse:
     return SharedRootsResponse(
         items=[SharedRootView.of(shared) for shared in imports.shared_roots(historic_id)]
     )
-
-
-@router.get("/{historic_id}/citations")
-def cited_by(
-    historic_id: str,
-    imports: ImportsDep,
-    response: Response,
-    offset: Annotated[int, Query(ge=0, le=100_000)] = 0,
-    limit: Annotated[int, Query(ge=1, le=CITATIONS_PAGE_MAX)] = 20,
-) -> CitedByResponse:
-    """Requirements whose prior art cites it, from requirement work: who and when only."""
-    response.headers["Cache-Control"] = "private, no-store"
-    return CitedByResponse.of(imports.cited_by(historic_id, offset, limit))
 
 
 @router.patch("/{historic_id}")

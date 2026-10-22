@@ -9,6 +9,7 @@ instead of returning a provider error on the first analysis request.
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -185,22 +186,14 @@ class Settings:
     metrics_port: int | None = None
     metrics_host: str = "127.0.0.1"
     request_max_body_bytes: int = DEFAULT_REQUEST_MAX_BODY_BYTES
-    # Each service token is named after the service that presents it (ADR-0099).
-    # How requirement work proves itself on this service's /internal routes: the
-    # token it presents, and/or its client at the OIDC issuer, whose granted
-    # tokens for the audience knowledge-internal are admitted (requirement-portal
-    # ADR-0104). With neither, the internal API is not served at all.
-    requirement_service_token: str | None = field(default=None, repr=False)
-    requirement_service_client_id: str | None = None
-    # Where requirement work's internal API is, and how this service proves itself
-    # there: a shared token, or this service's own client at the OIDC issuer,
-    # which then grants it tokens. Unset, offline fakes stand in for requirement work.
-    requirement_api_base_url: str | None = None
-    knowledge_service_token: str | None = field(default=None, repr=False)
-    knowledge_service_client_id: str | None = None
-    knowledge_service_client_secret: str | None = field(default=None, repr=False)
-    # The product catalog plans and prices are read from, live (requirement-portal
-    # ADR-0101): none, the offline sample, or a TMF620 Product Catalog Management API.
+    # The apps that may read the knowledge base under /apps (ADR-0126), each admitted under
+    # its own name: by a shared token of its own (name -> token), and/or by its client at the
+    # OIDC issuer, whose granted tokens for the audience knowledge-apps are admitted (named
+    # after the client id). With neither, the app API is not served at all.
+    app_tokens: Mapping[str, str] = field(default_factory=dict, repr=False)
+    app_client_ids: tuple[str, ...] = ()
+    # The product catalog plans and prices are read from, live (ADR-0101): none, the
+    # offline sample, or a TMF620 Product Catalog Management API.
     product_catalog_provider: ProductCatalogProvider = ProductCatalogProvider.NONE
     product_catalog_url: str | None = None
     product_catalog_token: str | None = field(default=None, repr=False)
@@ -224,25 +217,6 @@ class Settings:
 
     def __post_init__(self) -> None:
         validate_settings(self)
-
-    @property
-    def uses_service_client(self) -> bool:
-        """Whether this service asks the OIDC issuer for its tokens to requirement work."""
-        return (
-            self.knowledge_service_client_id is not None
-            and self.knowledge_service_client_secret is not None
-        )
-
-    @property
-    def requirement_service_url(self) -> str | None:
-        """Requirement work's internal API, or None when offline fakes stand in.
-
-        It is called only with both its address and a way to prove this service
-        there: a shared token or this service's client credentials.
-        """
-        if self.knowledge_service_token is None and not self.uses_service_client:
-            return None
-        return self.requirement_api_base_url
 
     @classmethod
     def from_env(cls, *, config_path: str | None = None) -> Settings:
@@ -269,7 +243,7 @@ class Settings:
             **_documents_from_env(),
             **_library_from_env(),
             **_operability_from_env(),
-            **_requirement_service_from_env(),
+            **_apps_from_env(),
             **_product_catalog_from_env(),
             knowledge_review_cycle_days=_review_cycle_from_env(),
             **_ado_from_env(),
@@ -635,22 +609,43 @@ def _operability_from_env() -> dict[str, Any]:
     }
 
 
-def _requirement_service_from_env() -> dict[str, Any]:
-    """The link with requirement work, both ways (requirement-portal ADR-0099, ADR-0104)."""
+# Settings of the link with requirement work that ADR-0126 renamed, and what replaced them.
+_RENAMED = {
+    "REQUIREMENT_SERVICE_TOKEN": "APP_TOKENS=<app name>=<token>",
+    "REQUIREMENT_SERVICE_CLIENT_ID": "APP_CLIENT_IDS=<client id>",
+    "REQUIREMENT_API_BASE_URL": "nothing: the knowledge base calls no app",
+    "KNOWLEDGE_SERVICE_TOKEN": "nothing: the knowledge base calls no app",
+    "KNOWLEDGE_SERVICE_CLIENT_ID": "nothing: the knowledge base calls no app",
+    "KNOWLEDGE_SERVICE_CLIENT_SECRET": "nothing: the knowledge base calls no app",
+}
+
+
+def _apps_from_env() -> dict[str, Any]:
+    """The apps that may read the knowledge base (ADR-0126).
+
+    APP_TOKENS is a comma-separated list of name=token; APP_CLIENT_IDS a comma-separated
+    list of client ids. A setting of the old link with requirement work fails the boot with
+    its replacement, so a deployment never silently loses an app.
+    """
+    for old, replacement in _RENAMED.items():
+        if os.getenv(old, "").strip():
+            raise ConfigurationError(f"{old} is no longer read; use {replacement} (ADR-0126).")
+    tokens: dict[str, str] = {}
+    for entry in _listed(os.getenv("APP_TOKENS", "")):
+        name, separator, token = entry.partition("=")
+        if not separator or not name.strip() or not token.strip():
+            raise ConfigurationError("APP_TOKENS lists name=token pairs, separated by commas.")
+        if name.strip() in tokens:
+            raise ConfigurationError(f"APP_TOKENS names {name.strip()} twice.")
+        tokens[name.strip()] = token.strip()
     return {
-        "requirement_service_token": os.getenv("REQUIREMENT_SERVICE_TOKEN", "").strip() or None,
-        "requirement_api_base_url": os.getenv("REQUIREMENT_API_BASE_URL", "").strip() or None,
-        "knowledge_service_token": os.getenv("KNOWLEDGE_SERVICE_TOKEN", "").strip() or None,
-        "requirement_service_client_id": (
-            os.getenv("REQUIREMENT_SERVICE_CLIENT_ID", "").strip() or None
-        ),
-        "knowledge_service_client_id": (
-            os.getenv("KNOWLEDGE_SERVICE_CLIENT_ID", "").strip() or None
-        ),
-        "knowledge_service_client_secret": (
-            os.getenv("KNOWLEDGE_SERVICE_CLIENT_SECRET", "").strip() or None
-        ),
+        "app_tokens": tokens,
+        "app_client_ids": tuple(_listed(os.getenv("APP_CLIENT_IDS", ""))),
     }
+
+
+def _listed(raw: str) -> list[str]:
+    return [item.strip() for item in raw.split(",") if item.strip()]
 
 
 def _reranker_from_env() -> dict[str, Any]:

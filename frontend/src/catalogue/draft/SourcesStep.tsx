@@ -364,7 +364,7 @@ function ChangeRequests({ release, draft }: { release: Release; draft: DraftHook
   return (
     <Section title="Change requests" count={items.length}>
       <p className="draft-lead">
-        Approved backlogs and closed Epics from Requirement AI, read with fixed rules: each approved feature asks a question of the offering it
+        Approved backlogs and closed Epics from connected apps, read with fixed rules: each approved feature asks a question of the offering it
         names, and each closed Epic suggests the capabilities it delivered.
       </p>
       {read.isError && <p role="status"><Status tone="attention">{errorMessage(read.error)}</Status></p>}

@@ -1,6 +1,6 @@
 /**
- * A Solution Architecture document for one scenario (requirement-portal
- * ADR-0101, step 6), with the original explorer's document control and
+ * A Solution Architecture document for one scenario (ADR-0101,
+ * step 6), with the original explorer's document control and
  * eighteen sections, filled from the catalogue version in service. A pure
  * function of what the explorer already reads: nothing is filled in that the
  * version does not hold, and a section the catalogue cannot hold yet says so.
@@ -207,7 +207,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
           record.title,
           [record.requester && record.requester !== record.trace?.approved_by && `Requested by ${record.requester}`, record.priority && `${record.priority} priority`].filter(Boolean).join(" · "),
           record.trace
-            ? `Requirement AI requirement ${record.trace.requirement_id}, revision ${record.trace.breakdown_revision}${record.trace.approved_by ? `, approved by ${record.trace.approved_by}` : ""}${record.trace.approved_at ? ` on ${day(record.trace.approved_at)}` : ""}`
+            ? `Requirement ${record.trace.requirement_id}, revision ${record.trace.breakdown_revision}${record.trace.approved_by ? `, approved by ${record.trace.approved_by}` : ""}${record.trace.approved_at ? ` on ${day(record.trace.approved_at)}` : ""}`
             : record.origin === "explorer"
               ? "Drafted in the original explorer"
               : "",

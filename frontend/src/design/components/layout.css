@@ -97,18 +97,6 @@
   white-space: nowrap;
 }
 
-.ds-masthead__out {
-  /* A 24px target at least (WCAG 2.5.8), the text centred in it. */
-  display: inline-flex;
-  align-items: center;
-  min-block-size: 24px;
-  /* Room inside the target, so the focus ring sits clear of the words. */
-  padding-inline: var(--space-1);
-  color: inherit;
-  font-size: var(--text-meta);
-  white-space: nowrap;
-}
-
 /* The utilities sit quietly on the bar: text, an icon, a hairline that firms on hover. */
 
 .ds-masthead__button {
@@ -909,10 +897,6 @@
   .ds-masthead__end,
   .ds-masthead__utilities {
     gap: var(--space-2);
-  }
-
-  .ds-masthead__out {
-    font-size: var(--size-14);
   }
 
   .ds-masthead__button {

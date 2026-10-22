@@ -166,7 +166,7 @@ describe("saving and approving", () => {
 });
 
 describe("standing", () => {
-  it("says what requirement work can cite today", () => {
+  it("says what can be cited today", () => {
     expect(standing(document([])).kind).toBe("none");
     expect(standing(document([], {
       publications: [{ id: "p", activated_at: null, requires_activation: false, withdrawn_at: null, indexing_attempts: 3 }] as never,

@@ -22,7 +22,7 @@ import { changesOf, type KeptReview, keptCount, readKept, restored, writeKept } 
 import { awaitingReview, IN_PROGRESS, initialDrafts, latestRevision, livePublication, newestState, newestVersion, standing, unsaved } from "./model";
 import { Outcome } from "./parts";
 import { ReviewDesk } from "./ReviewDesk";
-import { returnBlocker } from "./citing";
+import { returnBlocker } from "./returning";
 import { StandingPanel } from "./StandingPanel";
 import { useDocument } from "./useDocument";
 import { humanWhere, plural } from "./where";
@@ -41,8 +41,8 @@ const STAGE: Record<string, string> = {
 };
 
 /**
- * Record archetype (plan 02 §1): one library document, where it stands with
- * requirement work, and its pages. The main page is the review desk while a
+ * Record archetype (plan 02 §1): one library document, where it stands, and
+ * its pages. The main page is the review desk while a
  * version waits for review, else the overview. Withdraw and return to service
  * open consequence panels in place (§5). The unsaved review lives here, so it
  * survives moving between the document's pages.
@@ -111,9 +111,8 @@ function Record({ document, hook }: { document: LibraryDocument; hook: Hook }) {
   const owner = document.owner.display_name;
   const base = `/library/${encodeURIComponent(document.id)}`;
   const tab = location.pathname.endsWith("/versions") ? "versions"
-    : /\/(cited-by|citations)$/.test(location.pathname) ? "cited-by"
-      : location.pathname.endsWith("/ownership") ? "ownership"
-        : location.pathname.endsWith("/about") ? "about" : "main";
+    : location.pathname.endsWith("/ownership") ? "ownership"
+      : location.pathname.endsWith("/about") ? "about" : "main";
   const desk = awaitingReview(document);
   const tabPanel = useRef<HTMLDivElement>(null);
   useTabFocus(tab, tabPanel);
@@ -129,12 +128,12 @@ function Record({ document, hook }: { document: LibraryDocument; hook: Hook }) {
       </>
     ) : stand.kind === "indexing" ? (
       stand.stuck
-        ? <>Approved on {formatDay(stand.publication.approved_at)}, but indexing for search stopped after three attempts. Requirement work can't cite it yet.</>
-        : <>Approved on {formatDay(stand.publication.approved_at)}; being indexed for search. Requirement work can cite it once that finishes.</>
+        ? <>Approved on {formatDay(stand.publication.approved_at)}, but indexing for search stopped after three attempts. It can't be cited yet.</>
+        : <>Approved on {formatDay(stand.publication.approved_at)}; being indexed for search. It can be cited once that finishes.</>
     ) : stand.kind === "withdrawn" ? (
       <>Withdrawn on {formatDay(stand.publication.withdrawn_at)} by <bdi>{stand.publication.withdrawn_by?.display_name ?? "—"}</bdi>{stand.publication.withdrawal_reason ? <>: <q dir="auto">{stand.publication.withdrawal_reason}</q></> : null}</>
     ) : (
-      <>Not in service. Requirement work can't cite it until a review is published.</>
+      <>Not in service. It can't be cited until a review is published.</>
     );
 
   const download = async () => {
@@ -228,7 +227,6 @@ function Record({ document, hook }: { document: LibraryDocument; hook: Hook }) {
           items={[
             { href: base, label: desk ? (dirty > 0 ? `Review (${plural(dirty, "unsaved change")})` : "Review") : "Overview", current: tab === "main" },
             { href: `${base}/versions`, label: "Versions", current: tab === "versions" },
-            { href: `${base}/cited-by`, label: "Cited by", current: tab === "cited-by" },
             { href: `${base}/ownership`, label: "Owner", current: tab === "ownership" },
             { href: `${base}/about`, label: "Type and topics", current: tab === "about" },
           ]}
@@ -440,7 +438,7 @@ function useNow(ticking: boolean): number {
 
 type Passage = { id: string; where: string; text: string };
 
-/** The passages requirement work cites now, read-only; "#passage-…" focuses one (from search). */
+/** The passages in service, read-only; "#passage-…" focuses one (from search). */
 function InService({ caption }: { caption: string }) {
   const { document } = useDocumentContext();
   const location = useLocation();
@@ -474,7 +472,7 @@ function InService({ caption }: { caption: string }) {
 
   if (!live) return null;
   if (!source || !revision) {
-    return <p className="lib-quiet">The passages in service are private to its owner. Requirement work cites them as approved.</p>;
+    return <p className="lib-quiet">The passages in service are private to its owner. They are cited as approved.</p>;
   }
   const columns: Column<Passage>[] = [
     { id: "where", header: "Where", rowHeader: true, width: "12rem", cell: (item) => <span id={`passage-${item.id}`} tabIndex={-1} className="lib-anchor">{item.where}</span> },
@@ -601,7 +599,7 @@ function useLeaveGuard(documentId: string, dirty: number, onDiscard: () => void)
   return { dialog, leaveTo };
 }
 
-const TAB_NAMES: Record<string, string | undefined> = { versions: "Versions", "cited-by": "Cited by", ownership: "Owner" };
+const TAB_NAMES: Record<string, string | undefined> = { versions: "Versions", ownership: "Owner" };
 
 /** Library › the document › its page: the way back up from any of a document's pages. */
 function LibraryCrumbs({ document, base, page }: { document?: string; base?: string; page?: string }) {

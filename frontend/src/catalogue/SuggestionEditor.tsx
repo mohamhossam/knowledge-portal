@@ -204,7 +204,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
               label="Matched by"
               value={content.triggers}
               required
-              hint="One phrase per line. Requirement work maps a requirement here when it uses one."
+              hint="One phrase per line. A requirement is mapped here when it uses one."
               onChange={(triggers) => set({ triggers })}
             />
           </>

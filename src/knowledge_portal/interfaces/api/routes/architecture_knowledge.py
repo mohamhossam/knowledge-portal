@@ -30,9 +30,6 @@ from knowledge_portal.application.use_cases.architecture_jobs import Architectur
 from knowledge_portal.application.use_cases.architecture_knowledge import (
     ManageArchitectureKnowledge,
 )
-from knowledge_portal.application.use_cases.architecture_mapping_impact import (
-    ReportMappingImpact,
-)
 from knowledge_portal.application.use_cases.architecture_preview import (
     PreviewArchitectureImpact,
 )
@@ -61,7 +58,6 @@ from knowledge_portal.interfaces.api.dependencies import (
     get_precedent_summaries,
     get_preview_architecture_impact,
     get_read_knowledge_document,
-    get_report_mapping_impact,
     get_upload_architecture_documents,
     get_upload_knowledge_document,
     limit_provider_calls,
@@ -87,7 +83,6 @@ from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     KnowledgeAuditEventResponse,
     KnowledgeDocumentVersionResponse,
     KnowledgeReleaseResponse,
-    MappingImpactResponse,
     PublishRequest,
     RejectSuggestionsRequest,
     RejectSuggestionsResponse,
@@ -658,15 +653,6 @@ def document_passage(
     )
 
 
-@router.get("/mapping-impact", response_model=MappingImpactResponse)
-def mapping_impact(
-    actor: KnowledgeActorDep,
-    report: Annotated[ReportMappingImpact, Depends(get_report_mapping_impact)],
-) -> MappingImpactResponse:
-    """Counts of mapped and outdated requirements, features and stories; no titles."""
-    return MappingImpactResponse.from_domain(report.execute(actor))
-
-
 @router.get("/precedents/summary", response_model=PrecedentSummariesResponse)
 def precedent_summaries(
     actor: KnowledgeActorDep,
@@ -758,7 +744,7 @@ def list_extractions(
 def list_change_requests(
     change_requests: ListChangeRequestsDep, actor: KnowledgeActorDep
 ) -> ChangeRequestsResponse:
-    """Change requests from Requirement AI, newest first (requirement-portal ADR-0101, step 7)."""
+    """Change requests apps sent, newest first (ADR-0126)."""
     return ChangeRequestsResponse(
         change_requests=[
             ChangeRequestResponse.from_domain(item) for item in change_requests.execute(actor)

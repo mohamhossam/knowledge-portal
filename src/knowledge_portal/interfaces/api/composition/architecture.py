@@ -92,7 +92,7 @@ class ArchitectureWiring:
     knowledge: ArchitectureKnowledgePort
     # A whole requirement's verdict, systems, gaps and owners (ontology plan Phase 3).
     assess: RequirementAssessmentPort
-    # Decided verdicts from requirement work, and their counts (ontology plan Phase 5).
+    # Decided verdicts apps send, and their counts (ontology plan Phase 5).
     record_precedent: RecordPrecedent
     precedent_summaries: ReadPrecedentSummaries
     manage: ManageArchitectureKnowledge
@@ -109,7 +109,7 @@ class ArchitectureWiring:
     clean_up_vocabulary: CleanUpVocabulary
     # The dependencies its interfaces and journeys say (ADR-0119).
     suggest_derived_dependencies: SuggestDerivedDependencies
-    # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
+    # Change requests apps send (ADR-0126).
     receive_change_request: ReceiveChangeRequest
     receive_delivery: ReceiveDelivery
     delivery_summaries: ReadDeliverySummaries

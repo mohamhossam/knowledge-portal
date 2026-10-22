@@ -1,7 +1,7 @@
 """Queue and execute catalogue work (index builds, document reading) off the request path.
 
-Mapping a requirement's backlog is requirement work, queued in requirement-portal
-(ADR-0099).
+Mapping a requirement's backlog is the work of the app that holds the requirement, queued
+there.
 """
 
 from __future__ import annotations

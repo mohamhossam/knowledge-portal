@@ -1,4 +1,4 @@
-/** The sections of an offering's sheet, each edited on its own (requirement-portal ADR-0101). */
+/** The sections of an offering's sheet, each edited on its own (ADR-0101). */
 import type { ReactNode } from "react";
 
 import {

@@ -15,7 +15,7 @@ import { humanWhere, plural } from "./where";
 
 /**
  * Browse archetype for passages (plan 02 §1): every passage in service, across
- * all owners, the way requirement work's grounding finds them. The query lives
+ * all owners, the way the knowledge search finds them. The query lives
  * in the URL; a result opens its document at that passage.
  */
 export function SearchPage() {
@@ -45,7 +45,7 @@ export function SearchPage() {
         breadcrumbs={<Breadcrumbs link={RouterLink} items={[{ href: "/library", label: "Library" }, { label: "Search passages" }]} />}
         title="Search passages"
         documentTitle={query ? `'${query}' · Search passages` : "Search passages"}
-        lead="Every passage in service, across all owners: what requirement work can cite today."
+        lead="Every passage in service, across all owners: what can be cited today."
       />
       <form
         role="search"

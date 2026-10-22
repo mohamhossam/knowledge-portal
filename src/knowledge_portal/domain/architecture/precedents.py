@@ -1,7 +1,7 @@
-"""Precedents: product verdicts a reviewer decided in requirement work (ontology plan Phase 5).
+"""Precedents: product verdicts a reviewer decided in an app (ontology plan Phase 5).
 
 When a Requirement Owner accepts, overrides or leaves unknown the verdict an assessment
-suggested, requirement-portal sends that decision here. It is kept with the requirement's
+suggested, the app sends that decision here. It is kept with the requirement's
 text, the concepts the requirement needed, the offering and the systems, against the
 release it was assessed on. Two things read it:
 
@@ -35,7 +35,7 @@ CONCEPT_LIMIT = 40
 
 
 class PrecedentDecision(StrEnum):
-    """What the reviewer did with the suggested verdict (requirement-portal ADR-0115)."""
+    """What the reviewer did with the suggested verdict (ADR-0115)."""
 
     ACCEPTED = "accepted"
     OVERRIDDEN = "overridden"
@@ -47,7 +47,7 @@ class PrecedentDecision(StrEnum):
 class PrecedentSystem:
     """A system the decided impact named, with the role and change type it was given.
 
-    Role and change type are kept as written: requirement-portal sends what the assessment
+    Role and change type are kept as written: the app sends what the assessment
     said, and a value added later must not refuse the whole decision.
     """
 
@@ -65,9 +65,9 @@ class PrecedentSystem:
 
 @dataclass(frozen=True)
 class Precedent:
-    """One decided product verdict, as requirement-portal sent it."""
+    """One decided product verdict, as an app sent it."""
 
-    # requirement-portal's analysis id: one precedent per requirement analysis.
+    # The app's analysis id: one precedent per requirement analysis.
     id: str
     requirement_id: str
     # "analysis-id@version": the analysis version the decision was made on.

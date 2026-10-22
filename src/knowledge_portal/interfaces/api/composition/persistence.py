@@ -136,9 +136,9 @@ class PersistenceAdapters:
     organisation_repository: OrganisationRepositoryPort
     sample_requirements: SampleRequirementsPort
     catalogue_candidates: CatalogueCandidateRepositoryPort
-    # Change requests from Requirement AI, waiting for an admin (ADR-0101, step 7).
+    # Change requests apps send, waiting for an admin (ADR-0126).
     change_requests: ChangeRequestInboxPort
-    # Verdicts a reviewer decided in requirement work (ontology plan Phase 5).
+    # Verdicts a reviewer decided in an app (ontology plan Phase 5).
     precedents: PrecedentStorePort
     architecture_evidence_index: ArchitectureEvidenceIndexPort
     architecture_job_repository: ArchitectureJobRepositoryPort

@@ -173,7 +173,7 @@ export function LibraryPage() {
   } else if (all.length === 0) {
     body = (
       <EmptyState title="No documents yet." action={<Button variant="primary" onClick={upload.show}>Upload documents</Button>}>
-        <p>Upload a policy or reference document. You review what was read before requirement work can cite it.</p>
+        <p>Upload a policy or reference document. You review what was read before it can be cited.</p>
       </EmptyState>
     );
   } else {
@@ -246,7 +246,7 @@ export function LibraryPage() {
     <div className="lib">
       <PageHeader
         title="Library"
-        lead="Reviewed reference documents that requirement work can cite."
+        lead="Reviewed reference documents that connected apps can cite."
         actions={
           <ActionGroup>
             <Button id="library-upload" variant="primary" icon={<UploadIcon size={14} />} aria-expanded={upload.open} onClick={(event) => (upload.open ? upload.close() : upload.show(event))}>
@@ -264,9 +264,8 @@ export function LibraryPage() {
 }
 
 /**
- * One document's summary beside the list: where it stands, what requirement
- * work can cite from it today, its newest upload, and the way into its review,
- * versions and citations.
+ * One document's summary beside the list: where it stands, what can be cited
+ * from it today, its newest upload, and the way into its review and versions.
  */
 function DocumentSummary({ row, takeFocus, stopped, onRetried }: {
   row: Row;
@@ -306,12 +305,12 @@ function DocumentSummary({ row, takeFocus, stopped, onRetried }: {
       <Facts
         items={[
           [
-            "Requirement work",
+            "In service",
             current.kind === "service"
-              ? `Cites version ${current.versionNumber ?? "?"}${current.publication.activated_at ? ` since ${formatDay(current.publication.activated_at)}` : ""}`
+              ? `Version ${current.versionNumber ?? "?"}${current.publication.activated_at ? ` since ${formatDay(current.publication.activated_at)}` : ""}`
               : current.kind === "indexing"
-                ? current.stuck ? "Can't cite it yet: indexing stopped" : "Can cite it once indexing finishes"
-                : current.kind === "withdrawn" ? `Withdrawn ${current.publication.withdrawn_at ? formatDay(current.publication.withdrawn_at) : ""}`.trim() : "Can't cite it: nothing approved yet",
+                ? current.stuck ? "Not yet: indexing stopped" : "Once indexing finishes"
+                : current.kind === "withdrawn" ? `Withdrawn ${current.publication.withdrawn_at ? formatDay(current.publication.withdrawn_at) : ""}`.trim() : "Not yet: nothing approved",
           ],
           ...(review && current.kind === "service"
             ? [["Re-confirmation", review.state === "current" ? `Confirmed ${formatDay(review.last_reviewed_at)} · next due ${formatDay(review.due_at)}` : `${REVIEW_STATUS[review.state]} · due ${formatDay(review.due_at)}`] as [string, ReactNode]]
@@ -323,7 +322,6 @@ function DocumentSummary({ row, takeFocus, stopped, onRetried }: {
               : "None",
           ],
           ...(version && version.blocks.length ? [["Passages read", plural(version.blocks.length, "passage")] as [string, ReactNode]] : []),
-          ["Cited by", doc.citations === null || doc.citations === undefined ? "Requirement AI didn't say" : doc.citations === 0 ? "No requirement yet" : <RouterLink href={`${href}/cited-by`}>{plural(doc.citations, "requirement")}</RouterLink>],
           ["Owner", doc.is_owner ? "You" : <bdi>{doc.owner.display_name}</bdi>],
           ...classificationFacts(doc, classification.data),
         ]}
