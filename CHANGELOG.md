@@ -7,6 +7,28 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Offerings and portfolio nodes retire like systems, and everything outside a version follows
+  an id to what names it now. An offering or portfolio node takes `deprecated` and
+  `replaced_by` (ADR-0121, amended), checked as a system's are; the offering's editor has a
+  "Retired" box and a "Replaced by" choice, and its page and list say "Retired". One resolver
+  follows an id through its former ids and its replacements. The organisation catalogue tells
+  a product naming a renamed or replaced offering or portfolio node, or a squad seat scoped to
+  a replaced concept, where the id went ("this offering is now X (renamed); link that
+  instead") rather than that it is gone. Precedents count for the system, offering and
+  concepts their old ids name now, and a retired offering is no longer matched by an
+  assessment. YAML, JSON and the workbook's Products and Portfolio sheets carry the two
+  columns, which are optional. Review recommendation 7. Public and internal contracts,
+  additive.
+- Journey steps and tracking flows can name the interface record they go through. An
+  integration or a tracking flow takes an optional `interface_id`, checked against the
+  version: the record must exist and be exposed by a system of the call. The journey editor
+  offers the records of the systems a step touches beside the interface text its source
+  writes. A dependency derived from a linked step takes the record's kind and direction
+  (ADR-0119, amended); an unlinked step whose text names exactly one record is read the same
+  way only when the direction agrees. A journey read again keeps a maintainer's links. YAML,
+  JSON and the workbook's ActivityIntegrations and TrackingFlows sheets carry `interface_id`,
+  an optional column. The committed catalogue is unchanged. Review recommendation 8. Public
+  and internal contracts, additive.
 - A fact's source line is read once, by one rule. The service reads every source line a
   version's facts write against its source register ("SDD v2.3 · §4.1" names the source
   short-named "SDD v2.3", at "§4.1") and sends those readings with the version as

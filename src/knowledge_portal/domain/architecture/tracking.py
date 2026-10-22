@@ -31,9 +31,12 @@ class TrackingFlow:
     interface: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The interface record the events pass over, by id (review recommendation 8).
+    interface_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "from_system_id", required(self.from_system_id, "From system"))
+        object.__setattr__(self, "interface_id", optional(self.interface_id, "Interface record"))
         object.__setattr__(self, "to_system_id", required(self.to_system_id, "To system"))
         object.__setattr__(self, "label", required(self.label, "What the flow carries"))
         object.__setattr__(self, "interface", optional(self.interface, "Interface"))

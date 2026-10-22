@@ -16,6 +16,7 @@ from knowledge_portal.application.use_cases.capability_domain_fallback import (
     contains,
     normalise,
 )
+from knowledge_portal.domain.architecture.deprecation import in_service
 from knowledge_portal.domain.architecture.entities import (
     JourneyNeighbour,
     JourneyStep,
@@ -57,7 +58,7 @@ def product_contexts(release: ArchitectureKnowledge, text: str) -> tuple[Product
         return ()
     names = {system.id: system.name for system in release.systems}
     ranked: list[tuple[int, int, str, ProductContext]] = []
-    for offering in release.products:
+    for offering in in_service(release.products):
         own = _matched(corpus, offering.name, offering.code)
         parts = [
             (part, words)

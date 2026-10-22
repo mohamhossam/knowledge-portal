@@ -208,6 +208,16 @@ export function productLinks(product: OrgProduct, release: Release | null, flag:
   for (const item of flag?.replaced_systems ?? []) {
     checks.push(`${systemName(item.system_id)}: retired, replaced by ${systemName(item.successor_id)}; list that instead.`);
   }
+  // Review recommendation 7: an offering or portfolio node renamed or replaced is pointed at what it is now.
+  for (const item of (flag?.forwarded ?? []).filter((each) => each.kind !== "concept")) {
+    const name = item.kind === "offering" ? offeringName : (id: string) => release?.portfolio?.find((node) => node.id === id)?.name ?? id;
+    const what = item.kind === "offering" ? "offering" : "portfolio node";
+    checks.push(
+      item.renamed
+        ? `${item.old_id}: this ${what} is now ${name(item.new_id)} (renamed); link that instead.`
+        : `${item.old_id}: a retired ${what}, replaced by ${name(item.new_id)}; link that instead.`,
+    );
+  }
   if (flag?.systems_missing.length) {
     checks.push(`Its offerings also name ${list(flag.systems_missing, systemName)}, which it does not list.`);
   }
@@ -232,6 +242,11 @@ export function squadChecks(flag: ReferenceFlag | undefined, release: Release | 
     ),
     ...(flag?.retired_capabilities ?? []).map(
       (scope) => `${systemName(scope.system_id)} › ${conceptName(release, scope.capability_id)}: no capability of the system links to it any more.`,
+    ),
+    // Review recommendation 7: a seat's concept renamed or replaced moves to the one its system links now.
+    ...(flag?.forwarded ?? []).filter((item) => item.kind === "concept").map(
+      (item) =>
+        `${systemName(item.system_id ?? "")} › ${item.old_id}: ${item.renamed ? "renamed" : "retired"}, now ${conceptName(release, item.new_id)}; scope the seat to that.`,
     ),
   ];
 }

@@ -3,8 +3,11 @@
 An interface's consumers depend on the system that exposes it: an API's consumer calls
 it, and an event's or a file's system sends to its consumers. A journey that hands over
 from one system to another, through an integration layer or not, says the same of each
-hop. Neither is a dependency until a maintainer accepts it: this only finds them, one per
-source, target and kind, each citing what says it.
+hop. A hop that goes through an interface record, linked or named alike, takes its kind and
+direction from the record first, as the interface itself would; only a hop with no record
+is read from its written style (review recommendation 8). Neither is a dependency until a
+maintainer accepts it: this only finds them, one per source, target and kind, each citing
+what says it.
 """
 
 from __future__ import annotations
@@ -14,6 +17,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 from knowledge_portal.domain.architecture.deprecation import in_service
+from knowledge_portal.domain.architecture.interface_links import interface_of
 from knowledge_portal.domain.architecture.interfaces import InterfaceStyle, SystemInterface
 from knowledge_portal.domain.architecture.journeys import ActivityIntegration, Journey
 from knowledge_portal.domain.architecture.knowledge import (
@@ -138,8 +142,21 @@ def _ends(journey: Journey, integration: ActivityIntegration) -> tuple[str | Non
     )
 
 
+def _record_edge(
+    record: SystemInterface | None, linked: bool, source: str, target: str
+) -> tuple[str, str, RelationshipKind] | None:
+    """How a hop depends, as the interface record it goes through says: a linked record
+    always (a maintainer chose it); one only named alike when it agrees with the hop's
+    direction, since a relay of the same name may run the other way."""
+    if record is None or record.system_id not in (source, target):
+        return None
+    consumer = target if record.system_id == source else source
+    edge = interface_dependency(record, consumer)
+    return edge if linked or edge[:2] == (source, target) else None
+
+
 def _from_journeys(
-    journeys: Iterable[Journey],
+    journeys: Iterable[Journey], interfaces: tuple[SystemInterface, ...]
 ) -> Iterable[tuple[str, str, RelationshipKind, str, DependencyEvidence]]:
     for journey in journeys:
         for integration in journey.integrations:
@@ -157,14 +174,25 @@ def _from_journeys(
                 if integration.from_activity == integration.to_activity
                 else f"{integration.from_activity} to {integration.to_activity}"
             )
-            purpose = integration.interface or integration.purpose or journey.name
+            record, linked = interface_of(interfaces, journey, integration)
+            purpose = (
+                record.name
+                if record
+                else integration.interface or integration.purpose or journey.name
+            )
+            said = integration.purpose or integration.interface or journey.name
             evidence = DependencyEvidence(
                 f"Catalogue › journey {journey.name} › step {steps}",
-                integration.purpose or integration.interface or journey.name,
+                f"{said} (through the interface {record.name})"
+                if record and record.name != said
+                else said,
             )
-            kind = written_kind(integration.style)
             for source, target in hops:
-                yield source, target, kind, purpose, evidence
+                edge = _record_edge(record, linked, source, target)
+                if edge is not None:
+                    yield (*edge, purpose, evidence)
+                else:
+                    yield source, target, written_kind(integration.style), purpose, evidence
 
 
 def _folded(
@@ -196,7 +224,7 @@ def derive_dependencies(release: ArchitectureKnowledge) -> tuple[DerivedDependen
     found: dict[tuple[str, str, RelationshipKind], _Sayings] = {}
     for origin, said in (
         ("interface", _from_interfaces(release.interfaces, _names(release))),
-        ("step", _from_journeys(release.journeys)),
+        ("step", _from_journeys(release.journeys, release.interfaces)),
     ):
         for source, target, kind, purpose, evidence in said:
             if source not in serving or target not in serving or source == target:

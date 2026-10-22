@@ -25,6 +25,7 @@ from decimal import Decimal
 from enum import StrEnum
 
 from knowledge_portal.domain.architecture.concepts import check_link
+from knowledge_portal.domain.architecture.deprecation import check_retirement
 from knowledge_portal.domain.architecture.governance import (
     ArchitectureDecision,
     OpenQuestion,
@@ -453,9 +454,15 @@ class ProductOffering:
     former_ids: tuple[str, ...] = ()
     # Why a customer buys it, beside the proposition that says what it is.
     purpose: str | None = None
+    # Retired, with the offering that takes its place if any (ADR-0121, review
+    # recommendation 7): it stays readable, selection and matching leave it out, and what
+    # names it from outside the version (a product, a precedent) is forwarded to its successor.
+    deprecated: bool = False
+    replaced_by: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Offering id"))
+        check_retirement(self, self.name)
         object.__setattr__(self, "former_ids", former(self.id, self.former_ids))
         object.__setattr__(self, "name", required(self.name, "Offering name"))
         for field, label in (

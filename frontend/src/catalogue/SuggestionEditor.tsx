@@ -498,6 +498,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
             systems={systems}
             offerings={release.products ?? []}
             channels={release.channels ?? []}
+            interfaces={release.interfaces ?? []}
             names={words}
             onChange={(journey) => set({ journey })}
           />

@@ -472,6 +472,17 @@
             ],
             "title": "Interface"
           },
+          "interface_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interface Id"
+          },
           "open_api_ids": {
             "default": [],
             "items": {
@@ -643,6 +654,18 @@
               }
             ],
             "title": "Interface"
+          },
+          "interface_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interface Id"
           },
           "open_api_ids": {
             "default": [],
@@ -6562,6 +6585,11 @@
             "title": "Decisions",
             "type": "array"
           },
+          "deprecated": {
+            "default": false,
+            "title": "Deprecated",
+            "type": "boolean"
+          },
           "family": {
             "anyOf": [
               {
@@ -6691,6 +6719,17 @@
             },
             "title": "Questions",
             "type": "array"
+          },
+          "replaced_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By"
           },
           "rules": {
             "default": [],
@@ -6835,6 +6874,11 @@
             "maxItems": 5000,
             "title": "Decisions",
             "type": "array"
+          },
+          "deprecated": {
+            "default": false,
+            "title": "Deprecated",
+            "type": "boolean"
           },
           "family": {
             "anyOf": [
@@ -6982,6 +7026,18 @@
             "maxItems": 5000,
             "title": "Questions",
             "type": "array"
+          },
+          "replaced_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By"
           },
           "rules": {
             "default": [],
@@ -7941,6 +7997,17 @@
             ],
             "title": "Interface"
           },
+          "interface_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interface Id"
+          },
           "label": {
             "title": "Label",
             "type": "string"
@@ -7998,6 +8065,18 @@
               }
             ],
             "title": "Interface"
+          },
+          "interface_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interface Id"
           },
           "label": {
             "maxLength": 10000,

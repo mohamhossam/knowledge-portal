@@ -65,11 +65,11 @@ function renderAt(path: string) {
   vi.spyOn(api, "organisationReferences").mockResolvedValue([
     {
       subject: "product", subject_id: "p", retired_system_ids: [], retired_offering_ids: [], retired_portfolio_node_id: null,
-      retired_capabilities: [], replaced_systems: [], systems_missing: [], systems_unexplained: [], unlinked: true,
+      retired_capabilities: [], replaced_systems: [], systems_missing: [], systems_unexplained: [], unlinked: true, forwarded: [],
     },
     {
       subject: "squad", subject_id: "sales", retired_system_ids: [], retired_offering_ids: [], retired_portfolio_node_id: null,
-      retired_capabilities: [{ system_id: "bcrm", capability_id: "cap-old" }], replaced_systems: [], systems_missing: [], systems_unexplained: [], unlinked: false,
+      retired_capabilities: [{ system_id: "bcrm", capability_id: "cap-old" }], replaced_systems: [], systems_missing: [], systems_unexplained: [], unlinked: false, forwarded: [],
     },
   ]);
   vi.spyOn(api, "knownActors").mockResolvedValue([]);

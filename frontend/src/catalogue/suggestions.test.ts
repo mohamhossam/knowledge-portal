@@ -190,6 +190,7 @@ describe("channel suggestions", () => {
     {
       kind: "product", system_id: "office", name: "Office Connect",
       product: {
+        deprecated: false,
         id: "office", name: "Office Connect", rules: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [],
         sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], accepted: [], former_ids: [],
         order_types: [{ code: "NEW", name: "New", enabled: true, channels: ["business-web", "Partner Feed"] }],
@@ -237,6 +238,7 @@ describe("offering detail suggestions", () => {
       {
         kind: "product", system_id: "office", name: "Office Connect",
         product: {
+          deprecated: false,
           id: "office", name: "Office Connect", rules: [], values: [], audiences: [],
           sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], accepted: [], former_ids: [],
           order_types: [{ code: "NEW", name: "New", enabled: true, channels: [] }],
@@ -422,12 +424,12 @@ describe("business area and portfolio suggestions (ADR-0123)", () => {
     { match: "needs_domain" },
   );
   const fixed = suggestion(
-    { kind: "portfolio_node", system_id: "fixed", name: "Fixed", portfolio_node: { id: "fixed", name: "Fixed", level: "Line of business", accepted: [] } },
+    { kind: "portfolio_node", system_id: "fixed", name: "Fixed", portfolio_node: { id: "fixed", name: "Fixed", level: "Line of business", accepted: [], deprecated: false } },
   );
   const smb = suggestion(
     {
       kind: "portfolio_node", system_id: "fixed-smb", name: "SMB",
-      portfolio_node: { id: "fixed-smb", name: "SMB", level: "Segment", parent_id: "Fixed", accepted: [] },
+      portfolio_node: { id: "fixed-smb", name: "SMB", level: "Segment", parent_id: "Fixed", accepted: [], deprecated: false },
     },
     { match: "needs_portfolio_node" },
   );

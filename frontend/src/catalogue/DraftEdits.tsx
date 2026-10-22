@@ -372,6 +372,7 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
     () => ({
       id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [],
       sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], accepted: [], former_ids: [],
+      deprecated: false,
     }),
   );
   const products = release.products ?? [];
@@ -392,7 +393,7 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
     >
       <p className="cat-edit__lead">Say what it is; its order types, parts and the rest are added on its sheet, one section at a time.</p>
       <div className="cat-form">
-        <OfferingFacts value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} />
+        <OfferingFacts value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} offerings={release.products ?? []} />
       </div>
     </EditPanel>
   );
@@ -467,6 +468,7 @@ export function JourneyEdit({ journey, onDone }: { journey?: Journey; onDone: (s
         systems={release.systems}
         offerings={release.products ?? []}
         channels={release.channels ?? []}
+        interfaces={release.interfaces ?? []}
       />
     </EditPanel>
   );

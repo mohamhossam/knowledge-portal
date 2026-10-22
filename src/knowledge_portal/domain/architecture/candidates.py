@@ -39,6 +39,7 @@ from knowledge_portal.domain.architecture.governance import (
     merge_conflicts,
     merge_sources,
 )
+from knowledge_portal.domain.architecture.interface_links import kept_interface_links
 from knowledge_portal.domain.architecture.interfaces import (
     SystemInterface,
     find_interface_among,
@@ -1356,7 +1357,10 @@ def classify(content: CandidateContent, release: ArchitectureKnowledge) -> Candi
         kept = _current_journey(journey, release)
         if kept is None:
             return CandidateMatch.NEW
-        same = kept_journey_terms(replace(journey, id=kept.id), kept) == kept
+        same = (
+            kept_interface_links(kept_journey_terms(replace(journey, id=kept.id), kept), kept)
+            == kept
+        )
         return CandidateMatch.ALREADY_PRESENT if same else CandidateMatch.UPDATES_EXISTING
     if content.kind is CandidateKind.PRODUCT and content.product is not None:
         offering, missing = _resolved_offering(content.product, release)
@@ -2098,7 +2102,9 @@ def _with_journey(journey: Journey, release: ArchitectureKnowledge) -> Architect
     current = _current_journey(resolved, release)
     if current is None:
         return release.updated(journeys=(*release.journeys, resolved))
-    kept = kept_journey_terms(replace(resolved, id=current.id), current)
+    kept = kept_interface_links(
+        kept_journey_terms(replace(resolved, id=current.id), current), current
+    )
     return release.updated(
         journeys=tuple(kept if item.id == current.id else item for item in release.journeys)
     )

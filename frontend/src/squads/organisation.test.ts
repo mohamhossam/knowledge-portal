@@ -68,12 +68,27 @@ describe("the organisation through what it sells", () => {
     expect(productLinks(product, release, undefined)).toEqual({ sells: ["Business fibre"], portfolio: "SMB (Segment)", checks: [] });
     const flag: ReferenceFlag = {
       subject: "product", subject_id: "p", retired_system_ids: ["legacy"], retired_offering_ids: ["old-offer"],
-      retired_portfolio_node_id: null, retired_capabilities: [], replaced_systems: [], systems_missing: ["cwom"], systems_unexplained: ["bcrm"], unlinked: false,
+      retired_portfolio_node_id: null, retired_capabilities: [], replaced_systems: [], systems_missing: ["cwom"], systems_unexplained: ["bcrm"], unlinked: false, forwarded: [],
     };
     expect(productLinks({ ...product, offering_ids: ["fibre-offer", "old-offer"] }, release, flag).checks).toEqual([
       "old-offer: no longer an offering in service.",
       "Its offerings also name CWOM, which it does not list.",
       "It lists BCRM, which none of its offerings name.",
+    ]);
+  });
+
+  it("points a product at an offering or node renamed or replaced, instead of calling it gone (review recommendation 7)", () => {
+    const flag: ReferenceFlag = {
+      subject: "product", subject_id: "p", retired_system_ids: [], retired_offering_ids: [], retired_portfolio_node_id: null,
+      retired_capabilities: [], replaced_systems: [], systems_missing: [], systems_unexplained: [], unlinked: false,
+      forwarded: [
+        { kind: "offering", old_id: "fibre-2025", new_id: "fibre-offer", renamed: true },
+        { kind: "portfolio_node", old_id: "old-segment", new_id: "smb", renamed: false },
+      ],
+    };
+    expect(productLinks(org.products[0]!, release, flag).checks).toEqual([
+      "fibre-2025: this offering is now Business fibre (renamed); link that instead.",
+      "old-segment: a retired portfolio node, replaced by SMB; link that instead.",
     ]);
   });
 
@@ -144,7 +159,7 @@ describe("seats scoped to a capability", () => {
   it("says what a squad names that the version in service no longer has", () => {
     const flag: ReferenceFlag = {
       subject: "squad", subject_id: "zeta", retired_system_ids: ["gone"], retired_offering_ids: [], retired_portfolio_node_id: null,
-      retired_capabilities: [{ system_id: "bscs", capability_id: "cap-charging" }], systems_missing: [], systems_unexplained: [], unlinked: false,
+      retired_capabilities: [{ system_id: "bscs", capability_id: "cap-charging" }], systems_missing: [], systems_unexplained: [], unlinked: false, forwarded: [],
       replaced_systems: [{ system_id: "old-billing", successor_id: "bscs" }],
     };
     expect(squadChecks(flag, billing)).toEqual([
@@ -153,6 +168,15 @@ describe("seats scoped to a capability", () => {
       "BSCS › Charging: no capability of the system links to it any more.",
     ]);
     expect(squadChecks(undefined, billing)).toEqual([]);
+  });
+
+  it("moves a seat whose concept was replaced to the one its system links now (review recommendation 7)", () => {
+    const flag: ReferenceFlag = {
+      subject: "squad", subject_id: "zeta", retired_system_ids: [], retired_offering_ids: [], retired_portfolio_node_id: null,
+      retired_capabilities: [], systems_missing: [], systems_unexplained: [], unlinked: false, replaced_systems: [],
+      forwarded: [{ kind: "concept", old_id: "cap-old-charging", new_id: "cap-charging", renamed: false, system_id: "bscs" }],
+    };
+    expect(squadChecks(flag, billing)).toEqual(["BSCS › cap-old-charging: retired, now Charging; scope the seat to that."]);
   });
 });
 

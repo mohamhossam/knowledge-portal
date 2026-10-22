@@ -231,6 +231,9 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "purpose",
         # Ids it was known by before a rename, by ;.
         "former_ids",
+        # Retired, and the offering that takes its place (review recommendation 7).
+        "deprecated",
+        "replaced_by",
     ),
     ORDER_TYPES: (
         "product_id",
@@ -342,6 +345,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "style",
         "tmf_equivalent",
         "open_apis",
+        # The interface record the call goes through, by id (review recommendation 8).
+        "interface_id",
     ),
     CHANNELS: (
         "channel_id",
@@ -379,6 +384,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "interface",
         "confidence",
         "source",
+        "interface_id",
     ),
     TRACKING_CHANNELS: (
         "product_id",
@@ -487,7 +493,17 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "knowledge_version",
     ),
     CHANGE_ITEMS: ("change_request_id", "kind", "summary", "status", "feature_id"),
-    PORTFOLIO: ("node_id", "name", "level", "parent_id", "description", "confidence", "source"),
+    PORTFOLIO: (
+        "node_id",
+        "name",
+        "level",
+        "parent_id",
+        "description",
+        "confidence",
+        "source",
+        "deprecated",
+        "replaced_by",
+    ),
     PLANS: ("product_id", "plan", "description", "confidence", "source"),
     PLAN_CHARACTERISTICS: ("product_id", "plan", "characteristic", "value"),
     BUSINESS_RULES: ("product_id", "rule_id", "statement", "kind", "confidence", "source"),
@@ -1370,6 +1386,7 @@ def _link(link: dict[str, Any], place: str) -> ActivityIntegration:
         style=_optional_text(link.get("style"), place, "style"),
         tmf_equivalent=_optional_text(link.get("tmf_equivalent"), place, "tmf_equivalent"),
         open_api_ids=_text_list(link.get("open_apis"), place, "open_apis"),
+        interface_id=_optional_text(link.get("interface_id"), place, "interface_id"),
     )
 
 
@@ -1491,6 +1508,7 @@ def _journey_mapping(journey: Journey) -> dict[str, Any]:
                         style=link.style,
                         tmf_equivalent=link.tmf_equivalent,
                         open_apis=list(link.open_api_ids),
+                        interface_id=link.interface_id,
                     ),
                     **_sourced(link),
                 }
@@ -1698,6 +1716,7 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                     ),
                     purpose=_optional_text(item.get("purpose"), where, "purpose"),
                     former_ids=_text_list(item.get("former_ids"), where, "former_ids"),
+                    **_retirement(item, where),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -1746,6 +1765,7 @@ def _portfolio(entries: list[dict[str, Any]]) -> list[PortfolioNode]:
                     description=_optional_text(item.get("description"), where, "description"),
                     confidence=_trust(item.get("confidence"), where),
                     source=_optional_text(item.get("source"), where, "source"),
+                    **_retirement(item, where),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -1760,6 +1780,7 @@ def _portfolio_mapping(node: PortfolioNode) -> dict[str, Any]:
         "level": node.level,
         **_present(parent=node.parent_id, description=node.description),
         **_sourced(node),
+        **_retired(node),
     }
 
 
@@ -1816,6 +1837,7 @@ def _tracking(item: dict[str, Any], where: str) -> OrderTracking | None:
                 _optional_text(flow.get("interface"), spot, "interface"),
                 _trust(flow.get("confidence"), spot),
                 _optional_text(flow.get("source"), spot, "source"),
+                _optional_text(flow.get("interface_id"), spot, "interface_id"),
             )
             for flow, spot in each("flows", "flow")
         ),
@@ -2079,6 +2101,7 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
             ],
             former_ids=list(offering.former_ids),
         ),
+        **_retired(offering),
     }
 
 
@@ -2135,7 +2158,7 @@ def _tracking_mapping(tracking: OrderTracking) -> dict[str, Any]:
                     "from_system": flow.from_system_id,
                     "to_system": flow.to_system_id,
                     "label": flow.label,
-                    **_present(interface=flow.interface),
+                    **_present(interface=flow.interface, interface_id=flow.interface_id),
                     **_sourced(flow),
                 }
                 for flow in tracking.flows
@@ -3277,6 +3300,8 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
             product.portfolio_node_id,
             product.purpose,
             f"{_LIST_SEPARATOR} ".join(product.former_ids),
+            _yes(product.deprecated) if product.deprecated else None,
+            product.replaced_by,
         ),
     )
     for plan in product.plans:
@@ -3487,6 +3512,7 @@ def _write_tracking(sheets: dict[str, Any], product_id: str, tracking: OrderTrac
                 flow.interface,
                 _confidence(flow),
                 flow.source,
+                flow.interface_id,
             ),
         )
     for channel in tracking.channels:
@@ -3617,6 +3643,7 @@ def _write_journey(sheets: dict[str, Any], journey: Journey) -> None:
                 link.style,
                 link.tmf_equivalent,
                 joined(link.open_api_ids),
+                link.interface_id,
             ),
         )
 
@@ -3805,6 +3832,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 node.description,
                 _confidence(node),
                 node.source,
+                _yes(node.deprecated) if node.deprecated else None,
+                node.replaced_by,
             ),
         )
     for product in release.products if release is not None else ():

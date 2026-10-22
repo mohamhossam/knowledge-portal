@@ -220,6 +220,18 @@
             ],
             "title": "Interface"
           },
+          "interface_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interface Id"
+          },
           "open_api_ids": {
             "default": [],
             "items": {
@@ -5222,6 +5234,51 @@
         "title": "FlowRuleSchema",
         "type": "object"
       },
+      "ForwardedResponse": {
+        "description": "An id still held that the version in service names otherwise now: the same thing\nrenamed, or retired with another in its place (review recommendation 7). A squad seat's\nconcept says which system the seat is scoped to.",
+        "properties": {
+          "kind": {
+            "enum": [
+              "offering",
+              "portfolio_node",
+              "concept"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "new_id": {
+            "title": "New Id",
+            "type": "string"
+          },
+          "old_id": {
+            "title": "Old Id",
+            "type": "string"
+          },
+          "renamed": {
+            "title": "Renamed",
+            "type": "boolean"
+          },
+          "system_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Id"
+          }
+        },
+        "required": [
+          "kind",
+          "old_id",
+          "new_id",
+          "renamed"
+        ],
+        "title": "ForwardedResponse",
+        "type": "object"
+      },
       "GoldenMapper": {
         "description": "The assessment (`/internal/architecture/assess`) or today's per-item match.",
         "enum": [
@@ -9681,6 +9738,11 @@
               }
             ]
           },
+          "deprecated": {
+            "default": false,
+            "title": "Deprecated",
+            "type": "boolean"
+          },
           "description": {
             "anyOf": [
               {
@@ -9719,6 +9781,18 @@
               }
             ],
             "title": "Parent Id"
+          },
+          "replaced_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By"
           },
           "source": {
             "anyOf": [
@@ -9936,6 +10010,11 @@
             "title": "Decisions",
             "type": "array"
           },
+          "deprecated": {
+            "default": false,
+            "title": "Deprecated",
+            "type": "boolean"
+          },
           "family": {
             "anyOf": [
               {
@@ -10082,6 +10161,18 @@
             "maxItems": 5000,
             "title": "Questions",
             "type": "array"
+          },
+          "replaced_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By"
           },
           "rules": {
             "default": [],
@@ -10917,6 +11008,14 @@
       "ReferenceFlagResponse": {
         "description": "A squad or product naming what the version in service no longer has, or a product\nwhose systems differ from what its offerings name, or that is linked to nothing.",
         "properties": {
+          "forwarded": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ForwardedResponse"
+            },
+            "title": "Forwarded",
+            "type": "array"
+          },
           "replaced_systems": {
             "default": [],
             "items": {
@@ -13528,6 +13627,18 @@
               }
             ],
             "title": "Interface"
+          },
+          "interface_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interface Id"
           },
           "label": {
             "maxLength": 10000,

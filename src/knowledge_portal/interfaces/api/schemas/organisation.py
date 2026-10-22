@@ -218,6 +218,18 @@ class SystemSuccessorResponse(BaseModel):
     successor_id: str
 
 
+class ForwardedResponse(BaseModel):
+    """An id still held that the version in service names otherwise now: the same thing
+    renamed, or retired with another in its place (review recommendation 7). A squad seat's
+    concept says which system the seat is scoped to."""
+
+    kind: Literal["offering", "portfolio_node", "concept"]
+    old_id: str
+    new_id: str
+    renamed: bool
+    system_id: str | None = None
+
+
 class ReferenceFlagResponse(BaseModel):
     """A squad or product naming what the version in service no longer has, or a product
     whose systems differ from what its offerings name, or that is linked to nothing."""
@@ -232,6 +244,7 @@ class ReferenceFlagResponse(BaseModel):
     systems_missing: list[str]
     systems_unexplained: list[str]
     unlinked: bool
+    forwarded: list[ForwardedResponse] = []
 
     @classmethod
     def from_domain(cls, flag: ReferenceFlag) -> ReferenceFlagResponse:
@@ -256,6 +269,16 @@ class ReferenceFlagResponse(BaseModel):
             systems_missing=list(flag.systems_missing),
             systems_unexplained=list(flag.systems_unexplained),
             unlinked=flag.unlinked,
+            forwarded=[
+                ForwardedResponse.model_construct(
+                    kind=item.kind,
+                    old_id=item.old_id,
+                    new_id=item.new_id,
+                    renamed=item.renamed,
+                    system_id=item.system_id,
+                )
+                for item in flag.forwarded
+            ],
         )
 
 

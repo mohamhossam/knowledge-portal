@@ -41,6 +41,8 @@ _OFFERING_FIELDS = (
     "portfolio_node_id",
     "plans",
     "business_rules",
+    "deprecated",
+    "replaced_by",
 )
 
 
@@ -161,6 +163,8 @@ _PORTFOLIO_FIELDS = (
     "description",
     "confidence",
     "source",
+    "deprecated",
+    "replaced_by",
 )
 
 

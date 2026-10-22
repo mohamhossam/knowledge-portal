@@ -2347,6 +2347,8 @@ export interface components {
             interaction?: string | null;
             /** Interface */
             interface?: string | null;
+            /** Interface Id */
+            interface_id?: string | null;
             /**
              * Open Api Ids
              * @default []
@@ -3841,6 +3843,27 @@ export interface components {
             to_activity: string;
         };
         /**
+         * ForwardedResponse
+         * @description An id still held that the version in service names otherwise now: the same thing
+         *     renamed, or retired with another in its place (review recommendation 7). A squad seat's
+         *     concept says which system the seat is scoped to.
+         */
+        ForwardedResponse: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "offering" | "portfolio_node" | "concept";
+            /** New Id */
+            new_id: string;
+            /** Old Id */
+            old_id: string;
+            /** Renamed */
+            renamed: boolean;
+            /** System Id */
+            system_id?: string | null;
+        };
+        /**
          * GoldenMapper
          * @description The assessment (`/internal/architecture/assess`) or today's per-item match.
          * @enum {string}
@@ -5328,6 +5351,11 @@ export interface components {
              */
             accepted: components["schemas"]["AcceptedFromSchema"][];
             confidence?: components["schemas"]["SourceConfidence"] | null;
+            /**
+             * Deprecated
+             * @default false
+             */
+            deprecated: boolean;
             /** Description */
             description?: string | null;
             /** Id */
@@ -5338,6 +5366,8 @@ export interface components {
             name: string;
             /** Parent Id */
             parent_id?: string | null;
+            /** Replaced By */
+            replaced_by?: string | null;
             /** Source */
             source?: string | null;
         };
@@ -5423,6 +5453,11 @@ export interface components {
              * @default []
              */
             decisions: components["schemas"]["ArchitectureDecisionSchema"][];
+            /**
+             * Deprecated
+             * @default false
+             */
+            deprecated: boolean;
             /** Family */
             family?: string | null;
             /**
@@ -5474,6 +5509,8 @@ export interface components {
              * @default []
              */
             questions: components["schemas"]["OpenQuestionSchema"][];
+            /** Replaced By */
+            replaced_by?: string | null;
             /**
              * Rules
              * @default []
@@ -5784,6 +5821,11 @@ export interface components {
          *     whose systems differ from what its offerings name, or that is linked to nothing.
          */
         ReferenceFlagResponse: {
+            /**
+             * Forwarded
+             * @default []
+             */
+            forwarded: components["schemas"]["ForwardedResponse"][];
             /**
              * Replaced Systems
              * @default []
@@ -6685,6 +6727,8 @@ export interface components {
             from_system_id: string;
             /** Interface */
             interface?: string | null;
+            /** Interface Id */
+            interface_id?: string | null;
             /** Label */
             label: string;
             /** Source */

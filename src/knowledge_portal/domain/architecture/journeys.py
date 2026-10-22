@@ -273,6 +273,9 @@ class ActivityIntegration:
     tmf_equivalent: str | None = None
     # The Open API terms ``tmf_equivalent`` names, beside the text; empty while unmapped.
     open_api_ids: tuple[str, ...] = ()
+    # The interface record the call goes through, by id, beside ``interface`` as the source
+    # writes it (review recommendation 8); None while unlinked.
+    interface_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "from_activity", required(self.from_activity, "From activity"))
@@ -288,6 +291,7 @@ class ActivityIntegration:
             ("purpose", "Purpose"),
             ("style", "Style"),
             ("tmf_equivalent", "TMF equivalent"),
+            ("interface_id", "Interface record"),
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
         object.__setattr__(self, "timing", call_timing(self.timing))

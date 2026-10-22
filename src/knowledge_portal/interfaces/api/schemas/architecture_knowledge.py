@@ -540,6 +540,9 @@ class PortfolioNodeSchema(BaseModel):
     description: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # Retired, and the one of its kind that takes its place (ADR-0121, review recommendation 7).
+    deprecated: bool = False
+    replaced_by: Identifier | None = None
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
@@ -553,6 +556,8 @@ class PortfolioNodeSchema(BaseModel):
             description=node.description,
             confidence=node.confidence,
             source=node.source,
+            deprecated=node.deprecated,
+            replaced_by=node.replaced_by,
             accepted=[AcceptedFromSchema.from_domain(item) for item in node.accepted],
         )
 
@@ -565,6 +570,8 @@ class PortfolioNodeSchema(BaseModel):
             description=self.description,
             confidence=self.confidence,
             source=self.source,
+            deprecated=self.deprecated,
+            replaced_by=self.replaced_by,
         )
 
 
@@ -1041,6 +1048,8 @@ class TrackingFlowSchema(BaseModel):
     interface: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The interface record the events pass over, by id (review recommendation 8).
+    interface_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, item: TrackingFlow) -> TrackingFlowSchema:
@@ -1051,6 +1060,7 @@ class TrackingFlowSchema(BaseModel):
             interface=item.interface,
             confidence=item.confidence,
             source=item.source,
+            interface_id=item.interface_id,
         )
 
     def to_domain(self) -> TrackingFlow:
@@ -1061,6 +1071,7 @@ class TrackingFlowSchema(BaseModel):
             self.interface,
             self.confidence,
             self.source,
+            self.interface_id,
         )
 
 
@@ -1558,6 +1569,9 @@ class ProductOfferingSchema(BaseModel):
     purpose: Text | None = None
     # Ids it was known by before a rename; set by renaming, kept when a file says so.
     former_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # Retired, and the one of its kind that takes its place (ADR-0121, review recommendation 7).
+    deprecated: bool = False
+    replaced_by: Identifier | None = None
 
     @classmethod
     def from_domain(cls, offering: ProductOffering) -> ProductOfferingSchema:
@@ -1597,6 +1611,8 @@ class ProductOfferingSchema(BaseModel):
             accepted=[AcceptedFromSchema.from_domain(item) for item in offering.accepted],
             purpose=offering.purpose,
             former_ids=list(offering.former_ids),
+            deprecated=offering.deprecated,
+            replaced_by=offering.replaced_by,
         )
 
     def to_domain(self) -> ProductOffering:
@@ -1629,6 +1645,8 @@ class ProductOfferingSchema(BaseModel):
             business_rules=tuple(item.to_domain() for item in self.business_rules),
             purpose=self.purpose,
             former_ids=tuple(self.former_ids),
+            deprecated=self.deprecated,
+            replaced_by=self.replaced_by,
         )
 
 
@@ -1799,6 +1817,8 @@ class ActivityIntegrationSchema(BaseModel):
     tmf_equivalent: Name | None = None
     # The Open API terms ``tmf_equivalent`` names.
     open_api_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # The interface record the call goes through, by id (review recommendation 8).
+    interface_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, link: ActivityIntegration) -> ActivityIntegrationSchema:
@@ -1819,6 +1839,7 @@ class ActivityIntegrationSchema(BaseModel):
             style=link.style,
             tmf_equivalent=link.tmf_equivalent,
             open_api_ids=list(link.open_api_ids),
+            interface_id=link.interface_id,
         )
 
     def to_domain(self) -> ActivityIntegration:
@@ -1839,6 +1860,7 @@ class ActivityIntegrationSchema(BaseModel):
             style=self.style,
             tmf_equivalent=self.tmf_equivalent,
             open_api_ids=tuple(self.open_api_ids),
+            interface_id=self.interface_id,
         )
 
 

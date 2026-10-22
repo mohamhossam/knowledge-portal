@@ -430,6 +430,19 @@ class SystemSuccessor:
 
 
 @dataclass(frozen=True)
+class Forwarded:
+    """An id a squad or product still holds that the version in service names otherwise now:
+    the same thing renamed, or retired with another in its place (review recommendation 7).
+    A squad seat's concept says which system the seat is scoped to."""
+
+    kind: Literal["offering", "portfolio_node", "concept"]
+    old_id: str
+    new_id: str
+    renamed: bool
+    system_id: str | None = None
+
+
+@dataclass(frozen=True)
 class ReferenceFlag:
     """A squad or product naming what the release in service no longer has, or a product
     whose systems differ from what its offerings say."""
@@ -448,6 +461,8 @@ class ReferenceFlag:
     systems_unexplained: tuple[str, ...] = ()
     # A product linked to no offering and no portfolio node.
     unlinked: bool = False
+    # Offerings, portfolio nodes and seat concepts it names that were renamed or replaced.
+    forwarded: tuple[Forwarded, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -461,6 +476,11 @@ class ReleaseReferences:
     portfolio_node_ids: Collection[str]
     # Each retired system another replaced, by id, with that successor (ADR-0121).
     successors: Mapping[str, str] = field(default_factory=dict)
+    # Ids of offerings, portfolio nodes and concepts that lead elsewhere now: to the id in
+    # service, and whether it is the same one renamed (identity.forwards).
+    offering_forwards: Mapping[str, tuple[str, bool]] = field(default_factory=dict)
+    portfolio_forwards: Mapping[str, tuple[str, bool]] = field(default_factory=dict)
+    concept_forwards: Mapping[str, tuple[str, bool]] = field(default_factory=dict)
 
 
 def check_references(
@@ -483,41 +503,66 @@ def check_references(
     for squad in sorted(catalogue.squads, key=lambda item: item.name.casefold()):
         retired = gone(squad.system_ids)
         moved = replaced(squad.system_ids)
-        # A capability lapses with its system, so only those of systems still in service.
-        lapsed = tuple(
-            dict.fromkeys(
-                CapabilityScope(item.system_id, item.capability_id)
-                for item in squad.resources
-                if item.capability_id is not None
-                and item.system_id in systems
-                and item.capability_id not in release.systems[item.system_id]
-            )
-        )
-        if retired or lapsed or moved:
+        # A capability lapses with its system, so only those of systems still in service. One
+        # whose concept was renamed or replaced, by a concept the system still has, moves.
+        lapsed: dict[CapabilityScope, None] = {}
+        forwarded: dict[Forwarded, None] = {}
+        for item in squad.resources:
+            if (
+                item.capability_id is None
+                or item.system_id not in systems
+                or item.capability_id in release.systems[item.system_id]
+            ):
+                continue
+            target = release.concept_forwards.get(item.capability_id)
+            if target is not None and target[0] in release.systems[item.system_id]:
+                forwarded[
+                    Forwarded("concept", item.capability_id, target[0], target[1], item.system_id)
+                ] = None
+            else:
+                lapsed[CapabilityScope(item.system_id, item.capability_id)] = None
+        if retired or lapsed or moved or forwarded:
             flags.append(
                 ReferenceFlag(
                     "squad",
                     squad.id,
                     retired_system_ids=retired,
-                    retired_capabilities=lapsed,
+                    retired_capabilities=tuple(lapsed),
                     replaced_systems=moved,
+                    forwarded=tuple(forwarded),
                 )
             )
     for product in sorted(catalogue.products, key=lambda item: item.name.casefold()):
-        offered = [item for item in product.offering_ids if item in release.offering_systems]
+        moved_offerings = tuple(
+            Forwarded("offering", item, *release.offering_forwards[item])
+            for item in product.offering_ids
+            if item not in release.offering_systems and item in release.offering_forwards
+        )
+        # What it sells, under the ids the version names them by now.
+        offered = [
+            *(item for item in product.offering_ids if item in release.offering_systems),
+            *(item.new_id for item in moved_offerings if item.new_id in release.offering_systems),
+        ]
         named = {system for offering in offered for system in release.offering_systems[offering]}
         node = product.portfolio_node_id
+        node_gone = node is not None and node not in release.portfolio_node_ids
+        moved_node = (
+            (Forwarded("portfolio_node", node, *release.portfolio_forwards[node]),)
+            if node is not None and node_gone and node in release.portfolio_forwards
+            else ()
+        )
         flag = ReferenceFlag(
             "product",
             product.id,
             retired_system_ids=gone(product.system_ids),
             replaced_systems=replaced(product.system_ids),
             retired_offering_ids=tuple(
-                item for item in product.offering_ids if item not in release.offering_systems
+                item
+                for item in product.offering_ids
+                if item not in release.offering_systems and item not in release.offering_forwards
             ),
-            retired_portfolio_node_id=(
-                node if node is not None and node not in release.portfolio_node_ids else None
-            ),
+            retired_portfolio_node_id=node if node_gone and not moved_node else None,
+            forwarded=(*moved_offerings, *moved_node),
             systems_missing=tuple(sorted(named - set(product.system_ids))),
             systems_unexplained=(
                 tuple(item for item in product.system_ids if item in systems and item not in named)

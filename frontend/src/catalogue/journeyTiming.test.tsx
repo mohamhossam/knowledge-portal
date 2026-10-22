@@ -31,3 +31,25 @@ describe("a hand-over's timing", () => {
     expect(onChange.mock.lastCall?.[0].integrations[0]?.timing).toBeNull();
   });
 });
+
+describe("a hand-over's interface record (review recommendation 8)", () => {
+  it("offers only the records a system of the call exposes, and links one by id", () => {
+    const onChange = vi.fn<(value: Journey) => void>();
+    const [from, to] = JOURNEY.activities;
+    const exposer = to!.performing_system_id!;
+    const interfaces = [
+      { id: "if-own", name: "Order status", system_id: exposer, style: "api", consumer_ids: [], open_api_ids: [], entity_ids: [], relays: [], accepted: [] },
+      { id: "if-other", name: "Elsewhere", system_id: "not-in-this-call", style: "api", consumer_ids: [], open_api_ids: [], entity_ids: [], relays: [], accepted: [] },
+    ] as unknown as NonNullable<Release["interfaces"]>;
+    const journey = {
+      ...JOURNEY,
+      integrations: [{ ...JOURNEY.integrations[0]!, from_system_id: from!.performing_system_id, to_system_id: exposer, via_system_id: null, interface_id: null }],
+    };
+    render(<JourneyEditor value={journey} onChange={onChange} systems={SAMPLE.systems} offerings={[]} interfaces={interfaces} />);
+
+    const record = screen.getByLabelText("Goes through the interface record");
+    expect([...(record as HTMLSelectElement).options].map((option) => option.value)).toEqual(["", "if-own"]);
+    fireEvent.change(record, { target: { value: "if-own" } });
+    expect(onChange.mock.lastCall?.[0].integrations[0]?.interface_id).toBe("if-own");
+  });
+});

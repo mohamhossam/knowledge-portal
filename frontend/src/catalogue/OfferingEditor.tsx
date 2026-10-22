@@ -54,6 +54,8 @@ export type SectionProps = {
   names?: Names;
   /** The draft's source register, to say which sources an offering is read from. */
   register?: KnowledgeSource[];
+  /** The draft's offerings, to retire this one for another (review recommendation 7); only on a draft's sheet. */
+  offerings?: Offering[];
 };
 
 type Question = Offering["questions"][number];
@@ -62,8 +64,13 @@ type Decision = Offering["decisions"][number];
 const orderTypeOptions = (value: Offering) => value.order_types.map((type) => ({ code: type.code, name: type.name || type.code }));
 
 /** What the offering is: its facts, what it offers, who it is for and what it promises. */
-export function OfferingFacts({ value, onChange }: SectionProps) {
+export function OfferingFacts({ value, onChange, offerings }: SectionProps) {
   const set = (patch: Partial<Offering>) => onChange({ ...value, ...patch });
+  // ADR-0121: what can stand in for a retired offering is one still in service.
+  const successors = [
+    { value: "", label: "Nothing replaces it" },
+    ...(offerings ?? []).filter((item) => item.id !== value.id && !item.deprecated).map((item) => ({ value: item.id, label: item.name })),
+  ];
   return (
     <>
       <div className="cat-form__grid">
@@ -79,6 +86,23 @@ export function OfferingFacts({ value, onChange }: SectionProps) {
           onChange={(confidence) => set({ confidence: (confidence || null) as SourceConfidence | null })}
         />
       </div>
+      {offerings && (
+        <>
+          <CheckField
+            label="Retired: still readable, never matched again"
+            checked={value.deprecated}
+            onChange={(deprecated) => set({ deprecated, replaced_by: deprecated ? value.replaced_by : null })}
+          />
+          {value.deprecated && (
+            <SelectField
+              label="Replaced by"
+              value={value.replaced_by ?? ""}
+              options={successors}
+              onChange={(id) => set({ replaced_by: id || null })}
+            />
+          )}
+        </>
+      )}
       <AreaField label="What it offers" value={value.proposition} onChange={(proposition) => set({ proposition: proposition || null })} />
       <AreaField label="Why a customer buys it" value={value.purpose} onChange={(purpose) => set({ purpose: purpose || null })} />
       <LinesField

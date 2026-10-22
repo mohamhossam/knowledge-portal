@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from knowledge_portal.domain.architecture.deprecation import check_retirement
 from knowledge_portal.domain.architecture.invariants import (
     InvalidKnowledgeError,
     optional,
@@ -31,9 +32,14 @@ class PortfolioNode:
     source: str | None = None
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
+    # Retired, with the node that takes its place if any (review recommendation 7): a
+    # product that sits in it is forwarded to its successor.
+    deprecated: bool = False
+    replaced_by: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Portfolio node id"))
+        check_retirement(self, self.name)
         object.__setattr__(self, "name", required(self.name, "Portfolio node name"))
         object.__setattr__(self, "level", required(self.level, "Portfolio level"))
         object.__setattr__(self, "parent_id", optional(self.parent_id, "Parent portfolio node"))

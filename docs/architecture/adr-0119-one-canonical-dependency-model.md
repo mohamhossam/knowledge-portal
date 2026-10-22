@@ -13,6 +13,15 @@ not a step of every build, so a build never adds dozens of suggestions unasked. 
 hand-over through an integration layer is two dependencies, one per hop, as an interface
 relay is. A saying that names no kind joins the pair's one stated kind, as a suggestion
 does under point 3. A dependency rejected before is not suggested again.
+Amended 2026-10-22 (review recommendation 8 of the 22 October portal review): a journey step
+and a tracking flow may name the interface record they go through (`interface_id`), beside the
+interface text their source writes. The link must name a record one system of the call
+exposes (for a tracking flow, its from or to system). A dependency derived from a linked step
+takes the record's kind and direction, whatever the step's style reads; an unlinked step whose
+interface text names exactly one record of a system it touches is read the same way, but only
+when the record's direction agrees with the step's. A journey read again keeps the links a
+maintainer made.
+
 Proposed 2026-10-19. Implements review finding #7 of the portal review
 ([report](https://claude.ai/code/artifact/d5147883-5ccd-472f-a57a-6a2464b2fd53));
 pairs with the adjacent-systems fallback shipped as the stop-gap (#109).

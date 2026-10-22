@@ -30,6 +30,7 @@ from knowledge_portal.domain.architecture.governance import (
     check_governance,
 )
 from knowledge_portal.domain.architecture.identity import check_former_ids
+from knowledge_portal.domain.architecture.interface_links import check_interface_links
 from knowledge_portal.domain.architecture.interfaces import (
     SystemInterface,
     check_data_roles,
@@ -648,6 +649,7 @@ class ArchitectureKnowledge:
         for system in self.systems:
             check_data_roles(system.name, system.masters, system.reads, terms)
         check_interfaces(self.interfaces, system_ids, terms)
+        check_interface_links(self.interfaces, self.journeys, self.products)
         check_realisations(self.realisations, system_ids, self.products)
         check_governance(
             self.sources,
@@ -665,6 +667,8 @@ class ArchitectureKnowledge:
         )
         check_change_history(self.change_history)
         check_replacements(self.systems, "System")
+        check_replacements(self.products, "Offering")
+        check_replacements(self.portfolio, "Portfolio node")
         check_replacements(self.business_capabilities, "Concept")
         check_replacements(self.vocabulary, "Term", lambda old, new: old.scheme is new.scheme)
         landscape = _check_domains(self.landscape_domains, "Landscape domain")
