@@ -9,6 +9,7 @@ evidence cannot create catalogue systems by itself.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from datetime import datetime
 from enum import StrEnum
@@ -1302,252 +1303,366 @@ def _linked_component(
     return (offering, component) if offering is not None and component is not None else None
 
 
-def classify(content: CandidateContent, release: ArchitectureKnowledge) -> CandidateMatch:
-    if content.kind is CandidateKind.VOCABULARY_TERM and content.term is not None:
-        return _classify_term(content.term, content, release)
-    if content.kind is CandidateKind.CONCEPT and content.concept is not None:
-        if any(find_system(release, ref.system_id) is None for ref in content.capability_refs):
-            return CandidateMatch.NEEDS_SYSTEM
-        gap = _concept_gap(content.concept, release)
-        if gap is not None:
-            return gap
-        try:
-            merged, held = _concept_to_apply(content.concept, release)
-        except CandidateDependencyError:
-            return CandidateMatch.UPDATES_EXISTING
-        if held is None:
-            return CandidateMatch.NEW
-        links = _covered(content.capability_refs, release)
-        return (
-            CandidateMatch.UPDATES_EXISTING
-            if links or merged != held
-            else CandidateMatch.ALREADY_PRESENT
-        )
-    if content.kind is CandidateKind.COMPONENT_LINK:
-        found = _linked_component(content, release)
-        if found is None:
-            return CandidateMatch.NEEDS_OFFERING
-        if any(find_concept(release, item) is None for item in content.concept_ids):
-            return CandidateMatch.NEEDS_CONCEPT
-        _, linked = found
-        wanted = {_concept_id(release, item) for item in content.concept_ids}
-        if wanted <= set(linked.capability_ids):
-            return CandidateMatch.ALREADY_PRESENT
-        return CandidateMatch.UPDATES_EXISTING if linked.capability_ids else CandidateMatch.NEW
-    if content.kind is CandidateKind.QUESTION and content.question is not None:
-        offering = _question_offering(content, release)
-        if offering is None:
-            return CandidateMatch.NEEDS_OFFERING
-        question, missing = _resolved_question(content.question, offering)
-        if missing:
-            return CandidateMatch.NEEDS_OFFERING
-        asked = question.id.casefold()
-        before = next((item for item in offering.questions if item.id.casefold() == asked), None)
-        if before is None:
-            return CandidateMatch.NEW
-        same = replace(question, id=before.id) == before
-        return CandidateMatch.ALREADY_PRESENT if same else CandidateMatch.UPDATES_EXISTING
-    if content.kind is CandidateKind.JOURNEY and content.journey is not None:
-        journey, gaps = _resolved_journey(content.journey, release)
-        if gaps.systems:
-            return CandidateMatch.NEEDS_SYSTEM
-        if gaps.offering:
-            return CandidateMatch.NEEDS_OFFERING
-        if gaps.components:
-            return CandidateMatch.NEEDS_COMPONENT
-        journey, channels = _journey_channels(journey, release)
-        if channels:
-            return CandidateMatch.NEEDS_CHANNEL
-        kept = _current_journey(journey, release)
-        if kept is None:
-            return CandidateMatch.NEW
-        same = (
-            kept_interface_links(kept_journey_terms(replace(journey, id=kept.id), kept), kept)
-            == kept
-        )
-        return CandidateMatch.ALREADY_PRESENT if same else CandidateMatch.UPDATES_EXISTING
-    if content.kind is CandidateKind.PRODUCT and content.product is not None:
-        offering, missing = _resolved_offering(content.product, release)
-        if missing:
-            return CandidateMatch.NEEDS_SYSTEM
-        offering, channels = _offering_channels(offering, release)
-        if channels:
-            return CandidateMatch.NEEDS_CHANNEL
-        existing = _current_offering(offering, release)
-        if existing is None:
-            return CandidateMatch.NEW
-        same = _kept_governance(offering, existing) == existing
-        return CandidateMatch.ALREADY_PRESENT if same else CandidateMatch.UPDATES_EXISTING
-    if content.kind is CandidateKind.CHANNEL and content.channel is not None:
-        channel, entry = _resolved_channel(content.channel, release)
-        if entry is not None:
-            return CandidateMatch.NEEDS_SYSTEM
-        recorded = _current_channel(channel, release)
-        if recorded is None:
-            return CandidateMatch.NEW
-        return (
-            CandidateMatch.UPDATES_EXISTING
-            if _channel_fill(recorded, channel) != recorded
-            else CandidateMatch.ALREADY_PRESENT
-        )
-    if content.kind is CandidateKind.INTERFACE and content.interface is not None:
-        interface, systems, relays = _resolved_interface(content.interface, release)
-        if systems:
-            return CandidateMatch.NEEDS_SYSTEM
-        if relays:
-            return CandidateMatch.NEEDS_INTERFACE
-        recorded_interface = _current_interface(interface, release)
-        if recorded_interface is None:
-            return CandidateMatch.NEW
-        return (
-            CandidateMatch.UPDATES_EXISTING
-            if merge_interfaces(recorded_interface, interface) != recorded_interface
-            else CandidateMatch.ALREADY_PRESENT
-        )
-    if content.kind is CandidateKind.CAPABILITY_DOMAIN and content.capability_domain is not None:
-        area, parent = _resolved_node(content.capability_domain, release.capability_domains)
-        recorded_domain = _current_node(area, release.capability_domains)
-        if recorded_domain is None:
-            return CandidateMatch.NEEDS_DOMAIN if parent else CandidateMatch.NEW
-        return (
-            CandidateMatch.UPDATES_EXISTING
-            if _domain_fill(recorded_domain, area) != recorded_domain
-            else CandidateMatch.ALREADY_PRESENT
-        )
-    if content.kind is CandidateKind.PORTFOLIO_NODE and content.portfolio_node is not None:
-        node, parent = _resolved_node(content.portfolio_node, release.portfolio)
-        recorded_node = _current_node(node, release.portfolio)
-        if recorded_node is None:
-            return CandidateMatch.NEEDS_PORTFOLIO_NODE if parent else CandidateMatch.NEW
-        return (
-            CandidateMatch.UPDATES_EXISTING
-            if _portfolio_fill(recorded_node, node) != recorded_node
-            else CandidateMatch.ALREADY_PRESENT
-        )
-    if content.kind is CandidateKind.SOURCE and content.knowledge_source is not None:
-        recorded_source = _current_source(content.knowledge_source, release)
-        if recorded_source is None:
-            return CandidateMatch.NEW
-        return (
-            CandidateMatch.UPDATES_EXISTING
-            if merge_sources(recorded_source, content.knowledge_source) != recorded_source
-            else CandidateMatch.ALREADY_PRESENT
-        )
-    if content.kind is CandidateKind.CONFLICT and content.conflict is not None:
-        conflict, cited, affected = _resolved_conflict(content.conflict, release)
-        if cited:
-            return CandidateMatch.NEEDS_SOURCE
-        if affected:
-            return CandidateMatch.NEEDS_OFFERING
-        recorded_conflict = _current_conflict(conflict, release)
-        if recorded_conflict is None:
-            return CandidateMatch.NEW
-        return (
-            CandidateMatch.UPDATES_EXISTING
-            if merge_conflicts(recorded_conflict, conflict) != recorded_conflict
-            else CandidateMatch.ALREADY_PRESENT
-        )
-    if content.kind is CandidateKind.REALISATION_RECORD and content.realisation is not None:
-        record, systems, below = _resolved_realisation(content.realisation, release)
-        if systems:
-            return CandidateMatch.NEEDS_SYSTEM
-        if below:
-            return CandidateMatch.NEEDS_REALISATION
-        recorded_record = _current_realisation(record, release)
-        if recorded_record is None:
-            return CandidateMatch.NEW
-        return (
-            CandidateMatch.UPDATES_EXISTING
-            if merge_realisations(recorded_record, record) != recorded_record
-            else CandidateMatch.ALREADY_PRESENT
-        )
-    if content.kind is CandidateKind.OFFERING_RULE:
-        offering = find_offering(release.products, content.system_id)
-        if offering is None:
-            return CandidateMatch.NEEDS_OFFERING
-        present = content.text.casefold() in {item.casefold() for item in offering.rules}
-        return CandidateMatch.ALREADY_PRESENT if present else CandidateMatch.NEW
-    if content.kind is CandidateKind.LANDSCAPE_DOMAIN:
-        domain = _suggested_domain(content, release)
-        if domain is None:
-            parent = content.parent_domain_id
-            if parent and find_landscape_domain(release, parent) is None:
-                return CandidateMatch.NEEDS_DOMAIN
-            return CandidateMatch.NEW
-        fills = (content.description and not domain.description) or (
-            content.name_ar and not domain.name_ar
-        )
-        return CandidateMatch.UPDATES_EXISTING if fills else CandidateMatch.ALREADY_PRESENT
-    system = find_system(release, content.system_id)
-    if content.kind is CandidateKind.SYSTEM:
-        system = system or find_system(release, content.name)
-        if system is None:
-            return CandidateMatch.NEW
-        known = {label.casefold() for label in (system.name, *system.aliases)}
-        wanted = {
-            label.casefold()
-            for label in _free(release, (content.name, *content.aliases), system.id)
-        }
-        describes = content.description is not None and system.description is None
-        return (
-            CandidateMatch.ALREADY_PRESENT
-            if wanted <= known and not describes
-            else CandidateMatch.UPDATES_EXISTING
-        )
-    if system is None:
+type _Classifier = Callable[[CandidateContent, ArchitectureKnowledge], CandidateMatch]
+type _SystemClassifier = Callable[
+    [CandidateContent, ArchitectureKnowledge, SystemDefinition], CandidateMatch
+]
+
+
+def _held[Payload](payload: Payload | None, content: CandidateContent) -> Payload:
+    """The whole item a suggestion of this kind holds, which ``CandidateContent`` guarantees."""
+    if payload is None:
+        raise InvalidKnowledgeError(f"A {content.kind} suggestion holds nothing to review.")
+    return payload
+
+
+def _every_kind[Handler](handlers: Mapping[CandidateKind, Handler], what: str) -> None:
+    """Fail on import, not on the first suggestion of a kind someone forgot to handle."""
+    missing = sorted(kind.value for kind in CandidateKind if kind not in handlers)
+    if missing:
+        raise NotImplementedError(f"No {what} for suggestion kinds: {', '.join(missing)}.")
+
+
+def _classify_vocabulary_term(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> CandidateMatch:
+    term = _held(content.term, content)
+    if term.broader_id is not None and (
+        find_term(release.vocabulary, term.scheme, term.broader_id) is None
+    ):
+        return CandidateMatch.NEEDS_CONCEPT
+    try:
+        merged, held = _term_to_apply(_term_broader(term, release), release)
+    except CandidateDependencyError:
+        return CandidateMatch.UPDATES_EXISTING
+    if held is None:
+        return CandidateMatch.NEW
+    places = _term_places(content, term, held.id, release)
+    return (
+        CandidateMatch.UPDATES_EXISTING
+        if places or merged != held
+        else CandidateMatch.ALREADY_PRESENT
+    )
+
+
+def _classify_concept(content: CandidateContent, release: ArchitectureKnowledge) -> CandidateMatch:
+    concept = _held(content.concept, content)
+    if any(find_system(release, ref.system_id) is None for ref in content.capability_refs):
         return CandidateMatch.NEEDS_SYSTEM
-    if content.kind is CandidateKind.PLACEMENT:
-        place = find_landscape_domain(release, content.landscape_domain_id or "")
-        if place is None:
+    gap = _concept_gap(concept, release)
+    if gap is not None:
+        return gap
+    try:
+        merged, held = _concept_to_apply(concept, release)
+    except CandidateDependencyError:
+        return CandidateMatch.UPDATES_EXISTING
+    if held is None:
+        return CandidateMatch.NEW
+    links = _covered(content.capability_refs, release)
+    return (
+        CandidateMatch.UPDATES_EXISTING
+        if links or merged != held
+        else CandidateMatch.ALREADY_PRESENT
+    )
+
+
+def _classify_component_link(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> CandidateMatch:
+    found = _linked_component(content, release)
+    if found is None:
+        return CandidateMatch.NEEDS_OFFERING
+    if any(find_concept(release, item) is None for item in content.concept_ids):
+        return CandidateMatch.NEEDS_CONCEPT
+    _, linked = found
+    wanted = {_concept_id(release, item) for item in content.concept_ids}
+    if wanted <= set(linked.capability_ids):
+        return CandidateMatch.ALREADY_PRESENT
+    return CandidateMatch.UPDATES_EXISTING if linked.capability_ids else CandidateMatch.NEW
+
+
+def _classify_question(content: CandidateContent, release: ArchitectureKnowledge) -> CandidateMatch:
+    suggested = _held(content.question, content)
+    offering = _question_offering(content, release)
+    if offering is None:
+        return CandidateMatch.NEEDS_OFFERING
+    question, missing = _resolved_question(suggested, offering)
+    if missing:
+        return CandidateMatch.NEEDS_OFFERING
+    asked = question.id.casefold()
+    before = next((item for item in offering.questions if item.id.casefold() == asked), None)
+    if before is None:
+        return CandidateMatch.NEW
+    same = replace(question, id=before.id) == before
+    return CandidateMatch.ALREADY_PRESENT if same else CandidateMatch.UPDATES_EXISTING
+
+
+def _classify_journey(content: CandidateContent, release: ArchitectureKnowledge) -> CandidateMatch:
+    journey, gaps = _resolved_journey(_held(content.journey, content), release)
+    if gaps.systems:
+        return CandidateMatch.NEEDS_SYSTEM
+    if gaps.offering:
+        return CandidateMatch.NEEDS_OFFERING
+    if gaps.components:
+        return CandidateMatch.NEEDS_COMPONENT
+    journey, channels = _journey_channels(journey, release)
+    if channels:
+        return CandidateMatch.NEEDS_CHANNEL
+    kept = _current_journey(journey, release)
+    if kept is None:
+        return CandidateMatch.NEW
+    same = (
+        kept_interface_links(kept_journey_terms(replace(journey, id=kept.id), kept), kept) == kept
+    )
+    return CandidateMatch.ALREADY_PRESENT if same else CandidateMatch.UPDATES_EXISTING
+
+
+def _classify_product(content: CandidateContent, release: ArchitectureKnowledge) -> CandidateMatch:
+    offering, missing = _resolved_offering(_held(content.product, content), release)
+    if missing:
+        return CandidateMatch.NEEDS_SYSTEM
+    offering, channels = _offering_channels(offering, release)
+    if channels:
+        return CandidateMatch.NEEDS_CHANNEL
+    existing = _current_offering(offering, release)
+    if existing is None:
+        return CandidateMatch.NEW
+    same = _kept_governance(offering, existing) == existing
+    return CandidateMatch.ALREADY_PRESENT if same else CandidateMatch.UPDATES_EXISTING
+
+
+def _classify_channel(content: CandidateContent, release: ArchitectureKnowledge) -> CandidateMatch:
+    channel, entry = _resolved_channel(_held(content.channel, content), release)
+    if entry is not None:
+        return CandidateMatch.NEEDS_SYSTEM
+    recorded = _current_channel(channel, release)
+    if recorded is None:
+        return CandidateMatch.NEW
+    return (
+        CandidateMatch.UPDATES_EXISTING
+        if _channel_fill(recorded, channel) != recorded
+        else CandidateMatch.ALREADY_PRESENT
+    )
+
+
+def _classify_interface(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> CandidateMatch:
+    interface, systems, relays = _resolved_interface(_held(content.interface, content), release)
+    if systems:
+        return CandidateMatch.NEEDS_SYSTEM
+    if relays:
+        return CandidateMatch.NEEDS_INTERFACE
+    recorded = _current_interface(interface, release)
+    if recorded is None:
+        return CandidateMatch.NEW
+    return (
+        CandidateMatch.UPDATES_EXISTING
+        if merge_interfaces(recorded, interface) != recorded
+        else CandidateMatch.ALREADY_PRESENT
+    )
+
+
+def _classify_capability_domain(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> CandidateMatch:
+    area, parent = _resolved_node(
+        _held(content.capability_domain, content), release.capability_domains
+    )
+    recorded = _current_node(area, release.capability_domains)
+    if recorded is None:
+        return CandidateMatch.NEEDS_DOMAIN if parent else CandidateMatch.NEW
+    return (
+        CandidateMatch.UPDATES_EXISTING
+        if _domain_fill(recorded, area) != recorded
+        else CandidateMatch.ALREADY_PRESENT
+    )
+
+
+def _classify_portfolio_node(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> CandidateMatch:
+    node, parent = _resolved_node(_held(content.portfolio_node, content), release.portfolio)
+    recorded = _current_node(node, release.portfolio)
+    if recorded is None:
+        return CandidateMatch.NEEDS_PORTFOLIO_NODE if parent else CandidateMatch.NEW
+    return (
+        CandidateMatch.UPDATES_EXISTING
+        if _portfolio_fill(recorded, node) != recorded
+        else CandidateMatch.ALREADY_PRESENT
+    )
+
+
+def _classify_source(content: CandidateContent, release: ArchitectureKnowledge) -> CandidateMatch:
+    source = _held(content.knowledge_source, content)
+    recorded = _current_source(source, release)
+    if recorded is None:
+        return CandidateMatch.NEW
+    return (
+        CandidateMatch.UPDATES_EXISTING
+        if merge_sources(recorded, source) != recorded
+        else CandidateMatch.ALREADY_PRESENT
+    )
+
+
+def _classify_conflict(content: CandidateContent, release: ArchitectureKnowledge) -> CandidateMatch:
+    conflict, cited, affected = _resolved_conflict(_held(content.conflict, content), release)
+    if cited:
+        return CandidateMatch.NEEDS_SOURCE
+    if affected:
+        return CandidateMatch.NEEDS_OFFERING
+    recorded = _current_conflict(conflict, release)
+    if recorded is None:
+        return CandidateMatch.NEW
+    return (
+        CandidateMatch.UPDATES_EXISTING
+        if merge_conflicts(recorded, conflict) != recorded
+        else CandidateMatch.ALREADY_PRESENT
+    )
+
+
+def _classify_realisation_record(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> CandidateMatch:
+    record, systems, below = _resolved_realisation(_held(content.realisation, content), release)
+    if systems:
+        return CandidateMatch.NEEDS_SYSTEM
+    if below:
+        return CandidateMatch.NEEDS_REALISATION
+    recorded = _current_realisation(record, release)
+    if recorded is None:
+        return CandidateMatch.NEW
+    return (
+        CandidateMatch.UPDATES_EXISTING
+        if merge_realisations(recorded, record) != recorded
+        else CandidateMatch.ALREADY_PRESENT
+    )
+
+
+def _classify_offering_rule(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> CandidateMatch:
+    offering = find_offering(release.products, content.system_id)
+    if offering is None:
+        return CandidateMatch.NEEDS_OFFERING
+    present = content.text.casefold() in {item.casefold() for item in offering.rules}
+    return CandidateMatch.ALREADY_PRESENT if present else CandidateMatch.NEW
+
+
+def _classify_landscape_domain(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> CandidateMatch:
+    domain = _suggested_domain(content, release)
+    if domain is None:
+        parent = content.parent_domain_id
+        if parent and find_landscape_domain(release, parent) is None:
             return CandidateMatch.NEEDS_DOMAIN
-        if system.landscape_domain_id is None:
-            return CandidateMatch.NEW
-        return (
-            CandidateMatch.ALREADY_PRESENT
-            if system.landscape_domain_id == place.id
-            else CandidateMatch.UPDATES_EXISTING
-        )
-    if content.kind is CandidateKind.COMPONENT:
-        component = _component_of(content, system)
-        if component is None:
-            return CandidateMatch.NEW
-        return (
-            CandidateMatch.ALREADY_PRESENT
-            if _component_additions(content, system, component).empty
-            else CandidateMatch.UPDATES_EXISTING
-        )
-    if content.kind is CandidateKind.CAPABILITY:
-        named = None
-        if content.component_id is not None:
-            named = find_component(system, content.component_id)
-            if named is None:
-                return CandidateMatch.NEEDS_COMPONENT
-        concept = None
-        if content.concept_ids:
-            concept = find_concept(release, content.concept_ids[0])
-            if concept is None:
-                return CandidateMatch.NEEDS_CONCEPT
-            # The system realising the concept already is all a delivered change says.
-            if any(item.concept_id == concept.id for item in system.capabilities):
-                return CandidateMatch.ALREADY_PRESENT
-        current = next(
-            (item for item in system.capabilities if item.id == content.capability_id), None
-        )
-        if current is None:
-            return CandidateMatch.NEW
-        places = named is not None and current.component_id is None
-        linking = concept is not None and current.concept_id is None
-        return (
-            CandidateMatch.ALREADY_PRESENT
-            if set(content.triggers) <= set(current.triggers)
-            and current.name == content.name
-            and not places
-            and not linking
-            else CandidateMatch.UPDATES_EXISTING
-        )
-    if content.kind is CandidateKind.CONSTRAINT:
-        present = content.text.casefold() in {item.casefold() for item in system.constraints}
-        return CandidateMatch.ALREADY_PRESENT if present else CandidateMatch.NEW
+        return CandidateMatch.NEW
+    fills = (content.description and not domain.description) or (
+        content.name_ar and not domain.name_ar
+    )
+    return CandidateMatch.UPDATES_EXISTING if fills else CandidateMatch.ALREADY_PRESENT
+
+
+def _classify_system(content: CandidateContent, release: ArchitectureKnowledge) -> CandidateMatch:
+    system = find_system(release, content.system_id) or find_system(release, content.name)
+    if system is None:
+        return CandidateMatch.NEW
+    known = {label.casefold() for label in (system.name, *system.aliases)}
+    wanted = {
+        label.casefold() for label in _free(release, (content.name, *content.aliases), system.id)
+    }
+    describes = content.description is not None and system.description is None
+    return (
+        CandidateMatch.ALREADY_PRESENT
+        if wanted <= known and not describes
+        else CandidateMatch.UPDATES_EXISTING
+    )
+
+
+def _in_system(classify_in: _SystemClassifier) -> _Classifier:
+    """A kind about one system waits for that system before anything else is asked."""
+
+    def classify_about_system(
+        content: CandidateContent, release: ArchitectureKnowledge
+    ) -> CandidateMatch:
+        system = find_system(release, content.system_id)
+        if system is None:
+            return CandidateMatch.NEEDS_SYSTEM
+        return classify_in(content, release, system)
+
+    return classify_about_system
+
+
+def _classify_placement(
+    content: CandidateContent, release: ArchitectureKnowledge, system: SystemDefinition
+) -> CandidateMatch:
+    place = find_landscape_domain(release, content.landscape_domain_id or "")
+    if place is None:
+        return CandidateMatch.NEEDS_DOMAIN
+    if system.landscape_domain_id is None:
+        return CandidateMatch.NEW
+    return (
+        CandidateMatch.ALREADY_PRESENT
+        if system.landscape_domain_id == place.id
+        else CandidateMatch.UPDATES_EXISTING
+    )
+
+
+def _classify_component(
+    content: CandidateContent, release: ArchitectureKnowledge, system: SystemDefinition
+) -> CandidateMatch:
+    component = _component_of(content, system)
+    if component is None:
+        return CandidateMatch.NEW
+    return (
+        CandidateMatch.ALREADY_PRESENT
+        if _component_additions(content, system, component).empty
+        else CandidateMatch.UPDATES_EXISTING
+    )
+
+
+def _classify_capability(
+    content: CandidateContent, release: ArchitectureKnowledge, system: SystemDefinition
+) -> CandidateMatch:
+    named = None
+    if content.component_id is not None:
+        named = find_component(system, content.component_id)
+        if named is None:
+            return CandidateMatch.NEEDS_COMPONENT
+    concept = None
+    if content.concept_ids:
+        concept = find_concept(release, content.concept_ids[0])
+        if concept is None:
+            return CandidateMatch.NEEDS_CONCEPT
+        # The system realising the concept already is all a delivered change says.
+        if any(item.concept_id == concept.id for item in system.capabilities):
+            return CandidateMatch.ALREADY_PRESENT
+    current = next((item for item in system.capabilities if item.id == content.capability_id), None)
+    if current is None:
+        return CandidateMatch.NEW
+    places = named is not None and current.component_id is None
+    linking = concept is not None and current.concept_id is None
+    return (
+        CandidateMatch.ALREADY_PRESENT
+        if set(content.triggers) <= set(current.triggers)
+        and current.name == content.name
+        and not places
+        and not linking
+        else CandidateMatch.UPDATES_EXISTING
+    )
+
+
+def _classify_constraint(
+    content: CandidateContent, release: ArchitectureKnowledge, system: SystemDefinition
+) -> CandidateMatch:
+    present = content.text.casefold() in {item.casefold() for item in system.constraints}
+    return CandidateMatch.ALREADY_PRESENT if present else CandidateMatch.NEW
+
+
+def _classify_relationship(
+    content: CandidateContent, release: ArchitectureKnowledge, system: SystemDefinition
+) -> CandidateMatch:
     target = find_system(release, content.target_system_id or "")
     if target is None:
         return CandidateMatch.NEEDS_SYSTEM
@@ -1559,6 +1674,37 @@ def classify(content: CandidateContent, release: ArchitectureKnowledge) -> Candi
         if _with_suggested(content, link) == link
         else CandidateMatch.UPDATES_EXISTING
     )
+
+
+# How a suggestion of each kind relates to the draft: one classifier per kind, no default.
+_CLASSIFIERS: Mapping[CandidateKind, _Classifier] = {
+    CandidateKind.SYSTEM: _classify_system,
+    CandidateKind.COMPONENT: _in_system(_classify_component),
+    CandidateKind.CAPABILITY: _in_system(_classify_capability),
+    CandidateKind.CONSTRAINT: _in_system(_classify_constraint),
+    CandidateKind.RELATIONSHIP: _in_system(_classify_relationship),
+    CandidateKind.LANDSCAPE_DOMAIN: _classify_landscape_domain,
+    CandidateKind.PLACEMENT: _in_system(_classify_placement),
+    CandidateKind.PRODUCT: _classify_product,
+    CandidateKind.JOURNEY: _classify_journey,
+    CandidateKind.CHANNEL: _classify_channel,
+    CandidateKind.QUESTION: _classify_question,
+    CandidateKind.CONCEPT: _classify_concept,
+    CandidateKind.COMPONENT_LINK: _classify_component_link,
+    CandidateKind.VOCABULARY_TERM: _classify_vocabulary_term,
+    CandidateKind.OFFERING_RULE: _classify_offering_rule,
+    CandidateKind.INTERFACE: _classify_interface,
+    CandidateKind.CAPABILITY_DOMAIN: _classify_capability_domain,
+    CandidateKind.PORTFOLIO_NODE: _classify_portfolio_node,
+    CandidateKind.REALISATION_RECORD: _classify_realisation_record,
+    CandidateKind.SOURCE: _classify_source,
+    CandidateKind.CONFLICT: _classify_conflict,
+}
+_every_kind(_CLASSIFIERS, "classifier")
+
+
+def classify(content: CandidateContent, release: ArchitectureKnowledge) -> CandidateMatch:
+    return _CLASSIFIERS[content.kind](content, release)
 
 
 def _relationship(
@@ -2430,27 +2576,6 @@ def _term_places(
     )
 
 
-def _classify_term(
-    term: VocabularyTerm, content: CandidateContent, release: ArchitectureKnowledge
-) -> CandidateMatch:
-    if term.broader_id is not None and (
-        find_term(release.vocabulary, term.scheme, term.broader_id) is None
-    ):
-        return CandidateMatch.NEEDS_CONCEPT
-    try:
-        merged, held = _term_to_apply(_term_broader(term, release), release)
-    except CandidateDependencyError:
-        return CandidateMatch.UPDATES_EXISTING
-    if held is None:
-        return CandidateMatch.NEW
-    places = _term_places(content, term, held.id, release)
-    return (
-        CandidateMatch.UPDATES_EXISTING
-        if places or merged != held
-        else CandidateMatch.ALREADY_PRESENT
-    )
-
-
 def _with_term(
     content: CandidateContent, suggested: VocabularyTerm, release: ArchitectureKnowledge
 ) -> ArchitectureKnowledge:
@@ -2481,154 +2606,227 @@ def _with_term(
     )
 
 
-def apply_candidate(
+type _Applier = Callable[[CandidateContent, ArchitectureKnowledge], ArchitectureKnowledge]
+type _SystemApplier = Callable[
+    [CandidateContent, ArchitectureKnowledge, SystemDefinition], ArchitectureKnowledge
+]
+
+
+def _apply_product(
     content: CandidateContent, release: ArchitectureKnowledge
 ) -> ArchitectureKnowledge:
-    """The draft with this change merged in; existing information is kept, never dropped.
+    return _with_offering(_held(content.product, content), release)
 
-    A product offering or a journey is the exception: accepting one replaces the
-    one it matches, as a whole, because it was reviewed as a whole.
-    """
-    if content.kind is CandidateKind.PRODUCT and content.product is not None:
-        return _with_offering(content.product, release)
-    if content.kind is CandidateKind.QUESTION and content.question is not None:
-        return _with_question(content, content.question, release)
-    if content.kind is CandidateKind.JOURNEY and content.journey is not None:
-        return _with_journey(content.journey, release)
-    if content.kind is CandidateKind.OFFERING_RULE:
-        return _with_offering_rule(content, release)
-    if content.kind is CandidateKind.LANDSCAPE_DOMAIN:
-        return _with_domain(content, release)
-    if content.kind is CandidateKind.CHANNEL and content.channel is not None:
-        return _with_channel(content.channel, release)
-    if content.kind is CandidateKind.INTERFACE and content.interface is not None:
-        return _with_interface(content.interface, release)
-    if content.kind is CandidateKind.CAPABILITY_DOMAIN and content.capability_domain is not None:
-        return _with_capability_domain(content.capability_domain, release)
-    if content.kind is CandidateKind.REALISATION_RECORD and content.realisation is not None:
-        return _with_realisation(content.realisation, release)
-    if content.kind is CandidateKind.SOURCE and content.knowledge_source is not None:
-        return _with_source(content.knowledge_source, release)
-    if content.kind is CandidateKind.CONFLICT and content.conflict is not None:
-        return _with_conflict(content.conflict, release)
-    if content.kind is CandidateKind.PORTFOLIO_NODE and content.portfolio_node is not None:
-        return _with_portfolio_node(content.portfolio_node, release)
-    if content.kind is CandidateKind.CONCEPT and content.concept is not None:
-        return _with_concept(content, content.concept, release)
-    if content.kind is CandidateKind.COMPONENT_LINK:
-        return _with_component_link(content, release)
-    if content.kind is CandidateKind.VOCABULARY_TERM and content.term is not None:
-        return _with_term(content, content.term, release)
-    if content.kind is CandidateKind.SYSTEM:
-        existing = find_system(release, content.system_id) or find_system(release, content.name)
-        arabic = (content.name_ar,) if content.name_ar else ()
-        if existing is None:
-            name = content.name.strip()
-            name_ar = next(iter(_free(release, arabic, content.system_id)), None)
-            return _with_system(
-                release,
-                SystemDefinition(
-                    id=content.system_id,
-                    name=name,
-                    aliases=tuple(
-                        label
-                        for label in _merged((), _free(release, content.aliases, content.system_id))
-                        if label.casefold() not in {name.casefold(), (name_ar or "").casefold()}
-                    ),
-                    name_ar=name_ar,
-                    description=content.description,
+
+def _apply_question(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    return _with_question(content, _held(content.question, content), release)
+
+
+def _apply_journey(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    return _with_journey(_held(content.journey, content), release)
+
+
+def _apply_channel(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    return _with_channel(_held(content.channel, content), release)
+
+
+def _apply_interface(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    return _with_interface(_held(content.interface, content), release)
+
+
+def _apply_capability_domain(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    return _with_capability_domain(_held(content.capability_domain, content), release)
+
+
+def _apply_realisation_record(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    return _with_realisation(_held(content.realisation, content), release)
+
+
+def _apply_source(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    return _with_source(_held(content.knowledge_source, content), release)
+
+
+def _apply_conflict(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    return _with_conflict(_held(content.conflict, content), release)
+
+
+def _apply_portfolio_node(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    return _with_portfolio_node(_held(content.portfolio_node, content), release)
+
+
+def _apply_concept(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    return _with_concept(content, _held(content.concept, content), release)
+
+
+def _apply_vocabulary_term(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    return _with_term(content, _held(content.term, content), release)
+
+
+def _apply_system(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    existing = find_system(release, content.system_id) or find_system(release, content.name)
+    arabic = (content.name_ar,) if content.name_ar else ()
+    if existing is None:
+        name = content.name.strip()
+        name_ar = next(iter(_free(release, arabic, content.system_id)), None)
+        return _with_system(
+            release,
+            SystemDefinition(
+                id=content.system_id,
+                name=name,
+                aliases=tuple(
+                    label
+                    for label in _merged((), _free(release, content.aliases, content.system_id))
+                    if label.casefold() not in {name.casefold(), (name_ar or "").casefold()}
                 ),
-            )
-        taken = {
-            existing.name.casefold(),
-            existing.id.casefold(),
-            (existing.name_ar or "").casefold(),
-        }
-        extra = tuple(
-            label
-            for label in _free(release, (content.name.strip(), *content.aliases), existing.id)
-            if label.casefold() not in taken
-        )
-        aliases = _merged(existing.aliases, extra)
-        name_ar = existing.name_ar or next(
-            (
-                label
-                for label in _free(release, arabic, existing.id)
-                if label.casefold() not in {alias.casefold() for alias in aliases}
-            ),
-            None,
-        )
-        return _with_system(
-            release,
-            replace(
-                existing,
-                aliases=aliases,
                 name_ar=name_ar,
-                # A suggestion fills a missing description; it never replaces one.
-                description=existing.description or content.description,
+                description=content.description,
             ),
         )
-    system = _require_system(release, content.system_id)
-    if content.kind is CandidateKind.PLACEMENT:
-        place = find_landscape_domain(release, content.landscape_domain_id or "")
-        if place is None:
+    taken = {
+        existing.name.casefold(),
+        existing.id.casefold(),
+        (existing.name_ar or "").casefold(),
+    }
+    extra = tuple(
+        label
+        for label in _free(release, (content.name.strip(), *content.aliases), existing.id)
+        if label.casefold() not in taken
+    )
+    aliases = _merged(existing.aliases, extra)
+    name_ar = existing.name_ar or next(
+        (
+            label
+            for label in _free(release, arabic, existing.id)
+            if label.casefold() not in {alias.casefold() for alias in aliases}
+        ),
+        None,
+    )
+    return _with_system(
+        release,
+        replace(
+            existing,
+            aliases=aliases,
+            name_ar=name_ar,
+            # A suggestion fills a missing description; it never replaces one.
+            description=existing.description or content.description,
+        ),
+    )
+
+
+def _to_system(apply_to: _SystemApplier) -> _Applier:
+    """A kind about one system needs that system in the draft before it can be accepted."""
+
+    def apply_to_system(
+        content: CandidateContent, release: ArchitectureKnowledge
+    ) -> ArchitectureKnowledge:
+        return apply_to(content, release, _require_system(release, content.system_id))
+
+    return apply_to_system
+
+
+def _apply_placement(
+    content: CandidateContent, release: ArchitectureKnowledge, system: SystemDefinition
+) -> ArchitectureKnowledge:
+    place = find_landscape_domain(release, content.landscape_domain_id or "")
+    if place is None:
+        raise CandidateDependencyError(
+            f"Accept or add landscape domain {content.landscape_domain_id!r} before placing "
+            "systems in it."
+        )
+    return _with_system(release, replace(system, landscape_domain_id=place.id))
+
+
+def _apply_component(
+    content: CandidateContent, release: ArchitectureKnowledge, system: SystemDefinition
+) -> ArchitectureKnowledge:
+    return _with_system(release, _with_component(content, system))
+
+
+def _apply_capability(
+    content: CandidateContent, release: ArchitectureKnowledge, system: SystemDefinition
+) -> ArchitectureKnowledge:
+    capability_id = content.capability_id or ""
+    current = next((item for item in system.capabilities if item.id == capability_id), None)
+    named = None
+    if content.component_id is not None:
+        named = find_component(system, content.component_id)
+        if named is None:
             raise CandidateDependencyError(
-                f"Accept or add landscape domain {content.landscape_domain_id!r} before placing "
-                "systems in it."
+                f"Accept or add component {content.component_id!r} of {system.name} before "
+                "the capabilities it delivers."
             )
-        return _with_system(release, replace(system, landscape_domain_id=place.id))
-    if content.kind is CandidateKind.COMPONENT:
-        return _with_system(release, _with_component(content, system))
-    if content.kind is CandidateKind.CAPABILITY:
-        capability_id = content.capability_id or ""
-        current = next((item for item in system.capabilities if item.id == capability_id), None)
-        named = None
-        if content.component_id is not None:
-            named = find_component(system, content.component_id)
-            if named is None:
-                raise CandidateDependencyError(
-                    f"Accept or add component {content.component_id!r} of {system.name} before "
-                    "the capabilities it delivers."
-                )
-        concept = None
-        if content.concept_ids:
-            concept = find_concept(release, content.concept_ids[0])
-            if concept is None:
-                raise CandidateDependencyError(
-                    f"Accept or add concept {content.concept_ids[0]!r} before the capabilities "
-                    "that realise it."
-                )
-        held = current.concept_id if current else None
-        capability = KnowledgeCapability(
-            capability_id,
-            content.name.strip(),
-            _merged(current.triggers, content.triggers) if current else content.triggers,
-            # A suggestion never moves a capability out of the domain it was placed in,
-            current.domain_id if current else None,
-            # nor out of its component; it only places one that has none.
-            (current.component_id if current else None) or (named.id if named else None),
-            # It links a capability no one has linked, and never relinks one.
-            held or (concept.id if concept else None),
-            # Accepting a link is a maintainer saying a concept fits after all.
-            None
-            if held is None and concept is not None
-            else (current.unlinked_reason if current else None),
-            # Where a maintainer said it comes from stays; a suggestion's own provenance is
-            # its acceptance record (ADR-0120).
-            confidence=current.confidence if current else None,
-            source=current.source if current else None,
-        )
-        capabilities = (
-            tuple(capability if item.id == capability_id else item for item in system.capabilities)
-            if current
-            else (*system.capabilities, capability)
-        )
-        return _with_system(release, replace(system, capabilities=capabilities))
-    if content.kind is CandidateKind.CONSTRAINT:
-        return _with_system(
-            release,
-            replace(system, constraints=_merged(system.constraints, (content.text.strip(),))),
-        )
+    concept = None
+    if content.concept_ids:
+        concept = find_concept(release, content.concept_ids[0])
+        if concept is None:
+            raise CandidateDependencyError(
+                f"Accept or add concept {content.concept_ids[0]!r} before the capabilities "
+                "that realise it."
+            )
+    held = current.concept_id if current else None
+    capability = KnowledgeCapability(
+        capability_id,
+        content.name.strip(),
+        _merged(current.triggers, content.triggers) if current else content.triggers,
+        # A suggestion never moves a capability out of the domain it was placed in,
+        current.domain_id if current else None,
+        # nor out of its component; it only places one that has none.
+        (current.component_id if current else None) or (named.id if named else None),
+        # It links a capability no one has linked, and never relinks one.
+        held or (concept.id if concept else None),
+        # Accepting a link is a maintainer saying a concept fits after all.
+        None
+        if held is None and concept is not None
+        else (current.unlinked_reason if current else None),
+        # Where a maintainer said it comes from stays; a suggestion's own provenance is
+        # its acceptance record (ADR-0120).
+        confidence=current.confidence if current else None,
+        source=current.source if current else None,
+    )
+    capabilities = (
+        tuple(capability if item.id == capability_id else item for item in system.capabilities)
+        if current
+        else (*system.capabilities, capability)
+    )
+    return _with_system(release, replace(system, capabilities=capabilities))
+
+
+def _apply_constraint(
+    content: CandidateContent, release: ArchitectureKnowledge, system: SystemDefinition
+) -> ArchitectureKnowledge:
+    return _with_system(
+        release,
+        replace(system, constraints=_merged(system.constraints, (content.text.strip(),))),
+    )
+
+
+def _apply_relationship(
+    content: CandidateContent, release: ArchitectureKnowledge, system: SystemDefinition
+) -> ArchitectureKnowledge:
     target = _require_system(release, content.target_system_id or "")
     link = _relationship(release, system.id, target.id, content)
     if link is not None:
@@ -2645,3 +2843,41 @@ def apply_candidate(
         content.relationship_kind or RelationshipKind.UNSPECIFIED,
     )
     return release.updated(relationships=(*release.relationships, relationship))
+
+
+# How a suggestion of each kind is merged into the draft: one applier per kind, no default.
+_APPLIERS: Mapping[CandidateKind, _Applier] = {
+    CandidateKind.SYSTEM: _apply_system,
+    CandidateKind.COMPONENT: _to_system(_apply_component),
+    CandidateKind.CAPABILITY: _to_system(_apply_capability),
+    CandidateKind.CONSTRAINT: _to_system(_apply_constraint),
+    CandidateKind.RELATIONSHIP: _to_system(_apply_relationship),
+    CandidateKind.LANDSCAPE_DOMAIN: _with_domain,
+    CandidateKind.PLACEMENT: _to_system(_apply_placement),
+    CandidateKind.PRODUCT: _apply_product,
+    CandidateKind.JOURNEY: _apply_journey,
+    CandidateKind.CHANNEL: _apply_channel,
+    CandidateKind.QUESTION: _apply_question,
+    CandidateKind.CONCEPT: _apply_concept,
+    CandidateKind.COMPONENT_LINK: _with_component_link,
+    CandidateKind.VOCABULARY_TERM: _apply_vocabulary_term,
+    CandidateKind.OFFERING_RULE: _with_offering_rule,
+    CandidateKind.INTERFACE: _apply_interface,
+    CandidateKind.CAPABILITY_DOMAIN: _apply_capability_domain,
+    CandidateKind.PORTFOLIO_NODE: _apply_portfolio_node,
+    CandidateKind.REALISATION_RECORD: _apply_realisation_record,
+    CandidateKind.SOURCE: _apply_source,
+    CandidateKind.CONFLICT: _apply_conflict,
+}
+_every_kind(_APPLIERS, "applier")
+
+
+def apply_candidate(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    """The draft with this change merged in; existing information is kept, never dropped.
+
+    A product offering or a journey is the exception: accepting one replaces the
+    one it matches, as a whole, because it was reviewed as a whole.
+    """
+    return _APPLIERS[content.kind](content, release)
