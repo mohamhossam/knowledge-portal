@@ -2,7 +2,6 @@
  * Records the seeded stack cannot hold, served to one page by the browser, so the axe suite
  * covers every page (review recommendation 15) without changing the shared seed:
  *
- * - the requirement corpus is requirement work's, and the offline stack's is empty;
  * - a historic requirement needs a Word BRD read from Azure DevOps;
  * - an evidence passage's id is a hash of the index;
  * - the seeded versions register no sources.
@@ -27,36 +26,6 @@ async function api(page: Page, path: string, answer: (route: Route) => Promise<v
 }
 
 const AMINA = { id: "fake-owner", display_name: "Amina Owner" };
-const RAVI = { id: "fake-reviewer", display_name: "Ravi Reviewer" };
-
-const REQUIREMENT = {
-  requirement_id: "REQ-1",
-  title: "XGPON bundles for small offices",
-  duplicate: false,
-  owner: AMINA,
-  index_state: "current",
-  last_screened_at: "2026-10-01T09:00:00Z",
-  open_findings: 1,
-  retired: null,
-};
-
-const FINDING = {
-  finding_id: "kf-1",
-  kind: "possible_duplicate",
-  rationale: "Both order XGPON bundles through BCRM.",
-  raised_at: "2026-08-27T09:00:00Z",
-  age: "over_30_days",
-  subject: { requirement_id: "REQ-1", title: "XGPON bundles for small offices", owner: AMINA },
-  related: { requirement_id: "REQ-2", title: "XGPON bundles", owner: RAVI },
-  last_nudge: null,
-  next_nudge_at: null,
-};
-
-/** The corpus with one requirement and the finding it raised. */
-export async function corpus(page: Page): Promise<void> {
-  await api(page, "/requirement-corpus/requirements", (route) => json(route, { items: [REQUIREMENT], next_offset: null }));
-  await api(page, "/requirement-corpus/findings", (route) => json(route, { items: [FINDING], next_offset: null }));
-}
 
 const HISTORIC = {
   id: "h1",
@@ -100,7 +69,6 @@ export async function historic(page: Page): Promise<void> {
     }),
   );
   await api(page, "/historic-requirements/h1/shared-roots", (route) => json(route, { items: [] }));
-  await api(page, "/historic-requirements/h1/citations", (route) => json(route, { total: 0, items: [], next_offset: null }));
 }
 
 /** An evidence passage of the draft, by an id the test names. */

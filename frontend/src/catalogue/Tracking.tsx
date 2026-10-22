@@ -29,7 +29,7 @@ type TrackingFocus = {
 const Due = ({ children }: { children: ReactNode }) => <Status tone="attention">{children}</Status>;
 
 /**
- * How an offering's orders are tracked once placed (requirement-portal ADR-0101):
+ * How an offering's orders are tracked once placed (ADR-0101):
  * each channel's correlation and tracking screen, the flows that carry order and
  * milestone events, what the customer sees, the internal statuses, and what
  * happens when an order falls out. What the sources leave undefined is due.

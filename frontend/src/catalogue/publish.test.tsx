@@ -27,9 +27,6 @@ function renderAt(release: Release, path: string, routes: ReactNode) {
   vi.spyOn(api, "systemOwnership").mockResolvedValue({ system_id: "x", squads: [], products: [], value_streams: [] } as never);
   vi.spyOn(api, "organisation").mockResolvedValue({ people: [], squads: [], products: [], value_streams: [] } as never);
   vi.spyOn(api, "buildJob").mockResolvedValue(null);
-  vi.spyOn(api, "mappingImpact").mockResolvedValue({
-    active_release_id: "live", requirements: 7, features: 0, stories: 0, outdated_requirements: 2, outdated_features: 0, outdated_stories: 0,
-  });
   vi.spyOn(api, "releaseChanges").mockResolvedValue({ base_release_id: "live", draft_release_id: "d", changes: [] });
   vi.spyOn(api, "suggestions").mockResolvedValue({ release_id: "d", release_revision: 5, suggestions: [], runs: [] } as never);
   const context: CatalogueContext = {

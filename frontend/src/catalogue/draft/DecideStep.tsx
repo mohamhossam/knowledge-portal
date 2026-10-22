@@ -351,7 +351,7 @@ function Decide() {
           )}
         </>
       }
-      reversibility="An acceptance stays: correct the draft afterwards with hand edits on its pages. Nothing reaches requirement work until the draft is published."
+      reversibility="An acceptance stays: correct the draft afterwards with hand edits on its pages. Nothing is in service until the draft is published."
       confirmLabel={`Accept ${count(acceptSet.length, "suggestion")}`}
       busyLabel="Accepting…"
       keepLabel="Not yet"
@@ -564,7 +564,7 @@ function SuggestionGrid({ rows, selected, onSelectedChange, currentId, onCurrent
           {sentence}
           <span className="draft-detail" dir="ltr">
             {suggestion.change_request ? (
-              <><bdi>{suggestion.change_request.change_request_id}</bdi> · {citedPart(suggestion)} · from Requirement AI</>
+              <><bdi>{suggestion.change_request.change_request_id}</bdi> · {citedPart(suggestion)} · from a connected app</>
             ) : (
               <>{suggestion.citations[0]?.location ?? "No passage cited"}{suggestion.basis === "inferred" && " · inferred"}</>
             )}

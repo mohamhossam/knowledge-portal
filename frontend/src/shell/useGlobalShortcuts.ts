@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import { usePreferences } from "./preferences";
 
-const GO: Record<string, string> = { w: "/", l: "/library", c: "/architecture", o: "/squads", r: "/requirement-knowledge" };
+const GO: Record<string, string> = { w: "/", l: "/library", c: "/architecture", o: "/squads", r: "/historic" };
 
 function inEditable(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;

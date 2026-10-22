@@ -45,7 +45,7 @@ export function PassagePane({
         <h2 className="ds-section__title">Passage {current.ordinal}, removed</h2>
         <p className="lib-quiet">{humanWhere(current.where)}</p>
         <p dir="auto" className="lib-passage lib-passage--muted">{current.basis}</p>
-        <p>It is in service now and has no counterpart in version {versionNumber}. Requirement work keeps citing it until version {versionNumber} is published.</p>
+        <p>It is in service now and has no counterpart in version {versionNumber}. It can still be cited until version {versionNumber} is published.</p>
       </>
     );
   }

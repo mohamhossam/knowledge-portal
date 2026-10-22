@@ -21,7 +21,7 @@ function rows(nodes: LineageNode[], depth = 0, prefix = ""): Row[] {
 export function AdoLink({ id, url }: { id: number; url?: string | null }) {
   if (!url) return <>#{id}</>;
   return (
-    <a href={url} target="_blank" rel="noreferrer" className="rk-ado">
+    <a href={url} target="_blank" rel="noreferrer" className="hist-ado">
       #{id}{" "}
       <span className="ds-visually-hidden">(opens Azure DevOps)</span>
       <ArrowUpRight size={12} aria-hidden="true" />
@@ -33,7 +33,7 @@ export function AdoLink({ id, url }: { id: number; url?: string | null }) {
 export function SharedRootNote({ holders }: { holders: HistoricSharedRoot[] | undefined }) {
   if (!holders || holders.length === 0) return null;
   return (
-    <span className="rk-detail">
+    <span className="hist-detail">
       Also the root of{" "}
       {holders.map((holder, index) => (
         <Fragment key={holder.historic_id}>
@@ -65,13 +65,13 @@ export function BreakdownTable({ breakdown, brds, shared, past = false, note }: 
       header: "Work item",
       rowHeader: true,
       cell: ({ item, depth }) => (
-        <span className={`rk-depth rk-depth--${Math.min(depth, 3)}`}>
-          <span className="rk-type">{TYPE_WORDS[item.type] ?? item.type}</span>{" "}
+        <span className={`hist-depth hist-depth--${Math.min(depth, 3)}`}>
+          <span className="hist-type">{TYPE_WORDS[item.type] ?? item.type}</span>{" "}
           <AdoLink id={item.id} url={item.url} />{" "}
           <bdi>{item.title}</bdi>
           {depth === 0 && shared?.has(item.id) && <SharedRootNote holders={shared.get(item.id)} />}
           {(item.description || item.acceptance_criteria) && (
-            <span className="rk-says">
+            <span className="hist-says">
               <Button
                 variant="link"
                 aria-expanded={open === item.id}
@@ -83,7 +83,7 @@ export function BreakdownTable({ breakdown, brds, shared, past = false, note }: 
             </span>
           )}
           {open === item.id && (
-            <dl className="rk-said-by">
+            <dl className="hist-said-by">
               {item.description && <div><dt>Description</dt><dd dir="auto">{item.description}</dd></div>}
               {item.acceptance_criteria && <div><dt>Acceptance criteria</dt><dd dir="auto">{item.acceptance_criteria}</dd></div>}
               <div><dt>Revision</dt><dd>{item.revision}{item.tags.length > 0 ? ` · tagged ${item.tags.join(", ")}` : ""}</dd></div>
@@ -92,13 +92,13 @@ export function BreakdownTable({ breakdown, brds, shared, past = false, note }: 
         </span>
       ),
     },
-    { id: "state", header: "State", cell: ({ item }) => (past ? <span className="rk-quiet">{item.state}</span> : item.state) },
+    { id: "state", header: "State", cell: ({ item }) => (past ? <span className="hist-quiet">{item.state}</span> : item.state) },
     { id: "iteration", header: "Iteration", bidi: true, cell: ({ item }) => item.iteration_path || "—" },
     { id: "area", header: "Area", bidi: true, cell: ({ item }) => item.area_path || "—" },
   ];
   return (
     <>
-      <p className="rk-lead">
+      <p className="hist-lead">
         <bdi>{brds.join(", ")}</bdi> was delivered as {count(breakdown.epics, "Epic")},{" "}
         {count(breakdown.features, "Feature")} and {count(breakdown.stories, "User Story", "User Stories")}, as read on{" "}
         {formatMoment(new Date(breakdown.fetched_at))}.
@@ -106,7 +106,7 @@ export function BreakdownTable({ breakdown, brds, shared, past = false, note }: 
         {note && <> {note}</>}
       </p>
       {lines.length === 0 ? (
-        <p className="rk-quiet">None of its top-level work items could be read.</p>
+        <p className="hist-quiet">None of its top-level work items could be read.</p>
       ) : (
         <DataTable
           caption="Its Epics, Features and User Stories, as numbered rows"
@@ -131,7 +131,7 @@ export function ItemErrors({ errors }: { errors: { work_item_id: number; problem
       cell: (error) => (
         <>
           <Status tone="attention">{PROBLEM_WORDS[error.problem] ?? error.problem}</Status>
-          {error.detail && <span className="rk-detail">{error.detail}</span>}
+          {error.detail && <span className="hist-detail">{error.detail}</span>}
         </>
       ),
     },
@@ -159,10 +159,10 @@ function Delta({ field, before, after }: { field: string; before?: HistoricWorkI
   const word = FIELD_WORDS[field] ?? field;
   const was = before ? valueOf(before, field) : null;
   const now = after ? valueOf(after, field) : null;
-  if (was === null || now === null) return <li><span className="rk-field">{word}</span> changed</li>;
+  if (was === null || now === null) return <li><span className="hist-field">{word}</span> changed</li>;
   return (
     <li>
-      <span className="rk-field">{word}</span> <bdi>{was || "none"}</bdi>
+      <span className="hist-field">{word}</span> <bdi>{was || "none"}</bdi>
       <span aria-hidden="true"> → </span>
       <span className="ds-visually-hidden">became</span>{" "}
       <strong dir="auto">{now || "none"}</strong>
@@ -197,13 +197,13 @@ export function ChangeTable({ changes, before, after }: {
         const later = now.get(change.work_item_id);
         return (
           <>
-            <span className="rk-kind">{CHANGE_WORDS[change.kind] ?? change.kind}</span>
+            <span className="hist-kind">{CHANGE_WORDS[change.kind] ?? change.kind}</span>
             {change.kind === "changed" && change.fields.length > 0 && (
-              <ul className="rk-deltas">
+              <ul className="hist-deltas">
                 {change.fields.map((field) => <Delta key={field} field={field} before={was.get(change.work_item_id)} after={later} />)}
               </ul>
             )}
-            {change.kind === "added" && later && <span className="rk-detail">{TYPE_WORDS[later.type] ?? later.type} · {later.state}</span>}
+            {change.kind === "added" && later && <span className="hist-detail">{TYPE_WORDS[later.type] ?? later.type} · {later.state}</span>}
           </>
         );
       },

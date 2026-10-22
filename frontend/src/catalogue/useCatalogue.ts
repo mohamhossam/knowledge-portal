@@ -48,10 +48,6 @@ export function useActorNames() {
   }, [actors.data]);
 }
 
-export function useMappingImpact() {
-  return useQuery({ queryKey: ["architecture", "mapping-impact"], queryFn: api.mappingImpact });
-}
-
 export function useReleases() {
   return useQuery({ queryKey: ["architecture", "releases"], queryFn: api.releases });
 }

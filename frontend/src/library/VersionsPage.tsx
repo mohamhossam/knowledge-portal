@@ -9,7 +9,6 @@ import { formatDay } from "../home/format";
 import { useDocumentContext } from "./documentContext";
 import { newestVersion } from "./model";
 import { Failure } from "./parts";
-import { CitingNow } from "./StandingPanel";
 import { ATTEMPT_LIMIT, buildStaleness, canRetryIndexing, coverageWords, pendingBuild, type PublicationState, publicationState } from "./publications";
 import { humanWhere, plural } from "./where";
 
@@ -117,7 +116,7 @@ export function VersionsPage() {
 
       {/* Each row is an index: an approval's, or a search index for tables built from it, so the count says indexes. */}
       <Section title="Published indexes" count={published.length}>
-        <p className="lib-quiet">Each approval is indexed for search, and a search index for tables built from it is listed as its own row. Requirement work cites the one in service.</p>
+        <p className="lib-quiet">Each approval is indexed for search, and a search index for tables built from it is listed as its own row. Citations come from the one in service.</p>
         {published.length === 0 ? (
           <EmptyState title="Nothing has been published yet.">
             <p>Publish a saved review from the document's Review page.</p>
@@ -191,21 +190,14 @@ function PendingBuild() {
         <ConsequencePanel
           panelRef={panel.panel}
           title="Activate the search index for tables"
-          happens={<>It replaces the index in service: requirement work finds and cites its {plural(build.chunk_count, "passage")} from then on.</>}
-          affects={
-            <CitingNow
-              documentId={document.id}
-              list={false}
-              lead={(count, one, none) => <><strong className="ds-num">{count}</strong> {one ? "requirement" : "requirements"} you can see {one ? "cites" : "cite"} the version in service{none ? "" : ". Their owners are told the source changed, and decide whether to keep or revise what they wrote"}</>}
-            />
-          }
-          reversibility="To go back, publish the passages again from a saved review; the requirements are told again."
+          happens={<>It replaces the index in service: search finds, and citations come from, its {plural(build.chunk_count, "passage")} from then on.</>}
+          reversibility="To go back, publish the passages again from a saved review."
           confirmLabel="Activate it"
           keepLabel="Not yet"
           busy={hook.activate.isPending}
           busyLabel="Activating…"
           failure={hook.activate.isError ? errorMessage(hook.activate.error) : null}
-          onConfirm={() => hook.activate.mutate({ buildId: build.id, manifest: build.chunk_manifest ?? "" }, { onSuccess: () => announce("Activated. Requirement work now cites the search index for tables.") })}
+          onConfirm={() => hook.activate.mutate({ buildId: build.id, manifest: build.chunk_manifest ?? "" }, { onSuccess: () => announce("Activated. Citations now come from the search index for tables.") })}
           onKeep={panel.close}
         />
       )}
@@ -236,7 +228,7 @@ function NewBuild() {
     <Section title="Search index for tables">
       <p className="lib-quiet">
         An optional second index that keeps table rows together: each row and worksheet range is indexed field by field, with its label, so a
-        requirement can cite one field rather than a whole row. It is built from the latest saved review, then waits for you to activate it.
+        citation can point at one field rather than a whole row. It is built from the latest saved review, then waits for you to activate it.
       </p>
       <ActionGroup>
         <Button busy={preview.isFetching} unavailableReason={waitReason} onClick={() => void preview.refetch()}>

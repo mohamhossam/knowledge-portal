@@ -4,7 +4,6 @@ import { ConsequencePanel, Lines } from "../../design/components";
 import type { useDisclosure } from "../../design/hooks";
 import type { DocumentContext } from "../documentContext";
 import type { latestRevision, livePublication, Row } from "../model";
-import { CitingNow } from "../StandingPanel";
 import { humanWhere, plural } from "../where";
 import { PassageText } from "./PassageText";
 
@@ -108,15 +107,11 @@ export function publishPanel({ disclosure, hook, document, version, included, li
     <ConsequencePanel
       panelRef={disclosure.panel}
       title={`Publish version ${version.number}`}
-      happens={<>Requirement work can cite its <strong>{plural(included, "passage")}</strong> once they are indexed.</>}
+      happens={<>Its <strong>{plural(included, "passage")}</strong> can be cited once they are indexed.</>}
       affects={
         <>
           {live ? (
-            <CitingNow
-              documentId={document.id}
-              list={false}
-              lead={(count, one, none) => <>It replaces version {liveNumber ?? "?"} in service, which <strong className="ds-num">{count}</strong> {one ? "requirement" : "requirements"} you can see {one ? "cites" : "cite"}{none ? "" : ". Their owners are told the source changed"}</>}
-            />
+            <p>It replaces version {liveNumber ?? "?"} in service.</p>
           ) : (
             <p>Nothing of it is in service yet.</p>
           )}
@@ -129,7 +124,7 @@ export function publishPanel({ disclosure, hook, document, version, included, li
         </>
       }
       reason={summaryField(summary, onSummaryChange)}
-      reversibility="You can withdraw it later; withdrawing tells the requirements that cite it."
+      reversibility="You can withdraw it later."
       confirmLabel={behalf ? `Publish version ${version.number} on ${document.owner.display_name}'s behalf` : `Publish version ${version.number}`}
       keepLabel="Not yet"
       busy={hook.review.isPending || hook.approve.isPending}

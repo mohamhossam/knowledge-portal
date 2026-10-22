@@ -1,25 +1,25 @@
 /*
- * The Requirements area (UX rebuild, phase 3): the corpus, its findings and historic
- * requirements on the workbench. Layout only, from semantic and component tokens;
+ * Historic requirements on the workbench (UX rebuild, phase 3): old BRDs with their
+ * Azure DevOps breakdown. Layout only, from semantic and component tokens;
  * logical properties only.
  */
 
 /* Quieter words: a second line, a missing fact, the who and when. */
-.rk-quiet {
+.hist-quiet {
   color: var(--color-ink-2);
 }
 
-p.rk-quiet,
-.rk-lead {
+p.hist-quiet,
+.hist-lead {
   margin: 0;
 }
 
-.rk-lead {
+.hist-lead {
   max-inline-size: 72ch;
   color: var(--color-ink-2);
 }
 
-.rk-detail {
+.hist-detail {
   display: block;
   margin-block-start: var(--space-1);
   font-size: var(--text-meta);
@@ -27,40 +27,14 @@ p.rk-quiet,
   overflow-wrap: anywhere;
 }
 
-.rk-inline {
+.hist-inline {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-1) var(--space-3);
 }
 
-.rk-leaves {
-  margin-inline-start: var(--space-1);
-  vertical-align: -2px;
-}
-
-/* The list's head: the two screening checks side by side, the owner it is narrowed to. */
-.rk-checks {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.ds-listtools__controls > .rk-checks,
-.ds-listtools__controls > .rk-owner {
-  flex-basis: 100%;
-}
-
-.rk-owner {
-  margin: 0;
-  font-size: var(--text-meta);
-  color: var(--color-ink-2);
-}
-
-.rk-owner strong {
-  color: var(--color-ink);
-}
-
-.rk-listpad {
+.hist-listpad {
   display: grid;
   justify-items: start;
   gap: var(--space-2);
@@ -68,7 +42,7 @@ p.rk-quiet,
   padding: var(--space-3);
 }
 
-.rk-failure {
+.hist-failure {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -77,32 +51,21 @@ p.rk-quiet,
 }
 
 /* What an action came to: mounted empty, so it is announced; it takes focus once its trigger has gone. */
-.rk-said {
+.hist-said {
   margin: 0;
 }
 
-.rk-said:empty {
+.hist-said:empty {
   display: none;
 }
 
-.rk-said:focus-visible,
-.rk-results__summary:focus-visible {
+.hist-said:focus-visible,
+.hist-results__summary:focus-visible {
   outline: var(--focus-ring);
   outline-offset: 2px;
 }
 
-.rk-bulk {
-  display: grid;
-  gap: var(--space-3);
-  justify-items: start;
-}
-
-.rk-bulk > .ds-consequence {
-  justify-self: stretch;
-}
-
-.rk-notice,
-.rk-state {
+.hist-state {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -111,12 +74,12 @@ p.rk-quiet,
 }
 
 /* The one next decision, as a link with its arrow. */
-.rk-next {
+.hist-next {
   margin: 0;
   font-weight: var(--weight-strong);
 }
 
-.rk-next a {
+.hist-next a {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
@@ -125,14 +88,14 @@ p.rk-quiet,
 }
 
 /* What needs someone: a ledger of named lines, each with its count and state. */
-.rk-lines {
+.hist-lines {
   display: grid;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.rk-lines > li {
+.hist-lines > li {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 0 var(--space-3);
@@ -141,105 +104,72 @@ p.rk-quiet,
   border-block-end: var(--rule-hair) solid var(--color-rule-soft);
 }
 
-.rk-lines > li > a {
+.hist-lines > li > a {
   display: inline-flex;
   align-items: center;
   min-block-size: var(--target-min);
 }
 
-.rk-lines__count {
+.hist-lines__count {
   font-variant-numeric: tabular-nums;
   font-weight: var(--weight-strong);
 }
 
-.rk-lines__status {
+.hist-lines__status {
   font-size: var(--text-meta);
   color: var(--color-ink-2);
 }
 
-.rk-lines > li:last-child {
+.hist-lines > li:last-child {
   border-block-end: 0;
 }
 
-/* A finding's two requirements, and the people the batch ask reaches. */
-.rk-sides,
-.rk-reach {
-  display: grid;
-  gap: var(--space-3);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.rk-reach {
-  gap: var(--space-1);
-}
-
-.rk-side {
-  display: grid;
-  gap: var(--space-1);
-  padding-block-end: var(--space-3);
-  border-block-end: var(--rule-hair) solid var(--color-rule-soft);
-}
-
-.rk-side > a:first-child {
-  font-weight: var(--weight-strong);
-}
-
-.rk-side a,
-.rk-out {
-  justify-self: start;
-  display: inline-flex;
-  align-items: center;
-  min-block-size: var(--target-min);
-}
-
 /* A historic record's sections: each heading takes focus from the next step. */
-.rk-part .ds-section__title:focus-visible {
+.hist-part .ds-section__title:focus-visible {
   outline: var(--focus-ring);
   outline-offset: 2px;
 }
 
-.rk-inline,
-.rk-import {
+.hist-inline,
+.hist-import {
   max-inline-size: 40rem;
 }
 
-form.rk-inline {
+form.hist-inline {
   display: grid;
   gap: var(--space-3);
 }
 
 /* The lineage: each level set in under its parent, its type in small capitals. */
-.rk-depth {
+.hist-depth {
   display: block;
 }
 
-.rk-depth--1 {
+.hist-depth--1 {
   padding-inline-start: var(--space-4);
 }
 
-.rk-depth--2 {
+.hist-depth--2 {
   padding-inline-start: var(--space-8);
 }
 
-.rk-depth--3 {
+.hist-depth--3 {
   padding-inline-start: var(--space-12);
 }
 
-.rk-depth--0 {
+.hist-depth--0 {
   font-weight: var(--weight-strong);
 }
 
-.rk-type,
-.rk-kind,
-.rk-field {
+.hist-type,
+.hist-kind,
+.hist-field {
   font-size: var(--text-meta);
   font-weight: var(--weight-strong);
   color: var(--color-ink-2);
 }
 
-.rk-ado {
+.hist-ado {
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -247,41 +177,41 @@ form.rk-inline {
   white-space: nowrap;
 }
 
-.rk-says {
+.hist-says {
   display: block;
 }
 
-.rk-said-by {
+.hist-said-by {
   display: grid;
   gap: var(--space-2);
   margin: var(--space-2) 0 0;
   font-weight: var(--weight-body);
 }
 
-.rk-said-by dt {
+.hist-said-by dt {
   font-size: var(--text-meta);
   color: var(--color-ink-2);
 }
 
-.rk-said-by dd {
+.hist-said-by dd {
   margin: 0;
   white-space: pre-line;
 }
 
-.rk-deltas {
+.hist-deltas {
   margin: var(--space-1) 0 0;
   padding-inline-start: var(--space-4);
 }
 
 /* A BRD: its file, its read state, then its passages. */
-.rk-brd {
+.hist-brd {
   display: grid;
   gap: var(--space-2);
   padding-block-end: var(--space-4);
   border-block-end: var(--rule-hair) solid var(--color-rule-soft);
 }
 
-.rk-brd__head {
+.hist-brd__head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -289,30 +219,30 @@ form.rk-inline {
   margin: 0;
 }
 
-.rk-brd__name {
+.hist-brd__name {
   font-weight: var(--weight-strong);
 }
 
-.rk-warnings {
+.hist-warnings {
   margin: 0;
   padding-inline-start: var(--space-4);
 }
 
-.rk-passage {
+.hist-passage {
   white-space: pre-line;
 }
 
-.rk-file {
+.hist-file {
   cursor: pointer;
 }
 
-.rk-file:focus-within {
+.hist-file:focus-within {
   outline: var(--focus-ring);
   outline-offset: 2px;
 }
 
 /* Work-item ids the BRD mentions, each with the words it was found in. */
-.rk-found {
+.hist-found {
   display: grid;
   gap: var(--space-2);
   padding: var(--space-3);
@@ -320,13 +250,13 @@ form.rk-inline {
   border: var(--rule-hair) solid var(--color-rule);
 }
 
-.rk-found__title,
-.rk-report__title {
+.hist-found__title,
+.hist-report__title {
   margin: 0;
   font-weight: var(--weight-strong);
 }
 
-.rk-found__list {
+.hist-found__list {
   display: grid;
   gap: var(--space-2);
   margin: 0;
@@ -334,43 +264,43 @@ form.rk-inline {
   list-style: none;
 }
 
-.rk-found__id {
+.hist-found__id {
   font-weight: var(--weight-strong);
   font-variant-numeric: tabular-nums;
 }
 
-.rk-quote {
+.hist-quote {
   display: block;
   color: var(--color-ink-2);
 }
 
-.rk-report {
+.hist-report {
   display: grid;
   gap: var(--space-2);
 }
 
-.rk-withdraw {
+.hist-withdraw {
   padding-block-start: var(--space-3);
   border-block-start: var(--rule-hair) solid var(--color-rule);
 }
 
 /* The import: a file field, then a result per BRD. */
-.rk-file-input {
+.hist-file-input {
   block-size: auto;
   padding-block: var(--space-2);
 }
 
-.rk-results {
+.hist-results {
   display: grid;
   gap: var(--space-2);
 }
 
-.rk-results__summary {
+.hist-results__summary {
   margin: 0;
   font-weight: var(--weight-strong);
 }
 
-.rk-results__list {
+.hist-results__list {
   display: grid;
   gap: var(--space-2);
   margin: 0;
@@ -378,18 +308,18 @@ form.rk-inline {
   list-style: none;
 }
 
-.rk-results__list > li {
+.hist-results__list > li {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-1) var(--space-3);
 }
 
-.rk-results__list .rk-detail {
+.hist-results__list .hist-detail {
   flex-basis: 100%;
   margin: 0;
 }
 
-.rk-results__name {
+.hist-results__name {
   font-weight: var(--weight-strong);
 }

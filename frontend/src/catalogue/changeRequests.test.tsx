@@ -107,7 +107,7 @@ describe("a closed Epic in the inbox", () => {
   it("says what it delivered, what it suggests, and how that compares with the prediction", async () => {
     open([CLOSED]);
 
-    const row = within(await screen.findByRole("table", { name: /Change requests from Requirement AI/ })).getAllByRole("row")[1]!;
+    const row = within(await screen.findByRole("table", { name: /Change requests from connected apps/ })).getAllByRole("row")[1]!;
     expect(row).toHaveTextContent("Epic closed: 1 delivered Feature for Business Fiber");
     expect(within(row).getByRole("link", { name: /Epic 4711 closed on 20 Oct 2026/ })).toHaveAttribute(
       "href",
@@ -160,7 +160,7 @@ describe("an approved backlog for a new offering", () => {
     } as unknown as Release;
     open([DRAFTED], [named]);
 
-    const row = within(await screen.findByRole("table", { name: /Change requests from Requirement AI/ })).getAllByRole("row")[1]!;
+    const row = within(await screen.findByRole("table", { name: /Change requests from connected apps/ })).getAllByRole("row")[1]!;
     expect(row).toHaveTextContent("Drafts a new offering, ‘Cloud Voice’, from Business Pro Plus.");
     expect(row).toHaveTextContent("Its components: SIP trunk, by CWOM; Call recording, with no system yet.");
     expect(row).toHaveTextContent("Its journey: New activation, 3 steps. 1 question is left for architecture review.");
@@ -180,21 +180,23 @@ describe("an approved backlog for a new offering", () => {
   });
 });
 
-describe("the inbox of change requests from Requirement AI", () => {
+describe("the inbox of change requests from connected apps", () => {
   it("says what each asks and where it comes from, and reads one into a new draft", async () => {
     const read = vi.spyOn(api, "readChangeRequest").mockResolvedValue({
       release: { ...VERSION, id: "draft-1", status: "draft", name: "CR-20261003-Business_Pro_Plus" },
       run: { id: "r", document_version_id: "CR-20261003-Business_Pro_Plus", model: "requirement-ai-export", prompt_version: "export-1", candidate_count: 1, warnings: [], created_at: "", match_model: null, match_prompt_version: null, change_request_id: "CR-20261003-Business_Pro_Plus" },
       change_request: item({ status: "read", read_into: "draft-1" }),
     } as never);
-    open([item()]);
+    open([item({ sent_by: "requirements" })]);
 
-    const row = within(await screen.findByRole("table", { name: /Change requests from Requirement AI/ })).getAllByRole("row")[1]!;
+    const row = within(await screen.findByRole("table", { name: /Change requests from connected apps/ })).getAllByRole("row")[1]!;
     expect(row).toHaveTextContent("CR-20261003-Business_Pro_Plus");
+    // The app that sent it, by the name it is registered under (ADR-0126).
+    expect(row).toHaveTextContent("Sent by requirements");
     expect(row).toHaveTextContent("1 approved feature for Business Pro Plus");
     expect(row).toHaveTextContent("REQ-2026-0412, revision 3, approved by Layla Haddad on 3 Oct 2026");
     expect(row).toHaveTextContent("FT-1 Offer Microsoft 365");
-    expect(screen.getByRole("heading", { name: /Change requests from Requirement AI 1 waiting/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^Change requests 1 waiting/ })).toBeInTheDocument();
 
     fireEvent.click(within(row).getByRole("button", { name: /^Read it into a new draft ?\(CR-20261003-Business_Pro_Plus\)$/ }));
 
@@ -244,7 +246,7 @@ describe("the inbox of change requests from Requirement AI", () => {
 
   it("says when nothing has come yet", async () => {
     open([]);
-    expect(await screen.findByText("No change request has come from Requirement AI yet.")).toBeInTheDocument();
+    expect(await screen.findByText("No change request has come from a connected app yet.")).toBeInTheDocument();
     expect(traceLine({ ...TRACE, approved_by: null, approved_at: null })).toBe("REQ-2026-0412, revision 3");
   });
 });

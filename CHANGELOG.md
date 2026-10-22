@@ -17,7 +17,12 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   pinned `contracts/requirement-internal.openapi.json`. Those screens showed requirement work's
   own data; they belong there.
 - **It links to no app.** The web image no longer fills in `REQUIREMENT_PORTAL_URL`, and the
-  shell, sign-in page, explorer and records carry no link to requirement work.
+  shell, sign-in page, explorer and records carry no link to requirement work (the shell's
+  outbound link slot is gone from the design system too). Copy that named requirement work
+  now says what it means: "It can be cited once it is indexed", "Change requests from
+  connected apps".
+- **Historic requirements have their own place**, "Historic" in the sidebar, at `/historic`
+  (`g r` goes there); the old `/requirement-knowledge/historic` addresses redirect to it.
 - **The internal API is the app API, for any app.** `/internal/*` is now `/apps/v2/*`, with its
   contract `contracts/knowledge-apps.openapi.json` at 2.0.0 (was
   `knowledge-internal.openapi.json`, 1.0.0); the operations and bodies are unchanged. Each app

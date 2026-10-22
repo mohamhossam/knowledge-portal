@@ -142,7 +142,6 @@ export function AppShell({
   product = "Knowledge Portal",
   homeHref,
   logo,
-  outbound,
   utilities,
   navigation = [],
   secondaryNavigation = [],
@@ -160,8 +159,6 @@ export function AppShell({
   homeHref: string;
   /** The logo slot; defaults to the white Etisalat lockup. */
   logo?: ReactNode;
-  /** The way back to requirement-portal, e.g. { href, label: "Requirement AI" }. */
-  outbound?: { href: string; label: string };
   /** Jobs, Help, Account: the same three, in the same place, on every page (WCAG 3.2.6). */
   utilities?: ReactNode;
   /** The sidebar's areas, top first; `group` names the groups. */
@@ -271,12 +268,6 @@ export function AppShell({
           </div>
           {search && <div className="ds-masthead__search" role="search" aria-label="Portal">{search}</div>}
           <div className="ds-masthead__end">
-            {outbound && (
-              <a className="ds-masthead__out" href={outbound.href}>
-                {outbound.label}{" "}
-                <span className="ds-visually-hidden">(leaves the knowledge portal)</span>
-              </a>
-            )}
             {utilities && <div className="ds-masthead__utilities">{utilities}</div>}
           </div>
         </header>

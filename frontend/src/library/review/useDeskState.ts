@@ -341,7 +341,7 @@ export function useDeskState(document: LibraryDocument, version: LibraryVersion)
   }
   // Stable for the memoized grid (Enter on a row): on to the pane's first action.
   const onActivate = useCallback(() => focusLater(() => desk.current?.querySelector<HTMLElement>(".ds-split__pane .ds-button")), [focusLater]);
-  const published = () => announce("Published. Requirement work can cite it once it is indexed; Jobs shows the indexing.");
+  const published = () => announce("Published. It can be cited once it is indexed; Jobs shows the indexing.");
 
   return {
     hook, dirty, summary, setSummary, rows, basis, headings, tally, revision, fileWarnings, unsavedReview,

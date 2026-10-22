@@ -90,7 +90,7 @@ test("A3 the document's pages: each link moves focus to its panel's heading (mod
   test.skip(!serviceDocument, "this seed has no document in service");
   await page.goto(`library/${serviceDocument}`);
   await settled(page);
-  for (const name of ["Versions", "Cited by", "Owner", "Overview"]) {
+  for (const name of ["Versions", "Owner", "Overview"]) {
     await page.getByRole("navigation", { name: "This document" }).getByRole("link", { name }).click();
     await settled(page);
     await expect(page.locator(":focus")).toHaveRole("heading");

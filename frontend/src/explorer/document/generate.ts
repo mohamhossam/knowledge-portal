@@ -1,6 +1,6 @@
 /**
- * The Solution Architecture document as a Word file (requirement-portal
- * ADR-0101, step 6): the model, its parts, and the package.
+ * The Solution Architecture document as a Word file (ADR-0101,
+ * step 6): the model, its parts, and the package.
  */
 import { solutionDocument, type DocumentInput, type SolutionDocument } from "./model";
 import { documentParts } from "./wordml";

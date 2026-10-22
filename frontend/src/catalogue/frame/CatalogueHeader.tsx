@@ -4,12 +4,12 @@ import type { ReactNode } from "react";
 
 import { api, type Release } from "../../api/client";
 import { Breadcrumbs, PageHeader, Status, SubNav } from "../../design/components";
-import { count, formatDay } from "../../home/format";
+import { formatDay } from "../../home/format";
 import { ButtonLink, RouterLink } from "../../shell/links";
 import { changeSentence } from "../catalogue";
 import { useDraftAction } from "../draft/useDraftAction";
 import { useChangeRequests } from "../inbox";
-import { type CatalogueContext, useCatalogueContext, useMappingImpact } from "../useCatalogue";
+import { type CatalogueContext, useCatalogueContext } from "../useCatalogue";
 
 /** A catalogue page, as its sub-navigation and its breadcrumb name it. */
 export type CataloguePageId =
@@ -123,7 +123,6 @@ export function CatalogueHeader({ page, chosen, record, children }: {
           <>
             {inService ? <Status tone="done">In service</Status> : draft ? <Status tone="working">In preparation</Status> : <Status tone="stopped">Replaced</Status>}
             <bdi>{name}</bdi>
-            {inService && <MappedEarlier />}
           </>
         }
         actions={
@@ -152,7 +151,7 @@ function pages(base: string, page: CataloguePageId, inService: boolean, release:
     { href: `${base}/domains`, label: "Landscape", current: page === "domains" },
     { href: `${base}/channels`, label: "Channels", current: page === "channels" },
     { href: `${base}/governance`, label: "Governance", current: page === "governance" },
-    // Change requests from Requirement AI wait on Versions; the count is seen from every page.
+    // Change requests from connected apps wait on Versions; the count is seen from every page.
     ...(inService
       ? [
           { href: "/architecture/versions", label: waiting ? `Versions · ${waiting} waiting` : "Versions", current: page === "versions" || page === "compare" },
@@ -165,18 +164,11 @@ function pages(base: string, page: CataloguePageId, inService: boolean, release:
 function Edition({ release, inService, actorName }: { release: Release; inService: boolean; actorName: CatalogueContext["actorName"] }) {
   const name = <bdi>‘{versionName(release)}’</bdi>;
   if (release.status === "draft") {
-    return <>A draft started by <bdi>{actorName(release.created_by)}</bdi>. Nothing in it reaches requirement work until it is published.</>;
+    return <>A draft started by <bdi>{actorName(release.created_by)}</bdi>. Nothing in it is in service until it is published.</>;
   }
   const published = <>published by <bdi>{actorName(release.published_by)}</bdi> on {formatDay(release.published_at)}</>;
-  if (inService) return <>The version in service, {name}, {published}. Requirement work maps to what you read here.</>;
+  if (inService) return <>The version in service, {name}, {published}.</>;
   return <>Replaced: {published}; no longer in service. <RouterLink href="/architecture">Read the version in service</RouterLink></>;
-}
-
-/** Requirement work still mapped with an earlier version, when there is any. */
-function MappedEarlier() {
-  const outdated = useMappingImpact().data?.outdated_requirements ?? 0;
-  if (!outdated) return null;
-  return <Status tone="attention">{count(outdated, "requirement")} still mapped with an earlier version</Status>;
 }
 
 /** Shown on any other version: what putting it in service would change. */
@@ -191,7 +183,7 @@ function Consequence({ release }: { release: Release }) {
   return <span>{sentence ? `${verb} would ${sentence}.` : "Its contents match the version in service."}</span>;
 }
 
-/** Change requests from Requirement AI waiting on Versions: the count, seen from every page. */
+/** Change requests from connected apps waiting on Versions: the count, seen from every page. */
 function useWaitingRequests(): number {
   return (useChangeRequests().data ?? []).filter((item) => item.status === "waiting").length;
 }

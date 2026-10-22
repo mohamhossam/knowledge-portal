@@ -30,10 +30,6 @@ export type OrganisationAuditEvent = Schemas["OrganisationAuditEventResponse"];
 type OriginalPreview = Schemas["OriginalPreview"];
 export type ReferenceChunk = Schemas["ReferenceChunk"];
 type BuildPreview = Schemas["CorpusBuildPreview"];
-type DependencyPage = Schemas["LibraryDependencyPage"];
-export type Dependency = Schemas["LibraryDependency"];
-type ImpactPage = Schemas["DependencyImpactPage"];
-export type Impact = Schemas["DependencyImpact"];
 export type OwnershipTransfer = Schemas["OwnershipTransfer"];
 /** A knowledge admin's grant to act on a document they don't own (Knowledge Center C). */
 type AdminGrant = Schemas["AdminGrant"];
@@ -59,7 +55,6 @@ export type JourneyActivity = Schemas["ActivitySchema"];
 export type SourceConfidence = Schemas["SourceConfidence"];
 export type ReleaseAuditEvent = Schemas["KnowledgeAuditEventResponse"];
 export type CatalogueDiff = Schemas["CatalogueDiffResponse"];
-type MappingImpact = Schemas["MappingImpactResponse"];
 type PrecedentSummaries = Schemas["PrecedentSummariesResponse"];
 export type ReleasePrecedents = Schemas["ReleasePrecedentsResponse"];
 type DeliverySummaries = Schemas["DeliverySummariesResponse"];
@@ -74,17 +69,6 @@ export type ExtractionRun = Schemas["ExtractionRunResponse"];
 export type CatalogueReading = Schemas["CatalogueReading"];
 export type ArchitectureJob = Schemas["ArchitectureJobResponse"];
 export type DocumentExtraction = Schemas["DocumentExtractionResponse"];
-export type RequirementCorpus = Schemas["RequirementCorpusResponse"];
-type CorpusRequirementsPage = Schemas["CorpusRequirementsResponse"];
-export type CorpusRequirement = Schemas["CorpusRequirementResponse"];
-type CorpusFindingsPage = Schemas["CorpusFindingsResponse"];
-export type CorpusFinding = Schemas["CorpusFindingResponse"];
-export type IndexState = Schemas["IndexState"];
-export type FindingAge = Schemas["FindingAge"];
-export type FindingKind = Schemas["FindingKind"];
-type Nudge = Schemas["NudgeResponse"];
-type Membership = Schemas["MembershipResponse"];
-export type ReindexScope = Schemas["ReindexScope"];
 /** The Golden set report: runs of the impact mapper over the catalogue's golden set. */
 export type GoldenSetInfo = Schemas["GoldenSetInfoResponse"];
 export type GoldenRunOptions = Schemas["GoldenRunRequest"];
@@ -107,9 +91,6 @@ export type LineageNode = Schemas["LineageNodeView"];
 export type HistoricWorkItem = Schemas["WorkItemView"];
 export type HistoricChange = Schemas["ItemChangeView"];
 export type HistoricSharedRoot = Schemas["SharedRootView"];
-/** A Requirement whose prior art cites a historic one: who and when, never what (E2). */
-export type HistoricCitation = Schemas["CitationView"];
-type HistoricCitedBy = Schemas["CitedByResponse"];
 /** When knowledge was last confirmed still right, by whom, and when it falls due (Knowledge Center D). */
 export type ReviewStanding = Schemas["ReviewStanding"];
 export type ReviewState = Schemas["ReviewState"];
@@ -119,15 +100,6 @@ export type ConfirmReview = Schemas["ReviewRequest"];
 export type SystemStanding = Schemas["SystemStanding"];
 export type Reminders = Schemas["Reminders"];
 export type Reminder = Schemas["Reminder"];
-export type CorpusFilters = {
-  indexState?: IndexState;
-  ownerId?: string;
-  query?: string;
-  openFindingsOnly?: boolean;
-  notScreenedForDays?: number;
-  retiredOnly?: boolean;
-};
-export type FindingFilters = { kind?: FindingKind; age?: FindingAge; ownerId?: string };
 type CitedPassage = Schemas["DocumentPassageResponse"];
 export type CatalogueDocument = Schemas["KnowledgeDocumentVersionResponse"];
 export type Person = Schemas["PersonSchema"];
@@ -145,7 +117,7 @@ export type UnregisteredCitation = Schemas["UnregisteredCitationResponse"];
 export type CatalogueCoverage = Schemas["CoverageResponse"];
 export type Orphan = Schemas["OrphanResponse"];
 export type DraftUpdate = Schemas["DraftUpdateRequest"];
-/** A change request from Requirement AI waiting in the inbox (requirement-portal ADR-0101, step 7). */
+/** A change request from a connected app waiting in the inbox (ADR-0101, step 7). */
 export type ChangeRequest = Schemas["ChangeRequestResponse"];
 type ChangeRequestReading = Schemas["ChangeRequestReadingResponse"];
 /** A change request applied to a version, in its change history. */
@@ -250,7 +222,7 @@ async function allLibraryDocuments(): Promise<LibraryDocument[]> {
 export const api = {
   identityConfig: () => apiRequest<IdentityConfig>("/identity/config"),
   currentActor: () => apiRequest<Actor>("/identity/me"),
-  /** Who is reading the explorer, admin or not (requirement-portal ADR-0101). */
+  /** Who is reading the explorer, admin or not (ADR-0101). */
   explorerReader: () => apiRequest<Actor>("/explorer/me"),
   explorerRelease: () => apiRequest<ExplorerRelease>("/explorer/release"),
   explorerPlans: (offeringId: string) =>
@@ -336,7 +308,7 @@ export const api = {
   /** Says what a name waiting suggestions name is: a system to suggest, or a product offering. */
   settleSubject: (releaseId: string, body: Schemas["SettleSubjectRequest"]) =>
     post<Schemas["SettleSubjectResponse"]>(`${releasePath(releaseId)}/suggestions/subject`, body),
-  /** Change requests requirement-portal delivered, newest first (ADR-0101, step 7). */
+  /** Change requests connected apps delivered, newest first (ADR-0101, step 7). */
   changeRequests: async () => (await apiRequest<Schemas["ChangeRequestsResponse"]>("/architecture-knowledge/change-requests")).change_requests,
   /** Reads one into the draft in progress, or a new draft named after it. */
   readChangeRequest: (changeRequestId: string) =>
@@ -372,7 +344,6 @@ export const api = {
     body.set("expected_revision", String(expectedRevision));
     return apiRequest<Release>(`${releasePath(releaseId)}/catalogue-file`, { method: "POST", body });
   },
-  mappingImpact: () => apiRequest<MappingImpact>("/architecture-knowledge/mapping-impact"),
   /** How reviewers decided suggested verdicts, per release (ontology plan Phase 5). */
   precedentSummary: () => apiRequest<PrecedentSummaries>("/architecture-knowledge/precedents/summary"),
   /** What closed Epics delivered against what was predicted, per release (ontology plan Phase 7). */
@@ -393,40 +364,6 @@ export const api = {
     }),
   organisationAudit: () => apiRequest<OrganisationAuditEvent[]>("/organisation/audit"),
   organisationReferences: () => apiRequest<ReferenceFlag[]>("/organisation/references"),
-
-  // Knowledge Center: requirement work's corpus, in counts (A′).
-  requirementCorpus: () => apiRequest<RequirementCorpus>("/knowledge-center/requirement-corpus"),
-  /** The corpus by title, 50 at a time: identity and state, never content (B2). */
-  corpusRequirements: (filters: CorpusFilters, offset: number) => {
-    const params = new URLSearchParams({ offset: String(offset), limit: "50" });
-    if (filters.indexState) params.set("index_state", filters.indexState);
-    if (filters.ownerId) params.set("owner_id", filters.ownerId);
-    if (filters.query) params.set("q", filters.query);
-    if (filters.openFindingsOnly) params.set("open_findings_only", "true");
-    if (filters.notScreenedForDays) params.set("not_screened_for_days", String(filters.notScreenedForDays));
-    if (filters.retiredOnly) params.set("retired_only", "true");
-    return apiRequest<CorpusRequirementsPage>(`/knowledge-center/requirement-corpus/requirements?${params}`);
-  },
-  /** Findings in force, the longest-standing first. */
-  corpusFindings: (filters: FindingFilters, offset: number) => {
-    const params = new URLSearchParams({ offset: String(offset), limit: "50" });
-    if (filters.kind) params.set("kind", filters.kind);
-    if (filters.age) params.set("age", filters.age);
-    if (filters.ownerId) params.set("owner_id", filters.ownerId);
-    return apiRequest<CorpusFindingsPage>(`/knowledge-center/requirement-corpus/findings?${params}`);
-  },
-  /** Ask both requirements' owners to decide a finding; requirement work sends it, at most weekly. */
-  /** Take a requirement out of the corpus, with the admin's reason (B3). */
-  retireRequirement: (requirementId: string, reason: string) =>
-    post<Membership>(`/knowledge-center/requirement-corpus/requirements/${encodeURIComponent(requirementId)}/retirement`, { reason }),
-  /** Return a retired requirement to the corpus. */
-  reinstateRequirement: (requirementId: string, reason: string) =>
-    post<Membership>(`/knowledge-center/requirement-corpus/requirements/${encodeURIComponent(requirementId)}/reinstatement`, { reason }),
-  /** Retry what stopped indexing, or index chosen requirements again. */
-  reindexCorpus: (scope: ReindexScope, requirementIds: string[] = []) =>
-    post<{ requirements: number }>("/knowledge-center/requirement-corpus/reindex", { scope, requirement_ids: requirementIds }),
-  nudgeFinding: (findingId: string) =>
-    post<Nudge>(`/knowledge-center/requirement-corpus/findings/${encodeURIComponent(findingId)}/nudge`, {}),
 
   // Library: one document and its curation. Every change names the version it saw.
   libraryDocument: (documentId: string) => apiRequest<LibraryDocument>(documentPath(documentId)),
@@ -459,7 +396,7 @@ export const api = {
     post<LibraryDocument>(`${versionPath(documentId, versionId)}/cancellation`, { expected_version: expectedVersion }),
   originalPreview: (documentId: string, versionId: string, blockId: string) =>
     apiRequest<OriginalPreview>(`${versionPath(documentId, versionId)}/blocks/${encodeURIComponent(blockId)}/original-preview`),
-  // Governance: how it is indexed for search, who relies on it, who owns it.
+  // Governance: how it is indexed for search and who owns it.
   chunkPreview: (documentId: string) => apiRequest<ReferenceChunk[]>(`${documentPath(documentId)}/chunks/preview`),
   buildPreview: (documentId: string) => apiRequest<BuildPreview>(`${documentPath(documentId)}/builds/preview`),
   build: (documentId: string, body: { expected_version: number; fingerprint: string; index_identity: string }) =>
@@ -470,12 +407,6 @@ export const api = {
     post<LibraryDocument>(`${documentPath(documentId)}/builds/${encodeURIComponent(buildId)}/discard`, { expected_version: expectedVersion }),
   retryIndexing: (documentId: string, expectedVersion: number) =>
     post<LibraryDocument>(`${documentPath(documentId)}/index-retry`, { expected_version: expectedVersion }),
-  dependencies: (documentId: string, offset: number) =>
-    apiRequest<DependencyPage>(`${documentPath(documentId)}/dependencies?offset=${offset}&limit=50`),
-  sourceImpact: (documentId: string, input: { offset: number; activeOnly: boolean; query: string }) =>
-    apiRequest<ImpactPage>(`${documentPath(documentId)}/source-impact?${new URLSearchParams({
-      offset: String(input.offset), limit: "50", active_only: String(input.activeOnly), query: input.query,
-    })}`),
   openAdminGrant: (documentId: string, reason: string) =>
     post<AdminGrant>(`${documentPath(documentId)}/admin-grant`, { reason }),
   endAdminGrant: async (documentId: string) => {
@@ -516,8 +447,6 @@ export const api = {
   historic: (historicId: string) => apiRequest<HistoricDetail>(historicPath(historicId)),
   historicSharedRoots: (historicId: string) =>
     apiRequest<Schemas["SharedRootsResponse"]>(`${historicPath(historicId)}/shared-roots`),
-  historicCitedBy: (historicId: string, offset = 0) =>
-    apiRequest<HistoricCitedBy>(`${historicPath(historicId)}/citations?offset=${offset}&limit=20`),
   renameHistoric: (historicId: string, title: string, expectedVersion: number) =>
     apiRequest<HistoricDetail>(historicPath(historicId), {
       method: "PATCH",

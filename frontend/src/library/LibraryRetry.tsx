@@ -75,7 +75,7 @@ function RetryLine({ scope, titles, onDone }: { scope: LibraryRetryScope; titles
       <p className="lib-retry__line">
         {scope === "reading"
           ? `${plural(n, "document")} couldn't be read.`
-          : `Indexing stopped for ${plural(n, "document")}: requirement work can't cite ${n === 1 ? "it" : "them"} yet.`}
+          : `Indexing stopped for ${plural(n, "document")}: ${n === 1 ? "it can't" : "they can't"} be cited yet.`}
       </p>
       <ActionGroup>
         <Button aria-expanded={panel.open} onClick={(event) => { if (panel.open) panel.close(); else { run.reset(); panel.show(event); } }}>{words.trigger(n)}</Button>

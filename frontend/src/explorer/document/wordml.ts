@@ -1,6 +1,6 @@
 /**
  * A Solution Architecture document's blocks as the parts of a Word package
- * (requirement-portal ADR-0101, step 6), ported from the original explorer's
+ * (ADR-0101, step 6), ported from the original explorer's
  * `renderDocxParts`. The look is the Timetable Book's: ink on stock, rules for
  * structure, rank carried by weight; red is kept for a gap, as on screen.
  */

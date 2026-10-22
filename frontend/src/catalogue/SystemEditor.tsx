@@ -7,7 +7,7 @@ type Component = CatalogueSystem["components"][number];
 
 /**
  * A whole system: its names, where it sits, what it does and by which phrases
- * requirement work finds it, its components and its constraints. Controlled.
+ * requirements are mapped to it, its components and its constraints. Controlled.
  */
 export function SystemEditor({ value, onChange, release }: {
   value: CatalogueSystem;
@@ -75,7 +75,7 @@ export function SystemEditor({ value, onChange, release }: {
               label="Matched by"
               value={item.triggers}
               required
-              hint="One phrase per line. Requirement work maps a requirement here when it uses one."
+              hint="One phrase per line. A requirement is mapped here when it uses one."
               onChange={(triggers) => update({ triggers })}
             />
             <SelectField

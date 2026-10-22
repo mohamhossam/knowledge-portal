@@ -20,7 +20,7 @@ const NAV = [
 describe("AppShell", () => {
   it("offers skip links first, labels its regions and marks the current area", async () => {
     render(
-      <AppShell homeHref="/" navigation={NAV} outbound={{ href: "/req", label: "Requirement AI" }} utilities={<MastheadButton icon="?" label="Help" onClick={() => {}} />} locationKey="/library">
+      <AppShell homeHref="/" navigation={NAV} utilities={<MastheadButton icon="?" label="Help" onClick={() => {}} />} locationKey="/library">
         <PageHeader title="Library">x</PageHeader>
       </AppShell>,
     );
@@ -31,7 +31,6 @@ describe("AppShell", () => {
     expect(screen.getByRole("main")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Library" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "To do 6 need you" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Requirement AI (leaves the knowledge portal)" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Etisalat" })).toBeInTheDocument();
   });
 
@@ -156,7 +155,7 @@ describe("page structure", () => {
   });
 
   it("marks the current sub-page in a labelled nav", () => {
-    render(<SubNav label="Document" items={[{ href: "/r", label: "Review", current: true }, { href: "/c", label: "Cited by" }]} />);
+    render(<SubNav label="Document" items={[{ href: "/r", label: "Review", current: true }, { href: "/c", label: "Versions" }]} />);
     expect(screen.getByRole("navigation", { name: "Document" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Review" })).toHaveAttribute("aria-current", "page");
   });

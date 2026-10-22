@@ -1,20 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-
-import { api, type LibraryDocument } from "../api/client";
+import type { LibraryDocument } from "../api/client";
 import { approvalBlocker, latestRevision, newestVersion } from "./model";
-
-/**
- * Who cites the document now (the first page of its dependants), shared by
- * withdraw and publish. Unknown is never zero (§11): a failed ask says so.
- */
-export function useCiting(documentId: string, enabled = true) {
-  return useQuery({
-    queryKey: ["library", "dependencies", documentId, "first"],
-    queryFn: () => api.dependencies(documentId, 0),
-    enabled,
-    retry: false,
-  });
-}
 
 /**
  * Why a withdrawn document can't return to service as it was; null when it can. In the

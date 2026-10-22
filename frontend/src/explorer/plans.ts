@@ -1,6 +1,6 @@
 /**
  * How the explorer says a product catalog's prices. The catalog is the system
- * of record (requirement-portal ADR-0101): an amount is printed exactly as it
+ * of record (ADR-0101): an amount is printed exactly as it
  * states it, in its own currency, never converted or rounded away.
  */
 import type { PlanPrice } from "../api/client";

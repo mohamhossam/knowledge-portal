@@ -30,7 +30,7 @@ export interface paths {
         };
         /**
          * List Change Requests
-         * @description Change requests from Requirement AI, newest first (requirement-portal ADR-0101, step 7).
+         * @description Change requests apps sent, newest first (ADR-0126).
          */
         get: operations["list_change_requests_architecture_knowledge_change_requests_get"];
         put?: never;
@@ -144,26 +144,6 @@ export interface paths {
         };
         /** Document Content */
         get: operations["document_content_architecture_knowledge_documents_versions__version_id__content_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/architecture-knowledge/mapping-impact": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Mapping Impact
-         * @description Counts of mapped and outdated requirements, features and stories; no titles.
-         */
-        get: operations["mapping_impact_architecture_knowledge_mapping_impact_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1162,26 +1142,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/historic-requirements/{historic_id}/citations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Cited By
-         * @description Requirements whose prior art cites it, from requirement work: who and when only.
-         */
-        get: operations["cited_by_historic_requirements__historic_id__citations_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/historic-requirements/{historic_id}/publication": {
         parameters: {
             query?: never;
@@ -1393,151 +1353,6 @@ export interface paths {
         put?: never;
         /** Retry Job */
         post: operations["retry_job_jobs__job_id__retry_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/knowledge-center/requirement-corpus": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Requirement Corpus
-         * @description Requirement work's corpus in counts. 503 when requirement work cannot answer.
-         */
-        get: operations["requirement_corpus_knowledge_center_requirement_corpus_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/knowledge-center/requirement-corpus/findings": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Corpus Findings
-         * @description Possible duplicates and contradictions in force, the longest-standing first.
-         */
-        get: operations["corpus_findings_knowledge_center_requirement_corpus_findings_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/knowledge-center/requirement-corpus/findings/{finding_id}/nudge": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Nudge Finding Owners
-         * @description Ask both Requirements' owners to decide a finding, in the admin's name.
-         *
-         *     409 with requirement work's reason when the finding was decided, a Requirement changed,
-         *     it was nudged in the last 7 days, or neither Requirement has an owner.
-         */
-        post: operations["nudge_finding_owners_knowledge_center_requirement_corpus_findings__finding_id__nudge_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/knowledge-center/requirement-corpus/reindex": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Reindex Corpus
-         * @description Retry every requirement that stopped indexing, or index the chosen ones again.
-         */
-        post: operations["reindex_corpus_knowledge_center_requirement_corpus_reindex_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/knowledge-center/requirement-corpus/requirements": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Corpus Requirements
-         * @description The corpus Requirement by Requirement, by title: identity and state, never content.
-         */
-        get: operations["corpus_requirements_knowledge_center_requirement_corpus_requirements_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/knowledge-center/requirement-corpus/requirements/{requirement_id}/reinstatement": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Reinstate Requirement
-         * @description Return a retired requirement to the corpus; it is indexed and screened again.
-         */
-        post: operations["reinstate_requirement_knowledge_center_requirement_corpus_requirements__requirement_id__reinstatement_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/knowledge-center/requirement-corpus/requirements/{requirement_id}/retirement": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Retire Requirement
-         * @description Take a requirement out of the corpus, in the admin's name and with their reason.
-         *
-         *     Requirement work closes the findings that cite it and tells its owner.
-         */
-        post: operations["retire_requirement_knowledge_center_requirement_corpus_requirements__requirement_id__retirement_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1758,23 +1573,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/library/documents/{document_id}/dependencies": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Dependencies */
-        get: operations["dependencies_library_documents__document_id__dependencies_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/library/documents/{document_id}/index-retry": {
         parameters: {
             query?: never;
@@ -1840,26 +1638,6 @@ export interface paths {
          * @description Its owner, or an admin for them with a reason, confirms it is still right.
          */
         post: operations["confirm_document_review_library_documents__document_id__review_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/library/documents/{document_id}/source-impact": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Document Source Impact
-         * @description Where the owner's document is cited, and which citations need review.
-         */
-        get: operations["document_source_impact_library_documents__document_id__source_impact_get"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3087,7 +2865,7 @@ export interface components {
          * @description Where a change request came from.
          * @enum {string}
          */
-        ChangeOrigin: "requirement-ai" | "explorer";
+        ChangeOrigin: "app" | "requirement-ai" | "explorer";
         /** ChangeRequestCitationResponse */
         ChangeRequestCitationResponse: {
             /** Change Request Id */
@@ -3113,7 +2891,7 @@ export interface components {
         };
         /**
          * ChangeRequestRecordSchema
-         * @description A change request applied to the version (requirement-portal ADR-0101, step 7).
+         * @description A change request applied to the version (ADR-0101, step 7).
          */
         ChangeRequestRecordSchema: {
             /** Applied At */
@@ -3179,6 +2957,11 @@ export interface components {
              * Format: date-time
              */
             received_at: string;
+            /**
+             * Sent By
+             * @description The app that sent it, by its registered name; null if kept before apps were named.
+             */
+            sent_by?: string | null;
             status: components["schemas"]["IncomingStatus"];
             /** Title */
             title: string;
@@ -3219,78 +3002,6 @@ export interface components {
             name: string;
             /** Source */
             source?: string | null;
-        };
-        /**
-         * CitationView
-         * @description A Requirement whose prior art cites it: who and when, never what was matched.
-         */
-        CitationView: {
-            /**
-             * Checked At
-             * Format: date-time
-             */
-            checked_at: string;
-            /**
-             * Current
-             * @description Whether that check still stands for the Requirement.
-             */
-            current: boolean;
-            /** Duplicate */
-            duplicate: boolean;
-            /** Owner */
-            owner: string;
-            /** Requirement Id */
-            requirement_id: string;
-            /** Retired */
-            retired: boolean;
-            /** Title */
-            title: string;
-        };
-        /** CitedByResponse */
-        CitedByResponse: {
-            /** Items */
-            items: components["schemas"]["CitationView"][];
-            /** Next Offset */
-            next_offset: number | null;
-            /** Total */
-            total: number;
-        };
-        /**
-         * CitingDependency
-         * @description One requirement statement that cites a passage of the document.
-         */
-        CitingDependency: {
-            /** Active */
-            active: boolean;
-            /** Analysis Id */
-            analysis_id?: string | null;
-            /** Content Fingerprint */
-            content_fingerprint: string;
-            /**
-             * Current
-             * @default true
-             */
-            current: boolean;
-            /** Id */
-            id: string;
-            lineage: components["schemas"]["SourceLineage"];
-            /** Requirement Id */
-            requirement_id: string;
-            /** Requirement Title */
-            requirement_title: string;
-            /** Round Number */
-            round_number?: number | null;
-            /** Statement */
-            statement: string;
-            /**
-             * Status
-             * @default recorded
-             */
-            status: string;
-            /** Target Id */
-            target_id: string;
-            /** Target Kind */
-            target_kind: string;
         };
         /** ClassificationOption */
         ClassificationOption: {
@@ -3394,14 +3105,6 @@ export interface components {
             /** Statement */
             statement: string;
         };
-        /**
-         * CorpusActionRequest
-         * @description Why: requirement work records it with the action and tells the owner.
-         */
-        CorpusActionRequest: {
-            /** Reason */
-            reason: string;
-        };
         /** CorpusActivationRequest */
         CorpusActivationRequest: {
             /** Expected Version */
@@ -3431,66 +3134,6 @@ export interface components {
             /** Index Identity */
             index_identity: string;
         };
-        /** CorpusFindingResponse */
-        CorpusFindingResponse: {
-            age: components["schemas"]["FindingAge"];
-            /** Finding Id */
-            finding_id: string;
-            kind: components["schemas"]["FindingKind"];
-            last_nudge: components["schemas"]["NudgeMarkResponse"] | null;
-            /** Next Nudge At */
-            next_nudge_at: string | null;
-            /**
-             * Raised At
-             * Format: date-time
-             */
-            raised_at: string;
-            /** Rationale */
-            rationale: string;
-            related: components["schemas"]["FindingSideResponse"];
-            subject: components["schemas"]["FindingSideResponse"];
-        };
-        /**
-         * CorpusFindingsResponse
-         * @description Findings in force, the longest-standing first.
-         */
-        CorpusFindingsResponse: {
-            /** Items */
-            items: components["schemas"]["CorpusFindingResponse"][];
-            /** Next Offset */
-            next_offset: number | null;
-        };
-        /** CorpusRequirementResponse */
-        CorpusRequirementResponse: {
-            /** Duplicate */
-            duplicate: boolean;
-            index_state: components["schemas"]["IndexState"];
-            /** Last Screened At */
-            last_screened_at: string | null;
-            /** Open Findings */
-            open_findings: number;
-            owner: components["schemas"]["PersonNameResponse"] | null;
-            /** Requirement Id */
-            requirement_id: string;
-            retired: components["schemas"]["RetiredMarkResponse"] | null;
-            /** Title */
-            title: string;
-        };
-        /**
-         * CorpusRequirementsResponse
-         * @description Requirements by title: identity and state, never content.
-         */
-        CorpusRequirementsResponse: {
-            /** Items */
-            items: components["schemas"]["CorpusRequirementResponse"][];
-            /** Next Offset */
-            next_offset: number | null;
-        };
-        /**
-         * CorpusState
-         * @enum {string}
-         */
-        CorpusState: "active" | "retired";
         /**
          * CoverageResponse
          * @description What the version holds that nothing links to (review recommendation 17).
@@ -3598,25 +3241,6 @@ export interface components {
         DeliverySummariesResponse: {
             /** Releases */
             releases: components["schemas"]["ReleaseDeliveriesResponse"][];
-        };
-        /** DependencyImpact */
-        DependencyImpact: {
-            /** Decisions */
-            decisions: components["schemas"]["ImpactDecision"][];
-            dependency: components["schemas"]["CitingDependency"];
-            /** Needs Review */
-            needs_review: boolean;
-            /** Publication Current */
-            publication_current: boolean;
-            /** Publication State */
-            publication_state: string;
-        };
-        /** DependencyImpactPage */
-        DependencyImpactPage: {
-            /** Items */
-            items: components["schemas"]["DependencyImpact"][];
-            /** Next Offset */
-            next_offset: number | null;
         };
         /** DocumentAsset */
         DocumentAsset: {
@@ -3746,7 +3370,7 @@ export interface components {
         /**
          * ExplorerReleaseResponse
          * @description The version in service as the explorer reads it: its content, never its documents,
-         *     index, version history or who accepted what (requirement-portal ADR-0101, ADR-0120).
+         *     index, version history or who accepted what (ADR-0101, ADR-0120).
          *     The change requests applied to it are part of its content, for the Solution
          *     Architecture document (step 7).
          */
@@ -3864,24 +3488,6 @@ export interface components {
             version_id?: string | null;
         };
         /**
-         * FindingAge
-         * @enum {string}
-         */
-        FindingAge: "under_7_days" | "from_7_to_30_days" | "over_30_days";
-        /**
-         * FindingKind
-         * @enum {string}
-         */
-        FindingKind: "possible_duplicate" | "possible_contradiction";
-        /** FindingSideResponse */
-        FindingSideResponse: {
-            owner: components["schemas"]["PersonNameResponse"] | null;
-            /** Requirement Id */
-            requirement_id: string;
-            /** Title */
-            title: string;
-        };
-        /**
          * FlowRuleKind
          * @enum {string}
          */
@@ -3930,7 +3536,7 @@ export interface components {
         };
         /**
          * GoldenMapper
-         * @description The assessment (`/internal/architecture/assess`) or today's per-item match.
+         * @description The assessment (`/apps/v2/architecture/assess`) or today's per-item match.
          * @enum {string}
          */
         GoldenMapper: "assess" | "match";
@@ -4099,11 +3705,6 @@ export interface components {
             brds_reading: number;
             breakdown: components["schemas"]["BreakdownView"] | null;
             /**
-             * Citations
-             * @description Requirements whose prior art cites it; null when unpublished or unknown.
-             */
-            citations?: number | null;
-            /**
              * Created At
              * Format: date-time
              */
@@ -4170,11 +3771,6 @@ export interface components {
             /** Brds Reading */
             brds_reading: number;
             /**
-             * Citations
-             * @description Requirements whose prior art cites it; null when unpublished or unknown.
-             */
-            citations?: number | null;
-            /**
              * Created At
              * Format: date-time
              */
@@ -4227,30 +3823,6 @@ export interface components {
             query: string;
             this_version: components["schemas"]["ComparedImpactResponse"];
         };
-        /** ImpactDecision */
-        ImpactDecision: {
-            actor: components["schemas"]["ActorSnapshot"];
-            decision: components["schemas"]["ImpactDecisionKind"];
-            /** Dependency Id */
-            dependency_id: string;
-            /** Publication State */
-            publication_state: string;
-            /** Reason */
-            reason: string;
-            /**
-             * Recorded At
-             * Format: date-time
-             */
-            recorded_at: string;
-            /** Version */
-            version: number;
-        };
-        /**
-         * ImpactDecisionKind
-         * @description What a requirement member decided about a citation whose source changed.
-         * @enum {string}
-         */
-        ImpactDecisionKind: "retain_historical" | "revise_content";
         /** IncomingContextResponse */
         IncomingContextResponse: {
             /** Order Type */
@@ -4315,11 +3887,6 @@ export interface components {
             /** Linked */
             linked: boolean;
         };
-        /**
-         * IndexState
-         * @enum {string}
-         */
-        IndexState: "current" | "waiting" | "failed" | "rebuild_required";
         /**
          * IngestionStage
          * @enum {string}
@@ -4697,34 +4264,6 @@ export interface components {
              */
             topics: string[];
         };
-        /** LibraryDependency */
-        LibraryDependency: {
-            /** Analysis Id */
-            analysis_id: string | null;
-            citation: components["schemas"]["PublishedReference"];
-            /** Current Analysis */
-            current_analysis: boolean;
-            /** Proposal Id */
-            proposal_id: string;
-            /** Publication Current */
-            publication_current: boolean;
-            /** Requirement Id */
-            requirement_id: string;
-            /** Requirement Title */
-            requirement_title: string;
-            /** Round Number */
-            round_number: number | null;
-            /** Statement */
-            statement: string;
-            status: components["schemas"]["ProposalStatus"];
-        };
-        /** LibraryDependencyPage */
-        LibraryDependencyPage: {
-            /** Items */
-            items: components["schemas"]["LibraryDependency"][];
-            /** Next Offset */
-            next_offset: number | null;
-        };
         /** LibraryMutation */
         LibraryMutation: {
             /** Expected Version */
@@ -4834,8 +4373,6 @@ export interface components {
             build_fingerprint?: string | null;
             /** Can Edit */
             can_edit: boolean;
-            /** Citations */
-            citations?: number | null;
             /** Document Type */
             document_type?: string | null;
             /** Id */
@@ -4930,26 +4467,6 @@ export interface components {
             label: string;
         };
         /**
-         * MappingImpactResponse
-         * @description How much of the backlog is mapped, and how much uses an older catalogue version.
-         */
-        MappingImpactResponse: {
-            /** Active Release Id */
-            active_release_id: string;
-            /** Features */
-            features: number;
-            /** Outdated Features */
-            outdated_features: number;
-            /** Outdated Requirements */
-            outdated_requirements: number;
-            /** Outdated Stories */
-            outdated_stories: number;
-            /** Requirements */
-            requirements: number;
-            /** Stories */
-            stories: number;
-        };
-        /**
          * MasteryNoteSchema
          * @description Which part of an entity a system masters, where others master it too (ADR-0123).
          */
@@ -4965,21 +4482,6 @@ export interface components {
          * @enum {string}
          */
         MatchRole: "system" | "target";
-        /** MembershipResponse */
-        MembershipResponse: {
-            /**
-             * Changed At
-             * Format: date-time
-             */
-            changed_at: string;
-            /** Closed Findings */
-            closed_findings: number;
-            /** Notified */
-            notified: string | null;
-            /** Requirement Id */
-            requirement_id: string;
-            state: components["schemas"]["CorpusState"];
-        };
         /**
          * NfrCoverage
          * @description How far the sources define a non-functional requirement.
@@ -5026,33 +4528,6 @@ export interface components {
              * @default false
              */
             to_verify: boolean;
-        };
-        /** NudgeMarkResponse */
-        NudgeMarkResponse: {
-            /**
-             * At
-             * Format: date-time
-             */
-            at: string;
-            /** By */
-            by: string;
-        };
-        /** NudgeResponse */
-        NudgeResponse: {
-            /** Finding Id */
-            finding_id: string;
-            /**
-             * Next Nudge At
-             * Format: date-time
-             */
-            next_nudge_at: string;
-            /**
-             * Nudged At
-             * Format: date-time
-             */
-            nudged_at: string;
-            /** Recipients */
-            recipients: string[];
         };
         /** OfferingComponentSchema */
         OfferingComponentSchema: {
@@ -5173,15 +4648,6 @@ export interface components {
             /** Source */
             source?: string | null;
         };
-        /** OpenFindingAgesResponse */
-        OpenFindingAgesResponse: {
-            /** From 7 To 30 Days */
-            from_7_to_30_days: number;
-            /** Over 30 Days */
-            over_30_days: number;
-            /** Under 7 Days */
-            under_7_days: number;
-        };
         /** OpenQuestionSchema */
         OpenQuestionSchema: {
             confidence?: components["schemas"]["SourceConfidence"] | null;
@@ -5203,7 +4669,7 @@ export interface components {
         };
         /**
          * OrderTrackingSchema
-         * @description How an offering's orders are tracked once placed (requirement-portal ADR-0101).
+         * @description How an offering's orders are tracked once placed (ADR-0101).
          */
         OrderTrackingSchema: {
             /**
@@ -5360,16 +4826,6 @@ export interface components {
             breakdown: components["schemas"]["BreakdownView"];
             /** Changes */
             changes: components["schemas"]["ItemChangeView"][];
-        };
-        /**
-         * PersonNameResponse
-         * @description An id and a display name; never an email.
-         */
-        PersonNameResponse: {
-            /** Display Name */
-            display_name: string;
-            /** Id */
-            id: string;
         };
         /**
          * PersonRequest
@@ -5661,12 +5117,6 @@ export interface components {
             /** Value Stream Id */
             value_stream_id: string;
         };
-        /**
-         * ProposalStatus
-         * @description Where a cited intent proposal stands in its requirement's analysis.
-         * @enum {string}
-         */
-        ProposalStatus: "pending" | "accepted" | "edited" | "rejected";
         /** Publication */
         Publication: {
             /** Activated At */
@@ -5742,35 +5192,6 @@ export interface components {
             expected_revision: number;
             /** Rationale */
             rationale: string;
-        };
-        /** PublishedReference */
-        PublishedReference: {
-            /** Approval Fingerprint */
-            approval_fingerprint: string;
-            /** Block Id */
-            block_id: string;
-            /** Document Id */
-            document_id: string;
-            /** End Offset */
-            end_offset: number;
-            /** Excerpt */
-            excerpt: string;
-            /** Lineage Hash */
-            lineage_hash: string;
-            /** Location */
-            location: string;
-            /** Publication Id */
-            publication_id: string;
-            /** Revision Id */
-            revision_id: string;
-            /** Start Offset */
-            start_offset: number;
-            /** Title */
-            title: string;
-            /** Version Id */
-            version_id: string;
-            /** Version Number */
-            version_number: number;
         };
         /** ReadingWarning */
         ReadingWarning: {
@@ -5943,22 +5364,6 @@ export interface components {
             /** Unlinked */
             unlinked: boolean;
         };
-        /** ReindexRequest */
-        ReindexRequest: {
-            /** Requirement Ids */
-            requirement_ids?: string[];
-            scope: components["schemas"]["ReindexScope"];
-        };
-        /** ReindexResponse */
-        ReindexResponse: {
-            /** Requirements */
-            requirements: number;
-        };
-        /**
-         * ReindexScope
-         * @enum {string}
-         */
-        ReindexScope: "failed" | "requirements";
         /** RejectSuggestionsRequest */
         RejectSuggestionsRequest: {
             /** Expected Revision */
@@ -6076,32 +5481,6 @@ export interface components {
             tuning: components["schemas"]["ScoreSetResponse"];
         };
         /**
-         * RequirementCorpusResponse
-         * @description Requirement work's corpus in counts; never which Requirements.
-         */
-        RequirementCorpusResponse: {
-            /**
-             * As Of
-             * Format: date-time
-             */
-            as_of: string;
-            /** Current */
-            current: number;
-            /** Duplicates */
-            duplicates: number;
-            /** Failed */
-            failed: number;
-            open_findings: components["schemas"]["OpenFindingAgesResponse"];
-            /** Rebuild Required */
-            rebuild_required: boolean;
-            /** Requirements */
-            requirements: number;
-            /** Retired */
-            retired: number;
-            /** Waiting */
-            waiting: number;
-        };
-        /**
          * RequirementTraceSchema
          * @description The approved requirement a change request comes from; the approver by name only.
          */
@@ -6129,18 +5508,6 @@ export interface components {
             knowledge_version?: string | null;
             /** Requirement Id */
             requirement_id: string;
-        };
-        /** RetiredMarkResponse */
-        RetiredMarkResponse: {
-            /**
-             * At
-             * Format: date-time
-             */
-            at: string;
-            /** By */
-            by: string;
-            /** Reason */
-            reason: string;
         };
         /**
          * ReviewConfirmation
@@ -6442,15 +5809,6 @@ export interface components {
          * @enum {string}
          */
         SourceLevel: "L1" | "L2" | "L3";
-        /** SourceLineage */
-        SourceLineage: {
-            citation: components["schemas"]["PublishedReference"];
-            /**
-             * Via
-             * @default []
-             */
-            via: string[];
-        };
         /**
          * SourceReferenceSchema
          * @description A source line the version's facts write, read once against its register (review
@@ -7299,37 +6657,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    mapping_impact_architecture_knowledge_mapping_impact_get: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Fake-Actor-Id"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MappingImpactResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9525,42 +8852,6 @@ export interface operations {
             };
         };
     };
-    cited_by_historic_requirements__historic_id__citations_get: {
-        parameters: {
-            query?: {
-                offset?: number;
-                limit?: number;
-            };
-            header?: {
-                "X-Fake-Actor-Id"?: string | null;
-            };
-            path: {
-                historic_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CitedByResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     publish_historic_historic_requirements__historic_id__publication_post: {
         parameters: {
             query?: never;
@@ -9986,312 +9277,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ArchitectureJobResponse"];
                 };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    requirement_corpus_knowledge_center_requirement_corpus_get: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Fake-Actor-Id"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RequirementCorpusResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    corpus_findings_knowledge_center_requirement_corpus_findings_get: {
-        parameters: {
-            query?: {
-                kind?: components["schemas"]["FindingKind"] | null;
-                age?: components["schemas"]["FindingAge"] | null;
-                owner_id?: string | null;
-                offset?: number;
-                limit?: number;
-            };
-            header?: {
-                "X-Fake-Actor-Id"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CorpusFindingsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    nudge_finding_owners_knowledge_center_requirement_corpus_findings__finding_id__nudge_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Fake-Actor-Id"?: string | null;
-            };
-            path: {
-                finding_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NudgeResponse"];
-                };
-            };
-            /** @description No such finding */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Not now */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    reindex_corpus_knowledge_center_requirement_corpus_reindex_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Fake-Actor-Id"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReindexRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReindexResponse"];
-                };
-            };
-            /** @description Requirement work has no such requirement */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Requirement work refused, with its reason */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    corpus_requirements_knowledge_center_requirement_corpus_requirements_get: {
-        parameters: {
-            query?: {
-                index_state?: components["schemas"]["IndexState"] | null;
-                owner_id?: string | null;
-                q?: string;
-                open_findings_only?: boolean;
-                not_screened_for_days?: number | null;
-                retired_only?: boolean;
-                offset?: number;
-                limit?: number;
-            };
-            header?: {
-                "X-Fake-Actor-Id"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CorpusRequirementsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    reinstate_requirement_knowledge_center_requirement_corpus_requirements__requirement_id__reinstatement_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Fake-Actor-Id"?: string | null;
-            };
-            path: {
-                requirement_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CorpusActionRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MembershipResponse"];
-                };
-            };
-            /** @description Requirement work has no such requirement */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Requirement work refused, with its reason */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    retire_requirement_knowledge_center_requirement_corpus_requirements__requirement_id__retirement_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Fake-Actor-Id"?: string | null;
-            };
-            path: {
-                requirement_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CorpusActionRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MembershipResponse"];
-                };
-            };
-            /** @description Requirement work has no such requirement */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Requirement work refused, with its reason */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -10754,42 +9739,6 @@ export interface operations {
             };
         };
     };
-    dependencies_library_documents__document_id__dependencies_get: {
-        parameters: {
-            query?: {
-                offset?: number;
-                limit?: number;
-            };
-            header?: {
-                "X-Fake-Actor-Id"?: string | null;
-            };
-            path: {
-                document_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LibraryDependencyPage"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     retry_index_library_documents__document_id__index_retry_post: {
         parameters: {
             query?: never;
@@ -10921,44 +9870,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LibraryView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    document_source_impact_library_documents__document_id__source_impact_get: {
-        parameters: {
-            query?: {
-                offset?: number;
-                limit?: number;
-                active_only?: boolean;
-                query?: string;
-            };
-            header?: {
-                "X-Fake-Actor-Id"?: string | null;
-            };
-            path: {
-                document_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DependencyImpactPage"];
                 };
             };
             /** @description Validation Error */

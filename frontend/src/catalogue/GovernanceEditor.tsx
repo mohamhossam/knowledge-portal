@@ -26,8 +26,8 @@ function repeated(values: string[]): boolean {
 }
 
 /**
- * The source register edited whole, in place of its table (requirement-portal
- * ADR-0101, step 5). A source an offering or a conflict still names cannot go.
+ * The source register edited whole, in place of its table (ADR-0101,
+ * step 5). A source an offering or a conflict still names cannot go.
  */
 export function SourcesEdit({ onDone }: { onDone: () => void }) {
   const { book } = useCatalogueContext();

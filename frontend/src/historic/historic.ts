@@ -12,15 +12,22 @@ import {
 } from "../api/client";
 import type { StatusTone } from "../design/components";
 import { count } from "../home/format";
-import { HISTORIC_PATH } from "../requirements/knowledge";
 import type { Rank } from "../home/derive";
 
-/** Historic Requirements live on Table 4, beside the corpus they will join (ADR-0102). */
-export { HISTORIC_PATH };
+/** Old BRDs with their Azure DevOps lineage, as reference knowledge (Knowledge Center E, ADR-0102). */
+export const HISTORIC_PATH = "/historic";
 export const historicHref = (id: string, search = "") => `${HISTORIC_PATH}/${encodeURIComponent(id)}${search}`;
 
 export const historicKey = (id: string) => ["historic", "record", id] as const;
 export const HISTORIC_LIST_KEY = ["historic", "list"] as const;
+
+/** The address's query, kept on a record's link so the list stays as filtered. */
+export const searchOf = (params: URLSearchParams) => (params.size ? `?${params}` : "");
+
+/** How many historic Requirements stand in each state; shared with the list's first page. */
+export function useHistoricCounts() {
+  return useQuery({ queryKey: [...HISTORIC_LIST_KEY, "counts"], queryFn: async () => (await api.historicList({})).counts });
+}
 
 export function useHistoricList(status: HistoricStatus | null, query: string) {
   return useInfiniteQuery({
@@ -59,26 +66,6 @@ export function useSharedRoots(record: HistoricDetail) {
   const byId = new Map<number, HistoricSharedRoot[]>();
   for (const item of query.data?.items ?? []) byId.set(item.work_item_id, [...(byId.get(item.work_item_id) ?? []), item]);
   return byId;
-}
-
-/**
- * The Requirements whose prior art cites it, from requirement work: who and when, never what
- * was matched (ADR-0102 Amendment 1). Only a record that was ever published can be cited.
- */
-export function useCitedBy(record: Pick<HistoricDetail, "id" | "publications">) {
-  return useInfiniteQuery({
-    queryKey: [...historicKey(record.id), "cited-by"],
-    queryFn: ({ pageParam }) => api.historicCitedBy(record.id, pageParam),
-    initialPageParam: 0,
-    getNextPageParam: (last) => last.next_offset ?? undefined,
-    enabled: record.publications.length > 0,
-  });
-}
-
-/** How many Requirements cite it, in words; a dash when requirement work could not say. */
-export function citedBy(citations: number | null | undefined): string {
-  if (citations === null || citations === undefined) return "—";
-  return citations === 0 ? "None" : count(citations, "requirement");
 }
 
 /** Every work item of a breakdown's lineage, by id. */

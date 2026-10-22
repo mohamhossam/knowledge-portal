@@ -27,7 +27,7 @@ import { DocumentDownload } from "./DocumentDownload";
 import { PlansAndPrices } from "./PlansAndPrices";
 import { gaps, type Involvement, involvement, journeyFor, listed, partsFor, pickScenario, type Scenario, trackingFor } from "./scenario";
 
-/** What the catalogue cannot hold yet; each arrives with a later slice (requirement-portal ADR-0101). */
+/** What the catalogue cannot hold yet; each arrives with a later slice (ADR-0101). */
 export const NOT_YET =
   "Information objects are not in the catalogue yet, so the explorer does not show them.";
 

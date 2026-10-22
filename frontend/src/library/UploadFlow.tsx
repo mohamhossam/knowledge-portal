@@ -104,7 +104,7 @@ export function UploadFlow({ onClose, panelRef }: { onClose: () => void; panelRe
       <h2 id={`${id}-title`} tabIndex={-1} className="lib-flow__title">Upload documents</h2>
       <Upload
         label="Choose files"
-        hint="PDF, Word, Excel, PowerPoint, CSV, Markdown, text or an image, up to 10 MB each. Each is scanned for malware, then read. Nothing reaches requirement work until you review what was read and approve it; until then it is private to you."
+        hint="PDF, Word, Excel, PowerPoint, CSV, Markdown, text or an image, up to 10 MB each. Each is scanned for malware, then read. Nothing is in service until you review what was read and approve it; until then it is private to you."
         accept={ACCEPT}
         items={started ? items : []}
         onFiles={(files) => {
@@ -122,7 +122,7 @@ export function UploadFlow({ onClose, panelRef }: { onClose: () => void; panelRe
               required
               maxLength={200}
               value={item.title}
-              error={tried && !item.title.trim() ? "Give it a title: it's how the library and requirement work name it." : null}
+              error={tried && !item.title.trim() ? "Give it a title: it's how the library names it." : null}
               onChange={(event) => update(item.key, { title: event.target.value })}
             />
           ))}

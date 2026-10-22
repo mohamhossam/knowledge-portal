@@ -25,8 +25,8 @@ export function StartDraft({ onCancel }: { onCancel: () => void }) {
       onCancel={onCancel}
     >
       <p className="cat-lead">
-        A draft starts as a copy of the version in service. Documents, a catalogue file or hand edits change it; nothing reaches
-        requirement work until it is published.
+        A draft starts as a copy of the version in service. Documents, a catalogue file or hand edits change it; nothing is in
+        service until it is published.
       </p>
       <TextField
         label="Name"

@@ -43,7 +43,7 @@ function wrap(children: ReactNode, roles: string[] = ["knowledge_admin"]) {
 function document(extra: Partial<LibraryDocument> = {}): LibraryDocument {
   return {
     id: "d1", title: "Coverage policy", owner: amina, version: 4, can_edit: true, is_owner: true,
-    published_id: "p1", review_fingerprint: null, build_fingerprint: null, acting_as_admin: null, citations: 1,
+    published_id: "p1", review_fingerprint: null, build_fingerprint: null, acting_as_admin: null,
     versions: [{ id: "v1", number: 1, stage: "ready_for_review", uploaded_at: "2026-04-01T09:00:00Z", uploaded_by: amina, revisions: [], blocks: [] }],
     publications: [{ id: "p1", version_id: "v1", approved_at: "2026-04-04T09:00:00Z", approved_by: amina, activated_at: "2026-04-04T09:05:00Z", withdrawn_at: null }],
     newest: { id: "v1", number: 1, stage: "ready_for_review", uploaded_at: "2026-04-01T09:00:00Z", uploaded_by: amina },

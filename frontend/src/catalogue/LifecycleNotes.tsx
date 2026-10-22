@@ -85,7 +85,7 @@ function tableName(note: Note, block: Block): string {
 
 /**
  * What happens to an offering over its life, as its sources tell it
- * (requirement-portal ADR-0101): each note a titled topic with the order types
+ * (ADR-0101): each note a titled topic with the order types
  * and channels it concerns and its content as the source sets it out. Notes
  * open in place, so a long list reads as an index first. The explorer reads
  * the notes of its order type and channel; a sheet reads all.

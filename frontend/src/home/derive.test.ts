@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import type { LibraryDocument, Organisation, Release, ReleaseDeliveries, ReleasePrecedents, RequirementCorpus } from "../api/client";
+import type { LibraryDocument, Organisation, Release, ReleaseDeliveries, ReleasePrecedents } from "../api/client";
 import {
   architectureOverview,
   deliveryHits,
   libraryOverview,
   nameDirectory,
-  requirementOverview,
   squadOverview,
   verdictDecisions,
   type DraftJobs,
@@ -82,7 +81,7 @@ describe("libraryOverview", () => {
 
     expect(libraryOverview([published]).edition.text).toBe("Edition of 2 Oct 2026 · 1 document in service · last change 2 Oct 2026");
     expect(libraryOverview([published, withdrawn]).edition.text).toContain("· last change 4 Oct 2026");
-    expect(libraryOverview([]).edition.text).toBe("Nothing published yet. Requirement work can cite only what is published here.");
+    expect(libraryOverview([]).edition.text).toBe("Nothing published yet. Only what is published here can be cited.");
   });
 
   it("says when nothing awaits a curator, without a link", () => {
@@ -265,7 +264,7 @@ describe("architectureOverview", () => {
   it("says plainly when no edition is in force", () => {
     const overview = architectureOverview([], null, new Map(), nameDirectory([]));
 
-    expect(overview.edition.text).toBe("No edition is in force. Requirement work maps against nothing until a release is published.");
+    expect(overview.edition.text).toBe("No edition is in force. Nothing is mapped until a release is published.");
     expect(overview.totals).toEqual([]);
   });
 });
@@ -300,89 +299,6 @@ describe("squadOverview", () => {
 
     expect(overview.lines).toHaveLength(8);
     expect(overview.more).toBe("and 3 more systems with no owning squad");
-  });
-});
-
-const corpus = (overrides: Partial<RequirementCorpus> = {}): RequirementCorpus => ({
-  requirements: 12, duplicates: 1, retired: 0, current: 12, waiting: 0, failed: 0, rebuild_required: false,
-  open_findings: { under_7_days: 0, from_7_to_30_days: 0, over_30_days: 0 },
-  as_of: "2026-10-06T09:00:00Z",
-  ...overrides,
-});
-
-describe("requirementOverview", () => {
-  const WORK = "/";
-
-  it("is quiet when everything is indexed and no finding stands open", () => {
-    const overview = requirementOverview(corpus(), WORK);
-
-    expect(overview.lines).toEqual([]);
-    expect(overview.next).toEqual({ label: "Nothing in requirement knowledge awaits anyone." });
-    expect(overview.alert).toBeUndefined();
-    expect(overview.extent).toEqual({ value: 12, label: "12 requirements" });
-    expect(overview.edition).toEqual({ text: "12 requirements, 12 indexed and current", note: "source" });
-    expect(overview.totals.map((total) => [total.label, total.value])).toEqual([
-      ["Requirements", "12"],
-      ["Indexed and current", "12"],
-      ["Of them closed as duplicates", "1"],
-      ["Of them retired", "0"],
-      ["Open findings", "0"],
-    ]);
-  });
-
-  it("ranks stopped indexing and month-old findings as disruptions and leads to the overdue findings", () => {
-    const overview = requirementOverview(corpus({
-      current: 9, waiting: 2, failed: 1,
-      open_findings: { under_7_days: 3, from_7_to_30_days: 1, over_30_days: 2 },
-    }), WORK);
-
-    expect(overview.lines.map((line) => [line.rank, line.name, line.cells.count, line.to])).toEqual([
-      ["delayed", "Requirements that stopped indexing", "1", "/requirement-knowledge/requirements?state=failed"],
-      ["delayed", "Findings open over 30 days", "2", "/requirement-knowledge/findings?age=over_30_days"],
-      ["due", "Findings open 7 to 30 days", "1", "/requirement-knowledge/findings?age=from_7_to_30_days"],
-      ["running", "Findings open under 7 days", "3", "/requirement-knowledge/findings?age=under_7_days"],
-      ["running", "Requirements waiting to be indexed", "2", "/requirement-knowledge/requirements?state=waiting"],
-    ]);
-    expect(overview.next).toEqual({
-      to: "/requirement-knowledge/findings?age=over_30_days",
-      label: "Ask the owners to decide the 2 overdue findings",
-    });
-    expect(overview.alert).toEqual({ rank: "delayed", text: "1 stopped indexing, 2 overdue" });
-    expect(overview.notes.map((note) => note.id)).toEqual(["source", "failed", "findings"]);
-    expect(overview.totals.at(-1)?.value).toBe("6");
-  });
-
-  it("treats a finding this week as in progress, and one older as awaiting its owners", () => {
-    const recent = requirementOverview(corpus({ open_findings: { under_7_days: 1, from_7_to_30_days: 0, over_30_days: 0 } }), WORK);
-    const older = requirementOverview(corpus({ open_findings: { under_7_days: 0, from_7_to_30_days: 1, over_30_days: 0 } }), WORK);
-
-    expect(recent.next).toEqual({ label: "Nothing in requirement knowledge awaits anyone." });
-    expect(recent.alert).toBeUndefined();
-    expect(older.next).toEqual({ to: "/requirement-knowledge/findings?age=from_7_to_30_days", label: "1 finding awaits its owners" });
-    expect(older.alert).toEqual({ rank: "due", text: "1 finding awaiting owners" });
-  });
-
-  it("leads to the requirements that stopped indexing when no finding is overdue", () => {
-    const overview = requirementOverview(corpus({ current: 11, failed: 1 }), WORK);
-
-    expect(overview.next).toEqual({
-      to: "/requirement-knowledge/requirements?state=failed",
-      label: "Retry the 1 requirement that stopped indexing",
-    });
-  });
-
-  it("says a model change needs a rebuild before anything else", () => {
-    const overview = requirementOverview(corpus({ rebuild_required: true, current: 0, requirements: 0 }), WORK);
-
-    expect(overview.lines[0]).toMatchObject({ rank: "delayed", name: "Requirement index", cells: { status: "Rebuild required" } });
-    expect(overview.next).toMatchObject({ href: "/", label: "Rebuild the requirement index in requirement work" });
-    expect(overview.edition.text).toBe("0 requirements · the index must be rebuilt");
-  });
-
-  it("names the rebuild without a link when requirement work is not connected", () => {
-    const overview = requirementOverview(corpus({ rebuild_required: true, current: 0, requirements: 0 }), null);
-
-    expect(overview.next).toEqual({ label: "Rebuild the requirement index in requirement work" });
   });
 });
 

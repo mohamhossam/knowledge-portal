@@ -1,6 +1,6 @@
 /**
  * Where the catalogue's knowledge comes from, and where its sources disagree
- * (requirement-portal ADR-0101, step 5): levels in words, the registered source a
+ * (ADR-0101, step 5): levels in words, the registered source a
  * fact's source text names, and the conflicts that concern an offering. Pure functions.
  */
 import { createContext, useContext } from "react";

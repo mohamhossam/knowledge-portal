@@ -143,11 +143,11 @@ function Capabilities({ system, index }: { system: CatalogueSystem; index: Conce
     <Section title="What it does" count={system.capabilities.length} headingLevel={3}>
       {system.capabilities.length ? (
         <>
-          <p className="cat-lead">Requirement work maps a requirement to this system when it names one of these concepts or phrases.</p>
+          <p className="cat-lead">A requirement is mapped to this system when it names one of these concepts or phrases.</p>
           <DataTable caption={`Capabilities of ${system.name}`} captionHidden columns={columns} rows={system.capabilities} rowId={(item) => item.id} />
         </>
       ) : (
-        <p className="cat-quiet">No capability is recorded, so requirement work never maps to it by phrase.</p>
+        <p className="cat-quiet">No capability is recorded, so no requirement is mapped to it by phrase.</p>
       )}
     </Section>
   );

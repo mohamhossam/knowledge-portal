@@ -19,18 +19,18 @@ type Pages = {
  * A workbench list's rows, or why there are none: still asking, a refusal to try again, or
  * nothing that matches. Paged lists end in "Show more".
  */
-export function ListBody({ pages, source = "Requirement work", empty, children }: {
+export function ListBody({ pages, source = "The knowledge service", empty, children }: {
   pages: Pages;
-  /** Who was asked, for the refusal: "Requirement work did not answer". */
+  /** Who was asked, for the refusal: "The knowledge service did not answer". */
   source?: string;
   empty: ReactNode;
   children: ReactNode;
 }) {
-  if (pages.isPending) return <div className="rk-listpad"><Skeleton label={`Asking ${source.toLowerCase()}`} rows={6} /></div>;
+  if (pages.isPending) return <div className="hist-listpad"><Skeleton label={`Asking ${source.toLowerCase()}`} rows={6} /></div>;
   if (pages.isError) {
     return (
-      <div className="rk-listpad">
-        <p className="rk-failure" role="alert"><Status tone="attention">{source} did not answer: {errorMessage(pages.error)}</Status></p>
+      <div className="hist-listpad">
+        <p className="hist-failure" role="alert"><Status tone="attention">{source} did not answer: {errorMessage(pages.error)}</Status></p>
         <Button variant="tertiary" icon={<RotateCw size={14} />} onClick={() => void pages.refetch()}>Try again</Button>
       </div>
     );
@@ -40,7 +40,7 @@ export function ListBody({ pages, source = "Requirement work", empty, children }
     <>
       {children}
       {pages.hasNextPage && (
-        <p className="rk-listpad">
+        <p className="hist-listpad">
           <Button variant="tertiary" busy={pages.isFetchingNextPage} onClick={() => void pages.fetchNextPage()}>
             {pages.isFetchingNextPage ? "Asking…" : "Show more"}
           </Button>

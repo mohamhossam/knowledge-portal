@@ -82,7 +82,7 @@ function Draft({ release, step, context }: { release: Release; step: DraftStep; 
         }
         title={<bdi>{name}</bdi>}
         documentTitle={`${stepLabel(step)} · ${name} · Catalogue draft`}
-        lead="A draft of the architecture catalogue. Nothing in it reaches requirement work until it is published."
+        lead="A draft of the architecture catalogue. Nothing in it is in service until it is published."
         meta={
           <>
             <Status tone="working">In preparation</Status>
@@ -156,7 +156,7 @@ function Remove({ release, panelRef, onKeep }: { release: Release; panelRef: Ref
       tone="danger"
       title={<>Remove the draft <bdi>‘{name}’</bdi></>}
       happens="The draft and everything decided in it go: its documents, their suggestions accepted and rejected alike, and its hand edits."
-      affects={<p>The version in service doesn't change, and requirement work never saw the draft.</p>}
+      affects={<p>The version in service doesn't change, and the draft was never in service.</p>}
       reversibility="It can't be brought back. To start again, start a new draft from Versions."
       confirmLabel="Remove the draft"
       busyLabel="Removing…"

@@ -17,7 +17,7 @@ import { ChangeRequestInbox } from "./ChangeRequests";
 import { VersionsTimeline } from "./diagrams/CatalogueDiagrams";
 import { StartDraft } from "./DraftActions";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
-import { useActivate, useCatalogueContext, useMappingImpact, useReleases } from "./useCatalogue";
+import { useActivate, useCatalogueContext, useReleases } from "./useCatalogue";
 
 type State = "in-service" | "draft" | "replaced";
 
@@ -38,7 +38,7 @@ const recordHref = (release: Release) => `/architecture/versions?${new URLSearch
  * the one in service and those it replaced, newest first, beside the record of
  * the one chosen (its state, who published it when, what it changed, its
  * history and files, and the way to open it, compare it or put it back). With
- * none chosen, the change requests from Requirement AI waiting to be read.
+ * none chosen, the change requests from connected apps waiting to be read.
  */
 export function VersionsPage() {
   const { book, actorName } = useCatalogueContext();
@@ -88,8 +88,8 @@ export function VersionsPage() {
   ) : (
     <RecordPlaceholder title={`${count(rows.length, "version")}. Choose one to read what it changed, its history and its files.`}>
       <p className="cat-lead">
-        Requirement work maps against the version in service. Publishing a draft puts it in service; an earlier version can be put back,
-        with a reason.
+        Requirements are mapped against the version in service. Publishing a draft puts it in service; an earlier version can be put
+        back, with a reason.
       </p>
       <VersionsTimeline />
       <div className="cat-actions ds-actions">
@@ -168,8 +168,8 @@ function VersionRecord({ release, releases, state, previous, activeId, onPutBack
   const open = state === "in-service" ? "/architecture" : `/architecture/versions/${encodeURIComponent(release.id)}`;
   const published = <>published by <bdi>{actorName(release.published_by)}</bdi> on {formatDay(release.published_at)}</>;
   const lead: Record<State, ReactNode> = {
-    draft: <>A draft started by <bdi>{actorName(release.created_by)}</bdi>. Nothing in it reaches requirement work until it is published.</>,
-    "in-service": <>The version in service, {published}. Requirement work maps against it.</>,
+    draft: <>A draft started by <bdi>{actorName(release.created_by)}</bdi>. Nothing in it is in service until it is published.</>,
+    "in-service": <>The version in service, {published}.</>,
     replaced: <>Replaced: {published}, and no longer in service.</>,
   };
   const keep = () => {
@@ -337,29 +337,20 @@ function History({ release }: { release: Release }) {
 /** Putting a replaced version back in service: the consequence first, then a reason. */
 function PutBack({ release, onDone, onKeep }: { release: Release; onDone: () => void; onKeep: () => void }) {
   const activate = useActivate();
-  const impact = useMappingImpact();
   const changes = useQuery({
     queryKey: ["architecture", "releases", release.id, "changes", release.revision],
     queryFn: () => api.releaseChanges(release.id),
   });
   const sentence = changes.data ? changeSentence(changes.data) : null;
-  const mapped = impact.data ? impact.data.requirements - impact.data.outdated_requirements : null;
   const name = nameOf(release);
   return (
     <ConsequencePanel
       title={<>Put ‘<bdi>{name}</bdi>’ back in service</>}
       happens={
         <>
-          Requirement work would map against ‘<bdi>{name}</bdi>’ from its next look at the catalogue.
+          Requirements would be mapped against ‘<bdi>{name}</bdi>’ from then on.
           {sentence && <> Against the version in service, it would {sentence}.</>}
         </>
-      }
-      affects={
-        mapped === null
-          ? undefined
-          : mapped
-            ? `${count(mapped, "requirement")} mapped with the version in service would then show as mapped with an earlier version.`
-            : "No requirement has been mapped with the version in service yet."
       }
       reversibility="The version in service now can be put back the same way, with a reason."
       reason={{ label: "Why it goes back", hint: "It is kept in the version's history.", maxLength: 2000 }}

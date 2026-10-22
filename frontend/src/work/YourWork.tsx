@@ -232,7 +232,7 @@ export function YourWork() {
             mark={<AlertTriangle size={16} />}
             title={<RouterLink href={entry.to} className="work-task__link"><bdi>{entry.subject}</bdi></RouterLink>}
             why={entry.kind === "unsearchable"
-              ? <><Status tone="attention">Couldn't make it searchable</Status> Requirement work can't cite it yet.</>
+              ? <><Status tone="attention">Couldn't make it searchable</Status> It can't be cited yet.</>
               : entry.held
                 ? <><Status tone="held">Held by the malware scan</Status> It won't be read. Upload a clean copy.</>
                 : <><Status tone="attention">Couldn't read</Status> {entry.cause ?? `The ${entry.fileType} file couldn't be read.`}</>}
@@ -314,7 +314,7 @@ export function YourWork() {
                 panelRef={panel.panel}
                 title={several ? <>Confirm {entry.subject} are still right</> : <>Confirm <bdi>{label}</bdi> is still right</>}
                 happens={entry.what === "document"
-                  ? "Its version in service stays as it is. Confirming starts its review cycle again, and requirement work stops flagging citations of it as overdue."
+                  ? "Its version in service stays as it is. Confirming starts its review cycle again."
                   : several
                     ? "One confirmation for each of them, with your note. Their sheets stay as they are, and each starts its review cycle again."
                     : "Its sheet in the version in service stays as it is. Confirming starts its review cycle again for every catalogue maintainer."}

@@ -6,19 +6,16 @@ import { useNavigate } from "react-router-dom";
 import {
   api,
   type HistoricBrd,
-  type HistoricCitation,
   type HistoricDetail,
   type HistoricRun,
   type HistoricSharedRoot,
 } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import {
-  ActionGroup, Button, type Column, ConsequencePanel, DataTable, RecordView, Skeleton, Status, type StatusTone,
+  ActionGroup, Button, type Column, ConsequencePanel, DataTable, RecordView, Status, type StatusTone,
   TextField,
 } from "../design/components";
 import { count, formatDay, formatMoment } from "../home/format";
-import { knowledgeStepHref } from "../requirements/knowledge";
-import { RequirementLink } from "../requirements/RequirementLink";
 import { AdoLink, BreakdownTable, ChangeTable, ItemErrors, SharedRootNote } from "./Breakdown";
 import {
   HISTORIC_LIST_KEY,
@@ -30,7 +27,6 @@ import {
   parseIds,
   runFailure,
   standing,
-  useCitedBy,
   useHistoricChange,
   useSharedRoots,
 } from "./historic";
@@ -55,8 +51,8 @@ function Edition({ record }: { record: HistoricDetail }) {
     return (
       <>
         Published by <bdi>{latest.published_by.display_name}</bdi> on {formatDay(latest.published_at)}
-        {latest.number > 1 ? `, after ${count(latest.number - 1, "refresh", "refreshes")}` : ""}. Requirement work reads it
-        as prior art.
+        {latest.number > 1 ? `, after ${count(latest.number - 1, "refresh", "refreshes")}` : ""}. Connected apps read it as
+        prior art.
       </>
     );
   }
@@ -75,7 +71,7 @@ function NextStep({ record }: { record: HistoricDetail }) {
     heading.scrollIntoView?.({ block: "start" });
   };
   return (
-    <p className="rk-next">
+    <p className="hist-next">
       <a href={`#${step.target}`} onClick={go}>
         {step.label}
         <ArrowRight size={16} aria-hidden="true" />
@@ -87,7 +83,7 @@ function NextStep({ record }: { record: HistoricDetail }) {
 /** A section whose heading the next step, or "See what publishing waits on", can take focus to. */
 function Part({ id, title, count: total, children }: { id: string; title: ReactNode; count?: number; children: ReactNode }) {
   return (
-    <section className="ds-section rk-part" aria-labelledby={id}>
+    <section className="ds-section hist-part" aria-labelledby={id}>
       <div className="ds-section__head">
         <h3 id={id} tabIndex={-1} className="ds-section__title">
           {title}
@@ -144,116 +140,10 @@ export function HistoricRecord({ record, takeFocus }: { record: HistoricDetail; 
       )}
       {/* The record's diagram (BRD → Epics → Features → Stories) goes here once the diagram thread draws it. */}
       {record.status === "draft" && <Publish record={record} />}
-      {record.publications.length > 0 && <CitedBy record={record} />}
       <Brds record={record} />
       {record.status === "published" && <Withdraw record={record} />}
     </RecordView>
   );
-}
-
-/** Where a citation stands, in words: a short status, and why on a second line. */
-function citationState(item: HistoricCitation, withdrawn: boolean): { tone: StatusTone; words: string; detail?: string } {
-  if (withdrawn) return { tone: "stopped", words: "Cited before it was withdrawn", detail: "It no longer shows it." };
-  if (item.duplicate) return { tone: "stopped", words: "Closed as a duplicate" };
-  if (item.retired) return { tone: "stopped", words: "Retired from the corpus" };
-  return item.current
-    ? { tone: "done", words: "Current check" }
-    : { tone: "neutral", words: "Older check", detail: "Checked again when its Knowledge step opens." };
-}
-
-/**
- * The Requirements whose prior art cites it, from requirement work. Who and when only: what was
- * matched stays with the Requirement's owner (ADR-0102 Amendment 1).
- */
-function CitedBy({ record }: { record: HistoricDetail }) {
-  const pages = useCitedBy(record);
-  const items = pages.data?.pages.flatMap((page) => page.items) ?? [];
-  const total = pages.data?.pages[0]?.total;
-  const rows = useRef<HTMLDivElement>(null);
-  // Show more hands focus to the first row it added, so the reader goes on from there.
-  const focusAt = useRef<number | null>(null);
-  useEffect(() => {
-    const at = focusAt.current;
-    if (at === null || items.length <= at) return;
-    focusAt.current = null;
-    rows.current?.querySelectorAll<HTMLAnchorElement>("tbody th a")[at]?.focus();
-  }, [items.length]);
-  const showMore = () => {
-    focusAt.current = items.length;
-    void pages.fetchNextPage();
-  };
-  const withdrawn = record.status === "withdrawn";
-  const columns: Column<HistoricCitation>[] = [
-    {
-      id: "requirement",
-      header: "Requirement",
-      rowHeader: true,
-      cell: (item) => (
-        <>
-          <RequirementLink href={knowledgeStepHref(item.requirement_id)}>{item.title}</RequirementLink>
-          <span className="rk-detail">{item.owner ? <>Owned by <bdi>{item.owner}</bdi></> : "No owner"}</span>
-        </>
-      ),
-    },
-    {
-      id: "check",
-      header: "Prior-art check",
-      cell: (item) => {
-        const state = citationState(item, withdrawn);
-        return (
-          <>
-            <Status tone={state.tone}>{state.words}</Status>
-            {state.detail && <span className="rk-detail">{state.detail}</span>}
-          </>
-        );
-      },
-    },
-    { id: "checked", header: "Checked on", cell: (item) => formatDay(item.checked_at) },
-  ];
-  return (
-    <Part id="historic-cited" title={<>Cited by{total !== undefined && <span className="ds-section__count"> · {total === 0 ? "none" : count(total, "requirement")}</span>}</>}>
-      <p className="rk-lead">
-        Requirements whose prior-art check names it as a similar past requirement. Who and when only; what was matched stays
-        with each Requirement.
-      </p>
-      {pages.isError ? (
-        <div className="rk-failure" role="alert">
-          <Status tone="attention">Who cites it could not be read: {errorMessage(pages.error)}</Status>{" "}
-          <Button variant="tertiary" icon={<RotateCw size={14} />} onClick={() => void pages.refetch()}>Try again</Button>
-        </div>
-      ) : pages.isPending ? (
-        <Skeleton label="Asking requirement work" rows={2} />
-      ) : items.length === 0 ? (
-        <p className="rk-quiet">
-          {withdrawn
-            ? "No requirement cites it. Withdrawn, it is no longer offered as prior art."
-            : "No requirement cites it yet. A Requirement is checked when it changes or its Knowledge step opens."}
-        </p>
-      ) : (
-        <div ref={rows}>
-          <DataTable caption={`Requirements citing ${record.title}`} captionHidden columns={columns} rows={items} rowId={(item) => item.requirement_id} />
-        </div>
-      )}
-      {pages.hasNextPage && (
-        <ActionGroup>
-          <Button variant="tertiary" busy={pages.isFetchingNextPage} onClick={showMore}>
-            {pages.isFetchingNextPage ? "Asking…" : "Show more"}
-          </Button>
-        </ActionGroup>
-      )}
-    </Part>
-  );
-}
-
-/** What withdrawing does to the Requirements citing it, said even when their number is unknown. */
-function withdrawCitations(total: number | undefined, unknown: boolean): string {
-  if (total === 0) return "";
-  if (total === undefined) {
-    return unknown
-      ? "; requirement work could not say which Requirements cite it, and any that do stop showing it at once"
-      : "; any Requirements citing it stop showing it at once";
-  }
-  return `: ${total === 1 ? "the 1 requirement" : `the ${total} requirements`} citing it ${total === 1 ? "stops" : "stop"} showing it at once`;
 }
 
 /** What is being read for it now, and how far along; or why reading stopped. */
@@ -261,18 +151,18 @@ function Processing({ record }: { record: HistoricDetail }) {
   const run = record.run;
   const reading = record.brd_files.filter((brd) => brd.stage === "queued").length;
   if (reading > 0) {
-    return <p className="rk-state" role="status"><Status tone="working">Reading {reading === 1 ? "its BRD" : `${reading} BRDs`}</Status></p>;
+    return <p className="hist-state" role="status"><Status tone="working">Reading {reading === 1 ? "its BRD" : `${reading} BRDs`}</Status></p>;
   }
   if (!run || run.status === "succeeded") return null;
   if (run.status === "failed") {
     return (
-      <p className="rk-state" role="alert">
+      <p className="hist-state" role="alert">
         <Status tone="attention">The breakdown could not be read</Status> {runFailure(run.failure)}
       </p>
     );
   }
   return (
-    <p className="rk-state" role="status">
+    <p className="hist-state" role="status">
       <Status tone="working">{run.kind === "refresh" ? "Reading it again from Azure DevOps" : "Reading the breakdown"}</Status>{" "}
       {run.total > 0 ? `${run.done} of ${count(run.total, "work item")}` : "Starting"}
     </p>
@@ -282,7 +172,7 @@ function Processing({ record }: { record: HistoricDetail }) {
 function Failure({ error, onReload }: { error: unknown; onReload?: () => void }) {
   const stale = error instanceof ApiError && error.status === 409 && /changed while you worked/i.test(errorMessage(error));
   return (
-    <div className="rk-failure" role="alert" tabIndex={-1}>
+    <div className="hist-failure" role="alert" tabIndex={-1}>
       <Status tone="attention">{errorMessage(error)}</Status>
       {stale && onReload && <Button variant="tertiary" icon={<RotateCw size={14} />} onClick={onReload}>Reload it</Button>}
     </div>
@@ -308,7 +198,7 @@ function Rename({ record, onDone }: { record: HistoricDetail; onDone: () => void
   };
   return (
     <form
-      className="rk-inline"
+      className="hist-inline"
       aria-label="Rename it"
       onSubmit={(event) => {
         event.preventDefault();
@@ -353,19 +243,19 @@ function Brd({ record, brd }: { record: HistoricDetail; brd: HistoricBrd }) {
   const warnings = brd.warnings.filter((warning) => !QUIET_WARNINGS.has(warning.code));
   const columns: Column<Passage>[] = [
     { id: "where", header: "Where", rowHeader: true, cell: (passage) => passage.label },
-    { id: "text", header: "Passage", bidi: true, cell: (passage) => <span className="rk-passage">{passage.text}</span> },
+    { id: "text", header: "Passage", bidi: true, cell: (passage) => <span className="hist-passage">{passage.text}</span> },
   ];
   return (
-    <div className="rk-brd">
-      <p className="rk-brd__head">
-        <bdi className="rk-brd__name">{brd.filename}</bdi>
+    <div className="hist-brd">
+      <p className="hist-brd__head">
+        <bdi className="hist-brd__name">{brd.filename}</bdi>
         <Status tone={STAGE[brd.stage].tone}>{STAGE[brd.stage].words}</Status>
-        <span className="rk-quiet">
+        <span className="hist-quiet">
           {brd.stage === "read" ? `${count(brd.passages.length, "passage")} · ` : ""}uploaded by <bdi>{brd.uploaded_by.display_name}</bdi> on {formatDay(brd.uploaded_at)}
         </span>
       </p>
       {brd.error && (
-        <div className="rk-failure">
+        <div className="hist-failure">
           <Status tone="attention">{brd.error}</Status>
           {record.status === "draft" && (
             <Button variant="tertiary" icon={<RotateCw size={14} />} busy={again.isPending} onClick={() => again.mutate(undefined)}>Read it again</Button>
@@ -373,9 +263,9 @@ function Brd({ record, brd }: { record: HistoricDetail; brd: HistoricBrd }) {
         </div>
       )}
       {warnings.length > 0 && (
-        <ul className="rk-warnings">
+        <ul className="hist-warnings">
           {warnings.map((warning, index) => (
-            <li key={index}>{warning.severity === "blocking" ? <Status tone="attention">{warning.message}</Status> : <span className="rk-quiet">{warning.message}</span>}</li>
+            <li key={index}>{warning.severity === "blocking" ? <Status tone="attention">{warning.message}</Status> : <span className="hist-quiet">{warning.message}</span>}</li>
           ))}
         </ul>
       )}
@@ -398,8 +288,8 @@ function AddBrd({ record }: { record: HistoricDetail }) {
   const id = useId();
   const add = useHistoricChange(record.id, (file: File) => api.addHistoricBrd(record.id, file, record.version));
   return (
-    <div className="rk-add-brd">
-      <label className="ds-button ds-button--tertiary rk-file" htmlFor={id}>
+    <div className="hist-add-brd">
+      <label className="ds-button ds-button--tertiary hist-file" htmlFor={id}>
         <Upload size={16} aria-hidden="true" />
         <span>{add.isPending ? "Adding…" : "Add another BRD"}</span>
         <input
@@ -451,7 +341,7 @@ function WorkItems({ record, shared }: { record: HistoricDetail; shared: Map<num
   };
   return (
     <Part id={id} title="Work items in Azure DevOps">
-      <p className="rk-lead">
+      <p className="hist-lead">
         The top-level work items, usually Epics, that this BRD was delivered as. The Features and User Stories beneath them
         are read from Azure DevOps, read-only.
       </p>
@@ -459,7 +349,7 @@ function WorkItems({ record, shared }: { record: HistoricDetail; shared: Map<num
         <Suggestions record={record} shared={shared} onUse={(value) => { setText(value); setTried(false); focusField(); }} />
       )}
       {draft ? (
-        <form className="rk-inline" onSubmit={submit} aria-labelledby={id}>
+        <form className="hist-inline" onSubmit={submit} aria-labelledby={id}>
           <div ref={field}>
             <TextField
               label="Top-level work item ids"
@@ -488,7 +378,7 @@ function WorkItems({ record, shared }: { record: HistoricDetail; shared: Map<num
                 <AdoLink id={rootId} url={urls.get(rootId)} />
               </Fragment>
             ))}
-            {record.breakdown && <span className="rk-quiet"> · read {formatMoment(new Date(record.breakdown.fetched_at))}</span>}
+            {record.breakdown && <span className="hist-quiet"> · read {formatMoment(new Date(record.breakdown.fetched_at))}</span>}
           </p>
           {record.status === "published" && !record.pending_refresh && (
             <ActionGroup>
@@ -513,19 +403,19 @@ function Suggestions({ record, shared, onUse }: {
 }) {
   const all = record.suggestions.map((item) => item.work_item_id).join(", ");
   return (
-    <div className="rk-found">
-      <p className="rk-found__title">Found in the BRD</p>
-      <ul className="rk-found__list">
+    <div className="hist-found">
+      <p className="hist-found__title">Found in the BRD</p>
+      <ul className="hist-found__list">
         {record.suggestions.map((item) => (
           <li key={item.work_item_id}>
-            <span className="rk-found__id">#{item.work_item_id}</span>{" "}
-            <span className="rk-quiet">{item.label}</span>
-            <span className="rk-quote" dir="auto">“{item.quote}”</span>
+            <span className="hist-found__id">#{item.work_item_id}</span>{" "}
+            <span className="hist-quiet">{item.label}</span>
+            <span className="hist-quote" dir="auto">“{item.quote}”</span>
             <SharedRootNote holders={shared.get(item.work_item_id)} />
           </li>
         ))}
       </ul>
-      <p className="rk-quiet">Suggested from the text only. Check each is the work item this BRD was delivered as.</p>
+      <p className="hist-quiet">Suggested from the text only. Check each is the work item this BRD was delivered as.</p>
       <ActionGroup>
         <Button variant="tertiary" onClick={() => onUse(all)}>{record.suggestions.length === 1 ? "Use it" : "Use these"}</Button>
       </ActionGroup>
@@ -535,10 +425,10 @@ function Suggestions({ record, shared, onUse }: {
 
 function RunReport({ run }: { run: HistoricRun }) {
   return (
-    <div className="rk-report">
-      <p className="rk-report__title">
+    <div className="hist-report">
+      <p className="hist-report__title">
         {count(run.item_errors.length, "work item")} could not be read
-        <span className="rk-quiet"> · in the read of {formatMoment(new Date(run.finished_at ?? run.started_at))}</span>
+        <span className="hist-quiet"> · in the read of {formatMoment(new Date(run.finished_at ?? run.started_at))}</span>
       </p>
       <ItemErrors errors={run.item_errors} />
     </div>
@@ -553,11 +443,11 @@ function PendingRefresh({ record }: { record: HistoricDetail }) {
   const busy = accept.isPending || discard.isPending;
   return (
     <Part id="historic-refresh" title="A newer read is waiting">
-      <p className="rk-lead">
+      <p className="hist-lead">
         Read from Azure DevOps {formatMoment(new Date(pending.breakdown.fetched_at))}.{" "}
         {pending.changes.length === 0
           ? "Nothing changed since it was published."
-          : `${count(pending.changes.length, "work item")} changed. Accepting publishes it again, and requirement work reads the new breakdown.`}
+          : `${count(pending.changes.length, "work item")} changed. Accepting publishes it again with the new breakdown.`}
       </p>
       {pending.changes.length > 0 && <ChangeTable changes={pending.changes} before={record.breakdown} after={pending.breakdown} />}
       <ActionGroup>
@@ -587,9 +477,9 @@ function Publish({ record }: { record: HistoricDetail }) {
   const waits = record.blockers.length > 0;
   return (
     <Part id="historic-publish" title="Publish as reference knowledge">
-      <p className="rk-lead">
-        Requirement work then reads its BRD passages and breakdown as prior art for new requirements: labelled historic, never
-        confirmed intent, and never blocking a decision. Azure DevOps is not changed.
+      <p className="hist-lead">
+        Its BRD passages and breakdown are then read as prior art for new requirements: labelled historic, never confirmed
+        intent, and never blocking a decision. Azure DevOps is not changed.
       </p>
       <ActionGroup>
         <Button variant="primary" busy={publish.isPending} unavailableReason={waits ? record.blockers.join(" ") : null} onClick={() => publish.mutate(undefined)}>
@@ -624,23 +514,22 @@ function Publish({ record }: { record: HistoricDetail }) {
 
 function Withdraw({ record }: { record: HistoricDetail }) {
   const [open, setOpen] = useState(false);
-  const cited = useCitedBy(record);
   const withdraw = useHistoricChange(record.id, (why: string) => api.withdrawHistoric(record.id, why, record.version));
   const close = () => {
     setOpen(false);
     window.requestAnimationFrame(() => document.querySelector<HTMLElement>("[data-withdraw]")?.focus());
   };
   return (
-    <div className="rk-withdraw">
+    <div className="hist-withdraw">
       {!open ? (
         <ActionGroup>
-          <Button variant="tertiary" data-withdraw onClick={() => { withdraw.reset(); setOpen(true); }}>Withdraw from requirement work…</Button>
+          <Button variant="tertiary" data-withdraw onClick={() => { withdraw.reset(); setOpen(true); }}>Withdraw it…</Button>
         </ActionGroup>
       ) : (
         <ConsequencePanel
           tone="danger"
-          title={<>Withdraw <bdi>‘{record.title}’</bdi> from requirement work?</>}
-          happens={`Requirement work stops reading it as prior art${withdrawCitations(cited.data?.pages[0]?.total, cited.isError)}. It stays here, withdrawn, with your reason.`}
+          title={<>Withdraw <bdi>‘{record.title}’</bdi>?</>}
+          happens="It is no longer offered as prior art. It stays here, withdrawn, with your reason."
           reversibility="Withdrawing cannot be undone, and its BRDs cannot be imported again."
           reason={{ label: "Why", hint: "Kept with it here, for anyone who reads it later.", maxLength: 2000 }}
           confirmLabel="Withdraw it"

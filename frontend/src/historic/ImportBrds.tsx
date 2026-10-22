@@ -49,13 +49,13 @@ export function ImportBrds({ onCancel, panelRef }: { onCancel?: () => void; pane
   return (
     <form
       ref={panelRef as RefObject<HTMLFormElement>}
-      className="ds-formpanel rk-import"
+      className="ds-formpanel hist-import"
       aria-labelledby={`${id}-title`}
       onSubmit={submit}
       onKeyDown={(event) => { if (event.key === "Escape" && onCancel && !importing.isPending) onCancel(); }}
     >
       <h2 ref={heading} id={`${id}-title`} tabIndex={-1} className="ds-formpanel__title">Import old BRDs</h2>
-      <p className="rk-lead">
+      <p className="hist-lead">
         Word (.docx) or PDF, up to 10 MB each and {MAX_FILES} at a time. Each starts its own draft and is read; work-item ids
         it mentions are suggested for you to confirm. A Word 97–2003 .doc file needs saving as .docx first.
       </p>
@@ -66,7 +66,7 @@ export function ImportBrds({ onCancel, panelRef }: { onCancel?: () => void; pane
             {...control}
             type="file"
             multiple
-            className="ds-input rk-file-input"
+            className="ds-input hist-file-input"
             accept={ACCEPTED}
             onChange={(event) => { setFiles([...(event.target.files ?? [])]); setResults(null); }}
           />
@@ -78,7 +78,7 @@ export function ImportBrds({ onCancel, panelRef }: { onCancel?: () => void; pane
         </Button>
         {onCancel && <Button onClick={onCancel}>Close</Button>}
       </ActionGroup>
-      {importing.isError && <p className="rk-failure" role="alert"><Status tone="attention">{errorMessage(importing.error)}</Status></p>}
+      {importing.isError && <p className="hist-failure" role="alert"><Status tone="attention">{errorMessage(importing.error)}</Status></p>}
       {results && <ImportResults results={results} />}
     </form>
   );
@@ -90,18 +90,18 @@ function ImportResults({ results }: { results: Result[] }) {
   // The outcome takes focus once, so the reader goes on from it.
   useEffect(() => summary.current?.focus(), []);
   return (
-    <div className="rk-results">
-      <p ref={summary} tabIndex={-1} className="rk-results__summary" role="status">
+    <div className="hist-results">
+      <p ref={summary} tabIndex={-1} className="hist-results__summary" role="status">
         {started} of {count(results.length, "BRD")} imported{started > 0 ? "; each is being read." : "."}
       </p>
-      <ul className="rk-results__list">
+      <ul className="hist-results__list">
         {results.map((item, index) => (
           <li key={`${index}-${item.filename}`}>
-            <bdi className="rk-results__name">
+            <bdi className="hist-results__name">
               {item.outcome === "added" && item.id ? <Link to={historicHref(item.id)}>{item.filename}</Link> : item.filename}
             </bdi>
             {item.outcome === "added" ? <Status tone="working">Imported, being read</Status> : <Status tone="attention">Refused</Status>}
-            {item.reason && <span className="rk-detail">{item.reason}</span>}
+            {item.reason && <span className="hist-detail">{item.reason}</span>}
           </li>
         ))}
       </ul>

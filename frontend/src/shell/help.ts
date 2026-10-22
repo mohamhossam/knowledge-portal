@@ -11,7 +11,7 @@ export const PAGE_KEYS: [string, string][] = [
   ["g l", "Go to the library"],
   ["g c", "Go to the catalogue"],
   ["g o", "Go to Ownership"],
-  ["g r", "Go to Requirements"],
+  ["g r", "Go to historic requirements"],
   ["g j", "Open Jobs"],
   ["/", "Find on this page, where the page has a find field"],
   ["Esc", "Close a panel and go back to what opened it"],
@@ -19,8 +19,8 @@ export const PAGE_KEYS: [string, string][] = [
 
 const NEUTRAL: HelpEntry = {
   title: "Knowledge portal",
-  body: ["Curate the library, the catalogue and who runs each system, for requirement work to rely on."],
-  terms: [["In service", "What requirement work uses or cites now."]],
+  body: ["Curate the knowledge base: the library, the catalogue and who runs each system."],
+  terms: [["In service", "What connected apps read or cite now."]],
   keys: [],
 };
 
@@ -61,14 +61,14 @@ const PAGES: { match: (path: string) => boolean; entry: HelpEntry }[] = [
       title: "A document and its review",
       body: [
         "While a version waits for review, move through its passages: keep, edit or exclude each, then save your review with a summary.",
-        "Approve and publish makes the reviewed passages citable by requirement work. Withdraw stops it citing them; Return to service publishes them again.",
+        "Approve and publish makes the reviewed passages citable. Withdraw stops them being cited; Return to service publishes them again.",
       ],
       terms: [
         ["Passage", "One reviewed unit of a document's text that can be cited."],
         ["Seen", "A passage that stayed the current one for a moment in this review, in this browser tab. Passing through doesn't count."],
         ["Flagged", "Has a warning from reading."],
         ["Blocks approval", "A warning that must be resolved: exclude the passage, or upload a new version."],
-        ["In service", "The published version requirement work cites now."],
+        ["In service", "The published version connected apps cite now."],
       ],
       keys: [
         ["↑ ↓ or j k", "Previous or next passage (in the passage table)"],
@@ -80,18 +80,6 @@ const PAGES: { match: (path: string) => boolean; entry: HelpEntry }[] = [
         ["Space / Shift+↑ ↓", "Select passages, for Exclude or Include in bulk"],
         ["Ctrl+Enter", "Save the review, anywhere on the desk"],
       ],
-    },
-  },
-  {
-    match: (path) => /^\/library\/[^/]+\/(cited-by|citations)$/.test(path),
-    entry: {
-      title: "Cited by",
-      body: ["The requirements that cite this document, and the requirement content whose source changed. Each requirement's owner decides in Requirement AI."],
-      terms: [
-        ["Cited by", "The requirements that cite a document (only those you can see)."],
-        ["Unknown, not zero", "Requirement AI didn't answer, so the count isn't known."],
-      ],
-      keys: [],
     },
   },
   {
@@ -123,14 +111,13 @@ const PAGES: { match: (path: string) => boolean; entry: HelpEntry }[] = [
     entry: {
       title: "Library",
       body: [
-        "Reviewed reference documents that requirement work can cite. Filter by state or owner, find by title, or upload documents.",
-        "Each upload is scanned and read; you review what was read and publish it before requirement work can cite it.",
+        "Reviewed reference documents that connected apps can cite. Filter by state or owner, find by title, or upload documents.",
+        "Each upload is scanned and read; you review what was read and publish it before anything can cite it.",
       ],
       terms: [
-        ["In service", "The published version requirement work cites now."],
+        ["In service", "The published version connected apps cite now."],
         ["Needs attention", "Reading failed or stopped: the row says why, and the document offers the fix."],
-        ["Cited by", "The requirements that cite a document (only those you can see)."],
-        ["Withdraw", "Stop requirement work citing a document."],
+        ["Withdraw", "Take a document out of service, so nothing cites it any more."],
       ],
       keys: [["/", "Find a document (with page-wide shortcuts on)"]],
     },
@@ -143,7 +130,7 @@ const PAGES: { match: (path: string) => boolean; entry: HelpEntry }[] = [
       terms: [
         ["Suggested", "Something a model proposed from a source that nobody has decided yet."],
         ["Stated / inferred", "Whether the source says it outright or the model inferred it."],
-        ["Mapping impact", "How requirement work's mappings would differ under this version."],
+        ["Mapping impact", "How the sample requirements would map differently under this version."],
       ],
       keys: [
         ["↑ ↓ or j k", "Previous or next suggestion (in the suggestions table)"],
@@ -157,7 +144,7 @@ const PAGES: { match: (path: string) => boolean; entry: HelpEntry }[] = [
     match: (path) => path.startsWith("/architecture"),
     entry: {
       title: "Catalogue",
-      body: ["The catalogue version in service: what requirement work maps against today."],
+      body: ["The catalogue version in service: what requirements are mapped against today."],
       terms: [
         ["Catalogue version", "One named state of the catalogue."],
         ["Connection", "A dependency between two systems, said as a sentence."],
@@ -180,14 +167,11 @@ const PAGES: { match: (path: string) => boolean; entry: HelpEntry }[] = [
     },
   },
   {
-    match: (path) => path.startsWith("/requirement-knowledge"),
+    match: (path) => path.startsWith("/historic"),
     entry: {
-      title: "Requirements",
-      body: ["What requirement work holds: requirements, possible duplicates and contradictions, and historic requirements."],
-      terms: [
-        ["Finding", "A possible duplicate or contradiction between requirements."],
-        ["Historic requirement", "A past requirement imported from BRDs to inform new work."],
-      ],
+      title: "Historic requirements",
+      body: ["Old BRDs imported with the Azure DevOps work items they were delivered as. Published, they are reference knowledge, read as prior art."],
+      terms: [["Historic requirement", "A past requirement imported from BRDs to inform new work."]],
       keys: [],
     },
   },

@@ -192,7 +192,7 @@ function BuildSection({ release, build, state }: { release: Release; build: Retu
   return (
     <Section title="The matching index">
       <p className="draft-lead">
-        Requirement work matches against an index of the version's systems, connections, offerings, journeys and documents. A draft is
+        Requirements are matched against an index of the version's systems, connections, offerings, journeys and documents. A draft is
         built at its revision; every edit after it needs another build.
       </p>
       <p role="status">

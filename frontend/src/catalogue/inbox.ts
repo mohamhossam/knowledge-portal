@@ -1,5 +1,5 @@
 /**
- * The inbox of change requests from Requirement AI (requirement-portal ADR-0101, step 7):
+ * The inbox of change requests from connected apps (ADR-0101, step 7):
  * reading it, and saying where a change request comes from. A closed Epic's catalogue change
  * (ontology plan Phase 7) says what it delivered and how that compares with the prediction.
  * An approved backlog for a new offering (Phase 9) says what was drafted for it.

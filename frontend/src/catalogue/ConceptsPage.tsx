@@ -38,7 +38,7 @@ export function ConceptsPage() {
       <>
         <CatalogueHeader page="concepts" />
         <EmptyState title="This version names no capability concept yet.">
-          <p>Concepts arrive with a version built from the ontology. Requirement work maps by system capabilities and phrases until then.</p>
+          <p>Concepts arrive with a version built from the ontology. Until then, requirements are mapped by system capabilities and phrases.</p>
         </EmptyState>
       </>
     );

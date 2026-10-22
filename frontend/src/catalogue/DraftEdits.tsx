@@ -145,7 +145,7 @@ export function SystemRemove({ system, onDone }: { system: CatalogueSystem; onDo
         {links
           ? `Its ${links === 1 ? "connection goes" : `${links} connections go`} with it. `
           : ""}
-        Requirement work keeps mapping to it until the draft is published.
+        The version in service keeps it until the draft is published.
       </p>
     </EditPanel>
   );
@@ -510,7 +510,7 @@ export function WholeRemove({ kind, item, onDone }: { kind: "offering" | "journe
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
 
 /**
- * A new id for an offering or journey. Precedents, change requests and requirement work that
+ * A new id for an offering or journey. Precedents, change requests and connected apps that
  * name the old id still find it: the old id is kept as a former id.
  */
 export function WholeRename({ kind, item, onDone }: { kind: "offering" | "journey"; item: Offering | Journey; onDone: (newId: string | null) => void }) {

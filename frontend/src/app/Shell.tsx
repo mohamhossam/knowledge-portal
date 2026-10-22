@@ -3,7 +3,6 @@ import { Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalSto
 import { Outlet, useLocation, useSearchParams } from "react-router-dom";
 
 import { useAuth } from "../auth/authContext";
-import { REQUIREMENT_APP_URL } from "../auth/paths";
 import { AppShell, LiveMessage, MastheadButton, type NavItem, Skeleton } from "../design/components";
 import { useDisclosure, useFocusAfterRender } from "../design/hooks";
 import { RouterLink } from "../shell/links";
@@ -106,7 +105,7 @@ export function Shell() {
     // In development the catalogue opens on its redesign (a development-only lab, like its route); production keeps /architecture.
     { href: catalogueLabEnabled ? LAB : "/architecture", label: "Catalogue", current: under("/architecture") || under(LAB), icon: <Layers />, group: "Look up" },
     { href: "/squads", label: "Ownership", current: under("/squads"), icon: <UsersRound />, group: "Look up" },
-    { href: "/requirement-knowledge", label: "Requirements", current: under("/requirement-knowledge"), icon: <FileText />, group: "Look up" },
+    { href: "/historic", label: "Historic", current: under("/historic"), icon: <FileText />, group: "Look up" },
   ];
   // Re-confirmations are To do's now (UX rebuild, phase 2): "/reminders" leads there.
   const secondary: NavItem[] = [
@@ -133,7 +132,6 @@ export function Shell() {
         homeHref="/"
         product="Knowledge Portal"
         link={RouterLink}
-        outbound={REQUIREMENT_APP_URL === null ? undefined : { href: REQUIREMENT_APP_URL, label: "Requirement AI" }}
         locationKey={location.pathname}
         navigation={navigation}
         secondaryNavigation={secondary}
