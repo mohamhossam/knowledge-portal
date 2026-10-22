@@ -222,6 +222,13 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- An architecture catalogue workbook whose Tracking sheet has a column named `flows`,
+  `channels`, `milestones`, `statuses` or `fallout` imports again. The column's cell replaced
+  the list the TrackingFlows, TrackingChannels and TrackingEvents sheets add to, and the import
+  failed with a 500. Like any other column the workbook doesn't define, it is now ignored;
+  those entries still come from their own sheets. The other sheets already set their lists
+  after a row's cells, so none had the same fault. Public contract unchanged.
+
 - Opening a result a moment after typing in a find box no longer pulls the reader back to the
   list. The box writes `?find=` to the address shortly after typing stops; when Enter opened a
   record first, that late write landed on the list's address and replaced the record. It now
