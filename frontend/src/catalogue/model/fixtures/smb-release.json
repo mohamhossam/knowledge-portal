@@ -18449,6 +18449,1695 @@
   }
  ],
  "change_history": [],
+ "source_references": [
+  {
+   "text": "SMB reference v1.0 · §1 System Directory",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §1 System Directory",
+   "where": "§1 System Directory"
+  },
+  {
+   "text": "SMB reference v1.0 · §1 System Directory; §6 ECM = system",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §1 System Directory; §6 ECM = system",
+   "where": "§1 System Directory; §6 ECM = system"
+  },
+  {
+   "text": "SDD v2.3 · §P1 Bundle Definition · The SDD's “Automation Portal for BFM” is read as this framework's portal (Ref §6: BFM is its SMB name).",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 Bundle Definition · The SDD's “Automation Portal for BFM” is read as this framework's portal (Ref §6: BFM is its SMB name).",
+   "where": "§P1 Bundle Definition · The SDD's “Automation Portal for BFM” is read as this framework's portal (Ref §6: BFM is its SMB name)."
+  },
+  {
+   "text": "SMB reference v1.0 · §1 System Directory; §6 CBCM = CRMGW",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §1 System Directory; §6 CBCM = CRMGW",
+   "where": "§1 System Directory; §6 CBCM = CRMGW"
+  },
+  {
+   "text": "SMB reference v1.0 · §3.1 step 4 branch",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §3.1 step 4 branch",
+   "where": "§3.1 step 4 branch"
+  },
+  {
+   "text": "SDD v2.3 · §EHS ADO 420619 · Not in the SMB reference; its full name and owner are not stated.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §EHS ADO 420619 · Not in the SMB reference; its full name and owner are not stated.",
+   "where": "§EHS ADO 420619 · Not in the SMB reference; its full name and owner are not stated."
+  },
+  {
+   "text": "SDD v2.3 · §vEDA Cessation · Named once in the SDD; not in the SMB reference.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §vEDA Cessation · Named once in the SDD; not in the SMB reference.",
+   "where": "§vEDA Cessation · Named once in the SDD; not in the SMB reference."
+  },
+  {
+   "text": "SDD v2.3 · §NPS Port In & Port Out · Not in the SMB reference; placed with numbers.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §NPS Port In & Port Out · Not in the SMB reference; placed with numbers.",
+   "where": "§NPS Port In & Port Out · Not in the SMB reference; placed with numbers."
+  },
+  {
+   "text": "SMB reference v1.0 · §1 System Directory (WFM / Remedy)",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §1 System Directory (WFM / Remedy)",
+   "where": "§1 System Directory (WFM / Remedy)"
+  },
+  {
+   "text": "SDD v2.3 · §P1 New Activation; §P3 ADO 194831",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 New Activation; §P3 ADO 194831",
+   "where": "§P1 New Activation; §P3 ADO 194831"
+  },
+  {
+   "text": "SDD v2.3 · §NPS Portout · Expanded nowhere in the sources.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §NPS Portout · Expanded nowhere in the sources.",
+   "where": "§NPS Portout · Expanded nowhere in the sources."
+  },
+  {
+   "text": "SMB reference v1.0 · §1 B2B Web integrations; §7 Glossary · Named as an integration, not described as a system.",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §1 B2B Web integrations; §7 Glossary · Named as an integration, not described as a system.",
+   "where": "§1 B2B Web integrations; §7 Glossary · Named as an integration, not described as a system."
+  },
+  {
+   "text": "SDD v2.3 · §Solution Overview P1",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §Solution Overview P1",
+   "where": "§Solution Overview P1"
+  },
+  {
+   "text": "SDD v2.3 · Scope; §P1",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Scope; §P1",
+   "where": "Scope; §P1"
+  },
+  {
+   "text": "SDD v2.3 · Scope; §P1 Legacy Migration; §P3 ADO 202824",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Scope; §P1 Legacy Migration; §P3 ADO 202824",
+   "where": "Scope; §P1 Legacy Migration; §P3 ADO 202824"
+  },
+  {
+   "text": "SDD v2.3 · §NPS Port In & Port Out",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §NPS Port In & Port Out",
+   "where": "§NPS Port In & Port Out"
+  },
+  {
+   "text": "SDD v2.3 · Scope; §P2 ADO 81197; §P3 ADO 81961",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Scope; §P2 ADO 81197; §P3 ADO 81961",
+   "where": "Scope; §P2 ADO 81197; §P3 ADO 81961"
+  },
+  {
+   "text": "SDD v2.3 · Scope",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Scope",
+   "where": "Scope"
+  },
+  {
+   "text": "SDD v2.3 · Scope, P4 SaaS activation (MODSUBS)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Scope, P4 SaaS activation (MODSUBS)",
+   "where": "Scope, P4 SaaS activation (MODSUBS)"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 289225",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 289225",
+   "where": "§P4 ADO 289225"
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 202826",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 202826",
+   "where": "§P3 ADO 202826"
+  },
+  {
+   "text": "SDD v2.3 · §EHS ADO 420619",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §EHS ADO 420619",
+   "where": "§EHS ADO 420619"
+  },
+  {
+   "text": "SDD v2.3 · §P2 ADO 259161",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 ADO 259161",
+   "where": "§P2 ADO 259161"
+  },
+  {
+   "text": "SDD v2.3 · §NPS Portout",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §NPS Portout",
+   "where": "§NPS Portout"
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 259162",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 259162",
+   "where": "§P3 ADO 259162"
+  },
+  {
+   "text": "SDD v2.3 · §P1 Catalog Modelling",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 Catalog Modelling",
+   "where": "§P1 Catalog Modelling"
+  },
+  {
+   "text": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)",
+   "source_id": null,
+   "cited": null,
+   "rest": null,
+   "where": "Ontology plan Phase 8 · the components' technical specs (SDD v2.3 · §P1)"
+  },
+  {
+   "text": "SDD v2.3 · §P1 Catalog Modelling; §ADO 438907",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 Catalog Modelling; §ADO 438907",
+   "where": "§P1 Catalog Modelling; §ADO 438907"
+  },
+  {
+   "text": "SDD v2.3 · §P1 Firewall; §P1.1",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 Firewall; §P1.1",
+   "where": "§P1 Firewall; §P1.1"
+  },
+  {
+   "text": "SDD v2.3 · §P1 Bundle Definition; §P3 ADO 194831",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 Bundle Definition; §P3 ADO 194831",
+   "where": "§P1 Bundle Definition; §P3 ADO 194831"
+  },
+  {
+   "text": "SDD v2.3 · §P1 Bundle Definition; General Highlights",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 Bundle Definition; General Highlights",
+   "where": "§P1 Bundle Definition; General Highlights"
+  },
+  {
+   "text": "SDD v2.3 · §P1.1 Generic FortiAP Offer",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1.1 Generic FortiAP Offer",
+   "where": "§P1.1 Generic FortiAP Offer"
+  },
+  {
+   "text": "SDD v2.3 · §P1.1 Mandating Bundling Components",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1.1 Mandating Bundling Components",
+   "where": "§P1.1 Mandating Bundling Components"
+  },
+  {
+   "text": "SDD v2.3 · §P1.1; Solution Assumptions",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1.1; Solution Assumptions",
+   "where": "§P1.1; Solution Assumptions"
+  },
+  {
+   "text": "SDD v2.3 · §P2 IN; §vEDA; Solution Assumptions",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 IN; §vEDA; Solution Assumptions",
+   "where": "§P2 IN; §vEDA; Solution Assumptions"
+  },
+  {
+   "text": "SDD v2.3 · §P1.1 Mandating Bundling Components; General Highlights",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1.1 Mandating Bundling Components; General Highlights",
+   "where": "§P1.1 Mandating Bundling Components; General Highlights"
+  },
+  {
+   "text": "SDD v2.3 · Feasibility matrix, User Story 57539; General Highlights",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Feasibility matrix, User Story 57539; General Highlights",
+   "where": "Feasibility matrix, User Story 57539; General Highlights"
+  },
+  {
+   "text": "SDD v2.3 · Feasibility matrix, User Story 80255 (existing implementation)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Feasibility matrix, User Story 80255 (existing implementation)",
+   "where": "Feasibility matrix, User Story 80255 (existing implementation)"
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 194831",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 194831",
+   "where": "§P3 ADO 194831"
+  },
+  {
+   "text": "SDD v2.3 · Feasibility matrix, User Story 81960",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Feasibility matrix, User Story 81960",
+   "where": "Feasibility matrix, User Story 81960"
+  },
+  {
+   "text": "SDD v2.3 · Feasibility matrix, User Story 81220 · Feasibility is TBD in the SDD.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Feasibility matrix, User Story 81220 · Feasibility is TBD in the SDD.",
+   "where": "Feasibility matrix, User Story 81220 · Feasibility is TBD in the SDD."
+  },
+  {
+   "text": "SMB reference v1.0 · Title and scope · The SDD doesn't state a customer-type rule.",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· Title and scope · The SDD doesn't state a customer-type rule.",
+   "where": "Title and scope · The SDD doesn't state a customer-type rule."
+  },
+  {
+   "text": "SDD v2.3 · §P1 Applicable Channels",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 Applicable Channels",
+   "where": "§P1 Applicable Channels"
+  },
+  {
+   "text": "SDD v2.3 · Scope; §P3 ADO 202824",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Scope; §P3 ADO 202824",
+   "where": "Scope; §P3 ADO 202824"
+  },
+  {
+   "text": "SDD v2.3 · Scope; Feasibility matrix",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Scope; Feasibility matrix",
+   "where": "Scope; Feasibility matrix"
+  },
+  {
+   "text": "SDD v2.3 · §ADO 438907, US 438909",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §ADO 438907, US 438909",
+   "where": "§ADO 438907, US 438909"
+  },
+  {
+   "text": "SDD v2.3 · §P1 FortiPortal Access",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 FortiPortal Access",
+   "where": "§P1 FortiPortal Access"
+  },
+  {
+   "text": "SMB reference v1.0 · §3.1 step 10",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §3.1 step 10",
+   "where": "§3.1 step 10"
+  },
+  {
+   "text": "SDD v2.3 · §BPM",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §BPM",
+   "where": "§BPM"
+  },
+  {
+   "text": "SDD v2.3 · §BPM; §TIBCO",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §BPM; §TIBCO",
+   "where": "§BPM; §TIBCO"
+  },
+  {
+   "text": "SDD v2.3 · §TIBCO",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §TIBCO",
+   "where": "§TIBCO"
+  },
+  {
+   "text": "SMB reference v1.0 · §5 Known Issues",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §5 Known Issues",
+   "where": "§5 Known Issues"
+  },
+  {
+   "text": "SDD v2.3 · §BPM General Note",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §BPM General Note",
+   "where": "§BPM General Note"
+  },
+  {
+   "text": "SMB reference v1.0 · §3.1 step 7",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §3.1 step 7",
+   "where": "§3.1 step 7"
+  },
+  {
+   "text": "SDD v2.3 · Annexure: Workflows",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Annexure: Workflows",
+   "where": "Annexure: Workflows"
+  },
+  {
+   "text": "SDD v2.3 · Annexure: E2ESO TP, IAD",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Annexure: E2ESO TP, IAD",
+   "where": "Annexure: E2ESO TP, IAD"
+  },
+  {
+   "text": "SDD v2.3 · Throughout",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Throughout",
+   "where": "Throughout"
+  },
+  {
+   "text": "SDD v2.3 · §ADO 438907",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §ADO 438907",
+   "where": "§ADO 438907"
+  },
+  {
+   "text": "SDD v2.3 · §P1 New Activation",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 New Activation",
+   "where": "§P1 New Activation"
+  },
+  {
+   "text": "SMB reference v1.0 · §1; §5",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §1; §5",
+   "where": "§1; §5"
+  },
+  {
+   "text": "SMB reference v1.0 · §0 Rules",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §0 Rules",
+   "where": "§0 Rules"
+  },
+  {
+   "text": "SDD v2.3 · Cover; Revision History",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Cover; Revision History",
+   "where": "Cover; Revision History"
+  },
+  {
+   "text": "SDD v2.3 · §IN Backup 5G table; §P1.1 CPE/AP inquiry · Upload speeds are derived from the 1:2 ratio (R2); the SDD lists download tiers only.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §IN Backup 5G table; §P1.1 CPE/AP inquiry · Upload speeds are derived from the 1:2 ratio (R2); the SDD lists download tiers only.",
+   "where": "§IN Backup 5G table; §P1.1 CPE/AP inquiry · Upload speeds are derived from the 1:2 ratio (R2); the SDD lists download tiers only."
+  },
+  {
+   "text": "SDD v2.3 · §P1 Bundle Definition",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 Bundle Definition",
+   "where": "§P1 Bundle Definition"
+  },
+  {
+   "text": "SDD v2.3 · General Highlights",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· General Highlights",
+   "where": "General Highlights"
+  },
+  {
+   "text": "SDD v2.3 · §P4 Pending Order Validation",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Pending Order Validation",
+   "where": "§P4 Pending Order Validation"
+  },
+  {
+   "text": "SDD v2.3 · §P4 Pending Order Validation, add-on matrix",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Pending Order Validation, add-on matrix",
+   "where": "§P4 Pending Order Validation, add-on matrix"
+  },
+  {
+   "text": "SDD v2.3 · §P1 Amendment/Cancellation; §P2 UpDowngrade",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 Amendment/Cancellation; §P2 UpDowngrade",
+   "where": "§P1 Amendment/Cancellation; §P2 UpDowngrade"
+  },
+  {
+   "text": "SDD v2.3 · General Highlights, Speed Booster",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· General Highlights, Speed Booster",
+   "where": "General Highlights, Speed Booster"
+  },
+  {
+   "text": "SDD v2.3 · §P4 Enhancement 1873844",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Enhancement 1873844",
+   "where": "§P4 Enhancement 1873844"
+  },
+  {
+   "text": "SDD v2.3 · §P4 Enhancement 1871663",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Enhancement 1871663",
+   "where": "§P4 Enhancement 1871663"
+  },
+  {
+   "text": "SDD v2.3 · §ADO 438907, US 438912",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §ADO 438907, US 438912",
+   "where": "§ADO 438907, US 438912"
+  },
+  {
+   "text": "SDD v2.3 · §ADO 438907, US 438909 · The applicable SRs are stated; the commitment test follows the existing exit-charge rules.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §ADO 438907, US 438909 · The applicable SRs are stated; the commitment test follows the existing exit-charge rules.",
+   "where": "§ADO 438907, US 438909 · The applicable SRs are stated; the commitment test follows the existing exit-charge rules."
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 420619",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 420619",
+   "where": "§P4 ADO 420619"
+  },
+  {
+   "text": "SDD v2.3 · Feasibility US 202815, 202817",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Feasibility US 202815, 202817",
+   "where": "Feasibility US 202815, 202817"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 288752",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 288752",
+   "where": "§P4 ADO 288752"
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 202826; §ADO 470510",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 202826; §ADO 470510",
+   "where": "§P3 ADO 202826; §ADO 470510"
+  },
+  {
+   "text": "SDD v2.3 · §P1 FortiPortal Access; §P2 ADO 259161",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 FortiPortal Access; §P2 ADO 259161",
+   "where": "§P1 FortiPortal Access; §P2 ADO 259161"
+  },
+  {
+   "text": "SMB reference v1.0 · §3.1; SDD v2.3 · §P1",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §3.1; SDD v2.3 · §P1",
+   "where": "§3.1; SDD v2.3 · §P1"
+  },
+  {
+   "text": "SMB reference v1.0 · §3.1 step 1",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §3.1 step 1",
+   "where": "§3.1 step 1"
+  },
+  {
+   "text": "SMB reference v1.0 · §3.1 step 2",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §3.1 step 2",
+   "where": "§3.1 step 2"
+  },
+  {
+   "text": "SMB reference v1.0 · §3.1 step 3",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §3.1 step 3",
+   "where": "§3.1 step 3"
+  },
+  {
+   "text": "SMB reference v1.0 · §3.1 step 4",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §3.1 step 4",
+   "where": "§3.1 step 4"
+  },
+  {
+   "text": "SDD v2.3 · §P1 Legacy Migration (as for SMB FW: Order to Delivery)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 Legacy Migration (as for SMB FW: Order to Delivery)",
+   "where": "§P1 Legacy Migration (as for SMB FW: Order to Delivery)"
+  },
+  {
+   "text": "SMB reference v1.0 · §1 BCRM integrations",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §1 BCRM integrations",
+   "where": "§1 BCRM integrations"
+  },
+  {
+   "text": "SDD v2.3 · §P1 New Activation (channels pass the Summary Order Flag)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 New Activation (channels pass the Summary Order Flag)",
+   "where": "§P1 New Activation (channels pass the Summary Order Flag)"
+  },
+  {
+   "text": "SDD v2.3 · §BPM; §TIBCO (Order Tracking)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §BPM; §TIBCO (Order Tracking)",
+   "where": "§BPM; §TIBCO (Order Tracking)"
+  },
+  {
+   "text": "SMB reference v1.0 · §3.1 step 6",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §3.1 step 6",
+   "where": "§3.1 step 6"
+  },
+  {
+   "text": "SMB reference v1.0 · §3.1 step 8",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §3.1 step 8",
+   "where": "§3.1 step 8"
+  },
+  {
+   "text": "SDD v2.3 · §P4 Pending Order Validation · The sub-orders are named in the validation matrix; the split as a step is this catalogue's reading.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Pending Order Validation · The sub-orders are named in the validation matrix; the split as a step is this catalogue's reading.",
+   "where": "§P4 Pending Order Validation · The sub-orders are named in the validation matrix; the split as a step is this catalogue's reading."
+  },
+  {
+   "text": "SDD v2.3 · §P1 New Activation; §P2 New Activation",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 New Activation; §P2 New Activation",
+   "where": "§P1 New Activation; §P2 New Activation"
+  },
+  {
+   "text": "SDD v2.3 · §P1 New Activation; §P1.1 Generic FortiAP Offer",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 New Activation; §P1.1 Generic FortiAP Offer",
+   "where": "§P1 New Activation; §P1.1 Generic FortiAP Offer"
+  },
+  {
+   "text": "SDD v2.3 · §P4 Enhancement 1873844 · The IN offers apply only when the bundle has Backup 5G; the check as a step is this catalogue's reading.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Enhancement 1873844 · The IN offers apply only when the bundle has Backup 5G; the check as a step is this catalogue's reading.",
+   "where": "§P4 Enhancement 1873844 · The IN offers apply only when the bundle has Backup 5G; the check as a step is this catalogue's reading."
+  },
+  {
+   "text": "SDD v2.3 · §P2 IN; §vEDA · The SDD details Backup 5G for up/downgrade and cessation and says activation is “the same as the new activation fulfillment”.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 IN; §vEDA · The SDD details Backup 5G for up/downgrade and cessation and says activation is “the same as the new activation fulfillment”.",
+   "where": "§P2 IN; §vEDA · The SDD details Backup 5G for up/downgrade and cessation and says activation is “the same as the new activation fulfillment”."
+  },
+  {
+   "text": "SDD v2.3 · §P4 Enhancement 1873844 (New Activation/Migration)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Enhancement 1873844 (New Activation/Migration)",
+   "where": "§P4 Enhancement 1873844 (New Activation/Migration)"
+  },
+  {
+   "text": "SMB reference v1.0 · §3.1 step 11",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §3.1 step 11",
+   "where": "§3.1 step 11"
+  },
+  {
+   "text": "SDD v2.3 · §TIBCO; §P4 Cancel Order Changes",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §TIBCO; §P4 Cancel Order Changes",
+   "where": "§TIBCO; §P4 Cancel Order Changes"
+  },
+  {
+   "text": "SDD v2.3 · §P1 New Activation; General Highlights",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 New Activation; General Highlights",
+   "where": "§P1 New Activation; General Highlights"
+  },
+  {
+   "text": "SMB reference v1.0 · §3.1 step 12; SDD v2.3 · §ADO 438907 US 438909",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §3.1 step 12; SDD v2.3 · §ADO 438907 US 438909",
+   "where": "§3.1 step 12; SDD v2.3 · §ADO 438907 US 438909"
+  },
+  {
+   "text": "SMB reference v1.0 · §3.1 step 14",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §3.1 step 14",
+   "where": "§3.1 step 14"
+  },
+  {
+   "text": "SMB reference v1.0 · §3.1 step 15",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §3.1 step 15",
+   "where": "§3.1 step 15"
+  },
+  {
+   "text": "SMB reference v1.0 · §1 B2B Web; §3.1 step 1",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §1 B2B Web; §3.1 step 1",
+   "where": "§1 B2B Web; §3.1 step 1"
+  },
+  {
+   "text": "SDD v2.3 · §P1 New Activation · The XML shape is read from the SDD's request samples.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 New Activation · The XML shape is read from the SDD's request samples.",
+   "where": "§P1 New Activation · The XML shape is read from the SDD's request samples."
+  },
+  {
+   "text": "SDD v2.3 · §P2 UpDowngrade (evaluteOrder with CRMGW & ECM)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 UpDowngrade (evaluteOrder with CRMGW & ECM)",
+   "where": "§P2 UpDowngrade (evaluteOrder with CRMGW & ECM)"
+  },
+  {
+   "text": "SDD v2.3 · §P2 UpDowngrade",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 UpDowngrade",
+   "where": "§P2 UpDowngrade"
+  },
+  {
+   "text": "SDD v2.3 · §P1 Legacy Migration; §P2 UpDowngrade · Named for migration and up/downgrade; the reference only says “CWOM format” for activation.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 Legacy Migration; §P2 UpDowngrade · Named for migration and up/downgrade; the reference only says “CWOM format” for activation.",
+   "where": "§P1 Legacy Migration; §P2 UpDowngrade · Named for migration and up/downgrade; the reference only says “CWOM format” for activation."
+  },
+  {
+   "text": "SDD v2.3 · §P2 New Activation; IAD (annex not provided)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 New Activation; IAD (annex not provided)",
+   "where": "§P2 New Activation; IAD (annex not provided)"
+  },
+  {
+   "text": "SDD v2.3 · §P1.1 Revised Fortinet APIs (V5)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1.1 Revised Fortinet APIs (V5)",
+   "where": "§P1.1 Revised Fortinet APIs (V5)"
+  },
+  {
+   "text": "SMB reference v1.0 · §3.1 step 12",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §3.1 step 12",
+   "where": "§3.1 step 12"
+  },
+  {
+   "text": "SDD v2.3 · §vEDA · The SDD gives the profile in the cessation commands.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §vEDA · The SDD gives the profile in the cessation commands.",
+   "where": "§vEDA · The SDD gives the profile in the cessation commands."
+  },
+  {
+   "text": "SDD v2.3 · §vEDA",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §vEDA",
+   "where": "§vEDA"
+  },
+  {
+   "text": "SDD v2.3 · §P4 Cancel Order Changes",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Cancel Order Changes",
+   "where": "§P4 Cancel Order Changes"
+  },
+  {
+   "text": "SDD v2.3 · §CWOM; §TIBCO",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §CWOM; §TIBCO",
+   "where": "§CWOM; §TIBCO"
+  },
+  {
+   "text": "SDD v2.3 · §P1 New Activation · The ticketing system isn't named.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 New Activation · The ticketing system isn't named.",
+   "where": "§P1 New Activation · The ticketing system isn't named."
+  },
+  {
+   "text": "SDD v2.3 · §P2 UpDowngrade · RTF triggers them; the sending system isn't named.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 UpDowngrade · RTF triggers them; the sending system isn't named.",
+   "where": "§P2 UpDowngrade · RTF triggers them; the sending system isn't named."
+  },
+  {
+   "text": "SDD v2.3 · §P2 ADO 81197; §P3 ADO 81961; §P4 Pending Order Validation; §P4 Enhancements 1871663, 1873844; §ADO 438907",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 ADO 81197; §P3 ADO 81961; §P4 Pending Order Validation; §P4 Enhancements 1871663, 1873844; §ADO 438907",
+   "where": "§P2 ADO 81197; §P3 ADO 81961; §P4 Pending Order Validation; §P4 Enhancements 1871663, 1873844; §ADO 438907"
+  },
+  {
+   "text": "SDD v2.3 · §P2 ADO 81197",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 ADO 81197",
+   "where": "§P2 ADO 81197"
+  },
+  {
+   "text": "SDD v2.3 · §P2 ADO 81197, request mapping",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 ADO 81197, request mapping",
+   "where": "§P2 ADO 81197, request mapping"
+  },
+  {
+   "text": "SDD v2.3 · §P4 Pending Order Validation · RTF rejects the request; how the channel shows it isn't stated.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Pending Order Validation · RTF rejects the request; how the channel shows it isn't stated.",
+   "where": "§P4 Pending Order Validation · RTF rejects the request; how the channel shows it isn't stated."
+  },
+  {
+   "text": "SDD v2.3 · §BPM; §TIBCO ADO 81961",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §BPM; §TIBCO ADO 81961",
+   "where": "§BPM; §TIBCO ADO 81961"
+  },
+  {
+   "text": "SDD v2.3 · §P2 IN; §P4 Enhancement 1873844 (w/ 5G to w/ 5G)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 IN; §P4 Enhancement 1873844 (w/ 5G to w/ 5G)",
+   "where": "§P2 IN; §P4 Enhancement 1873844 (w/ 5G to w/ 5G)"
+  },
+  {
+   "text": "SDD v2.3 · §P2 IN",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 IN",
+   "where": "§P2 IN"
+  },
+  {
+   "text": "SDD v2.3 · §P4 Enhancement 1873844 (w/o 5G to w/ 5G)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Enhancement 1873844 (w/o 5G to w/ 5G)",
+   "where": "§P4 Enhancement 1873844 (w/o 5G to w/ 5G)"
+  },
+  {
+   "text": "SDD v2.3 · §P4 Enhancement 1873844 (w/ 5G to w/o 5G)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Enhancement 1873844 (w/ 5G to w/o 5G)",
+   "where": "§P4 Enhancement 1873844 (w/ 5G to w/o 5G)"
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 81961 · WFMS fulfils per the agreed workflow (“w/ Device Change”), which isn't in the SDD text.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 81961 · WFMS fulfils per the agreed workflow (“w/ Device Change”), which isn't in the SDD text.",
+   "where": "§P3 ADO 81961 · WFMS fulfils per the agreed workflow (“w/ Device Change”), which isn't in the SDD text."
+  },
+  {
+   "text": "SDD v2.3 · §ADO 438907 US 438909 · The exit charge applies to up/downgrade; the commitment test follows the existing exit-charge rules.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §ADO 438907 US 438909 · The exit charge applies to up/downgrade; the commitment test follows the existing exit-charge rules.",
+   "where": "§ADO 438907 US 438909 · The exit charge applies to up/downgrade; the commitment test follows the existing exit-charge rules."
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 81961",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 81961",
+   "where": "§P3 ADO 81961"
+  },
+  {
+   "text": "SDD v2.3 · §P2 ADO 81197 · RTF triggers them; the sending system isn't named.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 ADO 81197 · RTF triggers them; the sending system isn't named.",
+   "where": "§P2 ADO 81197 · RTF triggers them; the sending system isn't named."
+  },
+  {
+   "text": "SDD v2.3 · §P2 ADO 81197 (SMB App)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 ADO 81197 (SMB App)",
+   "where": "§P2 ADO 81197 (SMB App)"
+  },
+  {
+   "text": "SDD v2.3 · §TIBCO ADO 81961",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §TIBCO ADO 81961",
+   "where": "§TIBCO ADO 81961"
+  },
+  {
+   "text": "SDD v2.3 · §P2 IN; §P4 Enhancement 1873844",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 IN; §P4 Enhancement 1873844",
+   "where": "§P2 IN; §P4 Enhancement 1873844"
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 81961 · Read from the new-activation installation.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 81961 · Read from the new-activation installation.",
+   "where": "§P3 ADO 81961 · Read from the new-activation installation."
+  },
+  {
+   "text": "SDD v2.3 · §P2; §P3 ADO 81961",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2; §P3 ADO 81961",
+   "where": "§P2; §P3 ADO 81961"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 198968",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 198968",
+   "where": "§P4 ADO 198968"
+  },
+  {
+   "text": "SDD v2.3 · §P2 ADO 81197 · The sending system isn't named.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 ADO 81197 · The sending system isn't named.",
+   "where": "§P2 ADO 81197 · The sending system isn't named."
+  },
+  {
+   "text": "SMB reference v1.0 · §3.1 step 5",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· §3.1 step 5",
+   "where": "§3.1 step 5"
+  },
+  {
+   "text": "SDD v2.3 · §TIBCO; §BPM",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §TIBCO; §BPM",
+   "where": "§TIBCO; §BPM"
+  },
+  {
+   "text": "SDD v2.3 · §TIBCO (TIBCO follows the M/S approach)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §TIBCO (TIBCO follows the M/S approach)",
+   "where": "§TIBCO (TIBCO follows the M/S approach)"
+  },
+  {
+   "text": "SDD v2.3 · §BPM General Note · The SDD names “the felix / getRealTimeOrderDetails SP”.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §BPM General Note · The SDD names “the felix / getRealTimeOrderDetails SP”.",
+   "where": "§BPM General Note · The SDD names “the felix / getRealTimeOrderDetails SP”."
+  },
+  {
+   "text": "SDD v2.3 · §TIBCO; US 2367, 44387, 2380",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §TIBCO; US 2367, 44387, 2380",
+   "where": "§TIBCO; US 2367, 44387, 2380"
+  },
+  {
+   "text": "SDD v2.3 · §BPM General Note · Read path inferred from the SP's name.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §BPM General Note · Read path inferred from the SP's name.",
+   "where": "§BPM General Note · Read path inferred from the SP's name."
+  },
+  {
+   "text": "SDD v2.3 · §P1 Legacy Migration; §P3 ADO 202824; Feasibility US 202815, 202817",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 Legacy Migration; §P3 ADO 202824; Feasibility US 202815, 202817",
+   "where": "§P1 Legacy Migration; §P3 ADO 202824; Feasibility US 202815, 202817"
+  },
+  {
+   "text": "SDD v2.3 · §P1 Legacy Migration; §P3 ADO 202824",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 Legacy Migration; §P3 ADO 202824",
+   "where": "§P1 Legacy Migration; §P3 ADO 202824"
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 202824",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 202824",
+   "where": "§P3 ADO 202824"
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 202824, request mapping",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 202824, request mapping",
+   "where": "§P3 ADO 202824, request mapping"
+  },
+  {
+   "text": "SDD v2.3 · §BPM; §TIBCO ADO 202824",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §BPM; §TIBCO ADO 202824",
+   "where": "§BPM; §TIBCO ADO 202824"
+  },
+  {
+   "text": "SDD v2.3 · §P1 Legacy Migration",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 Legacy Migration",
+   "where": "§P1 Legacy Migration"
+  },
+  {
+   "text": "SDD v2.3 · Feasibility US 202815, 202817; §P3 ADO 202824",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Feasibility US 202815, 202817; §P3 ADO 202824",
+   "where": "Feasibility US 202815, 202817; §P3 ADO 202824"
+  },
+  {
+   "text": "SDD v2.3 · §P2 UpDowngrade (as new activation); §P4 Enhancement 1873844",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 UpDowngrade (as new activation); §P4 Enhancement 1873844",
+   "where": "§P2 UpDowngrade (as new activation); §P4 Enhancement 1873844"
+  },
+  {
+   "text": "SDD v2.3 · Feasibility US 202815; §P1 New Activation/Legacy Migration",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Feasibility US 202815; §P1 New Activation/Legacy Migration",
+   "where": "Feasibility US 202815; §P1 New Activation/Legacy Migration"
+  },
+  {
+   "text": "SDD v2.3 · Feasibility US 202817; §ADO 443271",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Feasibility US 202817; §ADO 443271",
+   "where": "Feasibility US 202817; §ADO 443271"
+  },
+  {
+   "text": "SDD v2.3 · §CWOM ADO 202824; §TIBCO ADO 202824",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §CWOM ADO 202824; §TIBCO ADO 202824",
+   "where": "§CWOM ADO 202824; §TIBCO ADO 202824"
+  },
+  {
+   "text": "SDD v2.3 · Feasibility US 202817 · “Existing exit-charge rules posting on devices to follow”; the commitment test is the existing rule's.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· Feasibility US 202817 · “Existing exit-charge rules posting on devices to follow”; the commitment test is the existing rule's.",
+   "where": "Feasibility US 202817 · “Existing exit-charge rules posting on devices to follow”; the commitment test is the existing rule's."
+  },
+  {
+   "text": "SDD v2.3 · §ADO 438907 US 438909 · Billing start is read from the new-activation journey.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §ADO 438907 US 438909 · Billing start is read from the new-activation journey.",
+   "where": "§ADO 438907 US 438909 · Billing start is read from the new-activation journey."
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 202824 · RTF triggers them; the sending system isn't named.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 202824 · RTF triggers them; the sending system isn't named.",
+   "where": "§P3 ADO 202824 · RTF triggers them; the sending system isn't named."
+  },
+  {
+   "text": "SDD v2.3 · §P2 One-Time Data Migration · CRMGW holds the registry; closing is read from the other journeys.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 One-Time Data Migration · CRMGW holds the registry; closing is read from the other journeys.",
+   "where": "§P2 One-Time Data Migration · CRMGW holds the registry; closing is read from the other journeys."
+  },
+  {
+   "text": "SDD v2.3 · §BPM, §TIBCO ADO 202824",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §BPM, §TIBCO ADO 202824",
+   "where": "§BPM, §TIBCO ADO 202824"
+  },
+  {
+   "text": "SDD v2.3 · §P2 UpDowngrade (as new activation)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 UpDowngrade (as new activation)",
+   "where": "§P2 UpDowngrade (as new activation)"
+  },
+  {
+   "text": "SDD v2.3 · §P1; §P3 ADO 202824",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1; §P3 ADO 202824",
+   "where": "§P1; §P3 ADO 202824"
+  },
+  {
+   "text": "SDD v2.3 · §TIBCO ADO 202824",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §TIBCO ADO 202824",
+   "where": "§TIBCO ADO 202824"
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 202824 · The sending system isn't named.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 202824 · The sending system isn't named.",
+   "where": "§P3 ADO 202824 · The sending system isn't named."
+  },
+  {
+   "text": "SDD v2.3 · §P2 ADO 259161; §P4 ADO 288752; §ADO 438907",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 ADO 259161; §P4 ADO 288752; §ADO 438907",
+   "where": "§P2 ADO 259161; §P4 ADO 288752; §ADO 438907"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 323163, 288752",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 323163, 288752",
+   "where": "§P4 ADO 323163, 288752"
+  },
+  {
+   "text": "SDD v2.3 · §P3 Order Tracking · Stated for BFM lifecycle orders generally.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 Order Tracking · Stated for BFM lifecycle orders generally.",
+   "where": "§P3 Order Tracking · Stated for BFM lifecycle orders generally."
+  },
+  {
+   "text": "SDD v2.3 · §P2 ADO 259161; §P4 ADO 288752",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 ADO 259161; §P4 ADO 288752",
+   "where": "§P2 ADO 259161; §P4 ADO 288752"
+  },
+  {
+   "text": "SDD v2.3 · §P4 Enhancement 1873844 (Cease)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Enhancement 1873844 (Cease)",
+   "where": "§P4 Enhancement 1873844 (Cease)"
+  },
+  {
+   "text": "SDD v2.3 · §P2 ADO 259161 · WFMS fulfils per the agreed workflow, which isn't in the SDD text.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 ADO 259161 · WFMS fulfils per the agreed workflow, which isn't in the SDD text.",
+   "where": "§P2 ADO 259161 · WFMS fulfils per the agreed workflow, which isn't in the SDD text."
+  },
+  {
+   "text": "SDD v2.3 · §ADO 438907 US 438909",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §ADO 438907 US 438909",
+   "where": "§ADO 438907 US 438909"
+  },
+  {
+   "text": "SDD v2.3 · §ADO 438907 US 438909 · The exit charge applies to cessation; the commitment test follows the existing exit-charge rules.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §ADO 438907 US 438909 · The exit charge applies to cessation; the commitment test follows the existing exit-charge rules.",
+   "where": "§ADO 438907 US 438909 · The exit charge applies to cessation; the commitment test follows the existing exit-charge rules."
+  },
+  {
+   "text": "SDD v2.3 · §P2 ADO 259161 · Ceasing all services implies the final bill; the SDD doesn't detail it.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 ADO 259161 · Ceasing all services implies the final bill; the SDD doesn't detail it.",
+   "where": "§P2 ADO 259161 · Ceasing all services implies the final bill; the SDD doesn't detail it."
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 323163",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 323163",
+   "where": "§P4 ADO 323163"
+  },
+  {
+   "text": "SDD v2.3 · §P3 Order Tracking",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 Order Tracking",
+   "where": "§P3 Order Tracking"
+  },
+  {
+   "text": "SDD v2.3 · §P1 FortiPortal Access · The API isn't named.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P1 FortiPortal Access · The API isn't named.",
+   "where": "§P1 FortiPortal Access · The API isn't named."
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 202826 (External Shift of Site); §P4 Enhancement 1873844",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 202826 (External Shift of Site); §P4 Enhancement 1873844",
+   "where": "§P3 ADO 202826 (External Shift of Site); §P4 Enhancement 1873844"
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 202826, request mapping",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 202826, request mapping",
+   "where": "§P3 ADO 202826, request mapping"
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 202826; §BPM, §TIBCO",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 202826; §BPM, §TIBCO",
+   "where": "§P3 ADO 202826; §BPM, §TIBCO"
+  },
+  {
+   "text": "SDD v2.3 · §P4 Enhancement 1873844 · The geo-lock reset applies only to Backup 5G; the check as a step is this catalogue's reading.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Enhancement 1873844 · The geo-lock reset applies only to Backup 5G; the check as a step is this catalogue's reading.",
+   "where": "§P4 Enhancement 1873844 · The geo-lock reset applies only to Backup 5G; the check as a step is this catalogue's reading."
+  },
+  {
+   "text": "SDD v2.3 · §P4 Enhancement 1873844 (External Shift)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Enhancement 1873844 (External Shift)",
+   "where": "§P4 Enhancement 1873844 (External Shift)"
+  },
+  {
+   "text": "SDD v2.3 · §CWOM, §TIBCO ADO 202826",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §CWOM, §TIBCO ADO 202826",
+   "where": "§CWOM, §TIBCO ADO 202826"
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 202826 · RTF triggers them; the sending system isn't named.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 202826 · RTF triggers them; the sending system isn't named.",
+   "where": "§P3 ADO 202826 · RTF triggers them; the sending system isn't named."
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 202826 · Closing is read from the other journeys.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 202826 · Closing is read from the other journeys.",
+   "where": "§P3 ADO 202826 · Closing is read from the other journeys."
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 202826 · The sending system isn't named.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 202826 · The sending system isn't named.",
+   "where": "§P3 ADO 202826 · The sending system isn't named."
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 259162; §P4 Enhancement 1873844; General Highlights (Dunning)",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 259162; §P4 Enhancement 1873844; General Highlights (Dunning)",
+   "where": "§P3 ADO 259162; §P4 Enhancement 1873844; General Highlights (Dunning)"
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 259162 · The SDD doesn't name the system that raises the action (finding F12).",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 259162 · The SDD doesn't name the system that raises the action (finding F12).",
+   "where": "§P3 ADO 259162 · The SDD doesn't name the system that raises the action (finding F12)."
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 259162; §RTF ADO 259162 [RTF Common] · See finding F16.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 259162; §RTF ADO 259162 [RTF Common] · See finding F16.",
+   "where": "§P3 ADO 259162; §RTF ADO 259162 [RTF Common] · See finding F16."
+  },
+  {
+   "text": "SDD v2.3 · General Highlights (Dunning); §P3 ADO 259162 · See finding F16.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· General Highlights (Dunning); §P3 ADO 259162 · See finding F16.",
+   "where": "General Highlights (Dunning); §P3 ADO 259162 · See finding F16."
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 259162; §P4 Enhancement 1873844",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 259162; §P4 Enhancement 1873844",
+   "where": "§P3 ADO 259162; §P4 Enhancement 1873844"
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 259162; §P4 ADO 198968",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 259162; §P4 ADO 198968",
+   "where": "§P3 ADO 259162; §P4 ADO 198968"
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 259162 · Closing isn't detailed.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 259162 · Closing isn't detailed.",
+   "where": "§P3 ADO 259162 · Closing isn't detailed."
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 202826 (Port In & Port Out); §ADO 470510",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 202826 (Port In & Port Out); §ADO 470510",
+   "where": "§P3 ADO 202826 (Port In & Port Out); §ADO 470510"
+  },
+  {
+   "text": "SDD v2.3 · §NPS ADO 202826",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §NPS ADO 202826",
+   "where": "§NPS ADO 202826"
+  },
+  {
+   "text": "SDD v2.3 · §ADO 470510",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §ADO 470510",
+   "where": "§ADO 470510"
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 202826 · The channels pass the flag to fulfilment; NPS forwards it.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 202826 · The channels pass the flag to fulfilment; NPS forwards it.",
+   "where": "§P3 ADO 202826 · The channels pass the flag to fulfilment; NPS forwards it."
+  },
+  {
+   "text": "SDD v2.3 · §ADO 470510 · “Existing interactions between CWOM and RTF/NPS remain same”.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §ADO 470510 · “Existing interactions between CWOM and RTF/NPS remain same”.",
+   "where": "§ADO 470510 · “Existing interactions between CWOM and RTF/NPS remain same”."
+  },
+  {
+   "text": "SDD v2.3 · §P2 ADO 259161; §P4 Enhancement 1873844 · Port-out is fulfilled as a cessation.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 ADO 259161; §P4 Enhancement 1873844 · Port-out is fulfilled as a cessation.",
+   "where": "§P2 ADO 259161; §P4 Enhancement 1873844 · Port-out is fulfilled as a cessation."
+  },
+  {
+   "text": "SDD v2.3 · §P2 ADO 259161 · Port-out is fulfilled as a cessation.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P2 ADO 259161 · Port-out is fulfilled as a cessation.",
+   "where": "§P2 ADO 259161 · Port-out is fulfilled as a cessation."
+  },
+  {
+   "text": "SDD v2.3 · §P3 ADO 202826 · Closing is read from cessation.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P3 ADO 202826 · Closing is read from cessation.",
+   "where": "§P3 ADO 202826 · Closing is read from cessation."
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 289225; §ADO 438907 US 438912; §P4 Enhancement 1871663",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 289225; §ADO 438907 US 438912; §P4 Enhancement 1871663",
+   "where": "§P4 ADO 289225; §ADO 438907 US 438912; §P4 Enhancement 1871663"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 289225; Enhancement 1871663",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 289225; Enhancement 1871663",
+   "where": "§P4 ADO 289225; Enhancement 1871663"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 289225; §ADO 438907 US 438912",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 289225; §ADO 438907 US 438912",
+   "where": "§P4 ADO 289225; §ADO 438907 US 438912"
+  },
+  {
+   "text": "SDD v2.3 · §P4 Pending Order Validation · What WFMS does with a rejection isn't stated.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Pending Order Validation · What WFMS does with a rejection isn't stated.",
+   "where": "§P4 Pending Order Validation · What WFMS does with a rejection isn't stated."
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 289225; §ADO 438907 US 438912 · Billing the OTC is read from the charge PO.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 289225; §ADO 438907 US 438912 · Billing the OTC is read from the charge PO.",
+   "where": "§P4 ADO 289225; §ADO 438907 US 438912 · Billing the OTC is read from the charge PO."
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 289225 · Closing is read from the other journeys.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 289225 · Closing is read from the other journeys.",
+   "where": "§P4 ADO 289225 · Closing is read from the other journeys."
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 420619; §P4 ADO 198968",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 420619; §P4 ADO 198968",
+   "where": "§P4 ADO 420619; §P4 ADO 198968"
+  },
+  {
+   "text": "SDD v2.3 · §P4 Pending Order Validation · What EHS does with a rejection isn't stated.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Pending Order Validation · What EHS does with a rejection isn't stated.",
+   "where": "§P4 Pending Order Validation · What EHS does with a rejection isn't stated."
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 420619 · The billing step isn't detailed.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 420619 · The billing step isn't detailed.",
+   "where": "§P4 ADO 420619 · The billing step isn't detailed."
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 420619 · Closing is read from the other journeys.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 420619 · Closing is read from the other journeys.",
+   "where": "§P4 ADO 420619 · Closing is read from the other journeys."
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 420619 · The caller isn't named; read as EHS.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 420619 · The caller isn't named; read as EHS.",
+   "where": "§P4 ADO 420619 · The caller isn't named; read as EHS."
+  },
+  {
+   "text": "SDD v2.3 · §P4 Pending Order Validation; §P4 ADO 324570; §P4 ADO 198968",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Pending Order Validation; §P4 ADO 324570; §P4 ADO 198968",
+   "where": "§P4 Pending Order Validation; §P4 ADO 324570; §P4 ADO 198968"
+  },
+  {
+   "text": "SDD v2.3 · §P4 Pending Order Validation; ADO 198968",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 Pending Order Validation; ADO 198968",
+   "where": "§P4 Pending Order Validation; ADO 198968"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 324570",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 324570",
+   "where": "§P4 ADO 324570"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 198968 · vEDA holds the new profiles; provisioning follows the existing booster solution (Epic 45678).",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 198968 · vEDA holds the new profiles; provisioning follows the existing booster solution (Epic 45678).",
+   "where": "§P4 ADO 198968 · vEDA holds the new profiles; provisioning follows the existing booster solution (Epic 45678)."
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 198968 · Add-ons are configured in BSCS; the billing step isn't detailed.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 198968 · Add-ons are configured in BSCS; the billing step isn't detailed.",
+   "where": "§P4 ADO 198968 · Add-ons are configured in BSCS; the billing step isn't detailed."
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 288756; §P4 Pending Order Validation",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 288756; §P4 Pending Order Validation",
+   "where": "§P4 ADO 288756; §P4 Pending Order Validation"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 288756",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 288756",
+   "where": "§P4 ADO 288756"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 288754; §P4 Pending Order Validation",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 288754; §P4 Pending Order Validation",
+   "where": "§P4 ADO 288754; §P4 Pending Order Validation"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 288754",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 288754",
+   "where": "§P4 ADO 288754"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 288753; §P4 Pending Order Validation",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 288753; §P4 Pending Order Validation",
+   "where": "§P4 ADO 288753; §P4 Pending Order Validation"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 288753",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 288753",
+   "where": "§P4 ADO 288753"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 290747; §P4 Pending Order Validation",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 290747; §P4 Pending Order Validation",
+   "where": "§P4 ADO 290747; §P4 Pending Order Validation"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 290747",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 290747",
+   "where": "§P4 ADO 290747"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 288755; §P4 Pending Order Validation",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 288755; §P4 Pending Order Validation",
+   "where": "§P4 ADO 288755; §P4 Pending Order Validation"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 288755",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 288755",
+   "where": "§P4 ADO 288755"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 324564; §P4 Pending Order Validation",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 324564; §P4 Pending Order Validation",
+   "where": "§P4 ADO 324564; §P4 Pending Order Validation"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 324564",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 324564",
+   "where": "§P4 ADO 324564"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 290746; §P4 Pending Order Validation",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 290746; §P4 Pending Order Validation",
+   "where": "§P4 ADO 290746; §P4 Pending Order Validation"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 290746",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 290746",
+   "where": "§P4 ADO 290746"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 324568; §P4 Pending Order Validation",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 324568; §P4 Pending Order Validation",
+   "where": "§P4 ADO 324568; §P4 Pending Order Validation"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 324568",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 324568",
+   "where": "§P4 ADO 324568"
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 324568 · The SR is titled “SaaS Service activation”; the XaaS call follows the activation journey.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 324568 · The SR is titled “SaaS Service activation”; the XaaS call follows the activation journey.",
+   "where": "§P4 ADO 324568 · The SR is titled “SaaS Service activation”; the XaaS call follows the activation journey."
+  },
+  {
+   "text": "SDD v2.3 · §P4 ADO 324568 · Read from the activation journey.",
+   "source_id": "sdd",
+   "cited": "SDD v2.3",
+   "rest": "· §P4 ADO 324568 · Read from the activation journey.",
+   "where": "§P4 ADO 324568 · Read from the activation journey."
+  },
+  {
+   "text": "SMB reference v1.0 · title and scope; user, 2026-10-06",
+   "source_id": "ref",
+   "cited": "SMB reference v1.0",
+   "rest": "· title and scope; user, 2026-10-06",
+   "where": "title and scope; user, 2026-10-06"
+  },
+  {
+   "text": "Ontology plan Phase 1 · golden set v1 concept list",
+   "source_id": null,
+   "cited": null,
+   "rest": null,
+   "where": "Ontology plan Phase 1 · golden set v1 concept list"
+  },
+  {
+   "text": "Ontology plan Phase 6 · the catalogue's own eTOM values",
+   "source_id": null,
+   "cited": null,
+   "rest": null,
+   "where": "Ontology plan Phase 6 · the catalogue's own eTOM values"
+  },
+  {
+   "text": "Ontology plan Phase 6 · the catalogue's own channel kinds",
+   "source_id": null,
+   "cited": null,
+   "rest": null,
+   "where": "Ontology plan Phase 6 · the catalogue's own channel kinds"
+  },
+  {
+   "text": "Ontology plan Phase 6 · the catalogue's own activity roles",
+   "source_id": null,
+   "cited": null,
+   "rest": null,
+   "where": "Ontology plan Phase 6 · the catalogue's own activity roles"
+  },
+  {
+   "text": "Catalogue curation · the components' own responsibility notes",
+   "source_id": null,
+   "cited": null,
+   "rest": null,
+   "where": "Catalogue curation · the components' own responsibility notes"
+  },
+  {
+   "text": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
+   "source_id": null,
+   "cited": null,
+   "rest": null,
+   "where": "Ontology plan Phase 6 · the catalogue's own TMF equivalents"
+  },
+  {
+   "text": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
+   "source_id": null,
+   "cited": null,
+   "rest": null,
+   "where": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions"
+  },
+  {
+   "text": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
+   "source_id": null,
+   "cited": null,
+   "rest": null,
+   "where": "ADR-0123 · library classification, the owner's decision of 2026-10-21"
+  },
+  {
+   "text": "Ontology plan Phase 8 · the journeys' integrations",
+   "source_id": null,
+   "cited": null,
+   "rest": null,
+   "where": "Ontology plan Phase 8 · the journeys' integrations"
+  }
+ ],
  "portfolio": [
   {
    "id": "enterprise",

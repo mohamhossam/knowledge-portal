@@ -7,7 +7,7 @@ import { EXPLORED } from "../explorer/fixtures";
 import { concerns } from "./catalogue";
 import { fieldsInWords } from "./drafting";
 import { finishedOffering, offeringProblem } from "./editing";
-import { SourcesContext } from "./governance";
+import { sourceRegister, SourcesContext } from "./governance";
 import { LifecycleSection } from "./LifecycleNotes";
 import { OfferingEditor } from "./OfferingEditor";
 
@@ -76,7 +76,7 @@ describe("lifecycle notes read in the explorer", () => {
   const name = (id: string) => ({ shop: "Shop", online: "Online", NEW: "New Activation" })[id] ?? id;
   const read = (channelId: string) =>
     render(
-      <SourcesContext.Provider value={EXPLORED.sources ?? []}>
+      <SourcesContext.Provider value={sourceRegister(EXPLORED)}>
         <LifecycleSection
           offering={OFFERING}
           headingId="lc"

@@ -25,6 +25,8 @@ MAX_TEXT_CHARACTERS = 10_000
 MAX_ITEMS = 50
 # An architecture catalogue is edited whole, so its lists are larger.
 MAX_CATALOGUE_ITEMS = 5_000
+# Distinct source lines a version's facts write: every fact may cite its own.
+MAX_SOURCE_REFERENCES = 50_000
 MAX_YAML_CHARACTERS = 1_000_000
 
 Identifier = Annotated[str, Field(max_length=MAX_IDENTIFIER_CHARACTERS)]

@@ -103,7 +103,7 @@ from knowledge_portal.domain.architecture.products import (
     SourceConfidence,
     customer_stage,
 )
-from knowledge_portal.domain.architecture.provenance import AcceptedFrom
+from knowledge_portal.domain.architecture.provenance import AcceptedCitation, AcceptedFrom
 from knowledge_portal.domain.architecture.realisations import RealisationRecord
 from knowledge_portal.domain.architecture.tracking import (
     FalloutCase,
@@ -551,6 +551,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "prompt_version",
         "decided_by",
         "decided_at",
+        "citations",
     ),
 }
 # Headers a sheet cannot do without. Columns added later stay optional, so
@@ -913,10 +914,46 @@ def _acceptance_rows(body: CatalogueBody) -> list[dict[str, Any]]:
             "prompt_version": entry.prompt_version,
             "decided_by": entry.decided_by,
             "decided_at": entry.decided_at.isoformat(),
+            **_present(citations=[_citation_mapping(item) for item in entry.citations]),
         }
         for key, entries in recorded_acceptances(body).items()
         for entry in entries
     ]
+
+
+def _citation_mapping(citation: AcceptedCitation) -> dict[str, Any]:
+    return {
+        "location": citation.location,
+        "quote": citation.quote,
+        **_present(document_version_id=citation.document_version_id, document=citation.document),
+    }
+
+
+def _accepted_citations(value: object, where: str) -> tuple[AcceptedCitation, ...]:
+    """An acceptance's citations: a list in YAML and JSON, that list as JSON in a cell."""
+    if value is None or value == "":
+        return ()
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError as exc:
+            raise InvalidKnowledgeError(f"{where}: citations must be a JSON list.") from exc
+    if not isinstance(value, list):
+        raise InvalidKnowledgeError(f"{where}: citations must be a list.")
+    citations = []
+    for number, item in enumerate(value, start=1):
+        place = f"{where}, citation {number}"
+        if not isinstance(item, dict):
+            raise InvalidKnowledgeError(f"{place} must be an object.")
+        citations.append(
+            AcceptedCitation(
+                _text(item.get("location"), place, "location"),
+                _text(item.get("quote"), place, "quote"),
+                _optional_text(item.get("document_version_id"), place, "document_version_id"),
+                _optional_text(item.get("document"), place, "document"),
+            )
+        )
+    return tuple(citations)
 
 
 def _acceptance(item: dict[str, Any], where: str) -> AcceptedFrom:
@@ -929,6 +966,7 @@ def _acceptance(item: dict[str, Any], where: str) -> AcceptedFrom:
         _text(item.get("prompt_version"), where, "prompt_version"),
         _text(item.get("decided_by"), where, "decided_by"),
         moment,
+        _accepted_citations(item.get("citations"), where),
     )
 
 
@@ -3878,6 +3916,7 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 row["prompt_version"],
                 row["decided_by"],
                 row["decided_at"],
+                json.dumps(row["citations"], ensure_ascii=False) if row.get("citations") else None,
             ),
         )
     buffer = io.BytesIO()

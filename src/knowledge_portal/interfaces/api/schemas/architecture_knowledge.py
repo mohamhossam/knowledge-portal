@@ -58,6 +58,7 @@ from knowledge_portal.domain.architecture.change_requests import (
     TracedFeature,
 )
 from knowledge_portal.domain.architecture.channels import Channel
+from knowledge_portal.domain.architecture.citations import SourceReference, source_references
 from knowledge_portal.domain.architecture.concepts import BusinessCapability, CapabilityRef
 from knowledge_portal.domain.architecture.diff import (
     CatalogueDiff,
@@ -127,7 +128,7 @@ from knowledge_portal.domain.architecture.products import (
     SourceConfidence,
     measure_disagrees,
 )
-from knowledge_portal.domain.architecture.provenance import AcceptedFrom
+from knowledge_portal.domain.architecture.provenance import AcceptedCitation, AcceptedFrom
 from knowledge_portal.domain.architecture.realisations import RealisationRecord
 from knowledge_portal.domain.architecture.samples import MAX_SAMPLES, SampleRequirementSet
 from knowledge_portal.domain.architecture.tracking import (
@@ -141,6 +142,7 @@ from knowledge_portal.domain.architecture.vocabularies import VocabularyScheme, 
 from knowledge_portal.domain.architecture.vocabulary_links import VocabularyField, VocabularyRef
 from knowledge_portal.interfaces.api.schemas.bounds import (
     MAX_CATALOGUE_ITEMS,
+    MAX_SOURCE_REFERENCES,
     Identifier,
     Name,
     Sentence,
@@ -152,15 +154,35 @@ from knowledge_portal.interfaces.api.schemas.bounds import (
 # validation, so a stored release always reads back.
 
 
+class AcceptedCitationSchema(BaseModel):
+    """Where an accepted suggestion was read: the place and its words, and the document
+    version and title when it came from one of the draft's documents."""
+
+    location: Text
+    quote: Text
+    document_version_id: Identifier | None = None
+    document: Name | None = None
+
+    @classmethod
+    def from_domain(cls, citation: AcceptedCitation) -> AcceptedCitationSchema:
+        return cls.model_construct(
+            location=citation.location,
+            quote=citation.quote,
+            document_version_id=citation.document_version_id,
+            document=citation.document,
+        )
+
+
 class AcceptedFromSchema(BaseModel):
     """An accepted suggestion recorded on what it produced: the model and prompt that
-    suggested it, and who accepted it when (ADR-0120)."""
+    suggested it, who accepted it when (ADR-0120), and where it was read."""
 
     candidate_id: Identifier
     model: Name
     prompt_version: Name
     decided_by: Identifier
     decided_at: datetime
+    citations: list[AcceptedCitationSchema] = Field(default=[], max_length=3)
 
     @classmethod
     def from_domain(cls, entry: AcceptedFrom) -> AcceptedFromSchema:
@@ -170,6 +192,7 @@ class AcceptedFromSchema(BaseModel):
             prompt_version=entry.prompt_version,
             decided_by=entry.decided_by,
             decided_at=entry.decided_at,
+            citations=[AcceptedCitationSchema.from_domain(item) for item in entry.citations],
         )
 
 
@@ -2076,6 +2099,29 @@ class KnowledgeDocumentVersionResponse(BaseModel):
         )
 
 
+class SourceReferenceSchema(BaseModel):
+    """A source line the version's facts write, read once against its register (review
+    recommendation 5): the registered source it names, the words that name it, what follows
+    them as written, and where in the source. Screens look a fact's line up here rather than
+    matching it themselves."""
+
+    text: Text
+    source_id: Identifier | None = None
+    cited: Name | None = None
+    rest: Text | None = None
+    where: Text | None = None
+
+    @classmethod
+    def from_domain(cls, reference: SourceReference) -> SourceReferenceSchema:
+        return cls.model_construct(
+            text=reference.text,
+            source_id=reference.source_id,
+            cited=reference.cited,
+            rest=reference.rest,
+            where=reference.where,
+        )
+
+
 class KnowledgeReleaseResponse(BaseModel):
     id: str
     revision: int
@@ -2112,6 +2158,10 @@ class KnowledgeReleaseResponse(BaseModel):
     # The change requests applied to it (requirement-portal ADR-0101, step 7).
     change_history: list[ChangeRequestRecordSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
+    # Every source line its facts write, read once against the register (review recommendation 5).
+    source_references: list[SourceReferenceSchema] = Field(
+        default_factory=list, max_length=MAX_SOURCE_REFERENCES
     )
     portfolio: list[PortfolioNodeSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
@@ -2169,6 +2219,9 @@ class KnowledgeReleaseResponse(BaseModel):
             change_history=[
                 ChangeRequestRecordSchema.from_domain(item) for item in release.change_history
             ],
+            source_references=[
+                SourceReferenceSchema.from_domain(item) for item in source_references(release)
+            ],
             portfolio=[PortfolioNodeSchema.from_domain(item) for item in release.portfolio],
             business_capabilities=[
                 BusinessCapabilitySchema.from_domain(item) for item in release.business_capabilities
@@ -2209,6 +2262,10 @@ class ExplorerReleaseResponse(BaseModel):
     change_history: list[ChangeRequestRecordSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
+    # Every source line its facts write, read once against the register (review recommendation 5).
+    source_references: list[SourceReferenceSchema] = Field(
+        default_factory=list, max_length=MAX_SOURCE_REFERENCES
+    )
     portfolio: list[PortfolioNodeSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
@@ -2234,6 +2291,9 @@ class ExplorerReleaseResponse(BaseModel):
             conflicts=[SourceConflictSchema.from_domain(item) for item in release.conflicts],
             change_history=[
                 ChangeRequestRecordSchema.from_domain(item) for item in release.change_history
+            ],
+            source_references=[
+                SourceReferenceSchema.from_domain(item) for item in source_references(release)
             ],
             portfolio=[PortfolioNodeSchema.from_domain(item) for item in release.portfolio],
         )

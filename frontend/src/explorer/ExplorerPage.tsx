@@ -13,7 +13,7 @@ import { ConnectionsFlowDiagram } from "../catalogue/diagrams/CatalogueDiagrams"
 import type { JourneyView } from "../catalogue/journey/JourneyViews";
 import { NfrSection, RealisationKey, RealisedAs } from "../catalogue/Realisation";
 import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions } from "../catalogue/GovernanceSections";
-import { conflictsFor, questionOf, SourcesContext } from "../catalogue/governance";
+import { conflictsFor, questionOf, sourceRegister, SourcesContext } from "../catalogue/governance";
 import { LifecycleSection } from "../catalogue/LifecycleNotes";
 import { SOURCE_TONE, SOURCE_WORD } from "../catalogue/ontology";
 import { TrackingSection } from "../catalogue/Tracking";
@@ -100,7 +100,7 @@ export function ExplorerPage({ linkSystems }: { linkSystems: boolean }) {
       {scenario ? (
         <>
           <Choose release={release} scenario={scenario} onChoose={choose} />
-          <SourcesContext.Provider value={release.sources ?? []}>
+          <SourcesContext.Provider value={sourceRegister(release)}>
             <ScenarioSheet
               key={`${scenario.offering.id}:${scenario.orderType.code}:${scenario.channel?.id ?? ""}`}
               release={release}

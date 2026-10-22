@@ -7,6 +7,25 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- A fact's source line is read once, by one rule. The service reads every source line a
+  version's facts write against its source register ("SDD v2.3 · §4.1" names the source
+  short-named "SDD v2.3", at "§4.1") and sends those readings with the version as
+  `source_references` (source id, the words that name it, and where in it). The catalogue's
+  pages, the explorer, its Solution Architecture export and the catalogue lab look a line up
+  there instead of matching it themselves: four implementations with three different
+  boundary rules are now one (`citations.source_reference`), and the unused
+  `governance.named_source` is gone. A conflict's side, which names its source by id, says the
+  level directly. A line typed in an editor and not yet saved reads as written until it is.
+  Review recommendation 5. Public contract, additive.
+- An accepted suggestion keeps where it was read. Its acceptance record (ADR-0120, amended)
+  holds the suggestion's first three citations, each with its location and quote, and the
+  document version and title when it came from one of the draft's documents, so a fact still
+  leads to its passage after a later reading replaces the draft's suggestions. A system's or
+  offering's "Accepted from" lists them ("Integration design, §4.1 › Table 2, row 3: “…”"),
+  and the heading's one line names where the last one was read. YAML and JSON carry them with
+  each acceptance, and the workbook's Acceptances sheet in a `citations` column. Review
+  recommendation 6. Public and internal contracts, additive: an acceptance's `citations` list
+  defaults to empty.
 - A system's capabilities and components say where they come from. Like every other catalogue
   fact, each now carries an optional confidence (confirmed, inferred or gap) and a source, checked
   the same way: a capability's phrases and its concept link are what select a system

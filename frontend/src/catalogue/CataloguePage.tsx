@@ -7,7 +7,7 @@ import { ActionGroup, Button, EmptyState, PageHeader, Skeleton } from "../design
 import { ButtonLink } from "../shell/links";
 import { DraftFrame } from "./draft/DraftFrame";
 import { draftStepOf } from "./draft/progress";
-import { SourcesContext } from "./governance";
+import { sourceRegister, SourcesContext } from "./governance";
 import { type CatalogueContext, useActorNames, useRelease } from "./useCatalogue";
 
 /**
@@ -62,9 +62,10 @@ export function CataloguePage() {
   }
 
   const context: CatalogueContext = { book, base, inService, actorName, editable: book.release.status === "draft" };
+  const register = sourceRegister(book.release);
   return (
     <div className="cat">
-      <SourcesContext.Provider value={book.release.sources ?? []}>
+      <SourcesContext.Provider value={register}>
         <Outlet context={context} />
       </SourcesContext.Provider>
     </div>

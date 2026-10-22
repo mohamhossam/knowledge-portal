@@ -48,13 +48,67 @@
         "title": "AcceptSuggestionsRequest",
         "type": "object"
       },
+      "AcceptedCitationSchema": {
+        "description": "Where an accepted suggestion was read: the place and its words, and the document\nversion and title when it came from one of the draft's documents.",
+        "properties": {
+          "document": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document"
+          },
+          "document_version_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Version Id"
+          },
+          "location": {
+            "maxLength": 10000,
+            "title": "Location",
+            "type": "string"
+          },
+          "quote": {
+            "maxLength": 10000,
+            "title": "Quote",
+            "type": "string"
+          }
+        },
+        "required": [
+          "location",
+          "quote"
+        ],
+        "title": "AcceptedCitationSchema",
+        "type": "object"
+      },
       "AcceptedFromSchema": {
-        "description": "An accepted suggestion recorded on what it produced: the model and prompt that\nsuggested it, and who accepted it when (ADR-0120).",
+        "description": "An accepted suggestion recorded on what it produced: the model and prompt that\nsuggested it, who accepted it when (ADR-0120), and where it was read.",
         "properties": {
           "candidate_id": {
             "maxLength": 200,
             "title": "Candidate Id",
             "type": "string"
+          },
+          "citations": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedCitationSchema"
+            },
+            "maxItems": 3,
+            "title": "Citations",
+            "type": "array"
           },
           "decided_at": {
             "format": "date-time",
@@ -4716,6 +4770,14 @@
             "title": "Relationships",
             "type": "array"
           },
+          "source_references": {
+            "items": {
+              "$ref": "#/components/schemas/SourceReferenceSchema"
+            },
+            "maxItems": 50000,
+            "title": "Source References",
+            "type": "array"
+          },
           "sources": {
             "items": {
               "$ref": "#/components/schemas/KnowledgeSourceSchema"
@@ -7032,6 +7094,14 @@
           "revision": {
             "title": "Revision",
             "type": "integer"
+          },
+          "source_references": {
+            "items": {
+              "$ref": "#/components/schemas/SourceReferenceSchema"
+            },
+            "maxItems": 50000,
+            "title": "Source References",
+            "type": "array"
           },
           "sources": {
             "items": {
@@ -12293,6 +12363,69 @@
           "citation"
         ],
         "title": "SourceLineage",
+        "type": "object"
+      },
+      "SourceReferenceSchema": {
+        "description": "A source line the version's facts write, read once against its register (review\nrecommendation 5): the registered source it names, the words that name it, what follows\nthem as written, and where in the source. Screens look a fact's line up here rather than\nmatching it themselves.",
+        "properties": {
+          "cited": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cited"
+          },
+          "rest": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rest"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "text": {
+            "maxLength": 10000,
+            "title": "Text",
+            "type": "string"
+          },
+          "where": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Where"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "SourceReferenceSchema",
         "type": "object"
       },
       "SquadRequest": {

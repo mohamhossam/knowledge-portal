@@ -1,10 +1,12 @@
-"""Citations that name no registered source.
+"""A fact's source line, read once against the source register.
 
 A fact cites its source as one line: the source as it is cited ("SDD v2.3"), then where in
-it and any note, separated by " · ". The screens read the first part against the source
-register to give the source its level and title. A citation whose first part names no
-registered source can't be read that way, so before publishing a curator sees each one,
-grouped by what it cites, and either registers the source or corrects the citation.
+it and any note, separated by " · ". This module is the one place that line is read
+(review recommendation 5): ``source_reference`` names the registered source and where in
+it, every version the API sends carries those readings, and the screens look a line up
+rather than matching it themselves. A citation that names no registered source can't be
+read that way, so before publishing a curator sees each one, grouped by what it cites, and
+either registers the source or corrects the citation.
 """
 
 from __future__ import annotations
@@ -35,6 +37,14 @@ class UnregisteredCitation:
 def cited_source(text: str | None, sources: tuple[KnowledgeSource, ...]) -> KnowledgeSource | None:
     """The registered source a citation names: the longest id or short name it starts with,
     as a whole word ("SDD v2.3 · §P1" names the source cited "SDD v2.3")."""
+    named = _cited(text, sources)
+    return named[1] if named else None
+
+
+def _cited(
+    text: str | None, sources: tuple[KnowledgeSource, ...]
+) -> tuple[int, KnowledgeSource] | None:
+    """How long the name a citation starts with is, and the source it names."""
     written = (text or "").strip().casefold()
     if not written:
         return None
@@ -51,7 +61,50 @@ def cited_source(text: str | None, sources: tuple[KnowledgeSource, ...]) -> Know
                 continue
             if best is None or len(key) > best[0]:
                 best = (len(key), source)
-    return best[1] if best else None
+    return best
+
+
+@dataclass(frozen=True)
+class SourceReference:
+    """A fact's source line as the register reads it.
+
+    ``source_id`` is the registered source it names, if any; ``cited`` the words that name
+    it, as written; ``rest`` everything after them, as written ("· §4.1 · a note"); and
+    ``where`` that rest without its leading separator ("§4.1 · a note"): where in the
+    source, then any note. A line that names no registered source has ``where`` alone.
+    """
+
+    text: str
+    source_id: str | None = None
+    cited: str | None = None
+    rest: str | None = None
+    where: str | None = None
+
+
+def source_reference(text: str, sources: tuple[KnowledgeSource, ...]) -> SourceReference:
+    """A source line read against the register, by the one rule ``cited_source`` keeps."""
+    written = text.strip()
+    named = _cited(written, sources)
+    if named is None:
+        return SourceReference(written, where=written or None)
+    length, source = named
+    rest = written[length:].strip()
+    where = rest.removeprefix(SEPARATOR.strip()).strip()
+    return SourceReference(written, source.id, written[:length], rest or None, where or None)
+
+
+def source_references(release: ArchitectureKnowledge) -> tuple[SourceReference, ...]:
+    """Every distinct source line the version's facts write, each read once, in the order
+    first written."""
+    seen: dict[str, SourceReference] = {}
+    for field in fields(release):
+        if field.name in _NOT_FACTS:
+            continue
+        for fact in _facts(getattr(release, field.name)):
+            text: str = fact.source.strip()
+            if text and text not in seen:
+                seen[text] = source_reference(text, release.sources)
+    return tuple(seen.values())
 
 
 def _label(item: Any) -> str:

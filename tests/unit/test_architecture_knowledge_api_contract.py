@@ -19,6 +19,7 @@ from knowledge_portal.application.ports.architecture_jobs import (
     ArchitectureJobStatus,
     JobProgress,
 )
+from knowledge_portal.domain.architecture.citations import source_references
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     KnowledgeAuditEvent,
@@ -59,9 +60,14 @@ def _published_release_with_document() -> ArchitectureKnowledge:
 def test_release_response_matches_the_previous_domain_serialisation() -> None:
     previous = TypeAdapter(ArchitectureKnowledge)
     for release in (seed_knowledge(), _published_release_with_document()):
-        assert KnowledgeReleaseResponse.from_domain(release).model_dump(
-            mode="json"
-        ) == previous.dump_python(release, mode="json")
+        sent = KnowledgeReleaseResponse.from_domain(release).model_dump(mode="json")
+        # Derived, not stored: every source line its facts write, read against the register
+        # (review recommendation 5). The rest is the domain's own serialisation.
+        references = sent.pop("source_references")
+        assert sent == previous.dump_python(release, mode="json")
+        assert [item["text"] for item in references] == [
+            item.text for item in source_references(release)
+        ]
 
 
 def test_job_and_audit_responses_match_the_previous_domain_serialisation() -> None:

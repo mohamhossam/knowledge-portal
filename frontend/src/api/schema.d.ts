@@ -2290,13 +2290,33 @@ export interface components {
             suggestion_ids?: string[] | null;
         };
         /**
+         * AcceptedCitationSchema
+         * @description Where an accepted suggestion was read: the place and its words, and the document
+         *     version and title when it came from one of the draft's documents.
+         */
+        AcceptedCitationSchema: {
+            /** Document */
+            document?: string | null;
+            /** Document Version Id */
+            document_version_id?: string | null;
+            /** Location */
+            location: string;
+            /** Quote */
+            quote: string;
+        };
+        /**
          * AcceptedFromSchema
          * @description An accepted suggestion recorded on what it produced: the model and prompt that
-         *     suggested it, and who accepted it when (ADR-0120).
+         *     suggested it, who accepted it when (ADR-0120), and where it was read.
          */
         AcceptedFromSchema: {
             /** Candidate Id */
             candidate_id: string;
+            /**
+             * Citations
+             * @default []
+             */
+            citations: components["schemas"]["AcceptedCitationSchema"][];
             /**
              * Decided At
              * Format: date-time
@@ -3694,6 +3714,8 @@ export interface components {
             published_at?: string | null;
             /** Relationships */
             relationships: components["schemas"]["SystemRelationshipSchema"][];
+            /** Source References */
+            source_references?: components["schemas"]["SourceReferenceSchema"][];
             /** Sources */
             sources?: components["schemas"]["KnowledgeSourceSchema"][];
             /** Systems */
@@ -4447,6 +4469,8 @@ export interface components {
             relationships: components["schemas"]["SystemRelationshipSchema"][];
             /** Revision */
             revision: number;
+            /** Source References */
+            source_references?: components["schemas"]["SourceReferenceSchema"][];
             /** Sources */
             sources?: components["schemas"]["KnowledgeSourceSchema"][];
             /** @default draft */
@@ -6294,6 +6318,25 @@ export interface components {
              * @default []
              */
             via: string[];
+        };
+        /**
+         * SourceReferenceSchema
+         * @description A source line the version's facts write, read once against its register (review
+         *     recommendation 5): the registered source it names, the words that name it, what follows
+         *     them as written, and where in the source. Screens look a fact's line up here rather than
+         *     matching it themselves.
+         */
+        SourceReferenceSchema: {
+            /** Cited */
+            cited?: string | null;
+            /** Rest */
+            rest?: string | null;
+            /** Source Id */
+            source_id?: string | null;
+            /** Text */
+            text: string;
+            /** Where */
+            where?: string | null;
         };
         /** SquadRequest */
         SquadRequest: {

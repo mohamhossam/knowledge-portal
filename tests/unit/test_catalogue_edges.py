@@ -414,6 +414,24 @@ def test_decisions_check_revision_ownership_and_undo_on_a_lost_draft() -> None:
         candidates.save_decision(candidates.get("c1") or _candidate(draft.id, system))
 
 
+def test_an_accepted_fact_keeps_where_it_was_read_after_its_suggestion_is_gone() -> None:
+    from knowledge_portal.domain.architecture.provenance import AcceptedCitation
+
+    _, decide, draft, candidates, _ = _proposer()
+    candidates.replace_proposals(
+        _run(draft.id),
+        (_candidate(draft.id, CandidateContent(CandidateKind.SYSTEM, "hub", name="Hub")),),
+    )
+
+    updated = decide.decide(draft.id, "c1", draft.revision, True, MAINTAINER, NOW)
+    # A later reading of the document replaces the draft's suggestions (ADR-0120).
+    candidates.replace_proposals(_run(draft.id), ())
+
+    hub = next(item for item in updated.systems if item.id == "hub")
+    (entry,) = hub.accepted
+    assert entry.citations == (AcceptedCitation("line 1", "quote", "doc", "Doc"),)
+
+
 def test_accepting_the_ready_ones_takes_only_the_set_the_person_was_shown() -> None:
     _, decide, draft, candidates, _ = _proposer()
     shown = CandidateContent(CandidateKind.SYSTEM, "hub", name="Hub")

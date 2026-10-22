@@ -17,6 +17,7 @@ from knowledge_portal.domain.architecture.candidates import (
     apply_candidate,
     classify,
 )
+from knowledge_portal.domain.architecture.citations import cited_source
 from knowledge_portal.domain.architecture.diff import ChangedItem, diff_releases
 from knowledge_portal.domain.architecture.governance import (
     ArchitectureDecision,
@@ -26,7 +27,6 @@ from knowledge_portal.domain.architecture.governance import (
     OpenQuestion,
     SourceConflict,
     SourceLevel,
-    named_source,
     source_level,
 )
 from knowledge_portal.domain.architecture.knowledge import (
@@ -92,12 +92,13 @@ def test_a_level_is_read_however_it_is_written() -> None:
 def test_a_facts_source_text_names_a_registered_source_by_id_or_short_name() -> None:
     sources = (CANON, SDD, KnowledgeSource("SDDA", "Annex", SourceLevel.L2, short="BPP SDD Annex"))
 
-    assert named_source("BPP SDD §11.1.3", sources) is SDD
+    # One rule reads a source line everywhere (review recommendation 5): citations.py.
+    assert cited_source("BPP SDD §11.1.3", sources) is SDD
     # The longest name wins, and a name must end where a word does.
-    assert named_source("BPP SDD Annex §2", sources).id == "SDDA"  # type: ignore[union-attr]
-    assert named_source("SDDX §1", sources) is None
-    assert named_source("smb ref §0", sources) is CANON
-    assert named_source(None, sources) is None
+    assert cited_source("BPP SDD Annex §2", sources).id == "SDDA"  # type: ignore[union-attr]
+    assert cited_source("SDDX §1", sources) is None
+    assert cited_source("smb ref §0", sources) is CANON
+    assert cited_source(None, sources) is None
 
 
 def test_a_conflict_concerns_its_offerings_and_order_types() -> None:

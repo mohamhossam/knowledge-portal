@@ -14,6 +14,15 @@ than inside each entry; an imported file adds the entries it recorded that the d
 hold (point 4 governs edits made on a page, which send none); and the explorer, which any
 signed-in user reads, carries none.
 
+Amended 2026-10-22 (review recommendation 6 of the 22 October portal review): an entry also
+keeps where its suggestion was read, its first three citations (location and quote), with
+the document version id and title when the suggestion came from one of the draft's
+documents. The candidate table stays working data, replaced on each reading, so without
+this the fact led back to its passage only while the draft kept the suggestion. A
+suggestion read from the catalogue itself or from a change request names no document. The
+catalogue files carry the citations with each entry (`citations`; a JSON list in the
+workbook's Acceptances sheet).
+
 ## Context
 
 A catalogue candidate carries full provenance: model, prompt version, reader, verbatim

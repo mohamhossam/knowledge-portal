@@ -36,7 +36,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     SystemRelationship,
 )
 from knowledge_portal.domain.architecture.products import ProductOffering
-from knowledge_portal.domain.architecture.provenance import AcceptedFrom
+from knowledge_portal.domain.architecture.provenance import AcceptedCitation, AcceptedFrom
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
@@ -108,7 +108,10 @@ class _World:
 
 
 def _entry(candidate_id: str, at: datetime = NOW) -> AcceptedFrom:
-    return AcceptedFrom(candidate_id, "model-x", "prompt-7", "amina", at)
+    # Each suggestion here cites "line 1"; the draft holds no document, so none is named.
+    return AcceptedFrom(
+        candidate_id, "model-x", "prompt-7", "amina", at, (AcceptedCitation("line 1", "quote"),)
+    )
 
 
 def _system(release: ArchitectureKnowledge, system_id: str) -> SystemDefinition:

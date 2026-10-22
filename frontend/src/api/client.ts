@@ -51,6 +51,8 @@ export type Journey = Schemas["JourneySchema"];
 /** Where orders are placed, and the system each is entered through. */
 export type Channel = Schemas["ChannelSchema"];
 export type KnowledgeSource = Schemas["KnowledgeSourceSchema"];
+/** A fact's source line as the service read it against the register (review recommendation 5). */
+export type SourceReference = Schemas["SourceReferenceSchema"];
 export type SourceLevel = Schemas["SourceLevel"];
 export type SourceConflict = Schemas["SourceConflictSchema"];
 export type JourneyActivity = Schemas["ActivitySchema"];

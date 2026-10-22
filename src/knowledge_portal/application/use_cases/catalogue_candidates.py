@@ -118,7 +118,11 @@ from knowledge_portal.domain.architecture.products import (
     merge_offerings,
     same_offering,
 )
-from knowledge_portal.domain.architecture.provenance import AcceptedFrom
+from knowledge_portal.domain.architecture.provenance import (
+    MAX_ACCEPTED_CITATIONS,
+    AcceptedCitation,
+    AcceptedFrom,
+)
 from knowledge_portal.domain.architecture.realisations import merge_realisations
 from knowledge_portal.domain.document.value_objects import DocumentVersionId, EvidenceBlockKind
 
@@ -1578,7 +1582,14 @@ class DecideCatalogueCandidate:
                     "is no longer kept, so it cannot be accepted."
                 )
             merged = accept_from_change_request(release, content, incoming, cited.feature_id, at)
-        entry = AcceptedFrom(candidate.id, candidate.model, candidate.prompt_version, actor_id, at)
+        entry = AcceptedFrom(
+            candidate.id,
+            candidate.model,
+            candidate.prompt_version,
+            actor_id,
+            at,
+            _kept_citations(candidate, release),
+        )
         return with_acceptance(content.kind, release, merged, entry)
 
     def overview(self, release_id: str, actor: Actor) -> CandidateOverview:
@@ -1869,3 +1880,24 @@ def _settled(
             only = found.pop() if len(found) == 1 else RelationshipKind.UNSPECIFIED
             return replace(content, relationship_kind=only)
     return replace(content, relationship_kind=RelationshipKind.UNSPECIFIED)
+
+
+def _kept_citations(
+    candidate: CatalogueCandidate, release: ArchitectureKnowledge
+) -> tuple[AcceptedCitation, ...]:
+    """The first citations a suggestion rests on, as its acceptance keeps them: with the
+    document version and its title when the suggestion was read from one of the draft's
+    documents (review recommendation 6). A change request's or the catalogue's own
+    suggestion names no document."""
+    document = next(
+        (item for item in release.documents if item.id == candidate.document_version_id), None
+    )
+    return tuple(
+        AcceptedCitation(
+            item.location,
+            item.quote,
+            document.id if document else None,
+            document.title if document else None,
+        )
+        for item in candidate.citations[:MAX_ACCEPTED_CITATIONS]
+    )

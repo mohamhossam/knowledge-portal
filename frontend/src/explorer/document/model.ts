@@ -7,7 +7,7 @@
  */
 import type { CatalogPlans, ExplorerRelease, Journey, SourceConfidence } from "../../api/client";
 import { CONFIDENCE, COVERAGE, LAYERS, concerns, orderedSteps, roleLabel, sentenceCase } from "../../catalogue/catalogue";
-import { byLevel, questionLine, questionOf, withLevel } from "../../catalogue/governance";
+import { byLevel, levelTag, questionLine, questionOf, sourceRegister, withLevel } from "../../catalogue/governance";
 import { count } from "../../home/format";
 import { falling, formatAmount } from "../plans";
 import { gaps, involvement, journeyFor, listed, partsFor, performer, trackingFor, type Involvement, type Scenario } from "../scenario";
@@ -64,9 +64,10 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
   const { release, scenario, plans, at } = input;
   const { offering, orderType, channel, journey } = scenario;
   const sources = release.sources ?? [];
+  const sourceLines = sourceRegister(release);
   const names = new Map(release.systems.map((item) => [item.id, item]));
   const name = (systemId: string | null | undefined) => (systemId ? names.get(systemId)?.name ?? systemId : "Not named");
-  const sourced = (text: string | null | undefined) => withLevel(text, sources);
+  const sourced = (text: string | null | undefined) => withLevel(text, sourceLines);
   /** How sure a fact is, and where it is said: "Confirmed · BPP SDD (L2) §10". */
   const evidence = (fact: { confidence?: SourceConfidence | null; source?: string | null } | null | undefined): DocCell => {
     const parts = [fact?.confidence ? SHORT[fact.confidence] : null, sourced(citation(fact?.source))].filter(Boolean);
@@ -580,7 +581,8 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
     for (const conflict of conflicts) {
       const side = (each: (typeof conflict)["a"]) => {
         const source = sources.find((item) => item.id === each.source_id);
-        const where = [source ? sourced(source.short ?? source.title) : each.source_id, each.reference].filter(Boolean).join(" ");
+        // A side names its source by id: its name and level, as the Governance page says them.
+        const where = [source ? `${source.short ?? source.title} ${levelTag(source)}` : each.source_id, each.reference].filter(Boolean).join(" ");
         return `${where}: ${each.statement}`;
       };
       const raises = questionOf(conflict, offering.id);

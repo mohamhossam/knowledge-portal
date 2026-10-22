@@ -7,7 +7,7 @@
  * events are placed where the flow branches, splits and joins. The model carries
  * kinds, never English: the lab's words.ts names them.
  */
-import type { Release } from "../../api/client";
+import type { Release, SourceReference } from "../../api/client";
 import { BAND_DOMAINS, parseDrop, parseProposition, parseQuestion } from "./conventions";
 import {
   type Activity,
@@ -35,15 +35,18 @@ type ApiJourney = NonNullable<Release["journeys"]>[number];
 type ApiOrderType = NonNullable<Release["products"]>[number]["order_types"][number];
 type ApiEdge = ApiJourney["edges"][number];
 
-/** Evidence from a fact's confidence and its source line ("SDD v2.3 · §P1 · a note"). */
-export function parseEvidence(confidence: string | null | undefined, source: string | null | undefined, sources: Source[]): Evidence {
+/**
+ * Evidence from a fact's confidence and its source line ("SDD v2.3 · §P1 · a note"), as the
+ * service read the line against the register (review recommendation 5): its source, then
+ * where in it and any note. A line the service names no source for is all "where".
+ */
+export function parseEvidence(confidence: string | null | undefined, source: string | null | undefined, lines: ReadonlyMap<string, SourceReference>): Evidence {
   const status = confidence === "confirmed" || confidence === "inferred" || confidence === "gap" ? confidence : "inferred";
   if (!source) return { status };
-  const parts = source.split(" · ");
-  const named = sources.find((item) => item.short === parts[0] || item.id === parts[0]);
-  if (!named) return { status, where: source };
-  const [, where, ...rest] = parts;
-  return { status, source: named.id, ...(where ? { where } : {}), ...(rest.length ? { note: rest.join(" · ") } : {}) };
+  const line = lines.get(source.trim());
+  if (!line?.source_id) return { status, where: source };
+  const [where, ...rest] = (line.where ?? "").split(" · ").filter(Boolean);
+  return { status, source: line.source_id, ...(where ? { where } : {}), ...(rest.length ? { note: rest.join(" · ") } : {}) };
 }
 
 /** An order type's delivery drop and the rest of its description; read from the prose for a version saved before the service sent the drop. */
@@ -289,7 +292,8 @@ function portfolioOf(release: Release): Catalogue["portfolio"] {
 /** A catalogue version as the lab reads it, mapped once from the API's release. */
 export function fromRelease(release: Release): Catalogue {
   const sources = sourcesOf(release);
-  const evidence: EvidenceOf = (item) => parseEvidence(item.confidence, item.source, sources);
+  const lines = new Map((release.source_references ?? []).map((item) => [item.text, item]));
+  const evidence: EvidenceOf = (item) => parseEvidence(item.confidence, item.source, lines);
   const channels = channelsOf(release);
   const products = release.products ?? [];
   const offerings = products.map((product) => offeringOf(product, channels, evidence));

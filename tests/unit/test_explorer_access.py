@@ -56,6 +56,9 @@ def test_the_explorer_never_shows_documents_index_or_who_curated(client: TestCli
         "change_history",
         # Where its offerings sit in the product portfolio.
         "portfolio",
+        # Its facts' source lines as read against the register above (review recommendation
+        # 5): derived from what it already shows, so it adds no document, index or curator.
+        "source_references",
     }
 
 
