@@ -441,7 +441,8 @@ def test_the_workbook_has_a_concepts_sheet_and_link_columns() -> None:
     assert concepts[1][:3] == ("cap-wifi", "Managed Wi-Fi", "WiFi; access point")
     capabilities = workbook["Capabilities"]
     headers = [cell.value for cell in capabilities[1]]
-    assert headers[-2:] == ["concept_id", "unlinked_reason"]
+    link = headers.index("concept_id")
+    assert headers[link : link + 2] == ["concept_id", "unlinked_reason"]
 
 
 # The committed catalogue --------------------------------------------------------------------

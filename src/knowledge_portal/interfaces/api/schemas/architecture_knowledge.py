@@ -182,6 +182,9 @@ class KnowledgeCapabilitySchema(BaseModel):
     # The business capability concept it delivers (ADR-0114), or why none fits.
     concept_id: Identifier | None = None
     unlinked_reason: Sentence | None = None
+    # Where it comes from and how sure its source is, as for every other fact.
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
 
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
@@ -196,6 +199,8 @@ class KnowledgeCapabilitySchema(BaseModel):
             component_id=capability.component_id,
             concept_id=capability.concept_id,
             unlinked_reason=capability.unlinked_reason,
+            confidence=capability.confidence,
+            source=capability.source,
             accepted=[AcceptedFromSchema.from_domain(item) for item in capability.accepted],
         )
 
@@ -208,6 +213,8 @@ class KnowledgeCapabilitySchema(BaseModel):
             self.component_id,
             self.concept_id,
             self.unlinked_reason,
+            confidence=self.confidence,
+            source=self.source,
         )
 
 
@@ -405,6 +412,9 @@ class SystemComponentSchema(BaseModel):
     description: Text | None = None
     aliases: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     technology: Name | None = None
+    # Where it comes from and how sure its source is, as for every other fact.
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
 
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
@@ -418,6 +428,8 @@ class SystemComponentSchema(BaseModel):
             description=component.description,
             aliases=list(component.aliases),
             technology=component.technology,
+            confidence=component.confidence,
+            source=component.source,
             accepted=[AcceptedFromSchema.from_domain(item) for item in component.accepted],
         )
 
@@ -429,6 +441,8 @@ class SystemComponentSchema(BaseModel):
             self.description,
             tuple(self.aliases),
             self.technology,
+            confidence=self.confidence,
+            source=self.source,
         )
 
 

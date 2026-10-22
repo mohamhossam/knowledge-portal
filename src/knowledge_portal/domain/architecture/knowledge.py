@@ -210,8 +210,13 @@ class KnowledgeCapability:
     unlinked_reason: str | None = None
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
+    # Where it comes from and how sure its source is, as for every other fact: a capability
+    # and its concept link select systems (ADR-0114), so they carry their evidence too.
+    confidence: SourceConfidence | None = None
+    source: str | None = None
 
     def __post_init__(self) -> None:
+        check_source(self)
         if self.domain_id is not None:
             _required(self.domain_id, "Capability domain")
         if self.component_id is not None:
@@ -244,8 +249,12 @@ class SystemComponent:
     technology: str | None = None
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
+    # Where it comes from and how sure its source is, as for every other fact.
+    confidence: SourceConfidence | None = None
+    source: str | None = None
 
     def __post_init__(self) -> None:
+        check_source(self)
         _required(self.id, "Component id")
         _required(self.name, "Component name")
         for value, label in (

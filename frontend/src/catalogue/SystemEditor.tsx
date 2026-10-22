@@ -1,4 +1,5 @@
-import type { CatalogueSystem, Release } from "../api/client";
+import type { CatalogueSystem, Release, SourceConfidence } from "../api/client";
+import { CONFIDENCE_OPTIONS } from "./catalogue";
 import { AreaField, CheckField, LinesField, Rows, SelectField, TextField } from "./forms";
 
 type Capability = CatalogueSystem["capabilities"][number];
@@ -78,6 +79,13 @@ export function SystemEditor({ value, onChange, release }: {
               hint="One phrase per line. Requirement work maps a requirement here when it uses one."
               onChange={(triggers) => update({ triggers })}
             />
+            <SelectField
+              label="How sure its source is"
+              value={item.confidence ?? ""}
+              options={CONFIDENCE_OPTIONS}
+              onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
+            />
+            <TextField label="Source" value={item.source} hint="The document and where in it, such as SDD v2.3 · §4.1." onChange={(source) => update({ source: source || null })} />
           </>
         )}
       />
@@ -96,6 +104,13 @@ export function SystemEditor({ value, onChange, release }: {
             <TextField label="Built with" value={item.technology} onChange={(technology) => update({ technology: technology || null })} />
             <LinesField label="Also called" value={item.aliases} onChange={(aliases) => update({ aliases })} />
             <AreaField label="What it does" value={item.description} onChange={(description) => update({ description: description || null })} />
+            <SelectField
+              label="How sure its source is"
+              value={item.confidence ?? ""}
+              options={CONFIDENCE_OPTIONS}
+              onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
+            />
+            <TextField label="Source" value={item.source} onChange={(source) => update({ source: source || null })} />
           </>
         )}
       />

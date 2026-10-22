@@ -78,6 +78,31 @@ describe("SystemsPage", () => {
   });
 });
 
+describe("SystemsPage sources of what a system does", () => {
+  it("says where each capability and component comes from, and when nothing says so", () => {
+    const sourced = release("live", {
+      systems: [system("cwom", "CWOM", {
+        capabilities: [
+          { id: "tracking", name: "Order tracking", triggers: ["track orders"], confidence: "confirmed", source: "SDD v2.3 · §4.1", accepted: [] },
+          { id: "billing", name: "Billing", triggers: ["bill"], accepted: [] },
+        ],
+        components: [{ id: "milestones", name: "Milestone tracker", aliases: [], confidence: "inferred", source: "Integration design · Figure 3", accepted: [] }],
+      })] as unknown as Release["systems"],
+      relationships: [],
+    });
+    renderAt("/architecture/systems/cwom", systemRoutes, sourced);
+
+    const capabilities = screen.getByRole("table", { name: "Capabilities of CWOM" });
+    const tracking = within(capabilities).getByRole("rowheader", { name: /Order tracking/ }).closest("tr")!;
+    expect(tracking).toHaveTextContent("Confirmed");
+    expect(tracking).toHaveTextContent("SDD v2.3 · §4.1");
+    expect(within(capabilities).getByRole("rowheader", { name: /Billing/ }).closest("tr")).toHaveTextContent("Not stated");
+    const milestones = within(screen.getByRole("table", { name: "Components of CWOM" })).getByRole("rowheader", { name: /Milestone tracker/ }).closest("tr")!;
+    expect(milestones).toHaveTextContent("Inferred");
+    expect(milestones).toHaveTextContent("Integration design · Figure 3");
+  });
+});
+
 describe("SystemsPage gaps and owners", () => {
   const fulfilment = { id: "fulfilment", name: "Fulfilment squad", value_stream_id: "vs", resources: [{ system_id: "cwom", role: "system_contact", person_id: "p1" }] };
 

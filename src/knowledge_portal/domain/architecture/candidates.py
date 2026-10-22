@@ -2575,6 +2575,10 @@ def apply_candidate(
             None
             if held is None and concept is not None
             else (current.unlinked_reason if current else None),
+            # Where a maintainer said it comes from stays; a suggestion's own provenance is
+            # its acceptance record (ADR-0120).
+            confidence=current.confidence if current else None,
+            source=current.source if current else None,
         )
         capabilities = (
             tuple(capability if item.id == capability_id else item for item in system.capabilities)

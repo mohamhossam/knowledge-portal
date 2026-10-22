@@ -188,6 +188,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "aliases",
         "technology",
         "description",
+        "confidence",
+        "source",
     ),
     CAPABILITIES: (
         "system_id",
@@ -198,6 +200,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "component_id",
         "concept_id",
         "unlinked_reason",
+        "confidence",
+        "source",
     ),
     CONSTRAINTS: ("system_id", "constraint"),
     RELATIONSHIPS: (
@@ -979,6 +983,8 @@ def content_from_mapping(raw: object) -> CatalogueContent:
                         _optional_text(capability.get("component"), place, "component"),
                         _optional_text(capability.get("concept"), place, "concept"),
                         _optional_text(capability.get("unlinked_reason"), place, "unlinked_reason"),
+                        confidence=_trust(capability.get("confidence"), place),
+                        source=_optional_text(capability.get("source"), place, "source"),
                     )
                 )
             except InvalidKnowledgeError as exc:
@@ -1001,6 +1007,8 @@ def content_from_mapping(raw: object) -> CatalogueContent:
                         ),
                         aliases=_text_list(component.get("aliases"), place, "aliases"),
                         technology=_optional_text(component.get("technology"), place, "technology"),
+                        confidence=_trust(component.get("confidence"), place),
+                        source=_optional_text(component.get("source"), place, "source"),
                     )
                 )
             except InvalidKnowledgeError as exc:
@@ -2367,6 +2375,7 @@ def _component_mapping(component: SystemComponent) -> dict[str, Any]:
         **({"aliases": list(component.aliases)} if component.aliases else {}),
         **({"technology": component.technology} if component.technology else {}),
         **({"description": component.description} if component.description else {}),
+        **_sourced(component),
     }
 
 
@@ -2393,6 +2402,7 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
                         **({"domain": cap.domain_id} if cap.domain_id else {}),
                         **({"component": cap.component_id} if cap.component_id else {}),
                         **_present(concept=cap.concept_id, unlinked_reason=cap.unlinked_reason),
+                        **_sourced(cap),
                     }
                     for cap in item.capabilities
                 ],
@@ -2580,6 +2590,8 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                         _optional_text(cells.get("component_id"), where, "component_id"),
                         _optional_text(cells.get("concept_id"), where, "concept_id"),
                         _optional_text(cells.get("unlinked_reason"), where, "unlinked_reason"),
+                        confidence=_trust(cells.get("confidence"), where),
+                        source=_optional_text(cells.get("source"), where, "source"),
                     )
                 )
             except InvalidKnowledgeError as exc:
@@ -2595,6 +2607,8 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                         description=_optional_text(cells.get("description"), where, "description"),
                         aliases=_split(cells.get("aliases"), where, "aliases"),
                         technology=_optional_text(cells.get("technology"), where, "technology"),
+                        confidence=_trust(cells.get("confidence"), where),
+                        source=_optional_text(cells.get("source"), where, "source"),
                     )
                 )
             except InvalidKnowledgeError as exc:
@@ -3619,6 +3633,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                     capability.component_id,
                     capability.concept_id,
                     capability.unlinked_reason,
+                    _confidence(capability),
+                    capability.source,
                 ),
             )
         for component in system.components:
@@ -3632,6 +3648,8 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                     f"{_LIST_SEPARATOR} ".join(component.aliases),
                     component.technology,
                     component.description,
+                    _confidence(component),
+                    component.source,
                 ),
             )
         for constraint in system.constraints:

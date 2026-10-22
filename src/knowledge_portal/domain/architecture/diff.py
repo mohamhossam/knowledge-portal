@@ -485,6 +485,8 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                     capability.component_id or "",
                     capability.concept_id or "",
                     capability.unlinked_reason or "",
+                    capability.confidence.value if capability.confidence else "",
+                    capability.source or "",
                     *sorted(capability.triggers),
                 ),
             )
@@ -507,7 +509,11 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
             changed.append("component")
         if previous_capability[1][3:5] != value[3:5]:
             changed.append("concept")
-        if previous_capability[1][5:] != value[5:]:
+        if previous_capability[1][5] != value[5]:
+            changed.append("confidence")
+        if previous_capability[1][6] != value[6]:
+            changed.append("source")
+        if previous_capability[1][7:] != value[7:]:
             changed.append("triggers")
         changes.append(
             CatalogueChange(ChangedItem.CAPABILITY, ChangeKind.CHANGED, key, label, tuple(changed))
@@ -515,7 +521,7 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
 
     def components(
         release: ArchitectureKnowledge,
-    ) -> dict[str, tuple[str, tuple[str, str, tuple[str, ...], str, str]]]:
+    ) -> dict[str, tuple[str, tuple[str, str, tuple[str, ...], str, str, str, str]]]:
         return {
             f"{system.id}/{component.id}": (
                 f"{system.name}: {component.name}",
@@ -525,6 +531,8 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                     tuple(sorted(component.aliases)),
                     component.description or "",
                     component.technology or "",
+                    component.confidence.value if component.confidence else "",
+                    component.source or "",
                 ),
             )
             for system in release.systems
@@ -546,7 +554,15 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                 tuple(
                     field
                     for field, before, after in zip(
-                        ("name", "name_ar", "aliases", "description", "technology"),
+                        (
+                            "name",
+                            "name_ar",
+                            "aliases",
+                            "description",
+                            "technology",
+                            "confidence",
+                            "source",
+                        ),
                         previous_component[1],
                         component_value,
                         strict=True,

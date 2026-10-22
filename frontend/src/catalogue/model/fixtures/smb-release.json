@@ -17,6 +17,8 @@
      "component_id": null,
      "concept_id": "cap-assisted-order-capture",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     },
     {
@@ -32,6 +34,8 @@
      "component_id": null,
      "concept_id": "cap-sales-quoting",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -74,6 +78,8 @@
      "component_id": null,
      "concept_id": "cap-sales-quoting",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -111,6 +117,8 @@
      "component_id": null,
      "concept_id": "cap-offer-recommendation",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -148,6 +156,8 @@
      "component_id": null,
      "concept_id": "cap-offer-recommendation",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -189,6 +199,8 @@
      "component_id": null,
      "concept_id": "cap-product-catalogue",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -232,6 +244,8 @@
      "component_id": null,
      "concept_id": "cap-product-catalogue",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -275,6 +289,8 @@
      "component_id": null,
      "concept_id": "cap-product-catalogue",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -315,6 +331,8 @@
      "component_id": null,
      "concept_id": "cap-product-catalogue",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -358,6 +376,8 @@
      "component_id": null,
      "concept_id": "cap-product-design",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -399,6 +419,8 @@
      "component_id": null,
      "concept_id": "cap-self-service-order-capture",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     },
     {
@@ -412,6 +434,8 @@
      "component_id": null,
      "concept_id": "cap-customer-self-management",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -449,6 +473,8 @@
      "component_id": null,
      "concept_id": "cap-self-service-order-capture",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     },
     {
@@ -461,6 +487,8 @@
      "component_id": null,
      "concept_id": "cap-customer-self-management",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -499,6 +527,8 @@
      "component_id": null,
      "concept_id": "cap-identity-verification",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -538,6 +568,8 @@
      "component_id": null,
      "concept_id": "cap-complaint-management",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -577,6 +609,8 @@
      "component_id": null,
      "concept_id": "cap-assisted-order-capture",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -619,6 +653,8 @@
      "component_id": null,
      "concept_id": "cap-customer-data",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -669,6 +705,8 @@
      "component_id": null,
      "concept_id": "cap-customer-data",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -718,6 +756,8 @@
      "component_id": null,
      "concept_id": "cap-order-orchestration",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -763,6 +803,8 @@
      "component_id": null,
      "concept_id": "cap-order-tracking",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -803,6 +845,8 @@
      "component_id": null,
      "concept_id": "cap-order-tracking",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -843,6 +887,8 @@
      "component_id": null,
      "concept_id": "cap-contract-lifecycle",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -882,6 +928,8 @@
      "component_id": null,
      "concept_id": "cap-complaint-management",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -921,6 +969,8 @@
      "component_id": null,
      "concept_id": "cap-billing",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -966,6 +1016,8 @@
      "component_id": null,
      "concept_id": "cap-fixed-order-management",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1004,6 +1056,8 @@
      "component_id": null,
      "concept_id": "cap-cpe-provisioning",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1043,6 +1097,8 @@
      "component_id": null,
      "concept_id": "cap-saas-activation",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1080,6 +1136,8 @@
      "component_id": null,
      "concept_id": null,
      "unlinked_reason": "No capability concept describes SLA management yet.",
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1121,6 +1179,8 @@
      "component_id": null,
      "concept_id": "cap-mobile-network-activation",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     },
     {
@@ -1133,6 +1193,8 @@
      "component_id": null,
      "concept_id": "cap-mobile-backup-access",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1173,6 +1235,8 @@
      "component_id": null,
      "concept_id": "cap-mobile-network-activation",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     },
     {
@@ -1185,6 +1249,8 @@
      "component_id": null,
      "concept_id": "cap-mobile-backup-access",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     },
     {
@@ -1197,6 +1263,8 @@
      "component_id": null,
      "concept_id": "cap-collections",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1234,6 +1302,8 @@
      "component_id": null,
      "concept_id": "cap-mobile-network-activation",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1272,6 +1342,8 @@
      "component_id": null,
      "concept_id": null,
      "unlinked_reason": "No capability concept describes network resource allocation yet.",
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1313,6 +1385,8 @@
      "component_id": null,
      "concept_id": "cap-device-logistics",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1354,6 +1428,8 @@
      "component_id": null,
      "concept_id": "cap-number-portability",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1394,6 +1470,8 @@
      "component_id": null,
      "concept_id": "cap-network-feasibility",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1434,6 +1512,8 @@
      "component_id": null,
      "concept_id": "cap-field-installation",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1474,6 +1554,8 @@
      "component_id": null,
      "concept_id": "cap-trouble-ticketing",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1512,6 +1594,8 @@
      "component_id": null,
      "concept_id": "cap-identity-verification",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1549,6 +1633,8 @@
      "component_id": null,
      "concept_id": "cap-identity-verification",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1588,6 +1674,8 @@
      "component_id": null,
      "concept_id": "cap-identity-verification",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1630,6 +1718,8 @@
      "component_id": null,
      "concept_id": "cap-cpe-provisioning",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     },
     {
@@ -1642,6 +1732,8 @@
      "component_id": null,
      "concept_id": "cap-customer-self-management",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1679,6 +1771,8 @@
      "component_id": null,
      "concept_id": "cap-number-portability",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1720,6 +1814,8 @@
      "component_id": null,
      "concept_id": "cap-customer-notification",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1758,6 +1854,8 @@
      "component_id": null,
      "concept_id": "cap-document-management",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1801,6 +1899,8 @@
      "component_id": null,
      "concept_id": "cap-device-logistics",
      "unlinked_reason": null,
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1838,6 +1938,8 @@
      "component_id": null,
      "concept_id": null,
      "unlinked_reason": "Single sign-on is a platform service, not a business capability.",
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1875,6 +1977,8 @@
      "component_id": null,
      "concept_id": null,
      "unlinked_reason": "An integration bus realises no business capability of its own.",
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],
@@ -1914,6 +2018,8 @@
      "component_id": null,
      "concept_id": null,
      "unlinked_reason": "A channel backend realises no business capability of its own.",
+     "confidence": null,
+     "source": null,
      "accepted": []
     }
    ],

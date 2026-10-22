@@ -4356,12 +4356,15 @@ export interface components {
             component_id?: string | null;
             /** Concept Id */
             concept_id?: string | null;
+            confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Domain Id */
             domain_id?: string | null;
             /** Id */
             id: string;
             /** Name */
             name: string;
+            /** Source */
+            source?: string | null;
             /** Triggers */
             triggers: string[];
             /** Unlinked Reason */
@@ -6376,6 +6379,7 @@ export interface components {
              * @default []
              */
             aliases: string[];
+            confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Description */
             description?: string | null;
             /** Id */
@@ -6384,6 +6388,8 @@ export interface components {
             name: string;
             /** Name Ar */
             name_ar?: string | null;
+            /** Source */
+            source?: string | null;
             /** Technology */
             technology?: string | null;
         };

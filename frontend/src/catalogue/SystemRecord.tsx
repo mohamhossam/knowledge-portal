@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
-import { api, type CatalogueSystem, type Relationship } from "../api/client";
+import { api, type CatalogueSystem, type Relationship, type SourceConfidence } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { ActionGroup, Button, type Column, DataTable, Facts, Lines, RecordView, Section, Skeleton, Status } from "../design/components";
 import { RouterLink } from "../shell/links";
@@ -73,13 +73,7 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
             // The catalogue's own owner field, kept when its source names one: Ownership decides who runs it.
             ...(system.owner ? [["Owner in the source", <bdi key="owner">{system.owner}</bdi>] as [string, ReactNode]] : []),
             ...(system.roadmap ? [["Roadmap", <bdi key="roadmap">{system.roadmap}</bdi>] as [string, ReactNode]] : []),
-            [
-              "Source",
-              <span key="source" className="cat-inline">
-                {system.confidence && <Status tone={SOURCE_TONE[system.confidence]}>{SOURCE_WORD[system.confidence]}</Status>}
-                {system.source ? <bdi>{system.source}</bdi> : !system.confidence && <span className="cat-quiet">Not stated</span>}
-              </span>,
-            ],
+            ["Source", <SourceStated key="source" fact={system} />],
             ...(acceptances(system).length ? [["Accepted from", <AcceptedFrom key="accepted" accepted={acceptances(system)} />] as [string, ReactNode]] : []),
           ]}
         />
@@ -145,6 +139,8 @@ function Capabilities({ system, index }: { system: CatalogueSystem; index: Conce
       },
     },
     { id: "phrases", header: "Matched by", bidi: true, cell: (capability) => capability.triggers.map((phrase) => `“${phrase}”`).join(", ") },
+    // A capability selects its system, so where it comes from is shown beside it (review recommendation 4).
+    { id: "source", header: "Source", bidi: true, cell: (capability) => <SourceStated fact={capability} /> },
   ];
   return (
     <Section title="What it does" count={system.capabilities.length} headingLevel={3}>
@@ -442,6 +438,16 @@ function Data({ system }: { system: CatalogueSystem }) {
   );
 }
 
+/** Where a fact comes from: how sure its source is, as a status, and the source; "Not stated" when neither is said. */
+function SourceStated({ fact }: { fact: { confidence?: SourceConfidence | null; source?: string | null } }) {
+  return (
+    <span className="cat-inline">
+      {fact.confidence && <Status tone={SOURCE_TONE[fact.confidence]}>{SOURCE_WORD[fact.confidence]}</Status>}
+      {fact.source ? <bdi>{fact.source}</bdi> : !fact.confidence && <span className="cat-quiet">Not stated</span>}
+    </span>
+  );
+}
+
 function Components({ system }: { system: CatalogueSystem }) {
   type Component = CatalogueSystem["components"][number];
   const columns: Column<Component>[] = [
@@ -469,6 +475,7 @@ function Components({ system }: { system: CatalogueSystem }) {
         </>
       ),
     },
+    { id: "source", header: "Source", bidi: true, cell: (component) => <SourceStated fact={component} /> },
   ];
   return (
     <Section title="Components" count={system.components.length} headingLevel={3}>

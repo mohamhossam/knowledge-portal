@@ -7,6 +7,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- A system's capabilities and components say where they come from. Like every other catalogue
+  fact, each now carries an optional confidence (confirmed, inferred or gap) and a source, checked
+  the same way: a capability's phrases and its concept link are what select a system
+  (ADR-0114), and until now they were the only facts with no evidence. The system's page shows a
+  Source column for both ("Not stated" when nothing says), its editor takes them row by row, the
+  version diff reports a changed confidence or source, and the draft's Check step lists the
+  sources they cite that the register lacks. An accepted suggestion keeps what a maintainer said.
+  YAML, JSON and the workbook's Capabilities and Components sheets carry `confidence` and
+  `source`; the columns are optional, so older workbooks still import. Review recommendation 4.
+  Public contract, additive; the internal contract is unchanged.
 - Approvals keep what their approver looked at. Publishing from the review desk sends how many
   passages the reviewer looked at, of how many, and how many of the flagged ones, as the publish
   panel already said; the publication keeps it as `coverage`, and a version's publications list
