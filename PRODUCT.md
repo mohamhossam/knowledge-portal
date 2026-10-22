@@ -48,9 +48,8 @@ existing architecture mappings.
   publish or activate a release.
 - **Desktop, keyboard and mouse.** Long sessions at a large screen are normal during review
   bursts. Check-ins must still work quickly.
-- **Mixed-language content.** Documents, passages and catalogue names may be English, Arabic or
-  both, often within one table. The model evaluation behind architecture matching is
-  English/Arabic.
+- **English content.** Documents, passages and catalogue names are in English. The model
+  evaluation behind architecture matching is English.
 - **Source formats:** PDF, Word, Excel, PowerPoint, CSV, Markdown and plain text, plus
   catalogue files (an Excel template, YAML and CSV).
 - **Background work.** Ingestion, index builds, catalogue reading and impact previews run as
@@ -94,7 +93,7 @@ existing architecture mappings.
 - It is part of the requirement platform, beside requirement-portal (product name
   "Requirement AI"). Users move between the two through links. The two share one sign-in and
   should feel like one family, but they have distinct design systems.
-- The interface language is English. Content keeps its own language and direction.
+- The portal is English only: its interface and the content it curates.
 - **Brand: e& in calm mode.**
   - Mostly calm neutrals (white and beige-derived tints, warm greys), with maroon for actions,
     selection and focus.
@@ -125,8 +124,8 @@ existing architecture mappings.
    passage, document version and release.
 4. **Built for both rhythms.** It must hold up for dense review sessions, and stay quick for a
    one-change check-in.
-5. **Content keeps its language.** Arabic and English sit side by side without either being
-   mangled.
+5. **One language, English.** The interface and the content it curates are English. Content
+   in another language is refused with a reason, never stored half-handled.
 
 ## Success Signals
 
@@ -159,5 +158,4 @@ WCAG 2.2 AA:
 - consistent help;
 - respect for `prefers-reduced-motion`.
 
-Mixed-direction text (Arabic and English) must render correctly in every field, table cell and
-passage.
+Content is English and runs left to right; the page declares its language (`lang="en"`).
