@@ -43,6 +43,7 @@ from knowledge_portal.domain.document.library import (
     LibraryDocument,
     LibraryVersion,
     Publication,
+    ReviewCoverage,
     ReviewedPassage,
     require_submittable_passages,
 )
@@ -532,6 +533,7 @@ class DocumentLibrary:
         fingerprint: str,
         expected: int,
         actor: ActorProfile,
+        coverage: ReviewCoverage | None = None,
     ) -> LibraryDocument:
         with self._transactions.transaction():
             document, override = self._stewarded(document_id, actor, expected)
@@ -550,6 +552,7 @@ class DocumentLibrary:
                     actor.snapshot(),
                     self._clock.now(),
                     on_behalf=override,
+                    coverage=coverage,
                 )
             )
             self._repository.save(updated, expected)

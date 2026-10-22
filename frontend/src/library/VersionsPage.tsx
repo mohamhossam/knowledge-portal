@@ -10,7 +10,7 @@ import { useDocumentContext } from "./documentContext";
 import { newestVersion } from "./model";
 import { Failure } from "./parts";
 import { CitingNow } from "./StandingPanel";
-import { ATTEMPT_LIMIT, buildStaleness, canRetryIndexing, pendingBuild, type PublicationState, publicationState } from "./publications";
+import { ATTEMPT_LIMIT, buildStaleness, canRetryIndexing, coverageWords, pendingBuild, type PublicationState, publicationState } from "./publications";
 import { contentLang, humanWhere, plural } from "./where";
 
 /** A publication's state in the glossary's words, with a tone that never leans on colour alone. */
@@ -70,7 +70,20 @@ export function VersionsPage() {
   ];
 
   const publishedColumns: Column<Publication>[] = [
-    { id: "approved", header: "Published", rowHeader: true, width: "14rem", cell: (item) => <>{formatDay(item.approved_at)}<span className="lib-detail lib-detail--plain">by <bdi>{item.approved_by.display_name}</bdi>{item.on_behalf ? ", as admin" : ""}</span></> },
+    {
+      id: "approved", header: "Published", rowHeader: true, width: "14rem",
+      cell: (item) => {
+        const looked = coverageWords(item);
+        return (
+          <>
+            {formatDay(item.approved_at)}
+            <span className="lib-detail lib-detail--plain">by <bdi>{item.approved_by.display_name}</bdi>{item.on_behalf ? ", as admin" : ""}</span>
+            {/* Reviewed means seen: what the approver looked at, as their review desk counted it. */}
+            {looked && <span className="lib-detail lib-detail--plain">{looked}</span>}
+          </>
+        );
+      },
+    },
     {
       id: "state",
       header: "State",

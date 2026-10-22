@@ -25,9 +25,10 @@ import { NextStep } from "./NextStep";
 import { Said } from "./parts";
 import { SuggestionPane } from "./SuggestionPane";
 
-const FILTERS: Filter[] = ["waiting", "decide", "waits", "decided", "all"];
+const FILTERS: Filter[] = ["waiting", "ready", "decide", "waits", "decided", "all"];
 const FILTER_LABEL: Record<Filter, string> = {
   waiting: "Waiting",
+  ready: "Ready to accept",
   decide: "Needs your decision",
   waits: "Waits for another",
   decided: "Decided",
@@ -97,10 +98,14 @@ function Decide() {
   const desk = useRef<HTMLDivElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const rejecting = useDisclosure(() => desk.current?.querySelector<HTMLElement>("tr.is-current [data-cell-focus]") ?? null);
+  const accepting = useDisclosure(() => desk.current?.querySelector<HTMLElement>("tr.is-current [data-cell-focus]") ?? null);
+  // What accepting the ready ones will take, fixed when its panel opens: what is listed is what is sent.
+  const [acceptSet, setAcceptSet] = useState<Suggestion[]>([]);
 
   const counts = tally(all);
   const bulk = useMemo(() => bulkAcceptable(release, all), [release, all]);
   const bulkCount = bulk.ready.length + bulk.lifted.length;
+  const readyIds = useMemo(() => new Set([...bulk.ready, ...bulk.lifted].map((item) => item.id)), [bulk]);
   const stuck = useMemo(() => deadEnds(release, all, words), [release, all, words]);
   const notes = useMemo(() => featureWarnings(draft.suggestions.data?.runs ?? []), [draft.suggestions.data]);
   const documents = useMemo(() => new Map(release.documents.map((item) => [item.id, item])), [release.documents]);
@@ -120,8 +125,8 @@ function Decide() {
   );
   // The suggestion in hand stays listed while it is worked on, even once it no longer matches the filter.
   const shown = useMemo(
-    () => rows.filter((row) => row.suggestion.id === currentId || (inFilter(row.suggestion, filter) && matchesFind(row.suggestion, row.sentence, row.group.label, find))),
-    [rows, currentId, filter, find],
+    () => rows.filter((row) => row.suggestion.id === currentId || (inFilter(row.suggestion, filter, readyIds) && matchesFind(row.suggestion, row.sentence, row.group.label, find))),
+    [rows, currentId, filter, find, readyIds],
   );
   const current = shown.find((row) => row.suggestion.id === currentId) ?? shown[0];
 
@@ -223,11 +228,26 @@ function Decide() {
   const onGridKey = useCallback((row: Row, key: string) => handlers.current.onRowKey(row, key), []);
   const onActivate = useCallback(() => handlers.current.toPane(), []);
 
-  const acceptReady = () =>
-    draft.acceptReady.mutate(undefined, {
-      onSuccess: (result) =>
-        say(`Accepted ${count(counts.waiting - result.remaining, "suggestion")}. ${result.remaining ? `${result.remaining} still wait for you.` : "Nothing is left waiting."}`),
+  /** Opens the panel that lists what accepting the ready ones takes; nothing is sent until it is confirmed. */
+  const askToAcceptReady = () => {
+    setAcceptSet([...bulk.ready, ...bulk.lifted]);
+    accepting.show();
+  };
+  const acceptReady = () => {
+    const ids = acceptSet.map((item) => item.id);
+    draft.acceptReady.mutate(ids, {
+      onSuccess: (result) => {
+        const accepted = counts.waiting - result.remaining;
+        const missed = ids.length - accepted;
+        say(
+          `Accepted ${count(accepted, "suggestion")}.`
+          + (missed > 0 ? ` ${count(missed, "listed one")} couldn't apply and ${missed === 1 ? "waits" : "wait"} for you to decide.` : "")
+          + (result.remaining ? ` ${result.remaining} still wait for you.` : " Nothing is left waiting."),
+        );
+        accepting.close();
+      },
     });
+  };
   /** Says what a name suggestions wait for is: a system to suggest, or a product offering. */
   const settle = (reference: string, name: string, kind: "system" | "offering") =>
     draft.settleSubject.mutate({ system_id: reference, name, kind }, {
@@ -300,7 +320,38 @@ function Decide() {
     />
   ) : null;
 
-  const pane = rejectPanel ?? (current ? (
+  const acceptPanel = accepting.open && acceptSet.length ? (
+    <ConsequencePanel
+      panelRef={accepting.panel}
+      title={`Accept ${count(acceptSet.length, "suggestion")}`}
+      happens={
+        <>
+          They reach the draft as listed. None of them needs a decision
+          {acceptSet.some((item) => !bulk.ready.some((ready) => ready.id === item.id)) ? ", and those that wait on another wait on one in this list" : ""}.
+        </>
+      }
+      affects={
+        <>
+          <Lines label="Suggestions to accept">
+            {acceptSet.slice(0, 8).map((item) => <li key={item.id} dir="auto">{changeSentence(item, words)}</li>)}
+            {acceptSet.length > 8 && <li>and {(acceptSet.length - 8).toLocaleString("en")} more</li>}
+          </Lines>
+          {acceptSet.length > 8 && filter !== "ready" && (
+            <Button variant="link" onClick={() => setView("ready", "")}>List all {acceptSet.length.toLocaleString("en")} beside this</Button>
+          )}
+        </>
+      }
+      reversibility="An acceptance stays: correct the draft afterwards with hand edits on its pages. Nothing reaches requirement work until the draft is published."
+      confirmLabel={`Accept ${count(acceptSet.length, "suggestion")}`}
+      busyLabel="Accepting…"
+      keepLabel="Not yet"
+      busy={draft.acceptReady.isPending}
+      onConfirm={acceptReady}
+      onKeep={accepting.close}
+    />
+  ) : null;
+
+  const pane = acceptPanel ?? rejectPanel ?? (current ? (
     <SuggestionPane
       key={current.suggestion.id}
       suggestion={current.suggestion}
@@ -367,7 +418,7 @@ function Decide() {
         changesTo={`${base}/changes`}
         busy={busy}
         settling={draft.settleSubject.isPending}
-        onAcceptReady={acceptReady}
+        onAcceptReady={askToAcceptReady}
         onSettle={(blocker, kind) => settle(blocker.reference, blocker.name, kind)}
         onShow={showWaiting}
         onReject={rejectWaiting}
@@ -391,7 +442,7 @@ function Decide() {
       <div className="draft-toolbar">
         <FilterStrip
           label="Show suggestions"
-          filters={FILTERS.map((id) => ({ id, label: FILTER_LABEL[id], count: all.filter((item) => inFilter(item, id)).length }))}
+          filters={FILTERS.map((id) => ({ id, label: FILTER_LABEL[id], count: all.filter((item) => inFilter(item, id, readyIds)).length }))}
           active={filter}
           onChange={(id) => setView(id as Filter, find)}
           find={{ label: "Find in the suggestions", value: find, onChange: (value) => setView(filter, value), placeholder: "A system, a word or a document…" }}
@@ -415,7 +466,7 @@ function Decide() {
       </div>
 
       <SplitPane
-        paneLabel={rejectPanel ? "Reject the selected suggestions" : current ? "The suggestion" : "Suggestion"}
+        paneLabel={acceptPanel ? "Accept the ready suggestions" : rejectPanel ? "Reject the selected suggestions" : current ? "The suggestion" : "Suggestion"}
         list={
           <SuggestionGrid
             rows={shown}
@@ -432,7 +483,7 @@ function Decide() {
         pane={pane}
       />
 
-      <BulkActionBar count={rejecting.open ? 0 : selected.size} noun={["suggestion", "suggestions"]} onClear={() => setSelected(new Set())}>
+      <BulkActionBar count={rejecting.open || accepting.open ? 0 : selected.size} noun={["suggestion", "suggestions"]} onClear={() => setSelected(new Set())}>
         <Button
           busy={busy}
           unavailableReason={chosenReady.length ? null : "None of them is ready to accept without a decision."}

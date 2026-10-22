@@ -62,6 +62,7 @@ from knowledge_portal.interfaces.api.dependencies import (
 )
 from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     AcceptAllResponse,
+    AcceptSuggestionsRequest,
     ActivateRequest,
     ArchitectureJobResponse,
     BatchUploadResponse,
@@ -812,13 +813,17 @@ def decide_suggestion(
 @router.post("/releases/{release_id}/suggestions/acceptance", response_model=AcceptAllResponse)
 def accept_all_suggestions(
     release_id: str,
-    body: RevisionRequest,
+    body: AcceptSuggestionsRequest,
     suggestions: SuggestionsDep,
     actor: KnowledgeActorDep,
     clock: ClockDep,
 ) -> AcceptAllResponse:
     release, remaining = suggestions.accept_all(
-        release_id, body.expected_revision, actor, clock.now()
+        release_id,
+        body.expected_revision,
+        actor,
+        clock.now(),
+        None if body.suggestion_ids is None else tuple(body.suggestion_ids),
     )
     return AcceptAllResponse(
         release=KnowledgeReleaseResponse.from_domain(release), remaining=remaining

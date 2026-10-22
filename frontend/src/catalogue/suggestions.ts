@@ -929,11 +929,17 @@ export function tally(suggestions: Suggestion[]): Tally {
   return counts;
 }
 
-export type Filter = "waiting" | "decide" | "waits" | "decided" | "all";
+export type Filter = "waiting" | "ready" | "decide" | "waits" | "decided" | "all";
 
-export function shown(suggestion: Suggestion, filter: Filter): boolean {
+/**
+ * Whether a suggestion is listed under a filter. "Ready" is what accepting the ready
+ * ones would take: given that set (`bulkAcceptable`), exactly it, waits it lifts
+ * included; without it, the suggestions ready on their own.
+ */
+export function shown(suggestion: Suggestion, filter: Filter, ready?: ReadonlySet<string>): boolean {
   const state = suggestionState(suggestion);
   if (filter === "all") return true;
+  if (filter === "ready") return ready ? ready.has(suggestion.id) : state === "ready";
   if (filter === "decided") return state === "accepted" || state === "rejected";
   if (filter === "waiting") return suggestion.status === "proposed";
   return state === filter;

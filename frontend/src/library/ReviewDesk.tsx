@@ -5,6 +5,7 @@ import { useLocation, useSearchParams } from "react-router-dom";
 
 import { api, type LibraryDocument, type LibraryVersion } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
+import { useAuth } from "../auth/authContext";
 import {
   ActionGroup,
   BulkActionBar,
@@ -55,19 +56,24 @@ type Filter = "all" | "unseen" | "flagged" | "changed" | "excluded" | "removed";
 /** How long a passage holds focus before it counts as seen (decided at GATE 8.2): passing through isn't looking. */
 const SEEN_AFTER_MS = 600;
 
-/** "Seen" is per reviewer and for this session only (BG2): kept in the tab, never sent. */
-function useSeen(versionId: string) {
-  const key = `knowledge-portal.seen.${versionId}`;
+/**
+ * "Seen" is per reviewer and per version (BG2). It is kept in this browser, so a closed tab
+ * or a crash doesn't start the count again, and it is sent with the approval as its coverage.
+ */
+function useSeen(versionId: string, reviewerId: string | undefined) {
+  const key = `knowledge-portal.seen.${reviewerId ?? "anyone"}.${versionId}`;
   const [seen, setSeen] = useState<Set<string>>(() => {
     try {
-      return new Set(JSON.parse(window.sessionStorage.getItem(key) ?? "[]") as string[]);
+      // Kept for the tab only before it was kept in the browser: read once, then moved.
+      const kept = window.localStorage.getItem(key) ?? window.sessionStorage.getItem(`knowledge-portal.seen.${versionId}`);
+      return new Set(JSON.parse(kept ?? "[]") as string[]);
     } catch {
       return new Set();
     }
   });
   useEffect(() => {
     try {
-      window.sessionStorage.setItem(key, JSON.stringify([...seen]));
+      window.localStorage.setItem(key, JSON.stringify([...seen]));
     } catch {
       // Blocked storage: seen lasts while the desk is open.
     }
@@ -122,7 +128,8 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
     const wanted = passageOf(location.hash);
     return wanted ? rows.find((row) => row.key === wanted || row.basisBlockId === wanted)?.key : undefined;
   });
-  const { seen, add: markSeen } = useSeen(version.id);
+  const reviewer = useAuth()?.actor?.id;
+  const { seen, add: markSeen } = useSeen(version.id, reviewer);
   // "Not seen yet" lists what was unseen when it was chosen: a passage looked at stays listed, so k
   // goes back to it, until the filter is chosen again.
   const [seenBefore, setSeenBefore] = useState<ReadonlySet<string>>(() => new Set(seen));
@@ -333,6 +340,7 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
 
   const included = useMemo(() => rows.filter((row) => row.draft?.included).length, [rows]);
   const flaggedSeen = useMemo(() => rows.filter((row) => row.warnings.length > 0 && seen.has(row.key)).length, [rows, seen]);
+  const seenCount = useMemo(() => rows.filter((row) => seen.has(row.key)).length, [rows, seen]);
   const unseen = useMemo(() => rows.filter((row) => !seen.has(row.key)).length, [rows, seen]);
   const live = livePublication(document);
   const liveNumber = live ? document.versions.find((item) => item.id === live.version_id)?.number : undefined;
@@ -386,8 +394,10 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
 
   /** Publishing in one step: what is unsaved is saved with the summary, then that review is published. */
   async function publish(text: string) {
+    // What the publish panel said was looked at is what the approval keeps (PRODUCT.md: reviewed means seen).
+    const coverage = rows.length ? { passages: rows.length, seen: seenCount, flagged: tally.flagged, flagged_seen: flaggedSeen } : undefined;
     if (!needsSave(text) && revision) {
-      hook.approve.mutate({ versionId: version.id, revisionId: revision.id }, { onSuccess: published });
+      hook.approve.mutate({ versionId: version.id, revisionId: revision.id, coverage }, { onSuccess: published });
       return;
     }
     let saved: LibraryDocument;
@@ -398,7 +408,7 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
     }
     const savedRevision = latestRevision(saved.versions.find((item) => item.id === version.id));
     if (!savedRevision) return;
-    hook.approve.mutate({ versionId: version.id, revisionId: savedRevision.id, saved }, { onSuccess: published });
+    hook.approve.mutate({ versionId: version.id, revisionId: savedRevision.id, saved, coverage }, { onSuccess: published });
   }
   const published = () => announce("Published. Requirement work can cite it once it is indexed; Jobs shows the indexing.");
   const changeFailure = (error: unknown, verb: string) =>
@@ -439,8 +449,9 @@ export function ReviewDesk({ document, version }: { document: LibraryDocument; v
                 <p>Nothing of it is in service yet.</p>
               )}
               <p>
-                You looked at {seen.size.toLocaleString("en")} of {plural(rows.length, "passage")}
+                You looked at {seenCount.toLocaleString("en")} of {plural(rows.length, "passage")}
                 {tally.flagged > 0 ? `, and ${flaggedSeen.toLocaleString("en")} of the ${tally.flagged.toLocaleString("en")} flagged.` : "."}
+                {" "}It is kept with the approval.
               </p>
               {unsavedReview && revision && dirty > 0 && <p>Your {plural(dirty, "unsaved change")} {dirty === 1 ? "is" : "are"} saved with it.</p>}
             </>

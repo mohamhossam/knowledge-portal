@@ -281,7 +281,8 @@ function Summary({ release, all, words, questions, answers, draft, onBack, onDon
     };
     const port: SendPort = {
       decide: draft.decide,
-      acceptReady: () => draft.acceptReady.mutateAsync(),
+      // What follows is listed above the send: only those are accepted.
+      acceptReady: () => draft.acceptReady.mutateAsync(follows.map((item) => item.id)),
       settleSubject: (subject) => draft.settleSubject.mutateAsync(subject),
       refetchSuggestions: async () => (await draft.suggestions.refetch({ throwOnError: true })).data?.suggestions ?? [],
     };

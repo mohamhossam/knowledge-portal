@@ -40,7 +40,7 @@ is **Blocked** until the service changes, and then it becomes a follow-up item.
 | ID | Gap | UI workaround today |
 |---|---|---|
 | BG1 | No job-list endpoint | Jobs derived from documents plus this session's jobs |
-| BG2 | Approval doesn't record coverage ("seen") | Coverage is shown at approval, but not stored |
+| BG2 | ~~Approval doesn't record coverage ("seen")~~ Done: the approval keeps `coverage`, and "seen" is kept in the browser per reviewer and version | ~~Coverage is shown at approval, but not stored~~ |
 | BG3 | No reopen of decisions | A 6-second delayed commit with undo |
 | BG4 | Bulk marking is not recorded | Known in this session only |
 | BG5 | The organisation audit has no field diff | History lists events without "what changed" |

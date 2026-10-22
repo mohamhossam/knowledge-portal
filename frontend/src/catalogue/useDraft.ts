@@ -83,8 +83,9 @@ export function useDraft(release: Release) {
     [queryClient, releaseId, settle],
   );
 
+  // Only the suggestions the person was shown: a reading that finished meanwhile adds none.
   const acceptReady = useMutation({
-    mutationFn: () => api.acceptAll(releaseId, revision.current),
+    mutationFn: (ids: string[]) => api.acceptAll(releaseId, revision.current, ids),
     onSuccess: (result) => settle(result.release),
   });
   const rejectMany = useMutation({

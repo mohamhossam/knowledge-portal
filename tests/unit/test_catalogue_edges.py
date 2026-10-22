@@ -414,6 +414,30 @@ def test_decisions_check_revision_ownership_and_undo_on_a_lost_draft() -> None:
         candidates.save_decision(candidates.get("c1") or _candidate(draft.id, system))
 
 
+def test_accepting_the_ready_ones_takes_only_the_set_the_person_was_shown() -> None:
+    _, decide, draft, candidates, _ = _proposer()
+    shown = CandidateContent(CandidateKind.SYSTEM, "hub", name="Hub")
+    # Arrived after the page listed what it would accept: a reading finishing meanwhile.
+    arrived = CandidateContent(CandidateKind.SYSTEM, "gateway", name="Gateway")
+    candidates.replace_proposals(
+        _run(draft.id), (_candidate(draft.id, shown), _candidate(draft.id, arrived, "c2"))
+    )
+
+    updated, remaining = decide.accept_all(
+        draft.id, draft.revision, MAINTAINER, NOW, candidate_ids=("c1",)
+    )
+
+    assert {item.id for item in updated.systems} >= {"hub"}
+    assert "gateway" not in {item.id for item in updated.systems}
+    # What is left counts every suggestion still waiting, the unlisted one included.
+    assert remaining == 1
+    assert (candidates.get("c2") or _candidate(draft.id, arrived)).status.value == "proposed"
+
+    # Naming nothing accepts nothing, and the draft is unchanged.
+    same, still = decide.accept_all(draft.id, updated.revision, MAINTAINER, NOW, candidate_ids=())
+    assert (same.revision, still) == (updated.revision, 1)
+
+
 def _run(release_id: str) -> Any:
     from knowledge_portal.application.ports.catalogue_candidates import ExtractionRun
 

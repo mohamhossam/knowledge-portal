@@ -40,6 +40,7 @@ from knowledge_portal.application.use_cases.source_impact import DocumentSourceI
 from knowledge_portal.domain.document.library import (
     ADMIN_REASON_MAX,
     OwnershipTransfer,
+    ReviewCoverage,
     ReviewedPassage,
 )
 from knowledge_portal.domain.identity.entities import ActorId
@@ -121,6 +122,10 @@ def preview_chunks(
     document_id: str, service: KnowledgeDep, actor: CurrentActorDep
 ) -> tuple[ReferenceChunk, ...]:
     return service.preview_review(document_id, actor)
+
+
+# The most passages one review sends, and so the most one approval can count.
+MAX_REVIEW_PASSAGES = 10000
 
 
 class LibraryMutation(BaseModel):
@@ -229,14 +234,28 @@ def dependencies(
     return service.dependencies(document_id, actor, offset, limit)
 
 
+class ReviewCoverageRequest(BaseModel):
+    """How much of the version the approver looked at, as their review desk counted it."""
+
+    passages: int = Field(ge=1, le=MAX_REVIEW_PASSAGES)
+    seen: int = Field(ge=0, le=MAX_REVIEW_PASSAGES)
+    flagged: int = Field(default=0, ge=0, le=MAX_REVIEW_PASSAGES)
+    flagged_seen: int = Field(default=0, ge=0, le=MAX_REVIEW_PASSAGES)
+
+    def to_domain(self) -> ReviewCoverage:
+        return ReviewCoverage(self.passages, self.seen, self.flagged, self.flagged_seen)
+
+
 class LibraryReviewRequest(LibraryMutation):
-    passages: list[ReviewedPassage] = Field(min_length=1, max_length=10000)
+    passages: list[ReviewedPassage] = Field(min_length=1, max_length=MAX_REVIEW_PASSAGES)
     explanation: str = Field(min_length=1, max_length=2000)
 
 
 class LibraryApprovalRequest(LibraryMutation):
     revision_id: str = Field(min_length=1, max_length=200)
     fingerprint: str = Field(min_length=64, max_length=64)
+    # Optional: approvals that do not come from a review desk (putting a version back) carry none.
+    coverage: ReviewCoverageRequest | None = None
 
 
 class LibraryWithdrawalRequest(LibraryMutation):
@@ -404,7 +423,13 @@ def approve(
     actor: CurrentActorDep,
 ) -> LibraryView:
     service.approve(
-        document_id, version_id, data.revision_id, data.fingerprint, data.expected_version, actor
+        document_id,
+        version_id,
+        data.revision_id,
+        data.fingerprint,
+        data.expected_version,
+        actor,
+        data.coverage.to_domain() if data.coverage is not None else None,
     )
     return service.get(document_id, actor)
 

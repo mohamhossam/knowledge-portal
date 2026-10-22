@@ -2280,6 +2280,16 @@ export interface components {
             remaining: number;
         };
         /**
+         * AcceptSuggestionsRequest
+         * @description Accept what needs no decision; given ids, only those (the set the person was shown).
+         */
+        AcceptSuggestionsRequest: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Suggestion Ids */
+            suggestion_ids?: string[] | null;
+        };
+        /**
          * AcceptedFromSchema
          * @description An accepted suggestion recorded on what it produced: the model and prompt that
          *     suggested it, and who accepted it when (ADR-0120).
@@ -4544,6 +4554,7 @@ export interface components {
         };
         /** LibraryApprovalRequest */
         LibraryApprovalRequest: {
+            coverage?: components["schemas"]["ReviewCoverageRequest"] | null;
             /** Expected Version */
             expected_version: number;
             /** Fingerprint */
@@ -5521,6 +5532,7 @@ export interface components {
             chunk_manifest?: string | null;
             /** Chunking Policy */
             chunking_policy: string;
+            coverage?: components["schemas"]["ReviewCoverage"] | null;
             /** Fingerprint */
             fingerprint: string;
             /** Id */
@@ -5985,6 +5997,50 @@ export interface components {
              */
             reviewed_at: string;
             reviewer: components["schemas"]["ActorSnapshot"];
+        };
+        /**
+         * ReviewCoverage
+         * @description How much of a version the approver looked at, as their review desk counted it.
+         *
+         *     A passage counts as seen once it held the reviewer's focus for a moment; passing
+         *     through it does not. Flagged passages are those extraction warned about. The counts
+         *     are the reviewer's own record, kept with the approval (PRODUCT.md: reviewed means seen).
+         */
+        ReviewCoverage: {
+            /**
+             * Flagged
+             * @default 0
+             */
+            flagged: number;
+            /**
+             * Flagged Seen
+             * @default 0
+             */
+            flagged_seen: number;
+            /** Passages */
+            passages: number;
+            /** Seen */
+            seen: number;
+        };
+        /**
+         * ReviewCoverageRequest
+         * @description How much of the version the approver looked at, as their review desk counted it.
+         */
+        ReviewCoverageRequest: {
+            /**
+             * Flagged
+             * @default 0
+             */
+            flagged: number;
+            /**
+             * Flagged Seen
+             * @default 0
+             */
+            flagged_seen: number;
+            /** Passages */
+            passages: number;
+            /** Seen */
+            seen: number;
         };
         /**
          * ReviewRequest
@@ -8341,7 +8397,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RevisionRequest"];
+                "application/json": components["schemas"]["AcceptSuggestionsRequest"];
             };
         };
         responses: {

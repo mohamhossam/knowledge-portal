@@ -261,6 +261,43 @@ describe("Decide", () => {
     await waitFor(() => expect(reject).toHaveBeenCalledWith("d", 4, ["crm", "store"]));
   });
 
+  it("accepts the ready ones only through a consequence that lists them, and sends exactly that set", async () => {
+    const acceptAll = vi.spyOn(api, "acceptAll").mockResolvedValue({ release: draft({ revision: 4 }), remaining: 1 } as never);
+    renderStep("decide");
+    await screen.findByRole("grid");
+
+    fireEvent.click(screen.getByRole("button", { name: /^Accept the 3 ready/ }));
+    const panel = screen.getByRole("region", { name: "Accept 3 suggestions" });
+    const listed = within(within(panel).getByRole("list", { name: "Suggestions to accept" })).getAllByRole("listitem").map((item) => item.textContent);
+    expect(listed).toEqual(expect.arrayContaining(["Adds the system Order Hub", "Adds the constraint “Nights only”"]));
+    expect(listed).toHaveLength(3);
+    // The one with a possible match needs a person: it is not in the set.
+    expect(within(panel).queryByText(/Dynamics CRM/)).toBeNull();
+    expect(within(panel).getByText(/Nothing reaches requirement work until the draft is published/)).toBeInTheDocument();
+
+    // Not yet: nothing is sent.
+    fireEvent.click(within(panel).getByRole("button", { name: "Not yet" }));
+    expect(acceptAll).not.toHaveBeenCalled();
+    expect(screen.queryByRole("region", { name: "Accept 3 suggestions" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /^Accept the 3 ready/ }));
+    fireEvent.click(within(screen.getByRole("region", { name: "Accept 3 suggestions" })).getByRole("button", { name: "Accept 3 suggestions" }));
+    await waitFor(() => expect(acceptAll).toHaveBeenCalledOnce());
+    const [releaseId, revision, ids] = acceptAll.mock.calls[0]!;
+    expect([releaseId, revision]).toEqual(["d", 3]);
+    expect([...ids].sort()).toEqual(["cap", "hub", "store"]);
+    expect(await screen.findByText(/Accepted 3 suggestions\. 1 still wait for you\./)).toBeInTheDocument();
+  });
+
+  it("lists under Ready to accept exactly what accepting the ready ones would take", async () => {
+    renderStep("decide");
+    await screen.findByRole("grid");
+    fireEvent.click(screen.getByRole("button", { name: /Ready to accept/ }));
+    const listed = screen.getAllByRole("rowheader").map((row) => row.textContent ?? "");
+    expect(listed).toHaveLength(3);
+    expect(listed.some((text) => text.includes("Dynamics CRM"))).toBe(false);
+  });
+
   it("keeps the filter in the address and finds by any word", async () => {
     renderStep("decide");
     await screen.findByRole("grid");

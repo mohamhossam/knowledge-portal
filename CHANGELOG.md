@@ -7,6 +7,26 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Approvals keep what their approver looked at. Publishing from the review desk sends how many
+  passages the reviewer looked at, of how many, and how many of the flagged ones, as the publish
+  panel already said; the publication keeps it as `coverage`, and a version's publications list
+  it ("looked at 3 of 4 passages, 1 of 2 flagged"). "Seen" is kept in the browser per reviewer and
+  version, so a closed tab no longer starts the count again. Counts that cannot be (more seen than
+  there are) are refused. A version put back on an earlier review keeps none. Closes backlog BG2.
+  `POST /library/documents/{id}/versions/{version_id}/approval` takes an optional `coverage`;
+  public contract, additive.
+- Accepting the ready suggestions goes through its consequence. "Accept the N ready" on the
+  Decide step opens a panel that lists what it will accept and says that nothing reaches
+  requirement work until the draft is published; a new "Ready to accept" filter lists the whole
+  set. The service accepts only the suggestions listed, never one a reading added since:
+  `POST /architecture-knowledge/releases/{id}/suggestions/acceptance` takes optional
+  `suggestion_ids`. Focus mode sends the suggestions its summary lists under "What follows".
+  Public contract, additive.
+- A page that fails no longer blanks the portal. A render error, or a page's code gone after an
+  update, shows what happened in place of the page, with "Try again" and "Reload the page"; the
+  sidebar keeps working, and moving to another page clears it. A failure outside any page shows
+  the same on a page of its own.
+
 - Sources a draft cites but doesn't register. A fact cites its source as the source's id or
   short name, then where in it; one whose source the register doesn't hold can't show that
   source's level or title. The Check step lists each such source with how many facts cite it

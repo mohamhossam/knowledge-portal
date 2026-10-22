@@ -18,6 +18,36 @@
         "title": "AcceptAllResponse",
         "type": "object"
       },
+      "AcceptSuggestionsRequest": {
+        "description": "Accept what needs no decision; given ids, only those (the set the person was shown).",
+        "properties": {
+          "expected_revision": {
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "suggestion_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                "maxItems": 5000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggestion Ids"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "AcceptSuggestionsRequest",
+        "type": "object"
+      },
       "AcceptedFromSchema": {
         "description": "An accepted suggestion recorded on what it produced: the model and prompt that\nsuggested it, and who accepted it when (ADR-0120).",
         "properties": {
@@ -7337,6 +7367,16 @@
       },
       "LibraryApprovalRequest": {
         "properties": {
+          "coverage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewCoverageRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "expected_version": {
             "minimum": 1.0,
             "title": "Expected Version",
@@ -10181,6 +10221,16 @@
             "title": "Chunking Policy",
             "type": "string"
           },
+          "coverage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewCoverage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "fingerprint": {
             "title": "Fingerprint",
             "type": "string"
@@ -11455,6 +11505,72 @@
           "reviewer"
         ],
         "title": "ReviewConfirmation",
+        "type": "object"
+      },
+      "ReviewCoverage": {
+        "description": "How much of a version the approver looked at, as their review desk counted it.\n\nA passage counts as seen once it held the reviewer's focus for a moment; passing\nthrough it does not. Flagged passages are those extraction warned about. The counts\nare the reviewer's own record, kept with the approval (PRODUCT.md: reviewed means seen).",
+        "properties": {
+          "flagged": {
+            "default": 0,
+            "title": "Flagged",
+            "type": "integer"
+          },
+          "flagged_seen": {
+            "default": 0,
+            "title": "Flagged Seen",
+            "type": "integer"
+          },
+          "passages": {
+            "title": "Passages",
+            "type": "integer"
+          },
+          "seen": {
+            "title": "Seen",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "passages",
+          "seen"
+        ],
+        "title": "ReviewCoverage",
+        "type": "object"
+      },
+      "ReviewCoverageRequest": {
+        "description": "How much of the version the approver looked at, as their review desk counted it.",
+        "properties": {
+          "flagged": {
+            "default": 0,
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Flagged",
+            "type": "integer"
+          },
+          "flagged_seen": {
+            "default": 0,
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Flagged Seen",
+            "type": "integer"
+          },
+          "passages": {
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Passages",
+            "type": "integer"
+          },
+          "seen": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Seen",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "passages",
+          "seen"
+        ],
+        "title": "ReviewCoverageRequest",
         "type": "object"
       },
       "ReviewRequest": {
@@ -16889,7 +17005,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RevisionRequest"
+                "$ref": "#/components/schemas/AcceptSuggestionsRequest"
               }
             }
           },

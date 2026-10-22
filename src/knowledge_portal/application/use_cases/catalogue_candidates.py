@@ -1620,23 +1620,31 @@ class DecideCatalogueCandidate:
         return updated
 
     def accept_all(
-        self, release_id: str, expected_revision: int, actor: Actor, at: datetime
+        self,
+        release_id: str,
+        expected_revision: int,
+        actor: Actor,
+        at: datetime,
+        candidate_ids: tuple[str, ...] | None = None,
     ) -> tuple[ArchitectureKnowledge, int]:
         """Accept every undecided suggestion that can apply; returns how many were left.
 
         Inferred dependencies and suggestions that may name an existing system
-        are left for a one-by-one decision.
+        are left for a one-by-one decision. Given `candidate_ids`, only those are
+        accepted: the set the person was shown, never one a reading added since.
         """
         require_maintainer(actor)
         release = _draft(self._knowledge, release_id)
         if release.revision != expected_revision:
             raise KnowledgeConflictError("The draft changed; reload before deciding.")
+        proposed = [
+            item
+            for item in self._candidates.list(release_id)
+            if item.status is CandidateStatus.PROPOSED
+        ]
+        wanted = None if candidate_ids is None else set(candidate_ids)
         pending = sorted(
-            (
-                item
-                for item in self._candidates.list(release_id)
-                if item.status is CandidateStatus.PROPOSED
-            ),
+            (item for item in proposed if wanted is None or item.id in wanted),
             # A domain before the sub-domains inside it.
             key=lambda item: (_ORDER.index(item.content.kind), _nested(item.content)),
         )
@@ -1662,10 +1670,10 @@ class DecideCatalogueCandidate:
                 accepted.append(candidate.decide(True, actor.id, at))
             waiting = later if len(accepted) > before else []
         if not accepted:
-            return release, len(pending)
+            return release, len(proposed)
         updated = _accepted(release, merged)
         self._save(updated, expected_revision, actor, tuple(accepted))
-        return updated, len(pending) - len(accepted)
+        return updated, len(proposed) - len(accepted)
 
     def reject_many(
         self,

@@ -16,6 +16,8 @@ export type LibraryDocument = Schemas["LibraryView"];
 export type ClassificationOptions = Schemas["ClassificationOptions"];
 export type LibraryVersion = Schemas["LibraryVersion"];
 export type Publication = Schemas["Publication"];
+/** How much of a version its approver looked at, as the review desk counted it. */
+export type ReviewCoverage = Schemas["ReviewCoverageRequest"];
 export type Release = Schemas["KnowledgeReleaseResponse"];
 /** The version in service as the explorer reads it: content only, for anyone signed in. */
 export type ExplorerRelease = Schemas["ExplorerReleaseResponse"];
@@ -318,8 +320,12 @@ export const api = {
     (await send(`/architecture-knowledge/documents/versions/${encodeURIComponent(versionId)}/content`)).blob(),
   decide: (releaseId: string, suggestionId: string, body: { expected_revision: number; accept: boolean; content?: SuggestionContent | null }) =>
     post<Release>(`${releasePath(releaseId)}/suggestions/${encodeURIComponent(suggestionId)}/decision`, body),
-  acceptAll: (releaseId: string, expectedRevision: number) =>
-    post<Schemas["AcceptAllResponse"]>(`${releasePath(releaseId)}/suggestions/acceptance`, { expected_revision: expectedRevision }),
+  /** Accepts what needs no decision: only `suggestionIds`, the set the person was shown. */
+  acceptAll: (releaseId: string, expectedRevision: number, suggestionIds: string[]) =>
+    post<Schemas["AcceptAllResponse"]>(`${releasePath(releaseId)}/suggestions/acceptance`, {
+      expected_revision: expectedRevision,
+      suggestion_ids: suggestionIds,
+    }),
   rejectMany: (releaseId: string, expectedRevision: number, suggestionIds: string[]) =>
     post<{ rejected: number }>(`${releasePath(releaseId)}/suggestions/rejection`, {
       expected_revision: expectedRevision,
@@ -441,7 +447,7 @@ export const api = {
   },
   review: (documentId: string, versionId: string, body: ReviewRequest) =>
     post<LibraryDocument>(`${versionPath(documentId, versionId)}/review`, body),
-  approve: (documentId: string, versionId: string, body: { expected_version: number; revision_id: string; fingerprint: string }) =>
+  approve: (documentId: string, versionId: string, body: { expected_version: number; revision_id: string; fingerprint: string; coverage?: ReviewCoverage }) =>
     post<LibraryDocument>(`${versionPath(documentId, versionId)}/approval`, body),
   withdraw: (documentId: string, body: { expected_version: number; reason: string }) =>
     post<LibraryDocument>(`${documentPath(documentId)}/withdrawal`, body),

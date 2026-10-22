@@ -2855,6 +2855,12 @@ class MappingImpactResponse(BaseModel):
         )
 
 
+class AcceptSuggestionsRequest(RevisionRequest):
+    """Accept what needs no decision; given ids, only those (the set the person was shown)."""
+
+    suggestion_ids: list[Identifier] | None = Field(default=None, max_length=MAX_CATALOGUE_ITEMS)
+
+
 class RejectSuggestionsRequest(RevisionRequest):
     suggestion_ids: list[Identifier] = Field(max_length=MAX_CATALOGUE_ITEMS)
 

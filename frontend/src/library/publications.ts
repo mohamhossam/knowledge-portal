@@ -53,3 +53,16 @@ export function canRetryIndexing(document: LibraryDocument): boolean {
   return Boolean(latest && !latest.withdrawn_at && !latest.activated_at && !latest.built_at
     && latest.indexing_attempts >= ATTEMPT_LIMIT);
 }
+
+/**
+ * What an approval keeps of how much its approver looked at, in words: "looked at 3 of
+ * 4 passages, 1 of 2 flagged". Null when the approval kept none (before it was kept,
+ * or a version put back on an earlier review).
+ */
+export function coverageWords(publication: Publication): string | null {
+  const coverage = publication.coverage;
+  if (!coverage) return null;
+  const passages = `looked at ${coverage.seen.toLocaleString("en")} of ${coverage.passages.toLocaleString("en")} ${coverage.passages === 1 ? "passage" : "passages"}`;
+  const flagged = coverage.flagged ?? 0;
+  return flagged > 0 ? `${passages}, ${(coverage.flagged_seen ?? 0).toLocaleString("en")} of ${flagged.toLocaleString("en")} flagged` : passages;
+}

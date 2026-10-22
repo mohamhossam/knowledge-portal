@@ -159,6 +159,33 @@ class LibraryVersion:
 
 
 @dataclass(frozen=True)
+class ReviewCoverage:
+    """How much of a version the approver looked at, as their review desk counted it.
+
+    A passage counts as seen once it held the reviewer's focus for a moment; passing
+    through it does not. Flagged passages are those extraction warned about. The counts
+    are the reviewer's own record, kept with the approval (PRODUCT.md: reviewed means seen).
+    """
+
+    passages: int
+    seen: int
+    flagged: int = 0
+    flagged_seen: int = 0
+
+    def __post_init__(self) -> None:
+        if self.passages < 1:
+            raise InvalidDocumentError("Review coverage counts at least one passage.")
+        if not 0 <= self.seen <= self.passages:
+            raise InvalidDocumentError("Passages seen must be between none and all of them.")
+        if not 0 <= self.flagged <= self.passages:
+            raise InvalidDocumentError("Flagged passages must be between none and all of them.")
+        if not 0 <= self.flagged_seen <= min(self.flagged, self.seen):
+            raise InvalidDocumentError(
+                "Flagged passages seen must be no more than those flagged or seen."
+            )
+
+
+@dataclass(frozen=True)
 class Publication:
     id: str
     version_id: str
@@ -186,6 +213,9 @@ class Publication:
     # Who withdrew it; absent on withdrawals recorded before Knowledge Center C.
     withdrawn_by: ActorSnapshot | None = None
     withdrawn_on_behalf: AdminOverride | None = None
+    # How much of the version the approver looked at; absent on approvals recorded
+    # before it was kept, and when a version is put back on an earlier approved review.
+    coverage: ReviewCoverage | None = None
 
     def __post_init__(self) -> None:
         if not all((self.id, self.version_id, self.revision_id, self.chunking_policy)):

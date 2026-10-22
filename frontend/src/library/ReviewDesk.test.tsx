@@ -22,6 +22,8 @@ beforeEach(() => {
   vi.stubGlobal("ResizeObserver", NoResize);
   Element.prototype.scrollIntoView = vi.fn();
   window.sessionStorage.clear();
+  // "Seen" is kept in the browser now: each test starts with nothing looked at.
+  window.localStorage.clear();
 });
 afterEach(() => {
   vi.restoreAllMocks();
@@ -254,6 +256,8 @@ describe("the review desk", { timeout: 20_000 }, () => {
     const saved = matrix({ revisions: [{ id: "r1", passages: BLOCKS.map((item) => ({ block_id: item.id, text: item.text, included: item.id !== "b4", exclusion_reason: item.id === "b4" ? "Hidden" : null })) }] });
     const review = vi.spyOn(api, "review");
     const approve = vi.spyOn(api, "approve").mockResolvedValue({ ...saved, publications: [{ id: "p", version_id: "v1", revision_id: "r1", fingerprint: "f", withdrawn_at: null, activated_at: null, built_at: null, requires_activation: false, indexing_attempts: 0, approved_at: "2026-10-08T09:00:00Z", approved_by: amina }] } as unknown as LibraryDocument);
+    // Every passage looked at, in an earlier tab: "seen" is kept in the browser, per reviewer and version.
+    window.localStorage.setItem("knowledge-portal.seen.anyone.v1", JSON.stringify(["b1", "b2", "b3", "b4"]));
     openDocument(saved);
     await screen.findByRole("grid", { name: /Passages of version 1/ });
     await userEvent.click(screen.getByRole("button", { name: "Approve and publish…" }));
@@ -261,10 +265,14 @@ describe("the review desk", { timeout: 20_000 }, () => {
     const text = panel.textContent ?? "";
     expect(text).toContain("Requirement work can cite its 3 passages once they are indexed.");
     expect(text.indexOf("You looked at")).toBeLessThan(text.indexOf("Publish version 1", text.indexOf("You looked at")));
+    expect(text).toContain("You looked at 4 of 4 passages, and 2 of the 2 flagged. It is kept with the approval.");
     // The saved summary is there to read or change; unchanged, nothing is saved again.
     expect(within(panel).getByRole("textbox", { name: /Review summary/ })).toHaveValue("Checked every row");
     await userEvent.click(within(panel).getByRole("button", { name: "Publish version 1" }));
-    await waitFor(() => expect(approve).toHaveBeenCalledWith("d", "v1", { expected_version: 4, revision_id: "r1", fingerprint: "f" }));
+    // What the panel said was looked at goes with the approval (PRODUCT.md: reviewed means seen; BG2).
+    await waitFor(() => expect(approve).toHaveBeenCalledWith("d", "v1", {
+      expected_version: 4, revision_id: "r1", fingerprint: "f", coverage: { passages: 4, seen: 4, flagged: 2, flagged_seen: 2 },
+    }));
     expect(review).not.toHaveBeenCalled();
     const said = await screen.findByText("Published. Requirement work can cite it once it is indexed; Jobs shows the indexing.");
     await waitFor(() => expect(said).toHaveFocus());
@@ -288,7 +296,9 @@ describe("the review desk", { timeout: 20_000 }, () => {
     expect(review).not.toHaveBeenCalled();
     await userEvent.type(summary, "Dropped the duplicate");
     await userEvent.click(within(panel).getByRole("button", { name: "Publish version 1" }));
-    await waitFor(() => expect(approve).toHaveBeenCalledWith("d", "v1", { expected_version: 5, revision_id: "r2", fingerprint: "f2" }));
+    await waitFor(() => expect(approve).toHaveBeenCalledWith("d", "v1", expect.objectContaining({
+      expected_version: 5, revision_id: "r2", fingerprint: "f2", coverage: expect.objectContaining({ passages: 4, flagged: 2 }),
+    })));
     expect(review).toHaveBeenCalledTimes(1);
     expect(review.mock.calls[0]![2]).toMatchObject({ expected_version: 4, explanation: "Dropped the duplicate" });
   });
@@ -324,6 +334,8 @@ describe("the review desk", { timeout: 20_000 }, () => {
     // Seen is said on the row: the hidden "not seen" goes once the passage has been looked at.
     await waitFor(() => expect(within(grid()).getByRole("rowheader", { name: /^Line 1(,|$)/ })).not.toHaveTextContent("not seen"), { timeout: 3000 });
     expect(within(grid()).getByRole("rowheader", { name: /^Line 2(,|$)/ })).toHaveTextContent("not seen");
+    // Kept in the browser, so a closed tab or a crash doesn't start the count again.
+    expect(JSON.parse(window.localStorage.getItem("knowledge-portal.seen.anyone.v1") ?? "[]")).toContain("m1");
     await userEvent.keyboard("{End}");
     await waitFor(() => expect(within(grid()).getByRole("rowheader", { name: /^Line 205(,|$)/ })).toHaveFocus());
     expect(within(grid()).getAllByRole("row")).toHaveLength(206);

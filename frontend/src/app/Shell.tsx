@@ -14,6 +14,7 @@ import { densityFor, usePreferences } from "../shell/preferences";
 import { useGlobalShortcuts } from "../shell/useGlobalShortcuts";
 import { activeJobs, useJobs } from "../shell/useJobs";
 import { useWorkQueue } from "../work/queue";
+import { ErrorBoundary, PageFailed } from "./ErrorBoundary";
 import { catalogueLabEnabled, LAB } from "./features";
 
 type Panel = "jobs" | "help" | "account";
@@ -153,9 +154,12 @@ export function Shell() {
       >
         <LiveMessage message={jobs.announcement} />
         {/* An area's pages arrive in their own chunk: the skeleton until then, never a blank page (§8). */}
-        <Suspense fallback={<Skeleton label="Opening the page" rows={6} />}>
-          <Outlet />
-        </Suspense>
+        {/* A page that fails (a render error, or its chunk gone after an update) says so here; the shell stays. */}
+        <ErrorBoundary resetKey={location.pathname} fallback={(error, retry) => <PageFailed error={error} onRetry={retry} />}>
+          <Suspense fallback={<Skeleton label="Opening the page" rows={6} />}>
+            <Outlet />
+          </Suspense>
+        </ErrorBoundary>
       </AppShell>
     </div>
   );
