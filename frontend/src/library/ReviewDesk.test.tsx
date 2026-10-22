@@ -334,8 +334,9 @@ describe("the review desk", { timeout: 20_000 }, () => {
     // Seen is said on the row: the hidden "not seen" goes once the passage has been looked at.
     await waitFor(() => expect(within(grid()).getByRole("rowheader", { name: /^Line 1(,|$)/ })).not.toHaveTextContent("not seen"), { timeout: 3000 });
     expect(within(grid()).getByRole("rowheader", { name: /^Line 2(,|$)/ })).toHaveTextContent("not seen");
-    // Kept in the browser, so a closed tab or a crash doesn't start the count again.
-    expect(JSON.parse(window.localStorage.getItem("knowledge-portal.seen.anyone.v1") ?? "[]")).toContain("m1");
+    // Kept in the browser, so a closed tab or a crash doesn't start the count again. The write is
+    // an effect after the row is drawn, so it is awaited too.
+    await waitFor(() => expect(JSON.parse(window.localStorage.getItem("knowledge-portal.seen.anyone.v1") ?? "[]")).toContain("m1"));
     await userEvent.keyboard("{End}");
     await waitFor(() => expect(within(grid()).getByRole("rowheader", { name: /^Line 205(,|$)/ })).toHaveFocus());
     expect(within(grid()).getAllByRole("row")).toHaveLength(206);
