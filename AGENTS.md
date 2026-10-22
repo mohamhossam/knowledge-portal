@@ -46,6 +46,10 @@ Before changing code, read these files in this order:
 - `/internal/*` routes serve the requirement portal.
 - Change them only additively, or with a versioned path and a coordinated requirement-portal
   release.
+- Raise the contract's version (`INTERNAL_CONTRACT_VERSION` in `interfaces/api/routes/internal.py`)
+  with every shape change: MAJOR for a breaking change, MINOR for an additive one. CI regenerates
+  the contract and checks the version against the base branch's
+  (`scripts/check_internal_contract.py`); run it before you push.
 - Publish the OpenAPI snapshot with every release.
 
 The original `smb-ai-requirement-agent` stays maintained in parallel. Port its fixes to the

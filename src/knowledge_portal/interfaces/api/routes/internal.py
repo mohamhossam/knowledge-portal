@@ -252,8 +252,16 @@ def _event(event: KnowledgeEvent) -> dict[str, Any]:
     }
 
 
+# The internal contract's version (review recommendation 11), MAJOR.MINOR.PATCH: a breaking
+# change raises MAJOR (and needs a coordinated requirement-portal release), an additive one
+# raises MINOR, a description-only one may raise PATCH. CI checks it against the base branch's
+# contract (scripts/check_internal_contract.py, interfaces/api/contract_compat.py). 1.0.0 is the
+# first version that means something: until then the file carried FastAPI's default, 0.1.0.
+INTERNAL_CONTRACT_VERSION = "1.0.0"
+
+
 def contract_openapi() -> dict[str, Any]:
     """This internal API on its own: the contract requirement work builds against."""
-    application = FastAPI(title="Knowledge service internal API")
+    application = FastAPI(title="Knowledge service internal API", version=INTERNAL_CONTRACT_VERSION)
     application.include_router(router)
     return application.openapi()

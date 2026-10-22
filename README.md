@@ -56,7 +56,9 @@ The public API's contract is `contracts/knowledge-public.openapi.json`; regenera
 `uv run python scripts/dump_openapi.py`. The internal API's contract,
 `contracts/knowledge-internal.openapi.json`, is regenerated with
 `uv run python scripts/dump_internal_openapi.py`; it is shared with requirement-portal and
-changes only together with it.
+changes only together with it. Its version (`INTERNAL_CONTRACT_VERSION`) rises with every shape
+change, MAJOR for a breaking one and MINOR for an additive one;
+`uv run python scripts/check_internal_contract.py` checks both against `origin/main`, as CI does.
 
 ## Importing the existing knowledge
 

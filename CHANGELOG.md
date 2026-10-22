@@ -7,6 +7,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- The internal contract has a version that means something. `INTERNAL_CONTRACT_VERSION` in
+  the package sets it (1.0.0; the file carried FastAPI's default, 0.1.0), and every shape change
+  raises it: MAJOR for a breaking change, MINOR for an additive one. A new CI step regenerates
+  the contract, fails when the committed file is stale, and compares it with the base branch's
+  (`scripts/check_internal_contract.py`). Each change is listed as breaking or additive, and a
+  version that does not rise as far as the change needs fails the build.
+  `interfaces/api/contract_compat.py` does the sorting. Removed operations, parameters,
+  responses, schemas or fields, changed types, new required request input, stricter request
+  limits, lost enum values, and response fields that may now be missing or null are breaking.
+  Review recommendation 11. Internal contract: version 1.0.0, additive against main.
 - The explorer reads the catalogue's taxonomy as data (ADR-0101, Amendment 4, proposed). Its
   response carries the vocabulary terms and curated vocabularies, the capability domains and
   the interface records, without who accepted them. Role terms gain a `rank` (strongest
