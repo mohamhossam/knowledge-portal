@@ -153,6 +153,41 @@ def test_excel_errors_name_the_sheet_and_row(
         ADAPTER.read(CatalogueFileFormat.XLSX, _workbook(**sheets))
 
 
+@pytest.mark.parametrize("column", ["flows", "channels", "milestones", "statuses", "fallout"])
+def test_excel_tracking_ignores_a_column_named_for_one_of_its_lists(column: str) -> None:
+    # The tracking sheets append to these lists; a Tracking cell under the same name was
+    # spread over the list and the import crashed instead of reading the workbook.
+    content = ADAPTER.read(
+        CatalogueFileFormat.XLSX,
+        _workbook(
+            Systems=[("system_id", "name"), ("crm", "CRM"), ("om", "Order management")],
+            Products=[("product_id", "name"), ("fibre", "Fibre")],
+            OrderTypes=[("product_id", "code", "name"), ("fibre", "NEW", "New connection")],
+            Tracking=[("product_id", "order_types", column), ("fibre", "NEW", "stray")],
+            TrackingFlows=[
+                ("product_id", "from_system_id", "to_system_id", "label"),
+                ("fibre", "crm", "om", "Order placed"),
+            ],
+            TrackingChannels=[("product_id", "channel_id"), ("fibre", "web")],
+            TrackingEvents=[
+                ("product_id", "kind", "label"),
+                ("fibre", "milestone", "Installed"),
+                ("fibre", "status", "In progress"),
+                ("fibre", "fallout", "Address not found"),
+            ],
+        ),
+    )
+
+    tracking = content.products[0].tracking
+    assert tracking is not None
+    assert tracking.order_types == ("NEW",)
+    assert [flow.label for flow in tracking.flows] == ["Order placed"]
+    assert [channel.channel_id for channel in tracking.channels] == ["web"]
+    assert [event.label for event in tracking.milestones] == ["Installed"]
+    assert [event.label for event in tracking.statuses] == ["In progress"]
+    assert [case.trigger for case in tracking.fallout] == ["Address not found"]
+
+
 def test_text_formats_report_syntax_and_shape_errors() -> None:
     with pytest.raises(InvalidKnowledgeError, match="JSON file could not be parsed: line 1"):
         ADAPTER.read(CatalogueFileFormat.JSON, b"{nope")
