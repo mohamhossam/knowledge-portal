@@ -112,7 +112,12 @@ from knowledge_portal.domain.architecture.tracking import (
     TrackingEvent,
     TrackingFlow,
 )
-from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm, vocabulary_scheme
+from knowledge_portal.domain.architecture.vocabularies import (
+    SCHEME_NAMES,
+    ConceptScheme,
+    VocabularyTerm,
+    scheme_id,
+)
 
 SYSTEMS = "Systems"
 COMPONENTS = "Components"
@@ -153,6 +158,7 @@ PLAN_CHARACTERISTICS = "PlanCharacteristics"
 BUSINESS_RULES = "BusinessRules"
 CONCEPTS = "Concepts"
 VOCABULARY = "Vocabulary"
+SCHEMES = "Schemes"
 INTERFACES = "Interfaces"
 REALISATION_RECORDS = "RealisationRecords"
 ACCEPTANCES = "Acceptances"
@@ -190,6 +196,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "description",
         "confidence",
         "source",
+        # The term of a curated vocabulary the technology means (review recommendation 9).
+        "technology_term",
     ),
     CAPABILITIES: (
         "system_id",
@@ -234,6 +242,9 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         # Retired, and the offering that takes its place (review recommendation 7).
         "deprecated",
         "replaced_by",
+        # The terms of curated vocabularies its family and lifecycle mean (recommendation 9).
+        "family_term",
+        "lifecycle_term",
     ),
     ORDER_TYPES: (
         "product_id",
@@ -313,6 +324,9 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "role",
         "etom_term",
         "role_term",
+        # The terms of curated vocabularies its mode and phase mean (recommendation 9).
+        "mode_term",
+        "phase_term",
     ),
     FLOW_RULES: (
         "journey_id",
@@ -367,7 +381,15 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "source",
         "record_id",
     ),
-    NFRS: ("product_id", "quality", "coverage", "statement", "confidence", "source"),
+    NFRS: (
+        "product_id",
+        "quality",
+        "coverage",
+        "statement",
+        "confidence",
+        "source",
+        "quality_term",
+    ),
     TRACKING: (
         "product_id",
         "order_types",
@@ -503,10 +525,19 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "source",
         "deprecated",
         "replaced_by",
+        "level_term",
     ),
     PLANS: ("product_id", "plan", "description", "confidence", "source"),
     PLAN_CHARACTERISTICS: ("product_id", "plan", "characteristic", "value"),
-    BUSINESS_RULES: ("product_id", "rule_id", "statement", "kind", "confidence", "source"),
+    BUSINESS_RULES: (
+        "product_id",
+        "rule_id",
+        "statement",
+        "kind",
+        "confidence",
+        "source",
+        "kind_term",
+    ),
     CONCEPTS: (
         "concept_id",
         "pref_label",
@@ -519,7 +550,11 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "source",
         "deprecated",
         "replaced_by",
+        # Outside references near enough to read across, by ; (SKOS closeMatch).
+        "close_match",
     ),
+    # The vocabularies curators define (review recommendation 9): fields by ;.
+    SCHEMES: ("scheme_id", "name", "definition", "fields"),
     VOCABULARY: (
         "term_id",
         "scheme",
@@ -533,6 +568,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "source",
         "deprecated",
         "replaced_by",
+        # Outside references near enough to read across, by ; (SKOS closeMatch).
+        "close_match",
     ),
     INTERFACES: (
         "interface_id",
@@ -618,6 +655,7 @@ _REQUIRED_HEADERS: dict[str, tuple[str, ...]] = {
     PLAN_CHARACTERISTICS: ("product_id", "plan", "characteristic", "value"),
     BUSINESS_RULES: ("product_id", "rule_id", "statement"),
     CONCEPTS: ("concept_id", "pref_label"),
+    SCHEMES: ("scheme_id", "name"),
     VOCABULARY: ("term_id", "scheme", "pref_label"),
     INTERFACES: ("interface_id", "name", "system_id"),
     REALISATION_RECORDS: ("record_id", "layer", "name"),
@@ -764,6 +802,18 @@ _INSTRUCTIONS = (
         "such as TMF622. Activities etom_term and role_term, Channels kind_term, "
         "OfferingComponents type_term, Responsibilities role_term and ActivityIntegrations "
         "open_apis (by ;) name the term beside the text.",
+    ),
+    (
+        "Schemes (optional): vocabularies a curator defines beside the built-in ones, such as "
+        "nfr_quality; fields by ;, among nfr_quality, offering_family, offering_lifecycle, "
+        "rule_kind, activity_mode, activity_phase, portfolio_level and component_technology. "
+        "Its terms go on Vocabulary with scheme its scheme_id; Nfrs quality_term, Products "
+        "family_term and lifecycle_term, BusinessRules kind_term, Activities mode_term and "
+        "phase_term, Portfolio level_term and Components technology_term name them.",
+    ),
+    (
+        "Concepts and Vocabulary close_match (optional): outside references near enough to "
+        "read across, by ;; exact_match is the one that means the same.",
     ),
     (
         "Vocabulary scheme information_entity: the data systems master or read, such as "
@@ -1063,6 +1113,9 @@ def content_from_mapping(raw: object) -> CatalogueContent:
                         technology=_optional_text(component.get("technology"), place, "technology"),
                         confidence=_trust(component.get("confidence"), place),
                         source=_optional_text(component.get("source"), place, "source"),
+                        technology_id=_optional_text(
+                            component.get("technology_term"), place, "technology_term"
+                        ),
                     )
                 )
             except InvalidKnowledgeError as exc:
@@ -1137,6 +1190,7 @@ def content_from_mapping(raw: object) -> CatalogueContent:
         _terms(_entries(raw, "vocabulary")),
         _interfaces(_entries(raw, "interfaces")),
         _realisations(_entries(raw, "realisations")),
+        schemes=_schemes(_entries(raw, "schemes")),
     )
     return with_recorded_acceptances(content, _acceptances(_entries(raw, "acceptances")))
 
@@ -1159,6 +1213,7 @@ def _concepts(entries: list[dict[str, Any]]) -> list[BusinessCapability]:
                     _trust(item.get("confidence"), where),
                     _optional_text(item.get("source"), where, "source"),
                     **_retirement(item, where),
+                    close_match=_text_list(item.get("close_match"), where, "close_match"),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -1176,6 +1231,7 @@ def _concept_mapping(concept: BusinessCapability) -> dict[str, Any]:
             broader=concept.broader_id,
             domain=concept.domain_id,
             exact_match=concept.exact_match,
+            close_match=list(concept.close_match),
         ),
         **_sourced(concept),
         **_retired(concept),
@@ -1191,7 +1247,7 @@ def _terms(entries: list[dict[str, Any]]) -> list[VocabularyTerm]:
             terms.append(
                 VocabularyTerm(
                     _text(item.get("id"), where, "id"),
-                    vocabulary_scheme(_text(item.get("scheme"), where, "scheme")),
+                    scheme_id(_text(item.get("scheme"), where, "scheme")),
                     _text(item.get("pref_label"), where, "pref_label"),
                     _text_list(item.get("alt_labels"), where, "alt_labels"),
                     _optional_text(item.get("notation"), where, "notation"),
@@ -1201,6 +1257,7 @@ def _terms(entries: list[dict[str, Any]]) -> list[VocabularyTerm]:
                     _trust(item.get("confidence"), where),
                     _optional_text(item.get("source"), where, "source"),
                     **_retirement(item, where),
+                    close_match=_text_list(item.get("close_match"), where, "close_match"),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -1211,7 +1268,7 @@ def _terms(entries: list[dict[str, Any]]) -> list[VocabularyTerm]:
 def _term_mapping(term: VocabularyTerm) -> dict[str, Any]:
     return {
         "id": term.id,
-        "scheme": term.scheme.value,
+        "scheme": str(term.scheme),
         "pref_label": term.pref_label,
         **_present(
             alt_labels=list(term.alt_labels),
@@ -1219,9 +1276,38 @@ def _term_mapping(term: VocabularyTerm) -> dict[str, Any]:
             definition=term.definition,
             broader=term.broader_id,
             exact_match=term.exact_match,
+            close_match=list(term.close_match),
         ),
         **_sourced(term),
         **_retired(term),
+    }
+
+
+def _schemes(entries: list[dict[str, Any]]) -> list[ConceptScheme]:
+    """The vocabularies a curator defines, each with the fields it covers (review
+    recommendation 9)."""
+    schemes = []
+    for number, item in enumerate(entries, start=1):
+        where = _where(item, f"schemes entry {number}")
+        try:
+            schemes.append(
+                ConceptScheme(
+                    _text(item.get("id"), where, "id"),
+                    _text(item.get("name"), where, "name"),
+                    _optional_text(item.get("definition"), where, "definition"),
+                    _text_list(item.get("fields"), where, "fields"),  # type: ignore[arg-type]
+                )
+            )
+        except InvalidKnowledgeError as exc:
+            raise _located(where, exc) from exc
+    return schemes
+
+
+def _scheme_mapping(scheme: ConceptScheme) -> dict[str, Any]:
+    return {
+        "id": scheme.id,
+        "name": scheme.name,
+        **_present(definition=scheme.definition, fields=[item.value for item in scheme.fields]),
     }
 
 
@@ -1350,6 +1436,8 @@ def _activity(step: dict[str, Any], place: str) -> Activity:
         role=_optional_text(step.get("role"), place, "role"),
         etom_id=_optional_text(step.get("etom_term"), place, "etom_term"),
         role_id=_optional_text(step.get("role_term"), place, "role_term"),
+        mode_id=_optional_text(step.get("mode_term"), place, "mode_term"),
+        phase_id=_optional_text(step.get("phase_term"), place, "phase_term"),
     )
 
 
@@ -1470,6 +1558,8 @@ def _journey_mapping(journey: Journey) -> dict[str, Any]:
                         role=step.role,
                         etom_term=step.etom_id,
                         role_term=step.role_id,
+                        mode_term=step.mode_id,
+                        phase_term=step.phase_id,
                     ),
                     **_sourced(step),
                 }
@@ -1667,6 +1757,10 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                     family=_optional_text(item.get("family"), where, "family"),
                     version=_optional_text(item.get("version"), where, "version"),
                     lifecycle=_optional_text(item.get("lifecycle"), where, "lifecycle"),
+                    family_id=_optional_text(item.get("family_term"), where, "family_term"),
+                    lifecycle_id=_optional_text(
+                        item.get("lifecycle_term"), where, "lifecycle_term"
+                    ),
                     proposition=_optional_text(item.get("proposition"), where, "proposition"),
                     rules=_text_list(item.get("rules"), where, "rules"),
                     order_types=tuple(order_types),
@@ -1748,6 +1842,7 @@ def _business_rule(raw: dict[str, Any], where: str) -> BusinessRule:
         kind=_optional_text(raw.get("kind"), where, "kind"),
         confidence=_trust(raw.get("confidence"), where),
         source=_optional_text(raw.get("source"), where, "source"),
+        kind_id=_optional_text(raw.get("kind_term"), where, "kind_term"),
     )
 
 
@@ -1761,6 +1856,7 @@ def _portfolio(entries: list[dict[str, Any]]) -> list[PortfolioNode]:
                     id=_text(item.get("id"), where, "id"),
                     name=_text(item.get("name"), where, "name"),
                     level=_text(item.get("level"), where, "level"),
+                    level_id=_optional_text(item.get("level_term"), where, "level_term"),
                     parent_id=_optional_text(item.get("parent"), where, "parent"),
                     description=_optional_text(item.get("description"), where, "description"),
                     confidence=_trust(item.get("confidence"), where),
@@ -1778,7 +1874,7 @@ def _portfolio_mapping(node: PortfolioNode) -> dict[str, Any]:
         "id": node.id,
         "name": node.name,
         "level": node.level,
-        **_present(parent=node.parent_id, description=node.description),
+        **_present(level_term=node.level_id, parent=node.parent_id, description=node.description),
         **_sourced(node),
         **_retired(node),
     }
@@ -1938,6 +2034,7 @@ def _nfr(item: dict[str, Any], where: str) -> OfferingNfr:
         _optional_text(item.get("statement"), where, "statement"),
         _trust(item.get("confidence"), where),
         _optional_text(item.get("source"), where, "source"),
+        quality_id=_optional_text(item.get("quality_term"), where, "quality_term"),
     )
 
 
@@ -1971,8 +2068,10 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
         **_present(
             code=offering.code,
             family=offering.family,
+            family_term=offering.family_id,
             version=offering.version,
             lifecycle=offering.lifecycle,
+            lifecycle_term=offering.lifecycle_id,
             proposition=offering.proposition,
             purpose=offering.purpose,
             rules=list(offering.rules),
@@ -2051,7 +2150,7 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
                 {
                     "quality": nfr.quality,
                     "coverage": nfr.coverage.value,
-                    **_present(statement=nfr.statement),
+                    **_present(statement=nfr.statement, quality_term=nfr.quality_id),
                     **_sourced(nfr),
                 }
                 for nfr in offering.nfrs
@@ -2094,7 +2193,7 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
                 {
                     "id": rule.id,
                     "statement": rule.statement,
-                    **_present(kind=rule.kind),
+                    **_present(kind=rule.kind, kind_term=rule.kind_id),
                     **_sourced(rule),
                 }
                 for rule in offering.business_rules
@@ -2228,9 +2327,17 @@ def _content(
     terms: list[VocabularyTerm] | None = None,
     interfaces: list[SystemInterface] | None = None,
     realisations: list[RealisationRecord] | None = None,
+    schemes: list[ConceptScheme] | None = None,
 ) -> CatalogueContent:
-    """The file's content, refusing a placement in a domain the file does not list, or a
-    link to a concept it does not list."""
+    """The file's content, refusing a placement in a domain the file does not list, a link
+    to a concept it does not list, or a term in a vocabulary neither built in nor listed."""
+    vocabularies = {*SCHEME_NAMES, *(item.id for item in schemes or ())}
+    for term in terms or ():
+        if term.scheme not in vocabularies:
+            raise InvalidKnowledgeError(
+                f"Vocabulary term {term.id!r}: its vocabulary {term.scheme!r} is neither built "
+                "in nor listed among the schemes."
+            )
     known = {item.id for item in domains}
     places = {item.id for item in landscape}
     listed = {item.id for item in concepts or ()}
@@ -2267,6 +2374,7 @@ def _content(
         tuple(terms or ()),
         tuple(interfaces or ()),
         tuple(realisations or ()),
+        tuple(schemes or ()),
     )
 
 
@@ -2435,6 +2543,7 @@ def _component_mapping(component: SystemComponent) -> dict[str, Any]:
         **({"name_ar": component.name_ar} if component.name_ar else {}),
         **({"aliases": list(component.aliases)} if component.aliases else {}),
         **({"technology": component.technology} if component.technology else {}),
+        **_present(technology_term=component.technology_id),
         **({"description": component.description} if component.description else {}),
         **_sourced(component),
     }
@@ -2538,6 +2647,7 @@ def release_to_mapping(release: ArchitectureKnowledge) -> dict[str, Any]:
             business_capabilities=[
                 _concept_mapping(item) for item in release.business_capabilities
             ],
+            schemes=[_scheme_mapping(item) for item in release.schemes],
             vocabulary=[_term_mapping(item) for item in release.vocabulary],
             interfaces=[_interface_mapping(item) for item in release.interfaces],
             realisations=[_realisation_mapping(item) for item in release.realisations],
@@ -2670,6 +2780,9 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                         technology=_optional_text(cells.get("technology"), where, "technology"),
                         confidence=_trust(cells.get("confidence"), where),
                         source=_optional_text(cells.get("source"), where, "source"),
+                        technology_id=_optional_text(
+                            cells.get("technology_term"), where, "technology_term"
+                        ),
                     )
                 )
             except InvalidKnowledgeError as exc:
@@ -2755,6 +2868,9 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                     "alt_labels": list(
                         _split(cells.get("alt_labels"), f"{CONCEPTS} row {number}", "alt_labels")
                     ),
+                    "close_match": list(
+                        _split(cells.get("close_match"), f"{CONCEPTS} row {number}", "close_match")
+                    ),
                     "broader": cells.get("broader_id"),
                     "domain": cells.get("domain_id"),
                 }
@@ -2770,9 +2886,27 @@ def _read_workbook(content: bytes) -> CatalogueContent:
                     "alt_labels": list(
                         _split(cells.get("alt_labels"), f"{VOCABULARY} row {number}", "alt_labels")
                     ),
+                    "close_match": list(
+                        _split(
+                            cells.get("close_match"), f"{VOCABULARY} row {number}", "close_match"
+                        )
+                    ),
                     "broader": cells.get("broader_id"),
                 }
                 for number, cells in _rows(workbook, VOCABULARY)
+            ]
+        )
+        schemes = _schemes(
+            [
+                {
+                    **cells,
+                    "_where": f"{SCHEMES} row {number}",
+                    "id": cells.get("scheme_id"),
+                    "fields": list(
+                        _split(cells.get("fields"), f"{SCHEMES} row {number}", "fields")
+                    ),
+                }
+                for number, cells in _rows(workbook, SCHEMES)
             ]
         )
         interfaces = _interfaces(
@@ -2864,6 +2998,7 @@ def _read_workbook(content: bytes) -> CatalogueContent:
         terms,
         interfaces,
         realisations,
+        schemes=schemes,
     )
     return with_recorded_acceptances(body, acceptances)
 
@@ -3302,6 +3437,8 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
             f"{_LIST_SEPARATOR} ".join(product.former_ids),
             _yes(product.deprecated) if product.deprecated else None,
             product.replaced_by,
+            product.family_id,
+            product.lifecycle_id,
         ),
     )
     for plan in product.plans:
@@ -3314,7 +3451,15 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
     for rule in product.business_rules:
         _append(
             sheets[BUSINESS_RULES],
-            (product.id, rule.id, rule.statement, rule.kind, _confidence(rule), rule.source),
+            (
+                product.id,
+                rule.id,
+                rule.statement,
+                rule.kind,
+                _confidence(rule),
+                rule.source,
+                rule.kind_id,
+            ),
         )
     for question in product.questions:
         _append(
@@ -3426,6 +3571,7 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
                 nfr.statement,
                 _confidence(nfr),
                 nfr.source,
+                nfr.quality_id,
             ),
         )
     for kind, points in (("value", product.values), ("audience", product.audiences)):
@@ -3603,6 +3749,8 @@ def _write_journey(sheets: dict[str, Any], journey: Journey) -> None:
                 step.role,
                 step.etom_id,
                 step.role_id,
+                step.mode_id,
+                step.phase_id,
             ),
         )
     for rule in journey.flow_rules:
@@ -3715,6 +3863,7 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                     component.description,
                     _confidence(component),
                     component.source,
+                    component.technology_id,
                 ),
             )
         for constraint in system.constraints:
@@ -3769,6 +3918,17 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 concept.source,
                 _yes(concept.deprecated) if concept.deprecated else None,
                 concept.replaced_by,
+                f"{_LIST_SEPARATOR} ".join(concept.close_match),
+            ),
+        )
+    for scheme in release.schemes if release is not None else ():
+        _append(
+            sheets[SCHEMES],
+            (
+                scheme.id,
+                scheme.name,
+                scheme.definition,
+                f"{_LIST_SEPARATOR} ".join(item.value for item in scheme.fields),
             ),
         )
     for term in release.vocabulary if release is not None else ():
@@ -3776,7 +3936,7 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
             sheets[VOCABULARY],
             (
                 term.id,
-                term.scheme.value,
+                str(term.scheme),
                 term.pref_label,
                 f"{_LIST_SEPARATOR} ".join(term.alt_labels),
                 term.notation,
@@ -3787,6 +3947,7 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 term.source,
                 _yes(term.deprecated) if term.deprecated else None,
                 term.replaced_by,
+                f"{_LIST_SEPARATOR} ".join(term.close_match),
             ),
         )
     for interface in release.interfaces if release is not None else ():
@@ -3834,6 +3995,7 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 node.source,
                 _yes(node.deprecated) if node.deprecated else None,
                 node.replaced_by,
+                node.level_id,
             ),
         )
     for product in release.products if release is not None else ():

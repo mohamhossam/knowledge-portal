@@ -207,6 +207,7 @@ def test_template_has_instructions_and_every_sheet() -> None:
         "PlanCharacteristics",
         "BusinessRules",
         "Concepts",
+        "Schemes",
         "Vocabulary",
         "Interfaces",
         "RealisationRecords",

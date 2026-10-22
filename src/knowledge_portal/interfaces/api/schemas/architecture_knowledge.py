@@ -138,13 +138,14 @@ from knowledge_portal.domain.architecture.tracking import (
     TrackingEvent,
     TrackingFlow,
 )
-from knowledge_portal.domain.architecture.vocabularies import VocabularyScheme, VocabularyTerm
+from knowledge_portal.domain.architecture.vocabularies import ConceptScheme, VocabularyTerm
 from knowledge_portal.domain.architecture.vocabulary_links import VocabularyField, VocabularyRef
 from knowledge_portal.interfaces.api.schemas.bounds import (
     MAX_CATALOGUE_ITEMS,
     MAX_SOURCE_REFERENCES,
     Identifier,
     Name,
+    RequiredIdentifier,
     Sentence,
     Text,
 )
@@ -251,6 +252,9 @@ class BusinessCapabilitySchema(BaseModel):
     broader_id: Identifier | None = None
     domain_id: Identifier | None = None
     exact_match: Name | None = None
+    # Outside references near enough to read across, though not the same (SKOS closeMatch,
+    # review recommendation 9).
+    close_match: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     confidence: SourceConfidence | None = None
     source: Text | None = None
 
@@ -270,6 +274,7 @@ class BusinessCapabilitySchema(BaseModel):
             broader_id=concept.broader_id,
             domain_id=concept.domain_id,
             exact_match=concept.exact_match,
+            close_match=list(concept.close_match),
             confidence=concept.confidence,
             source=concept.source,
             deprecated=concept.deprecated,
@@ -290,6 +295,7 @@ class BusinessCapabilitySchema(BaseModel):
             self.source,
             deprecated=self.deprecated,
             replaced_by=self.replaced_by,
+            close_match=tuple(self.close_match),
         )
 
 
@@ -300,16 +306,21 @@ class CapabilityRefSchema(BaseModel):
 
 class VocabularyTermSchema(BaseModel):
     """A term of a controlled vocabulary: an eTOM process, a channel or component kind, a
-    role, an Open API or an information entity."""
+    role, an Open API or an information entity, or a term of a vocabulary a curator
+    defined (review recommendation 9)."""
 
     id: Identifier
-    scheme: VocabularyScheme
+    # A built-in vocabulary's id, or a curated one's (``schemes``).
+    scheme: RequiredIdentifier
     pref_label: Name
     alt_labels: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     notation: Name | None = None
     definition: Text | None = None
     broader_id: Identifier | None = None
     exact_match: Name | None = None
+    # Outside references near enough to read across, though not the same (SKOS closeMatch,
+    # review recommendation 9).
+    close_match: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     confidence: SourceConfidence | None = None
     source: Text | None = None
 
@@ -323,13 +334,14 @@ class VocabularyTermSchema(BaseModel):
     def from_domain(cls, term: VocabularyTerm) -> VocabularyTermSchema:
         return cls.model_construct(
             id=term.id,
-            scheme=term.scheme,
+            scheme=str(term.scheme),
             pref_label=term.pref_label,
             alt_labels=list(term.alt_labels),
             notation=term.notation,
             definition=term.definition,
             broader_id=term.broader_id,
             exact_match=term.exact_match,
+            close_match=list(term.close_match),
             confidence=term.confidence,
             source=term.source,
             deprecated=term.deprecated,
@@ -351,7 +363,30 @@ class VocabularyTermSchema(BaseModel):
             self.source,
             deprecated=self.deprecated,
             replaced_by=self.replaced_by,
+            close_match=tuple(self.close_match),
         )
+
+
+class ConceptSchemeSchema(BaseModel):
+    """A vocabulary a curator defines beside the built-in ones, and the free-text fields
+    its terms are linked to (review recommendation 9)."""
+
+    id: RequiredIdentifier
+    name: Name
+    definition: Text | None = None
+    fields: list[VocabularyField] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+
+    @classmethod
+    def from_domain(cls, scheme: ConceptScheme) -> ConceptSchemeSchema:
+        return cls.model_construct(
+            id=scheme.id,
+            name=scheme.name,
+            definition=scheme.definition,
+            fields=list(scheme.fields),
+        )
+
+    def to_domain(self) -> ConceptScheme:
+        return ConceptScheme(self.id, self.name, self.definition, tuple(self.fields))
 
 
 class SystemInterfaceSchema(BaseModel):
@@ -435,6 +470,9 @@ class SystemComponentSchema(BaseModel):
     description: Text | None = None
     aliases: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     technology: Name | None = None
+    # The term of a curated vocabulary the technology means, beside the text (review
+    # recommendation 9).
+    technology_id: Identifier | None = None
     # Where it comes from and how sure its source is, as for every other fact.
     confidence: SourceConfidence | None = None
     source: Text | None = None
@@ -451,6 +489,7 @@ class SystemComponentSchema(BaseModel):
             description=component.description,
             aliases=list(component.aliases),
             technology=component.technology,
+            technology_id=component.technology_id,
             confidence=component.confidence,
             source=component.source,
             accepted=[AcceptedFromSchema.from_domain(item) for item in component.accepted],
@@ -466,6 +505,7 @@ class SystemComponentSchema(BaseModel):
             self.technology,
             confidence=self.confidence,
             source=self.source,
+            technology_id=self.technology_id,
         )
 
 
@@ -536,6 +576,8 @@ class PortfolioNodeSchema(BaseModel):
     id: Identifier
     name: Name
     level: Name
+    # The term of a curated vocabulary the level means, beside the text (recommendation 9).
+    level_id: Identifier | None = None
     parent_id: Identifier | None = None
     description: Text | None = None
     confidence: SourceConfidence | None = None
@@ -552,6 +594,7 @@ class PortfolioNodeSchema(BaseModel):
             id=node.id,
             name=node.name,
             level=node.level,
+            level_id=node.level_id,
             parent_id=node.parent_id,
             description=node.description,
             confidence=node.confidence,
@@ -566,6 +609,7 @@ class PortfolioNodeSchema(BaseModel):
             id=self.id,
             name=self.name,
             level=self.level,
+            level_id=self.level_id,
             parent_id=self.parent_id,
             description=self.description,
             confidence=self.confidence,
@@ -1022,6 +1066,8 @@ class OfferingNfrSchema(BaseModel):
     statement: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The term of a curated vocabulary the quality means, beside the text (recommendation 9).
+    quality_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, item: OfferingNfr) -> OfferingNfrSchema:
@@ -1031,11 +1077,17 @@ class OfferingNfrSchema(BaseModel):
             statement=item.statement,
             confidence=item.confidence,
             source=item.source,
+            quality_id=item.quality_id,
         )
 
     def to_domain(self) -> OfferingNfr:
         return OfferingNfr(
-            self.quality, self.coverage, self.statement, self.confidence, self.source
+            self.quality,
+            self.coverage,
+            self.statement,
+            self.confidence,
+            self.source,
+            quality_id=self.quality_id,
         )
 
 
@@ -1509,6 +1561,8 @@ class BusinessRuleSchema(BaseModel):
     kind: Name | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The term of a curated vocabulary the kind means, beside the text (recommendation 9).
+    kind_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, rule: BusinessRule) -> BusinessRuleSchema:
@@ -1518,6 +1572,7 @@ class BusinessRuleSchema(BaseModel):
             kind=rule.kind,
             confidence=rule.confidence,
             source=rule.source,
+            kind_id=rule.kind_id,
         )
 
     def to_domain(self) -> BusinessRule:
@@ -1527,6 +1582,7 @@ class BusinessRuleSchema(BaseModel):
             kind=self.kind,
             confidence=self.confidence,
             source=self.source,
+            kind_id=self.kind_id,
         )
 
 
@@ -1539,6 +1595,10 @@ class ProductOfferingSchema(BaseModel):
     family: Name | None = None
     version: Name | None = None
     lifecycle: Name | None = None
+    # The terms of curated vocabularies ``family`` and ``lifecycle`` mean, beside the text
+    # (review recommendation 9).
+    family_id: Identifier | None = None
+    lifecycle_id: Identifier | None = None
     proposition: Text | None = None
     rules: list[Text] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     order_types: list[OrderTypeSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
@@ -1582,6 +1642,8 @@ class ProductOfferingSchema(BaseModel):
             family=offering.family,
             version=offering.version,
             lifecycle=offering.lifecycle,
+            family_id=offering.family_id,
+            lifecycle_id=offering.lifecycle_id,
             proposition=offering.proposition,
             rules=list(offering.rules),
             order_types=[OrderTypeSchema.from_domain(item) for item in offering.order_types],
@@ -1623,6 +1685,8 @@ class ProductOfferingSchema(BaseModel):
             family=self.family,
             version=self.version,
             lifecycle=self.lifecycle,
+            family_id=self.family_id,
+            lifecycle_id=self.lifecycle_id,
             proposition=self.proposition,
             rules=tuple(self.rules),
             order_types=tuple(item.to_domain() for item in self.order_types),
@@ -1679,6 +1743,9 @@ class ActivitySchema(BaseModel):
     # The eTOM process and role terms ``etom`` and ``role`` mean.
     etom_id: Identifier | None = None
     role_id: Identifier | None = None
+    # The terms of curated vocabularies ``mode`` and ``phase`` mean (review recommendation 9).
+    mode_id: Identifier | None = None
+    phase_id: Identifier | None = None
     # Derived on the way out and ignored on the way in: on the main track, which is also
     # where it is when ``track`` names none.
     main_track: bool = False
@@ -1709,6 +1776,8 @@ class ActivitySchema(BaseModel):
             role=item.role,
             etom_id=item.etom_id,
             role_id=item.role_id,
+            mode_id=item.mode_id,
+            phase_id=item.phase_id,
             main_track=item.main,
         )
 
@@ -1737,6 +1806,8 @@ class ActivitySchema(BaseModel):
             role=self.role,
             etom_id=self.etom_id,
             role_id=self.role_id,
+            mode_id=self.mode_id,
+            phase_id=self.phase_id,
         )
 
 
@@ -2196,6 +2267,8 @@ class KnowledgeReleaseResponse(BaseModel):
     vocabulary: list[VocabularyTermSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
+    # The vocabularies curators define beside the built-in ones (review recommendation 9).
+    schemes: list[ConceptSchemeSchema] = Field(default_factory=list, max_length=MAX_CATALOGUE_ITEMS)
     # The contracts systems expose and consume (ontology plan Phase 8).
     interfaces: list[SystemInterfaceSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
@@ -2249,6 +2322,7 @@ class KnowledgeReleaseResponse(BaseModel):
                 BusinessCapabilitySchema.from_domain(item) for item in release.business_capabilities
             ],
             vocabulary=[VocabularyTermSchema.from_domain(item) for item in release.vocabulary],
+            schemes=[ConceptSchemeSchema.from_domain(item) for item in release.schemes],
             interfaces=[SystemInterfaceSchema.from_domain(item) for item in release.interfaces],
             realisations=[
                 RealisationRecordSchema.from_domain(item) for item in release.realisations
@@ -2486,6 +2560,8 @@ class DraftUpdateRequest(BaseModel):
     vocabulary: list[VocabularyTermSchema] | None = Field(
         default=None, max_length=MAX_CATALOGUE_ITEMS
     )
+    # Likewise for the vocabularies curators define (review recommendation 9).
+    schemes: list[ConceptSchemeSchema] | None = Field(default=None, max_length=MAX_CATALOGUE_ITEMS)
     # Likewise for interfaces (ontology plan Phase 8).
     interfaces: list[SystemInterfaceSchema] | None = Field(
         default=None, max_length=MAX_CATALOGUE_ITEMS

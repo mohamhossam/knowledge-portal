@@ -277,6 +277,17 @@
             ],
             "title": "Mode"
           },
+          "mode_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode Id"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -328,6 +339,17 @@
               }
             ],
             "title": "Phase"
+          },
+          "phase_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phase Id"
           },
           "point_of_no_return": {
             "anyOf": [
@@ -897,6 +919,18 @@
             ],
             "title": "Mode"
           },
+          "mode_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode Id"
+          },
           "name": {
             "maxLength": 300,
             "title": "Name",
@@ -954,6 +988,18 @@
               }
             ],
             "title": "Phase"
+          },
+          "phase_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phase Id"
           },
           "point_of_no_return": {
             "anyOf": [
@@ -1956,6 +2002,17 @@
             ],
             "title": "Kind"
           },
+          "kind_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind Id"
+          },
           "source": {
             "anyOf": [
               {
@@ -2007,6 +2064,18 @@
               }
             ],
             "title": "Kind"
+          },
+          "kind_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind Id"
           },
           "source": {
             "anyOf": [
@@ -5276,6 +5345,17 @@
             "title": "Quality",
             "type": "string"
           },
+          "quality_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality Id"
+          },
           "source": {
             "anyOf": [
               {
@@ -5326,6 +5406,18 @@
             "maxLength": 300,
             "title": "Quality",
             "type": "string"
+          },
+          "quality_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality Id"
           },
           "source": {
             "anyOf": [
@@ -6601,6 +6693,17 @@
             ],
             "title": "Family"
           },
+          "family_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Family Id"
+          },
           "former_ids": {
             "default": [],
             "items": {
@@ -6623,6 +6726,17 @@
               }
             ],
             "title": "Lifecycle"
+          },
+          "lifecycle_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifecycle Id"
           },
           "lifecycle_notes": {
             "default": [],
@@ -6892,6 +7006,18 @@
             ],
             "title": "Family"
           },
+          "family_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Family Id"
+          },
           "former_ids": {
             "default": [],
             "items": {
@@ -6918,6 +7044,18 @@
               }
             ],
             "title": "Lifecycle"
+          },
+          "lifecycle_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifecycle Id"
           },
           "lifecycle_notes": {
             "default": [],

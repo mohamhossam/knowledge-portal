@@ -7,6 +7,18 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Vocabularies are data, on one SKOS base (ADR-0125, proposed). A version holds the
+  vocabularies a curator defines beside the seven built-in ones, each covering free-text
+  fields: an offering's NFR quality, family, lifecycle and business-rule kind, an activity's
+  mode and phase, a portfolio node's level, and a system component's technology. Each of those
+  fields gains a term id beside its text, and the vocabulary clean-up proposes links for a
+  field once a vocabulary covers it, so a new list needs no deploy. Concepts and terms check
+  their shape in one place and both gain `close_match` beside `exact_match`. Every catalogue
+  file format carries vocabularies (`schemes`; a Schemes sheet), the new links (`*_term`
+  columns, optional) and close matches; the version diff reports a vocabulary as its own
+  item. Labels carry no language tag: the portal is English only. Review recommendation 9.
+  Public contract: a term's `scheme` is any vocabulary id, no longer one of seven. Internal
+  contract, additive.
 - Offerings and portfolio nodes retire like systems, and everything outside a version follows
   an id to what names it now. An offering or portfolio node takes `deprecated` and
   `replaced_by` (ADR-0121, amended), checked as a system's are; the offering's editor has a

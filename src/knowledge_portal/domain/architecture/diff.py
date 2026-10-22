@@ -118,6 +118,7 @@ _CONCEPT_FIELDS = (
     "broader_id",
     "domain_id",
     "exact_match",
+    "close_match",
     "confidence",
     "source",
     "deprecated",
@@ -134,11 +135,16 @@ _TERM_FIELDS = (
     "definition",
     "broader_id",
     "exact_match",
+    "close_match",
     "confidence",
     "source",
     "deprecated",
     "replaced_by",
 )
+
+
+# A curated vocabulary's attributes, as reported (review recommendation 9).
+_SCHEME_FIELDS = ("name", "definition", "fields")
 
 
 # An interface's attributes, as reported (ontology plan Phase 8).
@@ -159,6 +165,7 @@ _INTERFACE_FIELDS = (
 _PORTFOLIO_FIELDS = (
     "name",
     "level",
+    "level_id",
     "parent_id",
     "description",
     "confidence",
@@ -217,10 +224,22 @@ def _duties(offering: ProductOffering) -> list[tuple[object, ...]]:
 
 
 def _offering_terms(offering: ProductOffering) -> dict[tuple[str, ...], str]:
-    """The terms its parts and their responsibilities are linked to, by where."""
+    """The terms it, its parts and their responsibilities, its NFRs and its business rules
+    are linked to, by where."""
     terms: dict[tuple[str, ...], str] = {
         (item.id,): item.kind_id for item in offering.components if item.kind_id
     }
+    terms.update(
+        ((f"@{name}",), term)
+        for name, term in (("family", offering.family_id), ("lifecycle", offering.lifecycle_id))
+        if term
+    )
+    terms.update(
+        (("@nfr", item.quality), item.quality_id) for item in offering.nfrs if item.quality_id
+    )
+    terms.update(
+        (("@rule", item.id), item.kind_id) for item in offering.business_rules if item.kind_id
+    )
     terms.update(
         ((item.id, duty.system_id, duty.role), duty.role_id)
         for item in offering.components
@@ -238,7 +257,8 @@ def _journey_fields(before: Journey, after: Journey) -> tuple[str, ...]:
         return replace(
             journey,
             activities=tuple(
-                replace(item, etom_id=None, role_id=None) for item in journey.activities
+                replace(item, etom_id=None, role_id=None, mode_id=None, phase_id=None)
+                for item in journey.activities
             ),
             integrations=tuple(replace(item, open_api_ids=()) for item in journey.integrations),
         )
@@ -247,7 +267,12 @@ def _journey_fields(before: Journey, after: Journey) -> tuple[str, ...]:
         found: dict[tuple[str, ...], tuple[str, ...]] = {
             (item.number, name): (term,)
             for item in journey.activities
-            for name, term in (("etom", item.etom_id), ("role", item.role_id))
+            for name, term in (
+                ("etom", item.etom_id),
+                ("role", item.role_id),
+                ("mode", item.mode_id),
+                ("phase", item.phase_id),
+            )
             if term
         }
         found.update(
@@ -276,10 +301,20 @@ def _offering_fields(before: ProductOffering, after: ProductOffering) -> tuple[s
     """Which parts of an offering changed; a component's responsibilities count as
     "responsibilities", its realisation as "realisation" and its concepts as
     "capability_links", apart from the rest of the component."""
+
+    def plain(offering: ProductOffering) -> ProductOffering:
+        # Its NFRs and rules without their terms, which count as "vocabulary_links".
+        return replace(
+            offering,
+            nfrs=tuple(replace(item, quality_id=None) for item in offering.nfrs),
+            business_rules=tuple(replace(item, kind_id=None) for item in offering.business_rules),
+        )
+
+    plain_before, plain_after = plain(before), plain(after)
     fields = [
         field
         for field in _OFFERING_FIELDS
-        if field != "components" and getattr(before, field) != getattr(after, field)
+        if field != "components" and getattr(plain_before, field) != getattr(plain_after, field)
     ]
     if _bare(before) != _bare(after):
         fields.append("components")
@@ -322,6 +357,8 @@ class ChangedItem(StrEnum):
     # A controlled vocabulary term: an eTOM process, a channel or component kind, a role or
     # an Open API.
     VOCABULARY_TERM = "vocabulary_term"
+    # A vocabulary a curator defines, with the fields it covers (review recommendation 9).
+    VOCABULARY = "vocabulary"
     # A contract a system exposes, with its consumers (ontology plan Phase 8).
     INTERFACE = "interface"
     REALISATION = "realisation"
@@ -525,7 +562,7 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
 
     def components(
         release: ArchitectureKnowledge,
-    ) -> dict[str, tuple[str, tuple[str, str, tuple[str, ...], str, str, str, str]]]:
+    ) -> dict[str, tuple[str, tuple[str, str, tuple[str, ...], str, str, str, str, str]]]:
         return {
             f"{system.id}/{component.id}": (
                 f"{system.name}: {component.name}",
@@ -537,6 +574,7 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                     component.technology or "",
                     component.confidence.value if component.confidence else "",
                     component.source or "",
+                    component.technology_id or "",
                 ),
             )
             for system in release.systems
@@ -566,6 +604,7 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                             "technology",
                             "confidence",
                             "source",
+                            "vocabulary_links",
                         ),
                         previous_component[1],
                         component_value,
@@ -770,6 +809,14 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
             _TERM_FIELDS,
             {item.id: (item.pref_label, item) for item in base.vocabulary},
             {item.id: (item.pref_label, item) for item in draft.vocabulary},
+        )
+    )
+    changes.extend(
+        _register_changes(
+            ChangedItem.VOCABULARY,
+            _SCHEME_FIELDS,
+            {item.id: (item.name, item) for item in base.schemes},
+            {item.id: (item.name, item) for item in draft.schemes},
         )
     )
     changes.extend(

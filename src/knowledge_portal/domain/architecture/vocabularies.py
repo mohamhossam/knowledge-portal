@@ -1,10 +1,13 @@
 """Controlled vocabularies: the closed lists behind fields that were free text (ADR-0114).
 
-Six schemes, each a small SKOS-style list curated with the release: eTOM process,
-channel kind, component kind, responsibility role, TM Forum Open API and information
-entity (the SID's aggregate business entities: Customer, Product, Order). A term has
-a preferred label, other labels people write, an optional code (such as "TMF622"),
-and a broader term in its own scheme.
+Seven schemes are built in, because code reads them: eTOM process, channel kind,
+component kind, responsibility role, TM Forum Open API, information entity (the SID's
+aggregate business entities: Customer, Product, Order) and document type. Curators add
+more as release data (``ConceptScheme``, review recommendation 9), each bound to the
+free-text fields its terms name, such as an offering's NFR quality or a portfolio level,
+so a new list needs no deploy. A term has a preferred label, other labels people write,
+an optional code (such as "TMF622"), and a broader term in its own scheme, on the SKOS
+base it shares with business capability concepts (``skos.py``).
 
 The text a source wrote stays where it is. Beside it, a field gains the id of the
 term it means, set only by a maintainer or by a clean-up suggestion a maintainer
@@ -14,11 +17,10 @@ accepts, so a release pins its vocabulary as it pins its systems.
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 
-from knowledge_portal.domain.architecture.concepts import label_key, label_words
 from knowledge_portal.domain.architecture.deprecation import check_retirement, successor
 from knowledge_portal.domain.architecture.invariants import (
     InvalidKnowledgeError,
@@ -26,6 +28,12 @@ from knowledge_portal.domain.architecture.invariants import (
     required,
 )
 from knowledge_portal.domain.architecture.provenance import AcceptedFrom
+from knowledge_portal.domain.architecture.skos import (
+    check_entry,
+    check_tree,
+    label_key,
+    label_words,
+)
 from knowledge_portal.domain.architecture.sources import SourceConfidence, check_source
 
 # eTOM's own levels 1 to 3; the other schemes are flat or nearly so.
@@ -45,7 +53,7 @@ class VocabularyScheme(StrEnum):
     DOCUMENT_TYPE = "document_type"
 
 
-SCHEME_NAMES = {
+SCHEME_NAMES: dict[str, str] = {
     VocabularyScheme.ETOM_PROCESS: "eTOM process",
     VocabularyScheme.CHANNEL_KIND: "channel kind",
     VocabularyScheme.COMPONENT_KIND: "component kind",
@@ -55,7 +63,7 @@ SCHEME_NAMES = {
     VocabularyScheme.DOCUMENT_TYPE: "document type",
 }
 
-_ID_PREFIXES = {
+_ID_PREFIXES: dict[str, str] = {
     VocabularyScheme.ETOM_PROCESS: "etom",
     VocabularyScheme.CHANNEL_KIND: "channel",
     VocabularyScheme.COMPONENT_KIND: "component",
@@ -66,7 +74,12 @@ _ID_PREFIXES = {
 }
 
 
+# A scheme a curator defines: lower case letters, digits and underscores, as the built-in ones.
+_SCHEME_ID = re.compile(r"^[a-z][a-z0-9_]*$")
+
+
 def vocabulary_scheme(value: VocabularyScheme | str) -> VocabularyScheme:
+    """A built-in scheme, by its id; refused for any other."""
     try:
         return VocabularyScheme(str(value).strip().casefold())
     except ValueError as exc:
@@ -74,12 +87,145 @@ def vocabulary_scheme(value: VocabularyScheme | str) -> VocabularyScheme:
         raise InvalidKnowledgeError(f"A vocabulary is one of {names}, not {value!r}.") from exc
 
 
+def scheme_id(value: str) -> str:
+    """A term's scheme as the model keeps it: a built-in scheme as its member, so code can
+    compare it by identity, and a curated one by its id. Whether a curated id is a scheme
+    of the release is checked with the release (``check_vocabulary``)."""
+    text = required(str(value), "Vocabulary").casefold()
+    if text in _BUILT_IN_IDS:
+        return VocabularyScheme(text)
+    if not _SCHEME_ID.match(text):
+        raise InvalidKnowledgeError(
+            f"A vocabulary id is lower case letters, digits and underscores, not {value!r}."
+        )
+    return text
+
+
+_BUILT_IN_IDS = frozenset(item.value for item in VocabularyScheme)
+
+
+def scheme_name(scheme: str, names: Mapping[str, str] | None = None) -> str:
+    """What a scheme is called in a message: its name, or its id when it has none."""
+    return (names or SCHEME_NAMES).get(scheme) or SCHEME_NAMES.get(scheme) or str(scheme)
+
+
+class VocabularyField(StrEnum):
+    """Where the catalogue writes a value a vocabulary covers.
+
+    The first six are bound to built-in schemes. The rest are free text until a curator
+    binds a scheme of their own to them (``ConceptScheme.fields``).
+    """
+
+    ACTIVITY_ETOM = "activity_etom"
+    ACTIVITY_ROLE = "activity_role"
+    CHANNEL_KIND = "channel_kind"
+    COMPONENT_KIND = "component_kind"
+    RESPONSIBILITY_ROLE = "responsibility_role"
+    INTEGRATION_OPEN_API = "integration_open_api"
+    # An offering's NFR quality, family and lifecycle stage, and its business rules' kind.
+    NFR_QUALITY = "nfr_quality"
+    OFFERING_FAMILY = "offering_family"
+    OFFERING_LIFECYCLE = "offering_lifecycle"
+    RULE_KIND = "rule_kind"
+    # A journey activity's mode ("Automated") and phase ("Order capture").
+    ACTIVITY_MODE = "activity_mode"
+    ACTIVITY_PHASE = "activity_phase"
+    # A portfolio node's level ("Segment", "Family").
+    PORTFOLIO_LEVEL = "portfolio_level"
+    # A system component's technology ("Microservice", "Batch job").
+    COMPONENT_TECHNOLOGY = "component_technology"
+
+
+FIELD_SCHEMES: dict[VocabularyField, str] = {
+    VocabularyField.ACTIVITY_ETOM: VocabularyScheme.ETOM_PROCESS,
+    VocabularyField.ACTIVITY_ROLE: VocabularyScheme.RESPONSIBILITY_ROLE,
+    VocabularyField.CHANNEL_KIND: VocabularyScheme.CHANNEL_KIND,
+    VocabularyField.COMPONENT_KIND: VocabularyScheme.COMPONENT_KIND,
+    VocabularyField.RESPONSIBILITY_ROLE: VocabularyScheme.RESPONSIBILITY_ROLE,
+    VocabularyField.INTEGRATION_OPEN_API: VocabularyScheme.OPEN_API,
+}
+# The fields a curator's scheme may take.
+OPEN_FIELDS = tuple(item for item in VocabularyField if item not in FIELD_SCHEMES)
+
+
+@dataclass(frozen=True)
+class ConceptScheme:
+    """A vocabulary a curator defines with the release, such as "NFR quality" (review
+    recommendation 9): its terms are release data like any other, and ``fields`` are the
+    free-text fields it covers, each linked to one of its terms beside the text."""
+
+    id: str
+    name: str
+    definition: str | None = None
+    fields: tuple[VocabularyField, ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "id", scheme_id(self.id))
+        if self.id in _BUILT_IN_IDS:
+            raise InvalidKnowledgeError(
+                f"{self.id!r} is a built-in vocabulary; a curated one takes another id."
+            )
+        object.__setattr__(self, "name", required(self.name, "Vocabulary name"))
+        object.__setattr__(self, "definition", optional(self.definition, "Vocabulary definition"))
+        try:
+            fields = tuple(VocabularyField(str(item).strip().casefold()) for item in self.fields)
+        except ValueError as exc:
+            names = ", ".join(item.value for item in OPEN_FIELDS)
+            raise InvalidKnowledgeError(
+                f"{self.name}: a vocabulary covers fields among {names}."
+            ) from exc
+        object.__setattr__(self, "fields", fields)
+        if len(set(fields)) != len(fields):
+            raise InvalidKnowledgeError(f"{self.name} names a field more than once.")
+        bound = [item.value for item in fields if item in FIELD_SCHEMES]
+        if bound:
+            raise InvalidKnowledgeError(
+                f"{self.name}: {', '.join(bound)} already has its built-in vocabulary."
+            )
+
+
+def check_schemes(schemes: tuple[ConceptScheme, ...]) -> dict[str, str]:
+    """Curated schemes with unique ids and names, none named like a built-in one, and each
+    field covered by one scheme at most. Returns every scheme's name by id, built-in first."""
+    names: dict[str, str] = dict(SCHEME_NAMES)
+    owners = {label_key(name): scheme for scheme, name in SCHEME_NAMES.items()}
+    fields: dict[VocabularyField, ConceptScheme] = {}
+    for scheme in schemes:
+        if scheme.id in names:
+            raise InvalidKnowledgeError("Vocabulary ids must be unique.")
+        owner = owners.setdefault(label_key(scheme.name), scheme.id)
+        if owner != scheme.id:
+            raise InvalidKnowledgeError(
+                f"{scheme.name!r} already names the vocabulary {owner!r}; each vocabulary "
+                "has its own name."
+            )
+        for field in scheme.fields:
+            other = fields.setdefault(field, scheme)
+            if other is not scheme:
+                raise InvalidKnowledgeError(
+                    f"{field.value} is covered by {other.name} already, so {scheme.name} "
+                    "cannot cover it too."
+                )
+        names[scheme.id] = scheme.name
+    return names
+
+
+def field_schemes(schemes: Iterable[ConceptScheme]) -> dict[VocabularyField, str]:
+    """The scheme each field's terms come from: built in, or bound by a curator."""
+    bound: dict[VocabularyField, str] = dict(FIELD_SCHEMES)
+    for scheme in schemes:
+        for field in scheme.fields:
+            bound.setdefault(field, scheme.id)
+    return bound
+
+
 @dataclass(frozen=True)
 class VocabularyTerm:
     """One term, such as the eTOM process "Order Handling" or the Open API "TMF622"."""
 
     id: str
-    scheme: VocabularyScheme
+    # A built-in scheme, or the id of a curated one (``ConceptScheme``).
+    scheme: str
     pref_label: str
     alt_labels: tuple[str, ...] = ()
     # The code people write for it, such as "TMF622"; None when it has none.
@@ -97,10 +243,12 @@ class VocabularyTerm:
     replaced_by: str | None = None
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
+    # Outside references near enough to read across, though not the same (SKOS closeMatch).
+    close_match: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Term id"))
-        object.__setattr__(self, "scheme", vocabulary_scheme(self.scheme))
+        object.__setattr__(self, "scheme", scheme_id(self.scheme))
         object.__setattr__(self, "pref_label", required(self.pref_label, "Term label"))
         object.__setattr__(
             self, "alt_labels", tuple(required(item, "Other label") for item in self.alt_labels)
@@ -114,15 +262,7 @@ class VocabularyTerm:
             object.__setattr__(self, field, optional(getattr(self, field), label))
         check_source(self)
         check_retirement(self, self.pref_label)
-        keys = [label_key(item) for item in self.labels]
-        if any(not key for key in keys):
-            raise InvalidKnowledgeError(f"{self.pref_label}: a label needs a letter or digit.")
-        if len(set(keys)) != len(keys):
-            raise InvalidKnowledgeError(
-                f"{self.pref_label}: each label and code must differ from the rest."
-            )
-        if self.broader_id == self.id:
-            raise InvalidKnowledgeError(f"{self.pref_label} cannot be broader than itself.")
+        check_entry(self, "label and code")
 
     @property
     def labels(self) -> tuple[str, ...]:
@@ -131,68 +271,62 @@ class VocabularyTerm:
         return (self.pref_label, *self.alt_labels, *code)
 
 
-def check_vocabulary(terms: tuple[VocabularyTerm, ...]) -> dict[str, VocabularyTerm]:
-    """Unique ids, each label or code naming one term of its scheme, broader terms in the
-    same scheme, no cycles, and at most MAX_TERM_DEPTH levels.
+def check_vocabulary(
+    terms: tuple[VocabularyTerm, ...], names: Mapping[str, str] | None = None
+) -> dict[str, VocabularyTerm]:
+    """Each term in a scheme of the release, unique ids, each label or code naming one term
+    of its scheme, broader terms in the same scheme, no cycles, and at most MAX_TERM_DEPTH
+    levels. ``names`` are the release's schemes by id (``check_schemes``); the built-in ones
+    when not given.
 
     Returns the terms by id, for checking what fields name.
     """
-    by_id = {item.id: item for item in terms}
-    if len(by_id) != len(terms):
-        raise InvalidKnowledgeError("Vocabulary term ids must be unique.")
-    owners: dict[tuple[VocabularyScheme, str], VocabularyTerm] = {}
+    known = names or SCHEME_NAMES
     for term in terms:
-        for label in term.labels:
-            owner = owners.setdefault((term.scheme, label_key(label)), term)
-            if owner.id != term.id:
-                raise InvalidKnowledgeError(
-                    f"{label!r} already names the {SCHEME_NAMES[term.scheme]} "
-                    f"{owner.pref_label}, so it cannot also name {term.pref_label}. Each label "
-                    "must identify one term."
-                )
-        broader = by_id.get(term.broader_id or "")
-        if term.broader_id is not None and (broader is None or broader.scheme is not term.scheme):
+        if term.scheme not in known:
             raise InvalidKnowledgeError(
-                f"{term.pref_label} narrows {term.broader_id!r}, which is not in the "
-                f"{SCHEME_NAMES[term.scheme]} vocabulary."
+                f"{term.pref_label} is in the vocabulary {term.scheme!r}, which is not in the "
+                "catalogue."
             )
-        depth, seen, current = 1, {term.id}, term
-        while current.broader_id is not None:
-            current = by_id[current.broader_id]
-            if current.id in seen:
-                raise InvalidKnowledgeError(f"{term.pref_label} is narrower than itself.")
-            seen.add(current.id)
-            depth += 1
-        if depth > MAX_TERM_DEPTH:
-            raise InvalidKnowledgeError(
-                f"Terms are at most {MAX_TERM_DEPTH} levels deep; {term.pref_label!r} is deeper."
-            )
-    return by_id
+    return check_tree(
+        terms,
+        kind="term",
+        max_depth=MAX_TERM_DEPTH,
+        scheme=lambda term: term.scheme,
+        owned_by=lambda term: f"the {scheme_name(term.scheme, known)} {term.pref_label}",
+        outside=lambda term: f"in the {scheme_name(term.scheme, known)} vocabulary",
+    )
 
 
 def check_terms(
     term_ids: Iterable[str],
-    scheme: VocabularyScheme,
+    scheme: str | None,
     terms: dict[str, VocabularyTerm],
     where: str,
+    names: Mapping[str, str] | None = None,
 ) -> None:
-    """The terms a field names exist, each once, in the field's own scheme."""
+    """The terms a field names exist, each once, in the field's own scheme; a field no
+    scheme covers names none."""
     ids = tuple(term_ids)
+    if ids and scheme is None:
+        raise InvalidKnowledgeError(f"{where} names a term, but no vocabulary covers it.")
+    name = scheme_name(scheme or "", names)
     if len(set(ids)) != len(ids):
-        raise InvalidKnowledgeError(f"{where} names one {SCHEME_NAMES[scheme]} more than once.")
+        raise InvalidKnowledgeError(f"{where} names one {name} more than once.")
     for term_id in ids:
         term = terms.get(term_id)
-        if term is None or term.scheme is not scheme:
+        if term is None or term.scheme != scheme:
             raise InvalidKnowledgeError(
-                f"{where} names {term_id!r}, which is not in the {SCHEME_NAMES[scheme]} vocabulary."
+                f"{where} names {term_id!r}, which is not in the {name} vocabulary."
             )
 
 
-def term_id_for(scheme: VocabularyScheme, label: str, taken: Iterable[str]) -> str:
-    """A new term id from its scheme and label, such as ``etom-order-handling``."""
+def term_id_for(scheme: str, label: str, taken: Iterable[str]) -> str:
+    """A new term id from its scheme and label, such as ``etom-order-handling``; a curated
+    scheme's id names its terms (``nfr-quality-availability``)."""
     used = set(taken)
     words = label_words(label)
-    prefix = _ID_PREFIXES[scheme]
+    prefix = _ID_PREFIXES.get(scheme) or str(scheme).replace("_", "-")
     base = f"{prefix}-{'-'.join(words)}" if words else prefix
     candidate, number = base, 2
     while candidate in used:
@@ -227,7 +361,7 @@ def api_name(value: str, code: str) -> str:
 
 
 def find_term(
-    terms: Iterable[VocabularyTerm], scheme: VocabularyScheme, reference: str
+    terms: Iterable[VocabularyTerm], scheme: str, reference: str
 ) -> VocabularyTerm | None:
     """The term of the scheme a reference means now (ADR-0121): one retired forwards to what
     replaced it, and one retired for good matches nothing. ``term_named`` sees every term."""
@@ -237,11 +371,11 @@ def find_term(
 
 
 def term_named(
-    terms: Iterable[VocabularyTerm], scheme: VocabularyScheme, reference: str
+    terms: Iterable[VocabularyTerm], scheme: str, reference: str
 ) -> VocabularyTerm | None:
     """A term of the scheme named by id, or by one of its labels or its code, ignoring case
     and punctuation, retired or not: whether a label is taken."""
-    candidates = [item for item in terms if item.scheme is scheme]
+    candidates = [item for item in terms if item.scheme == scheme]
     exact = next((item for item in candidates if item.id == reference), None)
     key = label_key(reference)
     if exact is not None or not key:
@@ -253,7 +387,7 @@ def term_named(
 
 
 def match_value(
-    terms: tuple[VocabularyTerm, ...], scheme: VocabularyScheme, value: str
+    terms: tuple[VocabularyTerm, ...], scheme: str, value: str
 ) -> tuple[VocabularyTerm, ...]:
     """The terms a written value means, or none when the scheme has no term for all of it.
 

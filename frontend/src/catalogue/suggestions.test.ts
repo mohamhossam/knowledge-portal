@@ -315,7 +315,7 @@ describe("vocabulary suggestions", () => {
   const orders = suggestion(
     {
       kind: "vocabulary_term", system_id: "etom-order-handling",
-      term: { id: "etom-order-handling", scheme: "etom_process", pref_label: "Order Handling", alt_labels: [], deprecated: false, accepted: [] },
+      term: { id: "etom-order-handling", scheme: "etom_process", pref_label: "Order Handling", alt_labels: [], close_match: [], deprecated: false, accepted: [] },
       value_refs: [ref, { ...ref, item: "20" }],
     },
     { match: "updates_existing" },
@@ -323,13 +323,13 @@ describe("vocabulary suggestions", () => {
   const saml = suggestion(
     {
       kind: "vocabulary_term", system_id: "role-saml",
-      term: { id: "role-saml", scheme: "responsibility_role", pref_label: "SAML", alt_labels: [], deprecated: false, accepted: [] },
+      term: { id: "role-saml", scheme: "responsibility_role", pref_label: "SAML", alt_labels: [], close_match: [], deprecated: false, accepted: [] },
       value_refs: [{ field: "responsibility_role", owner_id: "bpp", value: "SAML", item: "selfservice", part: "b2b-web" }],
     },
   );
   const api = suggestion({
     kind: "vocabulary_term", system_id: "api-tmf681",
-    term: { id: "api-tmf681", scheme: "open_api", pref_label: "Communication", notation: "TMF681", alt_labels: [], deprecated: false, accepted: [] },
+    term: { id: "api-tmf681", scheme: "open_api", pref_label: "Communication", notation: "TMF681", alt_labels: [], close_match: [], deprecated: false, accepted: [] },
     value_refs: [],
   });
   const termWords = lexicon(release, [orders, saml, api]);
@@ -338,6 +338,18 @@ describe("vocabulary suggestions", () => {
     expect(changeSentence(orders, termWords)).toBe("Links 2 values to the eTOM process Order Handling");
     expect(changeSentence(saml, termWords)).toBe("Adds the role SAML, linking 1 value");
     expect(changeSentence(api, termWords)).toBe("Adds the Open API Communication (TMF681)");
+  });
+
+  it("names a vocabulary a curator defined by its own name (review recommendation 9)", () => {
+    const quality = suggestion({
+      kind: "vocabulary_term", system_id: "nfr-quality-availability",
+      term: { id: "nfr-quality-availability", scheme: "nfr_quality", pref_label: "Availability", alt_labels: [], close_match: [], deprecated: false, accepted: [] },
+      value_refs: [{ field: "nfr_quality", owner_id: "bpp", value: "Availability", item: "Availability" }],
+    });
+    const curated = { ...release, schemes: [{ id: "nfr_quality", name: "NFR quality", fields: ["nfr_quality" as const] }] };
+    expect(changeSentence(quality, lexicon(curated, [quality]))).toBe("Adds the NFR quality Availability, linking 1 value");
+    // A vocabulary the draft no longer lists is still named, from its id.
+    expect(changeSentence(quality, termWords)).toBe("Adds the NFR Quality Availability, linking 1 value");
   });
 
   it("leaves a new term, a flagged value, for a person to decide alone", () => {

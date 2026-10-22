@@ -2407,6 +2407,8 @@ export interface components {
             main_track: boolean;
             /** Mode */
             mode?: string | null;
+            /** Mode Id */
+            mode_id?: string | null;
             /** Name */
             name: string;
             /** Number */
@@ -2419,6 +2421,8 @@ export interface components {
             performing_system_id?: string | null;
             /** Phase */
             phase?: string | null;
+            /** Phase Id */
+            phase_id?: string | null;
             /** Point Of No Return */
             point_of_no_return?: string | null;
             /** Role */
@@ -2702,6 +2706,11 @@ export interface components {
             alt_labels: string[];
             /** Broader Id */
             broader_id?: string | null;
+            /**
+             * Close Match
+             * @default []
+             */
+            close_match: string[];
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Definition */
             definition?: string | null;
@@ -2730,6 +2739,8 @@ export interface components {
             id: string;
             /** Kind */
             kind?: string | null;
+            /** Kind Id */
+            kind_id?: string | null;
             /** Source */
             source?: string | null;
             /** Statement */
@@ -3170,7 +3181,7 @@ export interface components {
          * ChangedItem
          * @enum {string}
          */
-        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request" | "concept" | "vocabulary_term" | "interface" | "realisation" | "portfolio_node";
+        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request" | "concept" | "vocabulary_term" | "vocabulary" | "interface" | "realisation" | "portfolio_node";
         /**
          * ChannelSchema
          * @description Where orders are placed, and the system each is entered through (ADR-0101, step 3).
@@ -3331,6 +3342,24 @@ export interface components {
             label: string;
             /** Overridden */
             overridden: number;
+        };
+        /**
+         * ConceptSchemeSchema
+         * @description A vocabulary a curator defines beside the built-in ones, and the free-text fields
+         *     its terms are linked to (review recommendation 9).
+         */
+        ConceptSchemeSchema: {
+            /** Definition */
+            definition?: string | null;
+            /**
+             * Fields
+             * @default []
+             */
+            fields: components["schemas"]["VocabularyField"][];
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** ConflictScopeSchema */
         ConflictScopeSchema: {
@@ -3653,6 +3682,8 @@ export interface components {
             realisations?: components["schemas"]["RealisationRecordSchema"][] | null;
             /** Relationships */
             relationships: components["schemas"]["SystemRelationshipSchema"][];
+            /** Schemes */
+            schemes?: components["schemas"]["ConceptSchemeSchema"][] | null;
             /** Sources */
             sources?: components["schemas"]["KnowledgeSourceSchema"][] | null;
             /** Systems */
@@ -4492,6 +4523,8 @@ export interface components {
             relationships: components["schemas"]["SystemRelationshipSchema"][];
             /** Revision */
             revision: number;
+            /** Schemes */
+            schemes?: components["schemas"]["ConceptSchemeSchema"][];
             /** Source References */
             source_references?: components["schemas"]["SourceReferenceSchema"][];
             /** Sources */
@@ -5065,6 +5098,8 @@ export interface components {
             coverage: components["schemas"]["NfrCoverage"];
             /** Quality */
             quality: string;
+            /** Quality Id */
+            quality_id?: string | null;
             /** Source */
             source?: string | null;
             /** Statement */
@@ -5362,6 +5397,8 @@ export interface components {
             id: string;
             /** Level */
             level: string;
+            /** Level Id */
+            level_id?: string | null;
             /** Name */
             name: string;
             /** Parent Id */
@@ -5460,6 +5497,8 @@ export interface components {
             deprecated: boolean;
             /** Family */
             family?: string | null;
+            /** Family Id */
+            family_id?: string | null;
             /**
              * Former Ids
              * @default []
@@ -5469,6 +5508,8 @@ export interface components {
             id: string;
             /** Lifecycle */
             lifecycle?: string | null;
+            /** Lifecycle Id */
+            lifecycle_id?: string | null;
             /**
              * Lifecycle Notes
              * @default []
@@ -6477,6 +6518,8 @@ export interface components {
             source?: string | null;
             /** Technology */
             technology?: string | null;
+            /** Technology Id */
+            technology_id?: string | null;
         };
         /** SystemDefinitionSchema */
         SystemDefinitionSchema: {
@@ -6835,9 +6878,13 @@ export interface components {
         };
         /**
          * VocabularyField
+         * @description Where the catalogue writes a value a vocabulary covers.
+         *
+         *     The first six are bound to built-in schemes. The rest are free text until a curator
+         *     binds a scheme of their own to them (``ConceptScheme.fields``).
          * @enum {string}
          */
-        VocabularyField: "activity_etom" | "activity_role" | "channel_kind" | "component_kind" | "responsibility_role" | "integration_open_api";
+        VocabularyField: "activity_etom" | "activity_role" | "channel_kind" | "component_kind" | "responsibility_role" | "integration_open_api" | "nfr_quality" | "offering_family" | "offering_lifecycle" | "rule_kind" | "activity_mode" | "activity_phase" | "portfolio_level" | "component_technology";
         /**
          * VocabularyRefSchema
          * @description One place a vocabulary value is written, and the value as it was read there.
@@ -6854,14 +6901,10 @@ export interface components {
             value: string;
         };
         /**
-         * VocabularyScheme
-         * @enum {string}
-         */
-        VocabularyScheme: "etom_process" | "channel_kind" | "component_kind" | "responsibility_role" | "open_api" | "information_entity" | "document_type";
-        /**
          * VocabularyTermSchema
          * @description A term of a controlled vocabulary: an eTOM process, a channel or component kind, a
-         *     role, an Open API or an information entity.
+         *     role, an Open API or an information entity, or a term of a vocabulary a curator
+         *     defined (review recommendation 9).
          */
         VocabularyTermSchema: {
             /**
@@ -6876,6 +6919,11 @@ export interface components {
             alt_labels: string[];
             /** Broader Id */
             broader_id?: string | null;
+            /**
+             * Close Match
+             * @default []
+             */
+            close_match: string[];
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Definition */
             definition?: string | null;
@@ -6894,7 +6942,8 @@ export interface components {
             pref_label: string;
             /** Replaced By */
             replaced_by?: string | null;
-            scheme: components["schemas"]["VocabularyScheme"];
+            /** Scheme */
+            scheme: string;
             /** Source */
             source?: string | null;
         };

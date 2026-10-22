@@ -2359,6 +2359,8 @@
    "family": "Business internet bundles",
    "version": null,
    "lifecycle": null,
+   "family_id": null,
+   "lifecycle_id": null,
    "proposition": "The premium flavour of Business Pro: fibre (GPON) internet on Fortinet 90G/120G CPEs, with SD-WAN and FortiPortal, firewall, static IP, proactive monitoring, a managed FortiAP and optional Backup 5G.",
    "rules": [],
    "order_types": [
@@ -3582,140 +3584,160 @@
      "statement": "SD-WAN/FortiPortal, Firewall, Static IP and Proactive Monitoring are mandatory: checked by default and locked in the Automation Portal for Business Pro Plus bundles.",
      "kind": "composition",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P1.1 Mandating Bundling Components"
+     "source": "SDD v2.3 · §P1.1 Mandating Bundling Components",
+     "kind_id": null
     },
     {
      "id": "R2",
      "statement": "Speed profiles with an upload:download ratio of 1:2 are only for Business Pro Plus; the 1:10 profiles stay with Business Pro.",
      "kind": "composition",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P1 Bundle Definition"
+     "source": "SDD v2.3 · §P1 Bundle Definition",
+     "kind_id": null
     },
     {
      "id": "R3",
      "statement": "ECM suggests the Fortinet 90G below 1 Gbps and the 120G at 1 Gbps; FAP-23JF-E below 1 Gbps and FAP-431F-E from 1 Gbps.",
      "kind": "fulfilment",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P1.1 Generic FortiAP Offer"
+     "source": "SDD v2.3 · §P1.1 Generic FortiAP Offer",
+     "kind_id": null
     },
     {
      "id": "R4",
      "statement": "Business Pro Plus CPEs are provisioned in the dedicated ADOM FortiManager cluster (platform type “Fortinet HE”).",
      "kind": "fulfilment",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P1 New Activation"
+     "source": "SDD v2.3 · §P1 New Activation",
+     "kind_id": null
     },
     {
      "id": "R5",
      "statement": "SD-WAN configuration (overlay, routing, templates, security policies) is a Day-N service by the MSS team, not part of activation.",
      "kind": "fulfilment",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · General Highlights"
+     "source": "SDD v2.3 · General Highlights",
+     "kind_id": null
     },
     {
      "id": "R6",
      "statement": "A lifecycle request is accepted only when the sub-orders it depends on are complete (pending-order validation matrix in CRMGW). An up/downgrade needs the master order closed.",
      "kind": "dependency",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P4 Pending Order Validation"
+     "source": "SDD v2.3 · §P4 Pending Order Validation",
+     "kind_id": null
     },
     {
      "id": "R7",
      "statement": "An add-on can be added only when its service type's sub-order is closed: voice needs GSM; static IP and Speed Booster need GSM and GPON; SaaS needs GSM and SaaS; vSaaS needs GSM and vSaaS.",
      "kind": "dependency",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P4 Pending Order Validation, add-on matrix"
+     "source": "SDD v2.3 · §P4 Pending Order Validation, add-on matrix",
+     "kind_id": null
     },
     {
      "id": "R8",
      "statement": "Amendment and cancellation are allowed until the point of no return agreed in the workflows. There is no amendment from the SMB App.",
      "kind": "lifecycle",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P1 Amendment/Cancellation; §P2 UpDowngrade"
+     "source": "SDD v2.3 · §P1 Amendment/Cancellation; §P2 UpDowngrade",
+     "kind_id": null
     },
     {
      "id": "R9",
      "statement": "Dunning throttles Backup 5G to 5 Mbps with IN offer 854 at TOSS, and removes it at reconnect.",
      "kind": "billing",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P3 ADO 259162"
+     "source": "SDD v2.3 · §P3 ADO 259162",
+     "kind_id": null
     },
     {
      "id": "R10",
      "statement": "The new generic CPE rate plan for 90G/120G carries an exit charge of AED 650 (to be confirmed by the business), per contract period: no contract, 1 year, 2 years.",
      "kind": "billing",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §ADO 438907, US 438909"
+     "source": "SDD v2.3 · §ADO 438907, US 438909",
+     "kind_id": null
     },
     {
      "id": "R11",
      "statement": "The 900/450 speed profile is not offered on the Fortinet 90G until it passes the lab test.",
      "kind": "composition",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · General Highlights, Speed Booster"
+     "source": "SDD v2.3 · General Highlights, Speed Booster",
+     "kind_id": null
     },
     {
      "id": "R12",
      "statement": "Backup 5G changes IN only when the bundle has it. New activation and migration: UpdateOffer for the base offer (6980) and the bandwidth offer. Cessation: DeleteOffer for both. Up/downgrade: added as in activation, removed as in cessation, kept by swapping the bandwidth offer, absent nothing. External shift: runPAM resets the geo-lock. Dunning: offer 854 at TOSS, removed at reconnect.",
      "kind": "fulfilment",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P4 Enhancement 1873844"
+     "source": "SDD v2.3 · §P4 Enhancement 1873844",
+     "kind_id": null
     },
     {
      "id": "R13",
      "statement": "For an up/downgrade ECM suggests the Fortinet 90G or 120G (FAP-23JF-E or FAP-431F-E) below 1 Gbps, so the CPE changes only when the target plan needs another model; at 1 Gbps only the 120G and FAP-431F-E.",
      "kind": "fulfilment",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P4 Enhancement 1871663"
+     "source": "SDD v2.3 · §P4 Enhancement 1871663",
+     "kind_id": null
     },
     {
      "id": "R14",
      "statement": "A device added during faulty device replacement carries its charge add-on PO: Fortinet 90G AED 13,200 and Fortinet 120G AED 18,000, one-time.",
      "kind": "billing",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §ADO 438907, US 438912"
+     "source": "SDD v2.3 · §ADO 438907, US 438912",
+     "kind_id": null
     },
     {
      "id": "R15",
      "statement": "The CPE exit charge applies to cessation and to up/downgrade when the removed CPE's rate plan is still within its 1- or 2-year commitment.",
      "kind": "billing",
      "confidence": "inferred",
-     "source": "SDD v2.3 · §ADO 438907, US 438909 · The applicable SRs are stated; the commitment test follows the existing exit-charge rules."
+     "source": "SDD v2.3 · §ADO 438907, US 438909 · The applicable SRs are stated; the commitment test follows the existing exit-charge rules.",
+     "kind_id": null
     },
     {
      "id": "R16",
      "statement": "At the end of the contract, EHS moves the account to the non-commitment package of the same family (ccat_after_contract_migrate_plan) as an up/downgrade; from an old-model bundle, RTF copies the dynamic attributes to the new-model target.",
      "kind": "lifecycle",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P4 ADO 420619"
+     "source": "SDD v2.3 · §P4 ADO 420619",
+     "kind_id": null
     },
     {
      "id": "R17",
      "statement": "A migration from a legacy product keeps the existing contract-reset and exit-charge rules on the removed devices.",
      "kind": "billing",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · Feasibility US 202815, 202817"
+     "source": "SDD v2.3 · Feasibility US 202815, 202817",
+     "kind_id": null
     },
     {
      "id": "R18",
      "statement": "Cessation is blocked while the activation is in progress: the customer cancels it first, each sub-order up to its point of no return, and the cessation then ceases what was fulfilled.",
      "kind": "lifecycle",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P4 ADO 288752"
+     "source": "SDD v2.3 · §P4 ADO 288752",
+     "kind_id": null
     },
     {
      "id": "R19",
      "statement": "Port-out is fulfilled as a cessation without Churn & Exit retention; port-in raises the port request at master-order level, before the split.",
      "kind": "lifecycle",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P3 ADO 202826; §ADO 470510"
+     "source": "SDD v2.3 · §P3 ADO 202826; §ADO 470510",
+     "kind_id": null
     },
     {
      "id": "R20",
      "statement": "The FortiPortal organisation is created with the customer's first site and removed only with the last one.",
      "kind": "lifecycle",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P1 FortiPortal Access; §P2 ADO 259161"
+     "source": "SDD v2.3 · §P1 FortiPortal Access; §P2 ADO 259161",
+     "kind_id": null
     }
    ],
    "accepted": [],
@@ -3760,6 +3782,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -3789,6 +3813,8 @@
      "role": "CATALOG",
      "etom_id": "etom-selling",
      "role_id": "role-catalog",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -3818,6 +3844,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -3847,6 +3875,8 @@
      "role": "CUSTOMER_DATA",
      "etom_id": "etom-order-handling",
      "role_id": "role-customer-data",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -3876,6 +3906,8 @@
      "role": "CUSTOMER_DATA",
      "etom_id": "etom-order-handling",
      "role_id": "role-customer-data",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -3904,6 +3936,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -3932,6 +3966,8 @@
      "role": "CUSTOMER_DATA",
      "etom_id": "etom-order-handling",
      "role_id": "role-customer-data",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -3958,6 +3994,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -3984,6 +4022,8 @@
      "role": "TRACK",
      "etom_id": "etom-order-handling",
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -4010,6 +4050,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -4036,6 +4078,8 @@
      "role": null,
      "etom_id": null,
      "role_id": null,
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -4062,6 +4106,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -4088,6 +4134,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -4114,6 +4162,8 @@
      "role": "CATALOG",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-catalog",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -4140,6 +4190,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -4166,6 +4218,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -4192,6 +4246,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-supplier-partner-requisition-management",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -4218,6 +4274,8 @@
      "role": "FIELD",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-field",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -4244,6 +4302,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -4270,6 +4330,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -4296,6 +4358,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -4322,6 +4386,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -4348,6 +4414,8 @@
      "role": "LOGISTICS",
      "etom_id": "etom-supplier-partner-requisition-management",
      "role_id": "role-logistics",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -4374,6 +4442,8 @@
      "role": "FIELD",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-field",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -4400,6 +4470,8 @@
      "role": "BILL",
      "etom_id": "etom-billing-revenue-management",
      "role_id": "role-bill",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -4426,6 +4498,8 @@
      "role": "NOTIFY",
      "etom_id": "etom-customer-interface-management",
      "role_id": "role-notify",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -4452,6 +4526,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     }
    ],
@@ -6163,6 +6239,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -6189,6 +6267,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -6215,6 +6295,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -6241,6 +6323,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -6267,6 +6351,8 @@
      "role": "CAPTURE",
      "etom_id": null,
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -6293,6 +6379,8 @@
      "role": "TRACK",
      "etom_id": "etom-order-handling",
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -6319,6 +6407,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -6345,6 +6435,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -6371,6 +6463,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -6397,6 +6491,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -6423,6 +6519,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -6449,6 +6547,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -6475,6 +6575,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -6501,6 +6603,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -6527,6 +6631,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -6553,6 +6659,8 @@
      "role": "CATALOG",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-catalog",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -6579,6 +6687,8 @@
      "role": "FIELD",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-field",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -6605,6 +6715,8 @@
      "role": "BILL",
      "etom_id": "etom-billing-revenue-management",
      "role_id": "role-bill",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -6631,6 +6743,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -6657,6 +6771,8 @@
      "role": "NOTIFY",
      "etom_id": "etom-customer-interface-management",
      "role_id": "role-notify",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -7517,6 +7633,8 @@
      "role": "TRACK",
      "etom_id": null,
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -7543,6 +7661,8 @@
      "role": "TRACK",
      "etom_id": null,
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -7569,6 +7689,8 @@
      "role": "TRACK",
      "etom_id": null,
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -7595,6 +7717,8 @@
      "role": "TRACK",
      "etom_id": null,
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -7621,6 +7745,8 @@
      "role": "TRACK",
      "etom_id": null,
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -7647,6 +7773,8 @@
      "role": "TRACK",
      "etom_id": null,
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -7673,6 +7801,8 @@
      "role": "TRACK",
      "etom_id": null,
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -7699,6 +7829,8 @@
      "role": "TRACK",
      "etom_id": null,
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -7725,6 +7857,8 @@
      "role": "TRACK",
      "etom_id": null,
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -7751,6 +7885,8 @@
      "role": "TRACK",
      "etom_id": null,
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -7777,6 +7913,8 @@
      "role": "TRACK",
      "etom_id": null,
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -7803,6 +7941,8 @@
      "role": "TRACK",
      "etom_id": null,
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -8212,6 +8352,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8238,6 +8380,8 @@
      "role": "CUSTOMER_DATA",
      "etom_id": "etom-order-handling",
      "role_id": "role-customer-data",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8264,6 +8408,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8290,6 +8436,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8316,6 +8464,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8342,6 +8492,8 @@
      "role": "CAPTURE",
      "etom_id": null,
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -8368,6 +8520,8 @@
      "role": "TRACK",
      "etom_id": "etom-order-handling",
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8394,6 +8548,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8420,6 +8576,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8446,6 +8604,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8472,6 +8632,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8498,6 +8660,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -8524,6 +8688,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -8550,6 +8716,8 @@
      "role": "CATALOG",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-catalog",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8576,6 +8744,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8602,6 +8772,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-supplier-partner-requisition-management",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8628,6 +8800,8 @@
      "role": "FIELD",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-field",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8654,6 +8828,8 @@
      "role": "LOGISTICS",
      "etom_id": "etom-supplier-partner-requisition-management",
      "role_id": "role-logistics",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8680,6 +8856,8 @@
      "role": "BILL",
      "etom_id": "etom-billing-revenue-management",
      "role_id": "role-bill",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8706,6 +8884,8 @@
      "role": "BILL",
      "etom_id": "etom-billing-revenue-management",
      "role_id": "role-bill",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -8732,6 +8912,8 @@
      "role": "BILL",
      "etom_id": "etom-billing-revenue-management",
      "role_id": "role-bill",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8758,6 +8940,8 @@
      "role": "NOTIFY",
      "etom_id": "etom-customer-interface-management",
      "role_id": "role-notify",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -8784,6 +8968,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -9532,6 +9718,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -9558,6 +9746,8 @@
      "role": "CUSTOMER_DATA",
      "etom_id": "etom-order-handling",
      "role_id": "role-customer-data",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -9584,6 +9774,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -9610,6 +9802,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -9636,6 +9830,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -9662,6 +9858,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -9688,6 +9886,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -9714,6 +9914,8 @@
      "role": "TRACK",
      "etom_id": "etom-order-handling",
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -9740,6 +9942,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -9766,6 +9970,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -9792,6 +9998,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -9818,6 +10026,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -9844,6 +10054,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -9870,6 +10082,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -9896,6 +10110,8 @@
      "role": "FIELD",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-field",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -9922,6 +10138,8 @@
      "role": "BILL",
      "etom_id": "etom-billing-revenue-management",
      "role_id": "role-bill",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -9948,6 +10166,8 @@
      "role": "BILL",
      "etom_id": "etom-billing-revenue-management",
      "role_id": "role-bill",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -9974,6 +10194,8 @@
      "role": "BILL",
      "etom_id": "etom-billing-revenue-management",
      "role_id": "role-bill",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -10000,6 +10222,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -10665,6 +10889,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -10691,6 +10917,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -10717,6 +10945,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -10743,6 +10973,8 @@
      "role": "CAPTURE",
      "etom_id": null,
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -10769,6 +11001,8 @@
      "role": "TRACK",
      "etom_id": "etom-order-handling",
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -10795,6 +11029,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -10821,6 +11057,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -10847,6 +11085,8 @@
      "role": "FIELD",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-field",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -10873,6 +11113,8 @@
      "role": "FIELD",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-field",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -10899,6 +11141,8 @@
      "role": "FIELD",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-field",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -10925,6 +11169,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -10951,6 +11197,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -10977,6 +11225,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -11003,6 +11253,8 @@
      "role": "TRACK",
      "etom_id": "etom-order-handling",
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -11029,6 +11281,8 @@
      "role": "NOTIFY",
      "etom_id": "etom-customer-interface-management",
      "role_id": "role-notify",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -11055,6 +11309,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -11672,6 +11928,8 @@
      "role": "BILL",
      "etom_id": "etom-billing-revenue-management",
      "role_id": "role-bill",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -11698,6 +11956,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -11724,6 +11984,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -11750,6 +12012,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -11776,6 +12040,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -11802,6 +12068,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -11828,6 +12096,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -11854,6 +12124,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -11880,6 +12152,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -11906,6 +12180,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -12388,6 +12664,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -12414,6 +12692,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -12440,6 +12720,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -12466,6 +12748,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -12492,6 +12776,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -12518,6 +12804,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -12544,6 +12832,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -12570,6 +12860,8 @@
      "role": "TRACK",
      "etom_id": "etom-order-handling",
      "role_id": "role-track",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -12596,6 +12888,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -13128,6 +13422,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -13154,6 +13450,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -13180,6 +13478,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -13206,6 +13506,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -13232,6 +13534,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -13258,6 +13562,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -13284,6 +13590,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -13591,6 +13899,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-problem-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -13617,6 +13927,8 @@
      "role": "FIELD",
      "etom_id": "etom-problem-handling",
      "role_id": "role-field",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -13643,6 +13955,8 @@
      "role": "CATALOG",
      "etom_id": "etom-problem-handling",
      "role_id": "role-catalog",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -13669,6 +13983,8 @@
      "role": "FIELD",
      "etom_id": "etom-problem-handling",
      "role_id": "role-field",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -13695,6 +14011,8 @@
      "role": "FIELD",
      "etom_id": "etom-problem-handling",
      "role_id": "role-field",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -13721,6 +14039,8 @@
      "role": "FIELD",
      "etom_id": "etom-problem-handling",
      "role_id": "role-field",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -13747,6 +14067,8 @@
      "role": "FIELD",
      "etom_id": "etom-problem-handling",
      "role_id": "role-field",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -13773,6 +14095,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -13799,6 +14123,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -13825,6 +14151,8 @@
      "role": "FIELD",
      "etom_id": "etom-order-handling",
      "role_id": "role-field",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -13851,6 +14179,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -13877,6 +14207,8 @@
      "role": "BILL",
      "etom_id": "etom-billing-revenue-management",
      "role_id": "role-bill",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -13903,6 +14235,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -14316,6 +14650,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-billing-revenue-management",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -14342,6 +14678,8 @@
      "role": "CATALOG",
      "etom_id": "etom-selling",
      "role_id": "role-catalog",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -14368,6 +14706,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -14394,6 +14734,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -14420,6 +14762,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -14446,6 +14790,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -14472,6 +14818,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -14498,6 +14846,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -14524,6 +14874,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -14550,6 +14902,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -14576,6 +14930,8 @@
      "role": "BILL",
      "etom_id": "etom-billing-revenue-management",
      "role_id": "role-bill",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -14602,6 +14958,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -14959,6 +15317,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -14985,6 +15345,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -15011,6 +15373,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -15037,6 +15401,8 @@
      "role": "CAPTURE",
      "etom_id": null,
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -15063,6 +15429,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -15089,6 +15457,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -15115,6 +15485,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-resource-provisioning",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -15141,6 +15513,8 @@
      "role": "BILL",
      "etom_id": "etom-billing-revenue-management",
      "role_id": "role-bill",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -15167,6 +15541,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -15465,6 +15841,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -15491,6 +15869,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -15517,6 +15897,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -15543,6 +15925,8 @@
      "role": "CAPTURE",
      "etom_id": null,
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -15569,6 +15953,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -15595,6 +15981,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -15621,6 +16009,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -15826,6 +16216,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -15852,6 +16244,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -15878,6 +16272,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -15904,6 +16300,8 @@
      "role": "CAPTURE",
      "etom_id": null,
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -15930,6 +16328,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -15956,6 +16356,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -15982,6 +16384,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -16187,6 +16591,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -16213,6 +16619,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -16239,6 +16647,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -16265,6 +16675,8 @@
      "role": "CAPTURE",
      "etom_id": null,
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -16291,6 +16703,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -16317,6 +16731,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -16343,6 +16759,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -16548,6 +16966,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -16574,6 +16994,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -16600,6 +17022,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -16626,6 +17050,8 @@
      "role": "CAPTURE",
      "etom_id": null,
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -16652,6 +17078,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -16678,6 +17106,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -16704,6 +17134,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -16909,6 +17341,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -16935,6 +17369,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -16961,6 +17397,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -16987,6 +17425,8 @@
      "role": "CAPTURE",
      "etom_id": null,
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -17013,6 +17453,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -17039,6 +17481,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -17065,6 +17509,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -17270,6 +17716,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -17296,6 +17744,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -17322,6 +17772,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -17348,6 +17800,8 @@
      "role": "CAPTURE",
      "etom_id": null,
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -17374,6 +17828,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -17400,6 +17856,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -17426,6 +17884,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -17631,6 +18091,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -17657,6 +18119,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -17683,6 +18147,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -17709,6 +18175,8 @@
      "role": "CAPTURE",
      "etom_id": null,
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -17735,6 +18203,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -17761,6 +18231,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -17787,6 +18259,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -17992,6 +18466,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-selling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -18018,6 +18494,8 @@
      "role": "CAPTURE",
      "etom_id": "etom-order-handling",
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -18044,6 +18522,8 @@
      "role": "VALIDATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-validate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -18070,6 +18550,8 @@
      "role": "CAPTURE",
      "etom_id": null,
      "role_id": "role-capture",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": false
     },
     {
@@ -18096,6 +18578,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-order-handling",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -18122,6 +18606,8 @@
      "role": "ORCHESTRATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-orchestrate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -18148,6 +18634,8 @@
      "role": "ACTIVATE",
      "etom_id": "etom-service-configuration-activation",
      "role_id": "role-activate",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     },
     {
@@ -18174,6 +18662,8 @@
      "role": "RECORD",
      "etom_id": "etom-order-handling",
      "role_id": "role-record",
+     "mode_id": null,
+     "phase_id": null,
      "main_track": true
     }
    ],
@@ -20310,6 +20800,7 @@
    "id": "enterprise",
    "name": "Enterprise",
    "level": "Business unit",
+   "level_id": null,
    "parent_id": null,
    "description": "The business unit that owns the business portfolios.",
    "confidence": "inferred",
@@ -20322,6 +20813,7 @@
    "id": "fixed",
    "name": "Fixed",
    "level": "Line of business",
+   "level_id": null,
    "parent_id": "enterprise",
    "description": "Fixed-line products: fibre broadband, voice and the services bundled with them.",
    "confidence": "inferred",
@@ -20334,6 +20826,7 @@
    "id": "smb",
    "name": "SMB",
    "level": "Segment",
+   "level_id": null,
    "parent_id": "fixed",
    "description": "Small and medium businesses.",
    "confidence": "inferred",
@@ -20346,6 +20839,7 @@
    "id": "business-internet",
    "name": "Business internet bundles",
    "level": "Product family",
+   "level_id": null,
    "parent_id": "smb",
    "description": "Bundles built on the Bundle Framework (BFM): broadband with business services.",
    "confidence": "inferred",
@@ -20368,6 +20862,7 @@
    "broader_id": null,
    "domain_id": "customer",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20386,6 +20881,7 @@
    "broader_id": null,
    "domain_id": "customer",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20404,6 +20900,7 @@
    "broader_id": null,
    "domain_id": "market-sales",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20422,6 +20919,7 @@
    "broader_id": null,
    "domain_id": "market-sales",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20440,6 +20938,7 @@
    "broader_id": null,
    "domain_id": "product",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20459,6 +20958,7 @@
    "broader_id": null,
    "domain_id": "product",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20477,6 +20977,7 @@
    "broader_id": null,
    "domain_id": "customer",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20495,6 +20996,7 @@
    "broader_id": null,
    "domain_id": "service",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20513,6 +21015,7 @@
    "broader_id": null,
    "domain_id": "service",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20530,6 +21033,7 @@
    "broader_id": null,
    "domain_id": "service",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20548,6 +21052,7 @@
    "broader_id": null,
    "domain_id": "service",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20566,6 +21071,7 @@
    "broader_id": null,
    "domain_id": "service",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20584,6 +21090,7 @@
    "broader_id": null,
    "domain_id": "service",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20602,6 +21109,7 @@
    "broader_id": null,
    "domain_id": "service",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20620,6 +21128,7 @@
    "broader_id": null,
    "domain_id": "customer",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20639,6 +21148,7 @@
    "broader_id": null,
    "domain_id": "service",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20657,6 +21167,7 @@
    "broader_id": null,
    "domain_id": "resource",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20676,6 +21187,7 @@
    "broader_id": null,
    "domain_id": "resource",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20694,6 +21206,7 @@
    "broader_id": null,
    "domain_id": "resource",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20712,6 +21225,7 @@
    "broader_id": null,
    "domain_id": "resource",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20730,6 +21244,7 @@
    "broader_id": null,
    "domain_id": "customer",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20748,6 +21263,7 @@
    "broader_id": null,
    "domain_id": "customer",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20766,6 +21282,7 @@
    "broader_id": null,
    "domain_id": "customer",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20783,6 +21300,7 @@
    "broader_id": null,
    "domain_id": "customer",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20801,6 +21319,7 @@
    "broader_id": null,
    "domain_id": "service",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20819,6 +21338,7 @@
    "broader_id": null,
    "domain_id": "customer",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20837,6 +21357,7 @@
    "broader_id": null,
    "domain_id": "customer",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20855,6 +21376,7 @@
    "broader_id": null,
    "domain_id": "service",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20874,6 +21396,7 @@
    "broader_id": null,
    "domain_id": "resource",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20892,6 +21415,7 @@
    "broader_id": null,
    "domain_id": "customer",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20910,6 +21434,7 @@
    "broader_id": null,
    "domain_id": "customer",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20928,6 +21453,7 @@
    "broader_id": null,
    "domain_id": "customer",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20946,6 +21472,7 @@
    "broader_id": null,
    "domain_id": "service",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20964,6 +21491,7 @@
    "broader_id": null,
    "domain_id": "service",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -20982,6 +21510,7 @@
    "broader_id": null,
    "domain_id": "service",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -21000,6 +21529,7 @@
    "broader_id": null,
    "domain_id": "service",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -21018,6 +21548,7 @@
    "broader_id": null,
    "domain_id": "service",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -21036,6 +21567,7 @@
    "broader_id": null,
    "domain_id": "service",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 1 · golden set v1 concept list",
    "deprecated": false,
@@ -21055,6 +21587,7 @@
    "definition": "The end-to-end process of providing what a customer ordered, on time and correctly.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
    "deprecated": false,
@@ -21070,6 +21603,7 @@
    "definition": "Taking the customer from interest to a feasible, agreed order.",
    "broader_id": "etom-fulfillment",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
    "deprecated": false,
@@ -21085,6 +21619,7 @@
    "definition": "Accepting, validating, tracking and closing the customer's order.",
    "broader_id": "etom-fulfillment",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
    "deprecated": false,
@@ -21100,6 +21635,7 @@
    "definition": "Configuring and activating the services an order needs.",
    "broader_id": "etom-fulfillment",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
    "deprecated": false,
@@ -21115,6 +21651,7 @@
    "definition": "Allocating, installing and configuring the resources services run on.",
    "broader_id": "etom-fulfillment",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
    "deprecated": false,
@@ -21130,6 +21667,7 @@
    "definition": "Ordering what an order needs from suppliers and partners, and tracking it.",
    "broader_id": "etom-fulfillment",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
    "deprecated": false,
@@ -21145,6 +21683,7 @@
    "definition": "Keeping delivered services working as promised.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
    "deprecated": false,
@@ -21160,6 +21699,7 @@
    "definition": "Receiving, tracking and resolving the problems a customer reports.",
    "broader_id": "etom-assurance",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
    "deprecated": false,
@@ -21177,6 +21717,7 @@
    "definition": "Rating, charging and billing what a customer uses, and collecting payment.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
    "deprecated": false,
@@ -21194,6 +21735,7 @@
    "definition": "Knowing the customer and handling every interaction with them.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
    "deprecated": false,
@@ -21209,6 +21751,7 @@
    "definition": "Managing the contacts between the customer and the operator, in any channel.",
    "broader_id": "etom-customer-relationship-management",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own eTOM values",
    "deprecated": false,
@@ -21224,6 +21767,7 @@
    "definition": "An order a sales agent, a shop or the back office places for the customer.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own channel kinds",
    "deprecated": false,
@@ -21241,6 +21785,7 @@
    "definition": "An order the customer places themselves, on the web or in an app.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own channel kinds",
    "deprecated": false,
@@ -21258,6 +21803,7 @@
    "definition": "An order another system raises, such as a portability or contract event.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own channel kinds",
    "deprecated": false,
@@ -21275,6 +21821,7 @@
    "definition": "Takes in the order, or facts the order needs, from the customer or the field.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
    "deprecated": false,
@@ -21290,6 +21837,7 @@
    "definition": "Supplies the offer, its rules and its eligibility from the product catalogue.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
    "deprecated": false,
@@ -21305,6 +21853,7 @@
    "definition": "Keeps the customer's account and party record.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
    "deprecated": false,
@@ -21320,6 +21869,7 @@
    "definition": "Checks that the order, the customer or the site qualifies.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
    "deprecated": false,
@@ -21337,6 +21887,7 @@
    "definition": "Splits the order into sub-orders and drives each to completion.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
    "deprecated": false,
@@ -21356,6 +21907,7 @@
    "definition": "Configures and activates the service or resource on the network.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
    "deprecated": false,
@@ -21373,6 +21925,7 @@
    "definition": "Schedules and records the work done at the customer's site.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
    "deprecated": false,
@@ -21388,6 +21941,7 @@
    "definition": "Ships, delivers or collects equipment.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
    "deprecated": false,
@@ -21403,6 +21957,7 @@
    "definition": "Starts, changes or stops billing for what was delivered.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
    "deprecated": false,
@@ -21418,6 +21973,7 @@
    "definition": "Shows the order's progress to the customer and to the operator.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
    "deprecated": false,
@@ -21433,6 +21989,7 @@
    "definition": "Tells the customer, or another party, that something happened.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
    "deprecated": false,
@@ -21448,6 +22005,7 @@
    "definition": "Keeps the record of what was delivered, such as the inventory.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own activity roles",
    "deprecated": false,
@@ -21468,6 +22026,7 @@
    "definition": "Sets a component's options up on the delivering system, such as applying a firewall policy on the CPE or creating the self-service portal organisation.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Catalogue curation · the components' own responsibility notes",
    "deprecated": false,
@@ -21486,6 +22045,7 @@
    "definition": "Signs users in to a component, such as SAML single sign-on into the self-service portal.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Catalogue curation · the components' own responsibility notes",
    "deprecated": false,
@@ -21503,6 +22063,7 @@
    "definition": "Proposes the fitting option for an order, such as the equipment model by bandwidth.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Catalogue curation · the components' own responsibility notes",
    "deprecated": false,
@@ -21520,6 +22081,7 @@
    "definition": null,
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
    "deprecated": false,
@@ -21535,6 +22097,7 @@
    "definition": null,
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
    "deprecated": false,
@@ -21550,6 +22113,7 @@
    "definition": null,
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
    "deprecated": false,
@@ -21567,6 +22131,7 @@
    "definition": null,
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
    "deprecated": false,
@@ -21582,6 +22147,7 @@
    "definition": null,
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
    "deprecated": false,
@@ -21599,6 +22165,7 @@
    "definition": null,
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
    "deprecated": false,
@@ -21614,6 +22181,7 @@
    "definition": null,
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
    "deprecated": false,
@@ -21629,6 +22197,7 @@
    "definition": null,
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
    "deprecated": false,
@@ -21644,6 +22213,7 @@
    "definition": null,
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 6 · the catalogue's own TMF equivalents",
    "deprecated": false,
@@ -21663,6 +22233,7 @@
    "definition": "A person or organisation the operator deals with, and how to reach them (SID Party).",
    "broader_id": null,
    "exact_match": "SID Party ABE",
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
    "deprecated": false,
@@ -21680,6 +22251,7 @@
    "definition": "A party the operator sells to, with its segment and status (SID Customer).",
    "broader_id": null,
    "exact_match": "SID Customer ABE",
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
    "deprecated": false,
@@ -21698,6 +22270,7 @@
    "definition": "The account a customer's products are billed to (SID Customer Account).",
    "broader_id": null,
    "exact_match": "SID Customer Bill ABE",
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
    "deprecated": false,
@@ -21715,6 +22288,7 @@
    "definition": "What a billing account is charged for a period (SID Customer Bill).",
    "broader_id": null,
    "exact_match": "SID Customer Bill ABE",
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
    "deprecated": false,
@@ -21733,6 +22307,7 @@
    "definition": "What is sold: an offering with its prices, eligibility rules and package codes (SID Product Offering).",
    "broader_id": null,
    "exact_match": "SID Product Offering ABE",
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
    "deprecated": false,
@@ -21752,6 +22327,7 @@
    "definition": "An offering as a customer has it: an instance in the product inventory (SID Product).",
    "broader_id": null,
    "exact_match": "SID Product ABE",
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
    "deprecated": false,
@@ -21770,6 +22346,7 @@
    "definition": "A customer's request to add, change or remove products (SID Customer Order).",
    "broader_id": null,
    "exact_match": "SID Customer Order ABE",
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
    "deprecated": false,
@@ -21788,6 +22365,7 @@
    "definition": "A step an order has reached, as tracked and shown to the customer.",
    "broader_id": "entity-product-order",
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
    "deprecated": false,
@@ -21803,6 +22381,7 @@
    "definition": "The order that provisions the services behind a product order (SID Service Order).",
    "broader_id": null,
    "exact_match": "SID Service Order ABE",
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
    "deprecated": false,
@@ -21822,6 +22401,7 @@
    "definition": "A physical or logical resource a service runs on: a CPE, a SIM, a number (SID Resource).",
    "broader_id": null,
    "exact_match": "SID Resource ABE",
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
    "deprecated": false,
@@ -21840,6 +22420,7 @@
    "definition": "A number assigned to a customer, ported in or out.",
    "broader_id": "entity-resource",
    "exact_match": "SID Logical Resource ABE",
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
    "deprecated": false,
@@ -21857,6 +22438,7 @@
    "definition": "Work a technician does on site: installing a CPE or an access point.",
    "broader_id": null,
    "exact_match": "SID Work Order ABE",
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
    "deprecated": false,
@@ -21875,6 +22457,7 @@
    "definition": "A customer's reported problem and its handling (SID Customer Problem).",
    "broader_id": null,
    "exact_match": "SID Customer Problem ABE",
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
    "deprecated": false,
@@ -21894,6 +22477,7 @@
    "definition": "A document a customer gives as proof: a trade licence, an ID, an establishment card.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "Ontology plan Phase 8 · SID aggregate business entities, read from the system descriptions",
    "deprecated": false,
@@ -21912,6 +22496,7 @@
    "definition": "How a solution is built: its systems, integrations and data, such as an SDD.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
    "deprecated": false,
@@ -21929,6 +22514,7 @@
    "definition": "The shape of a solution before its detail: its parts and how they connect.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
    "deprecated": false,
@@ -21946,6 +22532,7 @@
    "definition": "How work flows step by step, such as a workflow book of an order journey.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
    "deprecated": false,
@@ -21963,6 +22550,7 @@
    "definition": "What an offering is and how it is sold and fulfilled.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
    "deprecated": false,
@@ -21978,6 +22566,7 @@
    "definition": "An agreement with a customer, vendor or partner.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
    "deprecated": false,
@@ -21993,6 +22582,7 @@
    "definition": "A rule the business has to follow, and why.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
    "deprecated": false,
@@ -22010,6 +22600,7 @@
    "definition": "How to do something, for the people who do it.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
    "deprecated": false,
@@ -22025,6 +22616,7 @@
    "definition": "A document none of the other types describes.",
    "broader_id": null,
    "exact_match": null,
+   "close_match": [],
    "confidence": "inferred",
    "source": "ADR-0123 · library classification, the owner's decision of 2026-10-21",
    "deprecated": false,
@@ -22032,6 +22624,7 @@
    "accepted": []
   }
  ],
+ "schemes": [],
  "interfaces": [
   {
    "id": "if-cbcm-crm-gw-api",

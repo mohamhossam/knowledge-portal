@@ -72,6 +72,8 @@ export type Lexicon = {
   hasOffering: (reference: string) => boolean;
   /** Whether the draft already has a system or channel ("system:cwom", "channel:business-web"). */
   inDraft: (key: string) => boolean;
+  /** A vocabulary by id: a built-in one, or one a curator defined ("NFR quality"). */
+  vocabulary: (scheme: string) => string;
 };
 
 export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
@@ -129,9 +131,11 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
     !/^[a-z0-9_-]+$/.test(id) ? id : id.split(/[-_]+/).filter(Boolean)
       .map((word) => (/[0-9]/.test(word) || !/[aeiou]/.test(word) || word.length <= 2 ? word.toLocaleUpperCase() : word.charAt(0).toLocaleUpperCase() + word.slice(1)))
       .join(" ");
+  const curated = new Map((release.schemes ?? []).map((item) => [item.id, item.name] as const));
   const offeringBy = (reference: string) =>
     (release.products ?? []).find((item) => item.id === reference || item.name.toLocaleLowerCase() === reference.toLocaleLowerCase());
   return {
+    vocabulary: (scheme) => SCHEME[scheme] ?? curated.get(scheme) ?? humane(scheme),
     orderType: (offering, code) => offeringBy(offering)?.order_types.find((item) => item.code === code)?.name ?? code,
     hasOffering: (reference) => offeringBy(reference) !== undefined,
     system: (id) => systems.get(id) ?? humane(id),
@@ -284,7 +288,7 @@ export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
       return `Links ${words.offering(content.system_id)} › ${content.component_id ?? ""} to ${listed(content.concept_ids)}`;
     case "vocabulary_term": {
       const term = content.term;
-      const scheme = term ? SCHEME[term.scheme] : "term";
+      const scheme = term ? words.vocabulary(term.scheme) : "term";
       const label = term ? `${term.pref_label}${term.notation ? ` (${term.notation})` : ""}` : content.system_id;
       const covered = content.value_refs.length;
       const values = covered === 1 ? "1 value" : `${covered} values`;
@@ -301,8 +305,8 @@ const LAYER: Record<NonNullable<Suggestion["content"]["realisation"]>["layer"], 
   resource: "resource",
 };
 
-/** What each controlled vocabulary is called in a sentence. */
-const SCHEME: Record<NonNullable<Suggestion["content"]["term"]>["scheme"], string> = {
+/** What each built-in vocabulary is called in a sentence; a curated one goes by its name. */
+const SCHEME: Record<string, string> = {
   etom_process: "eTOM process",
   channel_kind: "channel kind",
   component_kind: "component kind",

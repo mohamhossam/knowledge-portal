@@ -77,15 +77,17 @@ from knowledge_portal.domain.architecture.realisations import (
 )
 from knowledge_portal.domain.architecture.tracking import TrackingChannel
 from knowledge_portal.domain.architecture.vocabularies import (
-    SCHEME_NAMES,
     VocabularyTerm,
+    field_schemes,
     find_term,
+    scheme_name,
     term_named,
 )
 from knowledge_portal.domain.architecture.vocabulary_links import (
     VocabularyRef,
     kept_component_terms,
     kept_journey_terms,
+    kept_offering_terms,
     linkable,
     with_terms,
 )
@@ -370,8 +372,9 @@ class CandidateContent:
             raise InvalidKnowledgeError("Only a vocabulary suggestion covers written values.")
         if len(set(self.value_refs)) != len(self.value_refs):
             raise InvalidKnowledgeError("A vocabulary suggestion names a value more than once.")
+        # A field only a curated scheme covers is checked against the draft on acceptance.
         if self.term is not None and any(
-            ref.scheme is not self.term.scheme for ref in self.value_refs
+            ref.scheme is not None and ref.scheme != self.term.scheme for ref in self.value_refs
         ):
             raise InvalidKnowledgeError("A term covers only values of its own vocabulary.")
         if self.kind in _PLACING:
@@ -1017,13 +1020,14 @@ def _kept_links(offering: ProductOffering, current: ProductOffering) -> ProductO
         parts.append(item)
     # Plans, business rules and the portfolio place come from a catalogue file or a
     # person far more often than from prose: a reading that names none keeps them.
-    return replace(
+    whole = replace(
         offering,
         components=tuple(parts),
         plans=offering.plans or current.plans,
         business_rules=offering.business_rules or current.business_rules,
         portfolio_node_id=offering.portfolio_node_id or current.portfolio_node_id,
     )
+    return kept_offering_terms(whole, current)
 
 
 def _resolved_offering(
@@ -2346,8 +2350,8 @@ def _term_broader(term: VocabularyTerm, release: ArchitectureKnowledge) -> Vocab
     broader = find_term(release.vocabulary, term.scheme, term.broader_id)
     if broader is None:
         raise CandidateDependencyError(
-            f"Accept or add the {SCHEME_NAMES[term.scheme]} {term.broader_id!r} before the "
-            f"narrower {term.pref_label}."
+            f"Accept or add the {_scheme_name(term.scheme, release)} {term.broader_id!r} "
+            f"before the narrower {term.pref_label}."
         )
     return replace(term, broader_id=broader.id)
 
@@ -2377,7 +2381,8 @@ def _term_to_apply(
     if current is None:
         if not labels or labels[0] != suggested.pref_label:
             raise CandidateDependencyError(
-                f"{suggested.pref_label!r} already names another {SCHEME_NAMES[scheme]}; edit "
+                f"{suggested.pref_label!r} already names another "
+                f"{_scheme_name(scheme, release)}; edit "
                 "the suggestion to merge into it or to use another label."
             )
         return replace(suggested, alt_labels=tuple(labels[1:]), notation=notation), None
@@ -2398,11 +2403,30 @@ def _term_to_apply(
     )
 
 
+def _scheme_name(scheme: str, release: ArchitectureKnowledge) -> str:
+    return scheme_name(scheme, {item.id: item.name for item in release.schemes})
+
+
+def _term_refs(
+    content: CandidateContent, term: VocabularyTerm, release: ArchitectureKnowledge
+) -> tuple[VocabularyRef, ...]:
+    """The places the suggestion covers whose field the term's scheme covers in the draft:
+    a curated scheme no longer covering a field links nothing there."""
+    bound = field_schemes(release.schemes)
+    return tuple(ref for ref in content.value_refs if bound.get(ref.field) == term.scheme)
+
+
 def _term_places(
-    content: CandidateContent, term_id: str, release: ArchitectureKnowledge
+    content: CandidateContent, term: VocabularyTerm, term_id: str, release: ArchitectureKnowledge
 ) -> tuple[VocabularyRef, ...]:
     return linkable(
-        content.value_refs, term_id, release.products, release.journeys, release.channels
+        _term_refs(content, term, release),
+        term_id,
+        release.products,
+        release.journeys,
+        release.channels,
+        portfolio=release.portfolio,
+        systems=release.systems,
     )
 
 
@@ -2419,7 +2443,7 @@ def _classify_term(
         return CandidateMatch.UPDATES_EXISTING
     if held is None:
         return CandidateMatch.NEW
-    places = _term_places(content, held.id, release)
+    places = _term_places(content, term, held.id, release)
     return (
         CandidateMatch.UPDATES_EXISTING
         if places or merged != held
@@ -2439,13 +2463,21 @@ def _with_term(
         else (*release.vocabulary, term)
     )
     linked = with_terms(
-        content.value_refs, term.id, release.products, release.journeys, release.channels
+        _term_refs(content, term, release),
+        term.id,
+        release.products,
+        release.journeys,
+        release.channels,
+        portfolio=release.portfolio,
+        systems=release.systems,
     )
     return release.updated(
         vocabulary=vocabulary,
         products=linked.products,
         journeys=linked.journeys,
         channels=linked.channels,
+        portfolio=linked.portfolio,
+        systems=linked.systems,
     )
 
 

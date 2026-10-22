@@ -318,6 +318,7 @@ const ITEM: Record<CatalogueDiff["changes"][number]["item"], [string, string]> =
   change_request: ["change request", "change requests"],
   concept: ["capability concept", "capability concepts"],
   vocabulary_term: ["vocabulary term", "vocabulary terms"],
+  vocabulary: ["vocabulary", "vocabularies"],
   document: ["document", "documents"],
   interface: ["interface", "interfaces"],
   realisation: ["service or resource record", "service and resource records"],

@@ -36,6 +36,9 @@ class PortfolioNode:
     # product that sits in it is forwarded to its successor.
     deprecated: bool = False
     replaced_by: str | None = None
+    # The term of a curated vocabulary ``level`` means, beside the text; None while unmapped
+    # (review recommendation 9).
+    level_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Portfolio node id"))
@@ -43,6 +46,7 @@ class PortfolioNode:
         object.__setattr__(self, "name", required(self.name, "Portfolio node name"))
         object.__setattr__(self, "level", required(self.level, "Portfolio level"))
         object.__setattr__(self, "parent_id", optional(self.parent_id, "Parent portfolio node"))
+        object.__setattr__(self, "level_id", optional(self.level_id, "Portfolio level term"))
         object.__setattr__(self, "description", optional(self.description, "Description"))
         if self.parent_id == self.id:
             raise InvalidKnowledgeError(f"{self.name} cannot sit under itself.")

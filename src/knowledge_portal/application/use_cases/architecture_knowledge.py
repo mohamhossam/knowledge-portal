@@ -54,7 +54,7 @@ from knowledge_portal.domain.architecture.knowledge import (
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import ProductOffering
 from knowledge_portal.domain.architecture.realisations import RealisationRecord
-from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm
+from knowledge_portal.domain.architecture.vocabularies import ConceptScheme, VocabularyTerm
 
 
 class KnowledgeNotFoundError(Exception):
@@ -244,6 +244,7 @@ class ManageArchitectureKnowledge:
         vocabulary: tuple[VocabularyTerm, ...] | None = None,
         interfaces: tuple[SystemInterface, ...] | None = None,
         realisations: tuple[RealisationRecord, ...] | None = None,
+        schemes: tuple[ConceptScheme, ...] | None = None,
     ) -> ArchitectureKnowledge:
         require_maintainer(actor)
         current = self.get(release_id)
@@ -262,6 +263,7 @@ class ManageArchitectureKnowledge:
             portfolio=portfolio,
             business_capabilities=business_capabilities,
             vocabulary=vocabulary,
+            schemes=schemes,
             interfaces=interfaces,
             realisations=realisations,
         )
@@ -430,6 +432,7 @@ class ManageArchitectureKnowledge:
             portfolio=imported.portfolio,
             business_capabilities=imported.business_capabilities,
             vocabulary=imported.vocabulary,
+            schemes=imported.schemes,
             interfaces=imported.interfaces,
             realisations=imported.realisations,
         )
@@ -468,6 +471,7 @@ class ManageArchitectureKnowledge:
             portfolio=imported.portfolio,
             business_capabilities=imported.business_capabilities,
             vocabulary=imported.vocabulary,
+            schemes=imported.schemes,
             interfaces=imported.interfaces,
             realisations=imported.realisations,
         )

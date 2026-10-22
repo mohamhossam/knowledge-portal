@@ -275,6 +275,9 @@ def update_draft(
                 if body.vocabulary is None
                 else tuple(item.to_domain() for item in body.vocabulary)
             ),
+            schemes=(
+                None if body.schemes is None else tuple(item.to_domain() for item in body.schemes)
+            ),
             interfaces=(
                 None
                 if body.interfaces is None

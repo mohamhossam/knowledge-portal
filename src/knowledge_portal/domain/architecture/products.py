@@ -200,11 +200,15 @@ class OfferingNfr:
     statement: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The term of a curated vocabulary ``quality`` means, beside the text; None while unmapped
+    # (review recommendation 9).
+    quality_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "quality", required(self.quality, "Quality"))
         object.__setattr__(self, "coverage", nfr_coverage(self.coverage))
         object.__setattr__(self, "statement", optional(self.statement, "Statement"))
+        object.__setattr__(self, "quality_id", optional(self.quality_id, "Quality term"))
         check_source(self)
 
 
@@ -402,11 +406,15 @@ class BusinessRule:
     kind: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The term of a curated vocabulary ``kind`` means, beside the text; None while unmapped
+    # (review recommendation 9).
+    kind_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Rule id"))
         object.__setattr__(self, "statement", required(self.statement, "Rule"))
         object.__setattr__(self, "kind", optional(self.kind, "Rule kind"))
+        object.__setattr__(self, "kind_id", optional(self.kind_id, "Rule kind term"))
         check_source(self)
 
 
@@ -459,6 +467,10 @@ class ProductOffering:
     # names it from outside the version (a product, a precedent) is forwarded to its successor.
     deprecated: bool = False
     replaced_by: str | None = None
+    # The terms of curated vocabularies ``family`` and ``lifecycle`` mean, beside the text;
+    # None while unmapped (review recommendation 9).
+    family_id: str | None = None
+    lifecycle_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Offering id"))
@@ -473,6 +485,8 @@ class ProductOffering:
             ("proposition", "Proposition"),
             ("purpose", "Purpose"),
             ("portfolio_node_id", "Portfolio node"),
+            ("family_id", "Family term"),
+            ("lifecycle_id", "Lifecycle term"),
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
         object.__setattr__(self, "rules", tuple(required(item, "Rule") for item in self.rules))

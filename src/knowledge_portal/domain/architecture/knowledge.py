@@ -51,7 +51,13 @@ from knowledge_portal.domain.architecture.realisations import (
     check_realisations,
 )
 from knowledge_portal.domain.architecture.sources import SourceConfidence, check_source
-from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm, check_vocabulary
+from knowledge_portal.domain.architecture.vocabularies import (
+    ConceptScheme,
+    VocabularyTerm,
+    check_schemes,
+    check_vocabulary,
+    field_schemes,
+)
 from knowledge_portal.domain.architecture.vocabulary_links import check_vocabulary_links
 
 
@@ -253,6 +259,9 @@ class SystemComponent:
     # Where it comes from and how sure its source is, as for every other fact.
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The term of a curated vocabulary ``technology`` means, beside the text; None while
+    # unmapped (review recommendation 9).
+    technology_id: str | None = None
 
     def __post_init__(self) -> None:
         check_source(self)
@@ -262,6 +271,7 @@ class SystemComponent:
             (self.name_ar, "Arabic component name"),
             (self.description, "Component description"),
             (self.technology, "Component technology"),
+            (self.technology_id, "Component technology term"),
         ):
             if value is not None:
                 _required(value, label)
@@ -559,6 +569,9 @@ class ArchitectureKnowledge:
     # The controlled vocabularies behind eTOM process, channel kind, component kind,
     # role and Open API values, each beside the text it covers (ADR-0114).
     vocabulary: tuple[VocabularyTerm, ...] = ()
+    # The vocabularies curators define beside the built-in ones, each covering free-text
+    # fields such as an offering's NFR quality (review recommendation 9).
+    schemes: tuple[ConceptScheme, ...] = ()
     # The contracts systems expose and consume (ontology plan Phase 8); with the
     # information entities systems master or read, what a data change ripples through.
     interfaces: tuple[SystemInterface, ...] = ()
@@ -644,8 +657,18 @@ class ArchitectureKnowledge:
         check_journeys(self.journeys, system_ids, self.products, channel_ids)
         check_former_ids("offering", self.products)
         check_former_ids("journey", self.journeys)
-        terms = check_vocabulary(self.vocabulary)
-        check_vocabulary_links(terms, self.products, self.journeys, self.channels)
+        scheme_names = check_schemes(self.schemes)
+        terms = check_vocabulary(self.vocabulary, scheme_names)
+        check_vocabulary_links(
+            terms,
+            self.products,
+            self.journeys,
+            self.channels,
+            portfolio=self.portfolio,
+            systems=self.systems,
+            bound=field_schemes(self.schemes),
+            names=scheme_names,
+        )
         for system in self.systems:
             check_data_roles(system.name, system.masters, system.reads, terms)
         check_interfaces(self.interfaces, system_ids, terms)
@@ -670,7 +693,7 @@ class ArchitectureKnowledge:
         check_replacements(self.products, "Offering")
         check_replacements(self.portfolio, "Portfolio node")
         check_replacements(self.business_capabilities, "Concept")
-        check_replacements(self.vocabulary, "Term", lambda old, new: old.scheme is new.scheme)
+        check_replacements(self.vocabulary, "Term", lambda old, new: old.scheme == new.scheme)
         landscape = _check_domains(self.landscape_domains, "Landscape domain")
         for system in self.systems:
             if (
@@ -702,6 +725,7 @@ class ArchitectureKnowledge:
         portfolio: tuple[PortfolioNode, ...] | None = None,
         business_capabilities: tuple[BusinessCapability, ...] | None = None,
         vocabulary: tuple[VocabularyTerm, ...] | None = None,
+        schemes: tuple[ConceptScheme, ...] | None = None,
         interfaces: tuple[SystemInterface, ...] | None = None,
         realisations: tuple[RealisationRecord, ...] | None = None,
     ) -> ArchitectureKnowledge:
@@ -736,6 +760,7 @@ class ArchitectureKnowledge:
                 else business_capabilities
             ),
             vocabulary=self.vocabulary if vocabulary is None else vocabulary,
+            schemes=self.schemes if schemes is None else schemes,
             interfaces=self.interfaces if interfaces is None else interfaces,
             realisations=self.realisations if realisations is None else realisations,
         )

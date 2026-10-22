@@ -46,6 +46,7 @@ from knowledge_portal.domain.architecture.vocabularies import (
 )
 from knowledge_portal.domain.architecture.vocabulary_cleanup import propose_terms
 from knowledge_portal.domain.architecture.vocabulary_links import (
+    FIELD_SCHEMES,
     VocabularyField,
     VocabularyRef,
     written_values,
@@ -149,8 +150,11 @@ def test_a_term_s_labels_and_code_differ_and_it_names_a_known_scheme() -> None:
         VocabularyTerm("api-1", API, "TMF622", notation="tmf-622")
     with pytest.raises(InvalidKnowledgeError, match="broader than itself"):
         VocabularyTerm("etom-a", ETOM, "A", broader_id="etom-a")
-    with pytest.raises(InvalidKnowledgeError, match="A vocabulary is one of"):
-        VocabularyTerm("x", "process", "X")  # type: ignore[arg-type]
+    # A term may sit in a vocabulary a curator defined; the version checks it has one.
+    with pytest.raises(InvalidKnowledgeError, match="lower case letters, digits"):
+        VocabularyTerm("x", "Process X!", "X")
+    with pytest.raises(InvalidKnowledgeError, match="vocabulary 'process', which is not in"):
+        check_vocabulary((VocabularyTerm("x", "process", "X"),))
     assert term_id_for(ETOM, "Order Handling", {"etom-order-handling"}) == "etom-order-handling-2"
 
 
@@ -364,7 +368,7 @@ def test_terms_and_links_survive_every_file_format(file_format: CatalogueFileFor
 
 def test_a_file_term_names_a_known_scheme_and_where_it_is() -> None:
     raw = {"systems": [], "vocabulary": [{"id": "x", "scheme": "process", "pref_label": "X"}]}
-    with pytest.raises(InvalidKnowledgeError, match="vocabulary entry 1.*A vocabulary is one of"):
+    with pytest.raises(InvalidKnowledgeError, match="term 'x'.*neither built in nor listed"):
         ADAPTER.read(CatalogueFileFormat.JSON, json.dumps(raw).encode())
 
 
@@ -391,7 +395,8 @@ def test_every_value_in_the_smb_catalogue_is_mapped_or_flagged() -> None:
     unmapped = {
         found.ref
         for found in written_values(release.products, release.journeys, release.channels)
-        if not found.term_ids
+        # Fields no vocabulary covers yet, such as a business rule's kind, stay free text.
+        if not found.term_ids and found.ref.field in FIELD_SCHEMES
     }
     assert unmapped == flagged
     # Configure, Authenticate and Suggest now cover the component verbs; PASSES

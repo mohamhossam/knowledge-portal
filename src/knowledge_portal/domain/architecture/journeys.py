@@ -88,6 +88,10 @@ class Activity:
     # text; None while unmapped.
     etom_id: str | None = None
     role_id: str | None = None
+    # The terms of curated vocabularies ``mode`` and ``phase`` mean, beside the text; None
+    # while unmapped (review recommendation 9).
+    mode_id: str | None = None
+    phase_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "number", required(self.number, "Activity number"))
@@ -104,6 +108,8 @@ class Activity:
             ("etom", "eTOM"),
             ("etom_id", "eTOM process term"),
             ("role_id", "Role term"),
+            ("mode_id", "Mode term"),
+            ("phase_id", "Phase term"),
             ("performer", "Performer"),
             ("point_of_no_return", "Point of no return"),
         ):

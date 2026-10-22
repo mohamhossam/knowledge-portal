@@ -462,6 +462,18 @@
             ],
             "title": "Mode"
           },
+          "mode_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode Id"
+          },
           "name": {
             "maxLength": 300,
             "title": "Name",
@@ -519,6 +531,18 @@
               }
             ],
             "title": "Phase"
+          },
+          "phase_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phase Id"
           },
           "point_of_no_return": {
             "anyOf": [
@@ -1381,6 +1405,16 @@
             ],
             "title": "Broader Id"
           },
+          "close_match": {
+            "default": [],
+            "items": {
+              "maxLength": 300,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Close Match",
+            "type": "array"
+          },
           "confidence": {
             "anyOf": [
               {
@@ -1502,6 +1536,18 @@
               }
             ],
             "title": "Kind"
+          },
+          "kind_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind Id"
           },
           "source": {
             "anyOf": [
@@ -3027,6 +3073,7 @@
           "change_request",
           "concept",
           "vocabulary_term",
+          "vocabulary",
           "interface",
           "realisation",
           "portfolio_node"
@@ -3488,6 +3535,49 @@
           "overridden"
         ],
         "title": "ConceptOverridesResponse",
+        "type": "object"
+      },
+      "ConceptSchemeSchema": {
+        "description": "A vocabulary a curator defines beside the built-in ones, and the free-text fields\nits terms are linked to (review recommendation 9).",
+        "properties": {
+          "definition": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "fields": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/VocabularyField"
+            },
+            "maxItems": 5000,
+            "title": "Fields",
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 300,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ConceptSchemeSchema",
         "type": "object"
       },
       "ConflictScopeSchema": {
@@ -4573,6 +4663,21 @@
             "maxItems": 5000,
             "title": "Relationships",
             "type": "array"
+          },
+          "schemes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ConceptSchemeSchema"
+                },
+                "maxItems": 5000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schemes"
           },
           "sources": {
             "anyOf": [
@@ -7152,6 +7257,14 @@
             "title": "Revision",
             "type": "integer"
           },
+          "schemes": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptSchemeSchema"
+            },
+            "maxItems": 5000,
+            "title": "Schemes",
+            "type": "array"
+          },
           "source_references": {
             "items": {
               "$ref": "#/components/schemas/SourceReferenceSchema"
@@ -8862,6 +8975,18 @@
             "title": "Quality",
             "type": "string"
           },
+          "quality_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality Id"
+          },
           "source": {
             "anyOf": [
               {
@@ -9765,6 +9890,18 @@
             "title": "Level",
             "type": "string"
           },
+          "level_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level Id"
+          },
           "name": {
             "maxLength": 300,
             "title": "Name",
@@ -10027,6 +10164,18 @@
             ],
             "title": "Family"
           },
+          "family_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Family Id"
+          },
           "former_ids": {
             "default": [],
             "items": {
@@ -10053,6 +10202,18 @@
               }
             ],
             "title": "Lifecycle"
+          },
+          "lifecycle_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifecycle Id"
           },
           "lifecycle_notes": {
             "default": [],
@@ -12813,6 +12974,18 @@
               }
             ],
             "title": "Technology"
+          },
+          "technology_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Technology Id"
           }
         },
         "required": [
@@ -13925,13 +14098,22 @@
         "type": "object"
       },
       "VocabularyField": {
+        "description": "Where the catalogue writes a value a vocabulary covers.\n\nThe first six are bound to built-in schemes. The rest are free text until a curator\nbinds a scheme of their own to them (``ConceptScheme.fields``).",
         "enum": [
           "activity_etom",
           "activity_role",
           "channel_kind",
           "component_kind",
           "responsibility_role",
-          "integration_open_api"
+          "integration_open_api",
+          "nfr_quality",
+          "offering_family",
+          "offering_lifecycle",
+          "rule_kind",
+          "activity_mode",
+          "activity_phase",
+          "portfolio_level",
+          "component_technology"
         ],
         "title": "VocabularyField",
         "type": "string"
@@ -13985,21 +14167,8 @@
         "title": "VocabularyRefSchema",
         "type": "object"
       },
-      "VocabularyScheme": {
-        "enum": [
-          "etom_process",
-          "channel_kind",
-          "component_kind",
-          "responsibility_role",
-          "open_api",
-          "information_entity",
-          "document_type"
-        ],
-        "title": "VocabularyScheme",
-        "type": "string"
-      },
       "VocabularyTermSchema": {
-        "description": "A term of a controlled vocabulary: an eTOM process, a channel or component kind, a\nrole, an Open API or an information entity.",
+        "description": "A term of a controlled vocabulary: an eTOM process, a channel or component kind, a\nrole, an Open API or an information entity, or a term of a vocabulary a curator\ndefined (review recommendation 9).",
         "properties": {
           "accepted": {
             "default": [],
@@ -14031,6 +14200,16 @@
               }
             ],
             "title": "Broader Id"
+          },
+          "close_match": {
+            "default": [],
+            "items": {
+              "maxLength": 300,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Close Match",
+            "type": "array"
           },
           "confidence": {
             "anyOf": [
@@ -14106,7 +14285,10 @@
             "title": "Replaced By"
           },
           "scheme": {
-            "$ref": "#/components/schemas/VocabularyScheme"
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Scheme",
+            "type": "string"
           },
           "source": {
             "anyOf": [
