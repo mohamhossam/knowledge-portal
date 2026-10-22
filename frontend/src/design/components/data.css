@@ -223,7 +223,7 @@
   min-block-size: var(--target-min);
 }
 
-/* An RTL cell aligns to its own start (§13.4). */
+/* A cell whose own text runs right to left aligns to its own start. */
 .ds-table :is(th, td)[dir="auto"]:dir(rtl) {
   text-align: start;
 }

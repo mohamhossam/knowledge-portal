@@ -8,7 +8,7 @@ built is archived in `docs/history/roadmap-to-v0.7.0.md`; each release is in `CH
 | Scope | Open item |
 |---|---|
 | Stage 0: repository scaffolding | Branch protection on `main`, set by the repository owner in GitHub's settings (`docs/operations/branch-protection.md` says what to require) |
-| The 2026-10-22 portal review ([report](https://claude.ai/artifact/TkWtaZUrpzyUYp1YYvtief)) | Recommendations 1 to 18 are in [#144](https://github.com/mohamhossam/knowledge-portal/pull/144). The English-only clean-up is in it too. Left: the impeccable critique of the screens #144 changed |
+| The 2026-10-22 portal review ([report](https://claude.ai/artifact/TkWtaZUrpzyUYp1YYvtief)) | Recommendations 1 to 18 are in [#144](https://github.com/mohamhossam/knowledge-portal/pull/144). The English-only clean-up and a critique of its screens (`docs/ux/critique-2026-10-22.md`, by hand: the impeccable plugin was not available) are in it too. Left: the critique's three low findings, and running it again with the plugin |
 | Ontology and impact plan (ADR-0114 to ADR-0116) | The live-model baseline and the 80% verdict gate for both mappers; the concept screens and coverage line (redesign plan 03); requirement-portal keeping, showing and sending the drafted offering (Phase 9) |
 | The Product Architecture Explorer (requirement-portal ADR-0101) | Live-model extraction checks, and a live TMF620 catalog |
 | Knowledge Center (ADR-0099 Amendment 1, ADR-0102) | The Azure DevOps edition, for the REST adapter (historic requirements run on the fake connector until then); prior art stays off in production until requirement-portal's judge is evaluated |

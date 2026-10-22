@@ -674,6 +674,10 @@
 
   .ds-split__list,
   .ds-split__pane {
+    /* The containing block of what they hold, so a visually hidden label (absolute) is clipped
+       by their scroll too: otherwise 200 rows' hidden labels stretch the page under the desk,
+       and focusing into the pane scrolls the whole window. */
+    position: relative;
     min-block-size: 0;
     overflow-y: auto;
     overscroll-behavior: contain;

@@ -333,7 +333,17 @@ function Decide() {
       affects={
         <>
           <Lines label="Suggestions to accept">
-            {acceptSet.slice(0, 8).map((item) => <li key={item.id} dir="auto">{changeSentence(item, words)}</li>)}
+            {acceptSet.slice(0, 8).map((item, index, shown) => {
+              const sentence = changeSentence(item, words);
+              // Two suggestions can read alike (the same system read twice): where each was read tells them apart.
+              const twin = shown.some((other, at) => at !== index && changeSentence(other, words) === sentence);
+              return (
+                <li key={item.id} dir="auto">
+                  {sentence}
+                  {twin && item.citations[0]?.location && <span className="draft-detail">Read at {item.citations[0].location}</span>}
+                </li>
+              );
+            })}
             {acceptSet.length > 8 && <li>and {(acceptSet.length - 8).toLocaleString("en")} more</li>}
           </Lines>
           {acceptSet.length > 8 && filter !== "ready" && (

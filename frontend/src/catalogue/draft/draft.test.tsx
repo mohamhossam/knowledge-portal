@@ -302,6 +302,21 @@ describe("Decide", () => {
     expect(await screen.findByText(/Accepted 3 suggestions\. 1 still wait for you\./)).toBeInTheDocument();
   });
 
+  it("tells two suggestions that read alike apart by where each was read", async () => {
+    const twice = [
+      base("hub", { kind: "system", system_id: "order-hub", name: "Order Hub" }, { citations: [{ location: "lines 1-12", quote: "Order Hub" }] }),
+      base("hub-again", { kind: "system", system_id: "order-hub", name: "Order Hub" }, { citations: [{ location: "line 13", quote: "Order Hub" }] }),
+      base("store", { kind: "constraint", system_id: "cwom", text: "Nights only" }, { system_name: "CWOM" }),
+    ];
+    renderStep("decide", { suggestions: twice });
+    await screen.findByRole("grid");
+    fireEvent.click(screen.getByRole("button", { name: /^Accept the \d+ ready/ }));
+    const listed = within(screen.getByRole("list", { name: "Suggestions to accept" })).getAllByRole("listitem").map((item) => item.textContent);
+    expect(listed).toEqual(expect.arrayContaining(["Adds the system Order HubRead at lines 1-12", "Adds the system Order HubRead at line 13"]));
+    // A sentence that reads once needs no place.
+    expect(listed).toContain("Adds the constraint “Nights only”");
+  });
+
   it("lists under Ready to accept exactly what accepting the ready ones would take", async () => {
     renderStep("decide");
     await screen.findByRole("grid");
@@ -457,6 +472,18 @@ describe("Check: what nothing links to", () => {
     expect(found.getByText("information entity")).toBeInTheDocument();
     expect(found.queryByRole("heading", { name: /Interfaces nobody consumes/ })).toBeNull();
     expect(found.getByText(/Publishing is not held for them\./)).toBeInTheDocument();
+  });
+
+  it("shows a long kind as its first ten rows until all are asked for", async () => {
+    const many = Array.from({ length: 12 }, (_, at) => ({ id: `cap-${at + 1}`, name: `Capability ${at + 1}`, owner_id: "cwom", owner: "CWOM" }));
+    vi.spyOn(api, "coverage").mockResolvedValue({ ...LINKED, unlinked_capabilities: many });
+    renderStep("check");
+    const found = within(await section());
+    const table = await found.findByRole("table", { name: "Capabilities with no concept" });
+    expect(within(table).getAllByRole("rowheader")).toHaveLength(10);
+    fireEvent.click(found.getByRole("button", { name: "Show all 12" }));
+    expect(within(table).getAllByRole("rowheader")).toHaveLength(12);
+    expect(within(table).getByRole("link", { name: "Capability 12" })).toHaveAttribute("href", "/architecture/versions/d/systems/cwom");
   });
 
   it("says so when everything is linked", async () => {

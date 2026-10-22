@@ -228,6 +228,14 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- The review desk, the draft's Decide desk and the catalogue's benches no longer stretch the
+  page under themselves. Their rows' visually hidden labels escaped the list's scroll, making
+  the page thousands of pixels tall, so focusing into the pane (opening the publish panel)
+  scrolled the whole window. The split and bench lists and panes now contain what they hold;
+  `e2e/layout.spec.ts` keeps each page about one screen tall. Found by the critique of #144's
+  screens (`docs/ux/critique-2026-10-22.md`), which also made the Check step's orphans a dense
+  table after the samples, and has the accept panel say where two look-alike suggestions were
+  read.
 - An architecture catalogue workbook whose Tracking sheet has a column named `flows`,
   `channels`, `milestones`, `statuses` or `fallout` imports again. The column's cell replaced
   the list the TrackingFlows, TrackingChannels and TrackingEvents sheets add to, and the import
