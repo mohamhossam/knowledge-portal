@@ -401,13 +401,13 @@ Diagrams section with two seed-shaped examples (CWOM in context, the ownership t
 
 ## 5. Bidi in components
 
-- **Direction:** every content-bearing input and cell can take its own direction (`dir="auto"`).
+The portal is English only (PRODUCT.md), so there is no right-to-left typography: no Arabic face,
+no RTL leading or alignment. Two isolation habits stay, because they keep a name's own
+punctuation from scrambling the text around it:
+
+- **Direction:** content-bearing inputs and cells carry `dir="auto"`, on the cell itself, not
+  just the link inside it.
 - **Names in sentences:** isolated with `<bdi>`.
-- **RTL text:** gets Noto Sans Arabic at line-height 1.75, with an underline offset that clears
-  descenders.
-- **The UI chrome is never mirrored.**
-- **Cell alignment:** an RTL table cell aligns to its own start. The cell itself carries
-  `dir="auto"`, not just the link inside it.
 
 ## 6. Accessible-name rule (found by the tests)
 

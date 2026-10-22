@@ -53,7 +53,7 @@ Each object lists its attributes, relationships, actions (with who can act) and 
 ### Document [`LibraryDocument`]
 - **Shown as:** Document.
 - **Attributes:**
-  - title (Arabic or English, `dir="auto"`);
+  - title (English, `dir="auto"`);
   - owner;
   - versions;
   - publications;
@@ -219,7 +219,7 @@ Each object lists its attributes, relationships, actions (with who can act) and 
 ### System [`SystemDefinitionSchema`]
 - **Attributes:**
   - id;
-  - name and Arabic name;
+  - name;
   - aliases;
   - description;
   - capabilities and components;
@@ -253,7 +253,7 @@ Each object lists its attributes, relationships, actions (with who can act) and 
 
 ### Domain [`CapabilityDomainSchema`, `LandscapeDomainSchema`]
 - **Shown as:** Capability area (capability) and Landscape area (landscape).
-- **Attributes:** name and Arabic name; parent; placed systems.
+- **Attributes:** name; parent; placed systems.
 - **Actions:** add, edit, remove, and place a system (draft).
 
 ### Offering [`ProductOfferingSchema`]

@@ -330,22 +330,19 @@ blame.
 
 ## 13. Bidi rules
 
+The portal is English only (PRODUCT.md, 2026-10-22): there is no Arabic name, face or
+right-to-left layout any more. What stays keeps a name's own punctuation from scrambling the
+text around it.
+
 1. **The UI chrome is English and LTR,** and is never mirrored.
 2. **Every element showing content** (names, titles, passages, cells, inputs, textareas, find
-   fields) gets `dir="auto"`. Known-Arabic fields (`name_ar`) get `lang="ar" dir="rtl"`.
+   fields) gets `dir="auto"`.
 3. **Every interpolated name** in a sentence is wrapped in `<bdi>`. This fixes the
    `suggestions.ts` join bug: "Waits for the systems <bdi>A</bdi>, <bdi>B</bdi>".
-4. **Alignment** follows each cell's own direction, so an RTL cell aligns to its own start.
-   Headings with RTL titles keep the **head layout** LTR: the title box has `dir="auto"`, but
-   the row layout does not swing.
-5. **Numerals:**
-   - The UI uses Western digits with `font-variant-numeric: tabular-nums` in tables.
-   - Content keeps its own digits.
-   - Dates and counts are never rendered inside Arabic strings by the UI.
-6. **Logical CSS properties only** (`margin-inline`, `inset-inline`, `text-align: start`). A
+4. **Numerals:** the UI uses Western digits with `font-variant-numeric: tabular-nums` in
+   tables; content keeps its own digits.
+5. **Logical CSS properties only** (`margin-inline`, `inset-inline`, `text-align: start`). A
    lint rule rejects physical properties in new CSS.
-7. **Arabic text** uses the Arabic face (Phase 4 picks it), with a line-height of at least 1.6
-   for passages.
 
 ---
 
