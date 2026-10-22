@@ -263,6 +263,35 @@ def test_http_only_api_requires_a_queue_a_separate_worker_can_see(
         Settings.from_env()
 
 
+@pytest.mark.parametrize(
+    ("name", "attribute", "default"),
+    [
+        ("LOCAL_LLM_VISION_ENABLED", "local_llm_vision_enabled", False),
+        ("OIDC_COMPANY_SSO_ENABLED", "oidc_company_sso_enabled", True),
+        ("OIDC_PASSWORD_LOGIN_ENABLED", "oidc_password_login_enabled", True),
+        ("DEBUG_TRACE_ENABLED", "debug_trace_enabled", False),
+        ("API_BACKGROUND_WORKERS", "api_background_workers", True),
+        ("KNOWLEDGE_EVALUATION_APPROVED", "knowledge_evaluation_approved", False),
+    ],
+)
+def test_each_switch_reads_true_or_false_and_refuses_anything_else(
+    monkeypatch: pytest.MonkeyPatch, name: str, attribute: str, default: bool
+) -> None:
+    monkeypatch.setenv("LLM_PROVIDER", "fake")
+    # PostgreSQL lets API_BACKGROUND_WORKERS be turned off too.
+    monkeypatch.setenv("PERSISTENCE_PROVIDER", "postgres")
+    monkeypatch.setenv("DATABASE_URL", "postgresql://example/test")
+    monkeypatch.delenv(name, raising=False)
+    assert getattr(Settings.from_env(), attribute) is default
+
+    monkeypatch.setenv(name, f" {str(not default).upper()} ")
+    assert getattr(Settings.from_env(), attribute) is (not default)
+
+    monkeypatch.setenv(name, "sometimes")
+    with pytest.raises(ConfigurationError, match=f"{name} must be true or false"):
+        Settings.from_env()
+
+
 class TestOperabilitySettings:
     def test_defaults_log_text_limit_providers_and_export_no_metrics(
         self, monkeypatch: pytest.MonkeyPatch

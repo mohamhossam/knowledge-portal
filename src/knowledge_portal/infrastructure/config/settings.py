@@ -78,13 +78,6 @@ from knowledge_portal.infrastructure.config.settings_validation import validate_
 DEFAULT_EVALUATION_ROOT = Path(__file__).resolve().parents[4]
 
 
-def _library_scanner_port() -> int:
-    try:
-        return int(os.getenv("LIBRARY_SCANNER_PORT", "3310"))
-    except ValueError as exc:
-        raise ConfigurationError("LIBRARY_SCANNER_PORT must be an integer.") from exc
-
-
 @dataclass(frozen=True)
 class PersistenceSettings:
     """Persistence-only configuration for operational database commands."""
@@ -253,298 +246,364 @@ class Settings:
 
     @classmethod
     def from_env(cls, *, config_path: str | None = None) -> Settings:
-        """Build settings from the process environment, loading .env if present."""
+        """Build settings from the process environment, loading .env if present.
+
+        Each section has its own reader; they run in turn, and the first malformed
+        value fails the boot.
+        """
         load_dotenv()
-
-        llm_config_path = config_path or os.getenv("LLM_CONFIG_PATH", "").strip() or None
-        llm_profiles = None
-        if llm_config_path:
-            try:
-                llm_profiles = load_profiles(llm_config_path, dict(os.environ))
-            except ProfileConfigurationError as exc:
-                raise ConfigurationError(str(exc)) from exc
-        raw_provider = (
-            "profiles"
-            if llm_profiles
-            else os.getenv("LLM_PROVIDER", LLMProvider.OPENAI.value).strip().lower()
-        )
-        try:
-            provider = LLMProvider(raw_provider)
-        except ValueError as exc:
-            supported = ", ".join(sorted(p.value for p in LLMProvider))
-            raise ConfigurationError(
-                f"Unsupported LLM_PROVIDER {raw_provider!r}. Supported values: {supported}."
-            ) from exc
-
-        api_key = os.getenv("OPENAI_API_KEY") or None
-        model = os.getenv("OPENAI_MODEL", "").strip() or DEFAULT_OPENAI_MODEL
-        raw_openai_timeout = os.getenv("OPENAI_TIMEOUT_SECONDS", "").strip()
-        try:
-            openai_timeout = (
-                float(raw_openai_timeout) if raw_openai_timeout else DEFAULT_OPENAI_TIMEOUT_SECONDS
-            )
-        except ValueError as exc:
-            raise ConfigurationError("OPENAI_TIMEOUT_SECONDS must be a number.") from exc
-        embedding_model = (
-            os.getenv("OPENAI_EMBEDDING_MODEL", "").strip() or DEFAULT_OPENAI_EMBEDDING_MODEL
-        )
-        openrouter_api_key = os.getenv("OPENROUTER_API_KEY", "").strip() or None
-        openrouter_model = os.getenv("OPENROUTER_MODEL", "").strip() or DEFAULT_OPENROUTER_MODEL
-        openrouter_embedding_model = (
-            os.getenv("OPENROUTER_EMBEDDING_MODEL", "").strip()
-            or DEFAULT_OPENROUTER_EMBEDDING_MODEL
-        )
-        openrouter_base_url = (
-            os.getenv("OPENROUTER_BASE_URL", "").strip() or DEFAULT_OPENROUTER_BASE_URL
-        )
-        raw_openrouter_timeout = os.getenv("OPENROUTER_TIMEOUT_SECONDS", "").strip()
-        raw_openrouter_max_output = os.getenv("OPENROUTER_MAX_OUTPUT_TOKENS", "").strip()
-        openrouter_data_collection = (
-            os.getenv("OPENROUTER_DATA_COLLECTION", "").strip().lower()
-            or DEFAULT_OPENROUTER_DATA_COLLECTION
-        )
-        local_base_url = os.getenv("LOCAL_LLM_BASE_URL", "").strip() or DEFAULT_LOCAL_LLM_BASE_URL
-        local_model = os.getenv("LOCAL_LLM_MODEL", "").strip()
-        local_embedding_model = os.getenv("LOCAL_EMBEDDING_MODEL", "").strip()
-        raw_local_timeout = os.getenv("LOCAL_LLM_TIMEOUT_SECONDS", "").strip()
-        local_reasoning_effort = os.getenv("LOCAL_LLM_REASONING_EFFORT", "").strip() or None
-        raw_context_window = os.getenv("LOCAL_LLM_CONTEXT_WINDOW_TOKENS", "").strip()
-        raw_max_output = os.getenv("LOCAL_LLM_MAX_OUTPUT_TOKENS", "").strip()
-        raw_vision_enabled = os.getenv("LOCAL_LLM_VISION_ENABLED", "false").strip().lower()
-        if raw_vision_enabled not in {"true", "false"}:
-            raise ConfigurationError("LOCAL_LLM_VISION_ENABLED must be true or false.")
-        persistence_settings = PersistenceSettings.from_env()
-        raw_document_max = os.getenv("DOCUMENT_MAX_FILE_BYTES", "").strip()
-        raw_extraction_timeout = os.getenv("DOCUMENT_EXTRACTION_TIMEOUT_SECONDS", "").strip()
-        raw_identity = os.getenv("IDENTITY_PROVIDER", IdentityProvider.FAKE.value).strip().lower()
-        raw_company_sso_enabled = os.getenv("OIDC_COMPANY_SSO_ENABLED", "true").strip().lower()
-        raw_password_login_enabled = (
-            os.getenv("OIDC_PASSWORD_LOGIN_ENABLED", "true").strip().lower()
-        )
-        for name, value in (
-            ("OIDC_COMPANY_SSO_ENABLED", raw_company_sso_enabled),
-            ("OIDC_PASSWORD_LOGIN_ENABLED", raw_password_login_enabled),
-        ):
-            if value not in {"true", "false"}:
-                raise ConfigurationError(f"{name} must be true or false.")
-        raw_job_poll = os.getenv("AI_JOB_POLL_INTERVAL_SECONDS", "").strip()
-        raw_job_shutdown_grace = os.getenv("AI_JOB_SHUTDOWN_GRACE_SECONDS", "").strip()
-        raw_oidc_jwks_ttl = os.getenv("OIDC_JWKS_TTL_SECONDS", "").strip()
-        raw_oidc_unknown_ttl = os.getenv("OIDC_UNKNOWN_KEY_TTL_SECONDS", "").strip()
-        raw_oidc_unknown_cache = os.getenv("OIDC_UNKNOWN_KEY_CACHE_SIZE", "").strip()
-        raw_knowledge_evaluation = (
-            os.getenv("KNOWLEDGE_EVALUATION_APPROVED", "false").strip().lower()
-        )
-        raw_debug_trace = os.getenv("DEBUG_TRACE_ENABLED", "false").strip().lower()
-        raw_api_workers = os.getenv("API_BACKGROUND_WORKERS", "true").strip().lower()
-        raw_pool_min = os.getenv("DATABASE_POOL_MIN_SIZE", "").strip()
-        raw_pool_max = os.getenv("DATABASE_POOL_MAX_SIZE", "").strip()
-        raw_pool_timeout = os.getenv("DATABASE_POOL_TIMEOUT_SECONDS", "").strip()
-        for name, value in (
-            ("DEBUG_TRACE_ENABLED", raw_debug_trace),
-            ("API_BACKGROUND_WORKERS", raw_api_workers),
-            ("KNOWLEDGE_EVALUATION_APPROVED", raw_knowledge_evaluation),
-        ):
-            if value not in {"true", "false"}:
-                raise ConfigurationError(f"{name} must be true or false.")
-        try:
-            identity_provider = IdentityProvider(raw_identity)
-        except ValueError as exc:
-            supported = ", ".join(item.value for item in IdentityProvider)
-            raise ConfigurationError(
-                f"Unsupported IDENTITY_PROVIDER {raw_identity!r}. Supported: {supported}."
-            ) from exc
-        allowed_algorithms = tuple(
-            item.strip()
-            for item in os.getenv("OIDC_ALLOWED_ALGORITHMS", "RS256,ES256").split(",")
-            if item.strip()
-        )
-        try:
-            document_max = (
-                int(raw_document_max) if raw_document_max else DEFAULT_DOCUMENT_MAX_FILE_BYTES
-            )
-            document_extraction_concurrency = int(
-                os.getenv("DOCUMENT_EXTRACTION_CONCURRENCY", "")
-                or DEFAULT_DOCUMENT_EXTRACTION_CONCURRENCY
-            )
-            catalogue_reading_concurrency = int(
-                os.getenv("CATALOGUE_READING_CONCURRENCY", "")
-                or DEFAULT_CATALOGUE_READING_CONCURRENCY
-            )
-            document_extraction_queue = int(
-                os.getenv("DOCUMENT_EXTRACTION_QUEUE", "") or DEFAULT_DOCUMENT_EXTRACTION_QUEUE
-            )
-            document_extraction_memory_bytes = int(
-                os.getenv("DOCUMENT_EXTRACTION_MEMORY_BYTES", "")
-                or DEFAULT_DOCUMENT_EXTRACTION_MEMORY_BYTES
-            )
-            document_max_pdf_pages = int(
-                os.getenv("DOCUMENT_MAX_PDF_PAGES", "") or DEFAULT_DOCUMENT_MAX_PDF_PAGES
-            )
-            document_max_extracted_characters = int(
-                os.getenv("DOCUMENT_MAX_EXTRACTED_CHARACTERS", "")
-                or DEFAULT_DOCUMENT_MAX_EXTRACTED_CHARACTERS
-            )
-            document_max_xml_nodes = int(
-                os.getenv("DOCUMENT_MAX_XML_NODES", "") or DEFAULT_DOCUMENT_MAX_XML_NODES
-            )
-            document_max_image_pixels = int(
-                os.getenv("DOCUMENT_MAX_IMAGE_PIXELS", "") or DEFAULT_DOCUMENT_MAX_IMAGE_PIXELS
-            )
-            document_max_spreadsheet_cells = int(
-                os.getenv("DOCUMENT_MAX_SPREADSHEET_CELLS", "")
-                or DEFAULT_DOCUMENT_MAX_SPREADSHEET_CELLS
-            )
-            document_extraction_timeout = (
-                float(raw_extraction_timeout)
-                if raw_extraction_timeout
-                else DEFAULT_DOCUMENT_EXTRACTION_TIMEOUT_SECONDS
-            )
-        except ValueError as exc:
-            raise ConfigurationError(
-                "Document size, complexity, concurrency, and timeout settings must be numeric."
-            ) from exc
-        try:
-            local_timeout = (
-                float(raw_local_timeout) if raw_local_timeout else DEFAULT_LOCAL_LLM_TIMEOUT_SECONDS
-            )
-        except ValueError as exc:
-            raise ConfigurationError("LOCAL_LLM_TIMEOUT_SECONDS must be a number.") from exc
-        openrouter_timeout = DEFAULT_OPENROUTER_TIMEOUT_SECONDS
-        if provider is LLMProvider.OPENROUTER and raw_openrouter_timeout:
-            try:
-                openrouter_timeout = float(raw_openrouter_timeout)
-            except ValueError as exc:
-                raise ConfigurationError("OPENROUTER_TIMEOUT_SECONDS must be a number.") from exc
-        try:
-            context_window = (
-                int(raw_context_window)
-                if raw_context_window
-                else DEFAULT_LOCAL_LLM_CONTEXT_WINDOW_TOKENS
-            )
-            max_output = (
-                int(raw_max_output) if raw_max_output else DEFAULT_LOCAL_LLM_MAX_OUTPUT_TOKENS
-            )
-        except ValueError as exc:
-            raise ConfigurationError(
-                "LOCAL_LLM_CONTEXT_WINDOW_TOKENS and LOCAL_LLM_MAX_OUTPUT_TOKENS must be integers."
-            ) from exc
-        openrouter_max_output = DEFAULT_OPENROUTER_MAX_OUTPUT_TOKENS
-        if provider is LLMProvider.OPENROUTER and raw_openrouter_max_output:
-            try:
-                openrouter_max_output = int(raw_openrouter_max_output)
-            except ValueError as exc:
-                raise ConfigurationError(
-                    "OPENROUTER_MAX_OUTPUT_TOKENS must be an integer."
-                ) from exc
-        try:
-            job_poll = float(raw_job_poll) if raw_job_poll else DEFAULT_AI_JOB_POLL_INTERVAL_SECONDS
-            job_shutdown_grace = (
-                float(raw_job_shutdown_grace)
-                if raw_job_shutdown_grace
-                else DEFAULT_AI_JOB_SHUTDOWN_GRACE_SECONDS
-            )
-        except ValueError as exc:
-            raise ConfigurationError("AI job worker settings must be numeric.") from exc
-        try:
-            pool_min = int(raw_pool_min) if raw_pool_min else DEFAULT_DATABASE_POOL_MIN_SIZE
-            pool_max = int(raw_pool_max) if raw_pool_max else DEFAULT_DATABASE_POOL_MAX_SIZE
-            pool_timeout = (
-                float(raw_pool_timeout)
-                if raw_pool_timeout
-                else DEFAULT_DATABASE_POOL_TIMEOUT_SECONDS
-            )
-        except ValueError as exc:
-            raise ConfigurationError("DATABASE_POOL_* settings must be numeric.") from exc
-        try:
-            oidc_jwks_ttl = (
-                float(raw_oidc_jwks_ttl) if raw_oidc_jwks_ttl else DEFAULT_OIDC_JWKS_TTL_SECONDS
-            )
-            oidc_unknown_ttl = (
-                float(raw_oidc_unknown_ttl)
-                if raw_oidc_unknown_ttl
-                else DEFAULT_OIDC_UNKNOWN_KEY_TTL_SECONDS
-            )
-            oidc_unknown_cache = (
-                int(raw_oidc_unknown_cache)
-                if raw_oidc_unknown_cache
-                else DEFAULT_OIDC_UNKNOWN_KEY_CACHE_SIZE
-            )
-        except ValueError as exc:
-            raise ConfigurationError("OIDC key cache settings must be numeric.") from exc
-
+        llm_config_path, llm_profiles = _llm_profiles_from_env(config_path)
+        llm_provider = _llm_provider_from_env(llm_profiles)
         return cls(
-            llm_provider=provider,
+            llm_provider=llm_provider,
             llm_config_path=llm_config_path,
             llm_profiles=llm_profiles,
-            openai_api_key=api_key,
-            openai_model=model,
-            openai_timeout_seconds=openai_timeout,
-            openai_embedding_model=embedding_model,
-            openrouter_api_key=openrouter_api_key,
-            openrouter_model=openrouter_model,
-            openrouter_embedding_model=openrouter_embedding_model,
-            openrouter_base_url=openrouter_base_url,
-            openrouter_timeout_seconds=openrouter_timeout,
-            openrouter_max_output_tokens=openrouter_max_output,
-            openrouter_data_collection=openrouter_data_collection,
-            local_llm_base_url=local_base_url,
-            local_llm_model=local_model,
-            local_embedding_model=local_embedding_model,
-            local_llm_timeout_seconds=local_timeout,
-            local_llm_reasoning_effort=local_reasoning_effort,
-            local_llm_context_window_tokens=context_window,
-            local_llm_max_output_tokens=max_output,
-            local_llm_vision_enabled=raw_vision_enabled == "true",
-            persistence_provider=persistence_settings.provider,
-            database_url=persistence_settings.database_url,
-            database_pool_min_size=pool_min,
-            database_pool_max_size=pool_max,
-            database_pool_timeout_seconds=pool_timeout,
-            api_background_workers=raw_api_workers == "true",
-            document_max_file_bytes=document_max,
-            library_scan_mode=os.getenv("LIBRARY_SCAN_MODE", "clamav").strip(),
-            library_ocr_artifacts_path=os.getenv("LIBRARY_OCR_ARTIFACTS_PATH", "").strip(),
-            document_office_preview_executable=os.getenv(
-                "DOCUMENT_OFFICE_PREVIEW_EXECUTABLE", ""
-            ).strip(),
-            library_scanner_host=os.getenv("LIBRARY_SCANNER_HOST", "127.0.0.1").strip(),
-            library_scanner_port=_library_scanner_port(),
-            document_extraction_concurrency=document_extraction_concurrency,
-            catalogue_reading_concurrency=catalogue_reading_concurrency,
-            document_extraction_queue=document_extraction_queue,
-            document_extraction_timeout_seconds=document_extraction_timeout,
-            document_extraction_memory_bytes=document_extraction_memory_bytes,
-            document_max_pdf_pages=document_max_pdf_pages,
-            document_max_extracted_characters=document_max_extracted_characters,
-            document_max_xml_nodes=document_max_xml_nodes,
-            document_max_image_pixels=document_max_image_pixels,
-            document_max_spreadsheet_cells=document_max_spreadsheet_cells,
-            app_environment=os.getenv("APP_ENV", "development").strip().lower(),
-            identity_provider=identity_provider,
-            oidc_issuer_url=os.getenv("OIDC_ISSUER_URL", "").strip().rstrip("/"),
-            oidc_audience=os.getenv("OIDC_AUDIENCE", "").strip(),
-            oidc_client_id=os.getenv("OIDC_CLIENT_ID", "").strip(),
-            oidc_scopes=os.getenv("OIDC_SCOPES", "").strip() or "openid profile email",
-            oidc_company_sso_enabled=raw_company_sso_enabled == "true",
-            oidc_company_sso_alias=(
-                os.getenv("OIDC_COMPANY_SSO_ALIAS", "").strip() or "company-sso"
-            ),
-            oidc_password_login_enabled=raw_password_login_enabled == "true",
-            oidc_allowed_algorithms=allowed_algorithms,
-            oidc_jwks_ttl_seconds=oidc_jwks_ttl,
-            oidc_unknown_key_ttl_seconds=oidc_unknown_ttl,
-            oidc_unknown_key_cache_size=oidc_unknown_cache,
-            oidc_roles_claim=os.getenv("OIDC_ROLES_CLAIM", "roles").strip(),
-            knowledge_evaluation_approved=raw_knowledge_evaluation == "true",
-            ai_job_poll_interval_seconds=job_poll,
-            ai_job_shutdown_grace_seconds=job_shutdown_grace,
-            debug_trace_enabled=raw_debug_trace == "true",
-            debug_trace_path=(
-                os.getenv("DEBUG_TRACE_PATH", "").strip() or DEFAULT_DEBUG_TRACE_PATH
-            ),
+            **_openai_from_env(),
+            **_local_llm_from_env(),
+            **_openrouter_from_env(llm_provider),
+            **_persistence_from_env(),
+            **_identity_from_env(),
+            **_debug_trace_from_env(),
+            **_ai_jobs_from_env(),
+            **_deployment_from_env(),
+            **_documents_from_env(),
+            **_library_from_env(),
             **_operability_from_env(),
+            **_requirement_service_from_env(),
+            **_product_catalog_from_env(),
+            knowledge_review_cycle_days=_review_cycle_from_env(),
+            **_ado_from_env(),
+            evaluation_root=_evaluation_root_from_env(),
+            **_reranker_from_env(),
         )
+
+
+def _flag_from_env(name: str, *, default: bool) -> bool:
+    """A true/false switch; any other value fails the boot."""
+    raw = os.getenv(name, "true" if default else "false").strip().lower()
+    if raw not in {"true", "false"}:
+        raise ConfigurationError(f"{name} must be true or false.")
+    return raw == "true"
+
+
+def _llm_profiles_from_env(
+    config_path: str | None,
+) -> tuple[str | None, LLMProfileConfiguration | None]:
+    """The LLM profiles file, from the caller or LLM_CONFIG_PATH, and what it configures."""
+    llm_config_path = config_path or os.getenv("LLM_CONFIG_PATH", "").strip() or None
+    llm_profiles = None
+    if llm_config_path:
+        try:
+            llm_profiles = load_profiles(llm_config_path, dict(os.environ))
+        except ProfileConfigurationError as exc:
+            raise ConfigurationError(str(exc)) from exc
+    return llm_config_path, llm_profiles
+
+
+def _llm_provider_from_env(llm_profiles: LLMProfileConfiguration | None) -> LLMProvider:
+    """Profiles, when a profiles file configures them; otherwise LLM_PROVIDER."""
+    raw_provider = (
+        "profiles"
+        if llm_profiles
+        else os.getenv("LLM_PROVIDER", LLMProvider.OPENAI.value).strip().lower()
+    )
+    try:
+        return LLMProvider(raw_provider)
+    except ValueError as exc:
+        supported = ", ".join(sorted(p.value for p in LLMProvider))
+        raise ConfigurationError(
+            f"Unsupported LLM_PROVIDER {raw_provider!r}. Supported values: {supported}."
+        ) from exc
+
+
+def _openai_from_env() -> dict[str, Any]:
+    raw_openai_timeout = os.getenv("OPENAI_TIMEOUT_SECONDS", "").strip()
+    try:
+        openai_timeout = (
+            float(raw_openai_timeout) if raw_openai_timeout else DEFAULT_OPENAI_TIMEOUT_SECONDS
+        )
+    except ValueError as exc:
+        raise ConfigurationError("OPENAI_TIMEOUT_SECONDS must be a number.") from exc
+    return {
+        "openai_api_key": os.getenv("OPENAI_API_KEY") or None,
+        "openai_model": os.getenv("OPENAI_MODEL", "").strip() or DEFAULT_OPENAI_MODEL,
+        "openai_timeout_seconds": openai_timeout,
+        "openai_embedding_model": (
+            os.getenv("OPENAI_EMBEDDING_MODEL", "").strip() or DEFAULT_OPENAI_EMBEDDING_MODEL
+        ),
+    }
+
+
+def _local_llm_from_env() -> dict[str, Any]:
+    """An OpenAI-compatible server on the operator's own hardware."""
+    vision_enabled = _flag_from_env("LOCAL_LLM_VISION_ENABLED", default=False)
+    raw_local_timeout = os.getenv("LOCAL_LLM_TIMEOUT_SECONDS", "").strip()
+    raw_context_window = os.getenv("LOCAL_LLM_CONTEXT_WINDOW_TOKENS", "").strip()
+    raw_max_output = os.getenv("LOCAL_LLM_MAX_OUTPUT_TOKENS", "").strip()
+    try:
+        local_timeout = (
+            float(raw_local_timeout) if raw_local_timeout else DEFAULT_LOCAL_LLM_TIMEOUT_SECONDS
+        )
+    except ValueError as exc:
+        raise ConfigurationError("LOCAL_LLM_TIMEOUT_SECONDS must be a number.") from exc
+    try:
+        context_window = (
+            int(raw_context_window)
+            if raw_context_window
+            else DEFAULT_LOCAL_LLM_CONTEXT_WINDOW_TOKENS
+        )
+        max_output = int(raw_max_output) if raw_max_output else DEFAULT_LOCAL_LLM_MAX_OUTPUT_TOKENS
+    except ValueError as exc:
+        raise ConfigurationError(
+            "LOCAL_LLM_CONTEXT_WINDOW_TOKENS and LOCAL_LLM_MAX_OUTPUT_TOKENS must be integers."
+        ) from exc
+    return {
+        "local_llm_base_url": (
+            os.getenv("LOCAL_LLM_BASE_URL", "").strip() or DEFAULT_LOCAL_LLM_BASE_URL
+        ),
+        "local_llm_model": os.getenv("LOCAL_LLM_MODEL", "").strip(),
+        "local_embedding_model": os.getenv("LOCAL_EMBEDDING_MODEL", "").strip(),
+        "local_llm_timeout_seconds": local_timeout,
+        "local_llm_reasoning_effort": (os.getenv("LOCAL_LLM_REASONING_EFFORT", "").strip() or None),
+        "local_llm_context_window_tokens": context_window,
+        "local_llm_max_output_tokens": max_output,
+        "local_llm_vision_enabled": vision_enabled,
+    }
+
+
+def _openrouter_from_env(provider: LLMProvider) -> dict[str, Any]:
+    """OpenRouter; its timeout and output limit are parsed only when it is the provider."""
+    raw_openrouter_timeout = os.getenv("OPENROUTER_TIMEOUT_SECONDS", "").strip()
+    raw_openrouter_max_output = os.getenv("OPENROUTER_MAX_OUTPUT_TOKENS", "").strip()
+    openrouter_timeout = DEFAULT_OPENROUTER_TIMEOUT_SECONDS
+    if provider is LLMProvider.OPENROUTER and raw_openrouter_timeout:
+        try:
+            openrouter_timeout = float(raw_openrouter_timeout)
+        except ValueError as exc:
+            raise ConfigurationError("OPENROUTER_TIMEOUT_SECONDS must be a number.") from exc
+    openrouter_max_output = DEFAULT_OPENROUTER_MAX_OUTPUT_TOKENS
+    if provider is LLMProvider.OPENROUTER and raw_openrouter_max_output:
+        try:
+            openrouter_max_output = int(raw_openrouter_max_output)
+        except ValueError as exc:
+            raise ConfigurationError("OPENROUTER_MAX_OUTPUT_TOKENS must be an integer.") from exc
+    return {
+        "openrouter_api_key": os.getenv("OPENROUTER_API_KEY", "").strip() or None,
+        "openrouter_model": os.getenv("OPENROUTER_MODEL", "").strip() or DEFAULT_OPENROUTER_MODEL,
+        "openrouter_embedding_model": (
+            os.getenv("OPENROUTER_EMBEDDING_MODEL", "").strip()
+            or DEFAULT_OPENROUTER_EMBEDDING_MODEL
+        ),
+        "openrouter_base_url": (
+            os.getenv("OPENROUTER_BASE_URL", "").strip() or DEFAULT_OPENROUTER_BASE_URL
+        ),
+        "openrouter_timeout_seconds": openrouter_timeout,
+        "openrouter_max_output_tokens": openrouter_max_output,
+        "openrouter_data_collection": (
+            os.getenv("OPENROUTER_DATA_COLLECTION", "").strip().lower()
+            or DEFAULT_OPENROUTER_DATA_COLLECTION
+        ),
+    }
+
+
+def _persistence_from_env() -> dict[str, Any]:
+    """Where durable state lives, and the pool of connections to it."""
+    persistence_settings = PersistenceSettings.from_env()
+    raw_pool_min = os.getenv("DATABASE_POOL_MIN_SIZE", "").strip()
+    raw_pool_max = os.getenv("DATABASE_POOL_MAX_SIZE", "").strip()
+    raw_pool_timeout = os.getenv("DATABASE_POOL_TIMEOUT_SECONDS", "").strip()
+    try:
+        pool_min = int(raw_pool_min) if raw_pool_min else DEFAULT_DATABASE_POOL_MIN_SIZE
+        pool_max = int(raw_pool_max) if raw_pool_max else DEFAULT_DATABASE_POOL_MAX_SIZE
+        pool_timeout = (
+            float(raw_pool_timeout) if raw_pool_timeout else DEFAULT_DATABASE_POOL_TIMEOUT_SECONDS
+        )
+    except ValueError as exc:
+        raise ConfigurationError("DATABASE_POOL_* settings must be numeric.") from exc
+    return {
+        "persistence_provider": persistence_settings.provider,
+        "database_url": persistence_settings.database_url,
+        "database_pool_min_size": pool_min,
+        "database_pool_max_size": pool_max,
+        "database_pool_timeout_seconds": pool_timeout,
+    }
+
+
+def _identity_from_env() -> dict[str, Any]:
+    """Who signs people in: the offline fake, or an OIDC issuer and its login choices."""
+    company_sso_enabled = _flag_from_env("OIDC_COMPANY_SSO_ENABLED", default=True)
+    password_login_enabled = _flag_from_env("OIDC_PASSWORD_LOGIN_ENABLED", default=True)
+    raw_identity = os.getenv("IDENTITY_PROVIDER", IdentityProvider.FAKE.value).strip().lower()
+    try:
+        identity_provider = IdentityProvider(raw_identity)
+    except ValueError as exc:
+        supported = ", ".join(item.value for item in IdentityProvider)
+        raise ConfigurationError(
+            f"Unsupported IDENTITY_PROVIDER {raw_identity!r}. Supported: {supported}."
+        ) from exc
+    allowed_algorithms = tuple(
+        item.strip()
+        for item in os.getenv("OIDC_ALLOWED_ALGORITHMS", "RS256,ES256").split(",")
+        if item.strip()
+    )
+    raw_oidc_jwks_ttl = os.getenv("OIDC_JWKS_TTL_SECONDS", "").strip()
+    raw_oidc_unknown_ttl = os.getenv("OIDC_UNKNOWN_KEY_TTL_SECONDS", "").strip()
+    raw_oidc_unknown_cache = os.getenv("OIDC_UNKNOWN_KEY_CACHE_SIZE", "").strip()
+    try:
+        oidc_jwks_ttl = (
+            float(raw_oidc_jwks_ttl) if raw_oidc_jwks_ttl else DEFAULT_OIDC_JWKS_TTL_SECONDS
+        )
+        oidc_unknown_ttl = (
+            float(raw_oidc_unknown_ttl)
+            if raw_oidc_unknown_ttl
+            else DEFAULT_OIDC_UNKNOWN_KEY_TTL_SECONDS
+        )
+        oidc_unknown_cache = (
+            int(raw_oidc_unknown_cache)
+            if raw_oidc_unknown_cache
+            else DEFAULT_OIDC_UNKNOWN_KEY_CACHE_SIZE
+        )
+    except ValueError as exc:
+        raise ConfigurationError("OIDC key cache settings must be numeric.") from exc
+    return {
+        "identity_provider": identity_provider,
+        "oidc_issuer_url": os.getenv("OIDC_ISSUER_URL", "").strip().rstrip("/"),
+        "oidc_audience": os.getenv("OIDC_AUDIENCE", "").strip(),
+        "oidc_client_id": os.getenv("OIDC_CLIENT_ID", "").strip(),
+        "oidc_scopes": os.getenv("OIDC_SCOPES", "").strip() or "openid profile email",
+        "oidc_company_sso_enabled": company_sso_enabled,
+        "oidc_company_sso_alias": (
+            os.getenv("OIDC_COMPANY_SSO_ALIAS", "").strip() or "company-sso"
+        ),
+        "oidc_password_login_enabled": password_login_enabled,
+        "oidc_allowed_algorithms": allowed_algorithms,
+        "oidc_jwks_ttl_seconds": oidc_jwks_ttl,
+        "oidc_unknown_key_ttl_seconds": oidc_unknown_ttl,
+        "oidc_unknown_key_cache_size": oidc_unknown_cache,
+        "oidc_roles_claim": os.getenv("OIDC_ROLES_CLAIM", "roles").strip(),
+    }
+
+
+def _debug_trace_from_env() -> dict[str, Any]:
+    """The opt-in development trace."""
+    return {
+        "debug_trace_enabled": _flag_from_env("DEBUG_TRACE_ENABLED", default=False),
+        "debug_trace_path": os.getenv("DEBUG_TRACE_PATH", "").strip() or DEFAULT_DEBUG_TRACE_PATH,
+    }
+
+
+def _ai_jobs_from_env() -> dict[str, Any]:
+    """Durable model-backed work: whether the API runs the workers, and their pace."""
+    api_background_workers = _flag_from_env("API_BACKGROUND_WORKERS", default=True)
+    raw_job_poll = os.getenv("AI_JOB_POLL_INTERVAL_SECONDS", "").strip()
+    raw_job_shutdown_grace = os.getenv("AI_JOB_SHUTDOWN_GRACE_SECONDS", "").strip()
+    try:
+        job_poll = float(raw_job_poll) if raw_job_poll else DEFAULT_AI_JOB_POLL_INTERVAL_SECONDS
+        job_shutdown_grace = (
+            float(raw_job_shutdown_grace)
+            if raw_job_shutdown_grace
+            else DEFAULT_AI_JOB_SHUTDOWN_GRACE_SECONDS
+        )
+    except ValueError as exc:
+        raise ConfigurationError("AI job worker settings must be numeric.") from exc
+    return {
+        "api_background_workers": api_background_workers,
+        "ai_job_poll_interval_seconds": job_poll,
+        "ai_job_shutdown_grace_seconds": job_shutdown_grace,
+    }
+
+
+def _deployment_from_env() -> dict[str, Any]:
+    """Which environment this is, and whether production may map architecture yet."""
+    return {
+        "knowledge_evaluation_approved": _flag_from_env(
+            "KNOWLEDGE_EVALUATION_APPROVED", default=False
+        ),
+        "app_environment": os.getenv("APP_ENV", "development").strip().lower(),
+    }
+
+
+def _documents_from_env() -> dict[str, Any]:
+    """How large and complex an uploaded document may be, and how many are read at once."""
+    raw_document_max = os.getenv("DOCUMENT_MAX_FILE_BYTES", "").strip()
+    raw_extraction_timeout = os.getenv("DOCUMENT_EXTRACTION_TIMEOUT_SECONDS", "").strip()
+    try:
+        document_max = (
+            int(raw_document_max) if raw_document_max else DEFAULT_DOCUMENT_MAX_FILE_BYTES
+        )
+        document_extraction_concurrency = int(
+            os.getenv("DOCUMENT_EXTRACTION_CONCURRENCY", "")
+            or DEFAULT_DOCUMENT_EXTRACTION_CONCURRENCY
+        )
+        catalogue_reading_concurrency = int(
+            os.getenv("CATALOGUE_READING_CONCURRENCY", "") or DEFAULT_CATALOGUE_READING_CONCURRENCY
+        )
+        document_extraction_queue = int(
+            os.getenv("DOCUMENT_EXTRACTION_QUEUE", "") or DEFAULT_DOCUMENT_EXTRACTION_QUEUE
+        )
+        document_extraction_memory_bytes = int(
+            os.getenv("DOCUMENT_EXTRACTION_MEMORY_BYTES", "")
+            or DEFAULT_DOCUMENT_EXTRACTION_MEMORY_BYTES
+        )
+        document_max_pdf_pages = int(
+            os.getenv("DOCUMENT_MAX_PDF_PAGES", "") or DEFAULT_DOCUMENT_MAX_PDF_PAGES
+        )
+        document_max_extracted_characters = int(
+            os.getenv("DOCUMENT_MAX_EXTRACTED_CHARACTERS", "")
+            or DEFAULT_DOCUMENT_MAX_EXTRACTED_CHARACTERS
+        )
+        document_max_xml_nodes = int(
+            os.getenv("DOCUMENT_MAX_XML_NODES", "") or DEFAULT_DOCUMENT_MAX_XML_NODES
+        )
+        document_max_image_pixels = int(
+            os.getenv("DOCUMENT_MAX_IMAGE_PIXELS", "") or DEFAULT_DOCUMENT_MAX_IMAGE_PIXELS
+        )
+        document_max_spreadsheet_cells = int(
+            os.getenv("DOCUMENT_MAX_SPREADSHEET_CELLS", "")
+            or DEFAULT_DOCUMENT_MAX_SPREADSHEET_CELLS
+        )
+        document_extraction_timeout = (
+            float(raw_extraction_timeout)
+            if raw_extraction_timeout
+            else DEFAULT_DOCUMENT_EXTRACTION_TIMEOUT_SECONDS
+        )
+    except ValueError as exc:
+        raise ConfigurationError(
+            "Document size, complexity, concurrency, and timeout settings must be numeric."
+        ) from exc
+    return {
+        "document_max_file_bytes": document_max,
+        "document_extraction_concurrency": document_extraction_concurrency,
+        "catalogue_reading_concurrency": catalogue_reading_concurrency,
+        "document_extraction_queue": document_extraction_queue,
+        "document_extraction_timeout_seconds": document_extraction_timeout,
+        "document_extraction_memory_bytes": document_extraction_memory_bytes,
+        "document_max_pdf_pages": document_max_pdf_pages,
+        "document_max_extracted_characters": document_max_extracted_characters,
+        "document_max_xml_nodes": document_max_xml_nodes,
+        "document_max_image_pixels": document_max_image_pixels,
+        "document_max_spreadsheet_cells": document_max_spreadsheet_cells,
+    }
+
+
+def _library_from_env() -> dict[str, Any]:
+    """Library and catalogue uploads: the malware scanner, OCR models and office previews."""
+    return {
+        "library_scan_mode": os.getenv("LIBRARY_SCAN_MODE", "clamav").strip(),
+        "library_ocr_artifacts_path": os.getenv("LIBRARY_OCR_ARTIFACTS_PATH", "").strip(),
+        "document_office_preview_executable": os.getenv(
+            "DOCUMENT_OFFICE_PREVIEW_EXECUTABLE", ""
+        ).strip(),
+        "library_scanner_host": os.getenv("LIBRARY_SCANNER_HOST", "127.0.0.1").strip(),
+        "library_scanner_port": _library_scanner_port(),
+    }
+
+
+def _library_scanner_port() -> int:
+    try:
+        return int(os.getenv("LIBRARY_SCANNER_PORT", "3310"))
+    except ValueError as exc:
+        raise ConfigurationError("LIBRARY_SCANNER_PORT must be an integer.") from exc
 
 
 def _operability_from_env() -> dict[str, Any]:
@@ -573,6 +632,12 @@ def _operability_from_env() -> dict[str, Any]:
         "metrics_port": port,
         "metrics_host": os.getenv("METRICS_HOST", "127.0.0.1").strip(),
         "request_max_body_bytes": body,
+    }
+
+
+def _requirement_service_from_env() -> dict[str, Any]:
+    """The link with requirement work, both ways (requirement-portal ADR-0099, ADR-0104)."""
+    return {
         "requirement_service_token": os.getenv("REQUIREMENT_SERVICE_TOKEN", "").strip() or None,
         "requirement_api_base_url": os.getenv("REQUIREMENT_API_BASE_URL", "").strip() or None,
         "knowledge_service_token": os.getenv("KNOWLEDGE_SERVICE_TOKEN", "").strip() or None,
@@ -585,11 +650,6 @@ def _operability_from_env() -> dict[str, Any]:
         "knowledge_service_client_secret": (
             os.getenv("KNOWLEDGE_SERVICE_CLIENT_SECRET", "").strip() or None
         ),
-        **_product_catalog_from_env(),
-        "knowledge_review_cycle_days": _review_cycle_from_env(),
-        **_ado_from_env(),
-        "evaluation_root": _evaluation_root_from_env(),
-        **_reranker_from_env(),
     }
 
 

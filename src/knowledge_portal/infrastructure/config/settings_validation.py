@@ -32,8 +32,37 @@ if TYPE_CHECKING:
 
 
 def validate_settings(settings: Settings) -> None:
+    """Check the resolved settings one concern at a time, failing on the first problem."""
+    _check_request_body_limit(settings)
+    _check_requirement_service_link(settings)
+    _check_reranker(settings)
+    _check_product_catalog(settings)
+    _check_review_cycle(settings)
+    _check_ado(settings)
+    _check_operability(settings)
+    _check_library_scanning(settings)
+    _check_llm_provider_credentials(settings)
+    _check_openrouter(settings)
+    _check_local_llm(settings)
+    _check_persistence(settings)
+    _check_app_environment(settings)
+    _check_document_limits(settings)
+    _check_oidc(settings)
+    _check_production_refusals(settings)
+    _check_database_pool(settings)
+    _check_background_workers(settings)
+    _check_openai_timeout(settings)
+    _check_ai_job_timing(settings)
+    _check_debug_trace(settings)
+
+
+def _check_request_body_limit(settings: Settings) -> None:
     if settings.request_max_body_bytes < 1024:
         raise ConfigurationError("REQUEST_MAX_BODY_BYTES must be at least 1024.")
+
+
+def _check_requirement_service_link(settings: Settings) -> None:
+    """How this service reaches requirement work, and how requirement work reaches it."""
     for name, token in (
         ("REQUIREMENT_SERVICE_TOKEN", settings.requirement_service_token),
         ("KNOWLEDGE_SERVICE_TOKEN", settings.knowledge_service_token),
@@ -70,6 +99,9 @@ def validate_settings(settings: Settings) -> None:
         and not settings.requirement_api_base_url.startswith(("http://", "https://"))
     ):
         raise ConfigurationError("REQUIREMENT_API_BASE_URL must be an http(s) URL.")
+
+
+def _check_reranker(settings: Settings) -> None:
     if settings.reranker_provider is RerankerProvider.HTTP and (
         not (settings.reranker_url or "").startswith(("http://", "https://"))
         or not settings.reranker_model
@@ -79,6 +111,9 @@ def validate_settings(settings: Settings) -> None:
         )
     if settings.reranker_timeout_seconds <= 0:
         raise ConfigurationError("RERANKER_TIMEOUT_SECONDS must be positive.")
+
+
+def _check_product_catalog(settings: Settings) -> None:
     if settings.product_catalog_provider is ProductCatalogProvider.TMF620:
         url = settings.product_catalog_url or ""
         if not url.startswith(("http://", "https://")) or not settings.product_catalog_token:
@@ -90,8 +125,14 @@ def validate_settings(settings: Settings) -> None:
         raise ConfigurationError("PRODUCT_CATALOG_CODE_FIELD must be a TMF620 field name.")
     if settings.product_catalog_cache_seconds < 0:
         raise ConfigurationError("PRODUCT_CATALOG_CACHE_SECONDS must not be negative.")
+
+
+def _check_review_cycle(settings: Settings) -> None:
     if settings.knowledge_review_cycle_days < 1:
         raise ConfigurationError("KNOWLEDGE_REVIEW_CYCLE_DAYS must be at least one day.")
+
+
+def _check_ado(settings: Settings) -> None:
     if not 1 <= settings.ado_import_max_items <= ADO_IMPORT_MAX_ITEMS_CEILING:
         raise ConfigurationError(
             f"ADO_IMPORT_MAX_ITEMS must be between 1 and {ADO_IMPORT_MAX_ITEMS_CEILING}."
@@ -100,6 +141,10 @@ def validate_settings(settings: Settings) -> None:
         raise ConfigurationError(
             "APP_ENV=production refuses ADO_PROVIDER=fake: historic breakdowns must be real."
         )
+
+
+def _check_operability(settings: Settings) -> None:
+    """Rate limiting, logging and metrics."""
     if settings.provider_rate_limit_per_minute < 0:
         raise ConfigurationError(
             "PROVIDER_RATE_LIMIT_PER_MINUTE must be 0 (unlimited) or a positive number."
@@ -110,6 +155,9 @@ def validate_settings(settings: Settings) -> None:
         raise ConfigurationError("METRICS_PORT must be a TCP port between 1 and 65535.")
     if not settings.metrics_host.strip():
         raise ConfigurationError("METRICS_HOST must not be blank.")
+
+
+def _check_library_scanning(settings: Settings) -> None:
     if settings.library_scan_mode not in {"clamav", "offline"}:
         raise ConfigurationError("LIBRARY_SCAN_MODE must be clamav or offline.")
     if settings.library_scan_mode == "offline" and (
@@ -121,6 +169,9 @@ def validate_settings(settings: Settings) -> None:
         )
     if not settings.library_scanner_host.strip() or not 1 <= settings.library_scanner_port <= 65535:
         raise ConfigurationError("Library scanner host and port are invalid.")
+
+
+def _check_llm_provider_credentials(settings: Settings) -> None:
     if settings.llm_provider is LLMProvider.PROFILES and settings.llm_profiles is None:
         raise ConfigurationError("LLM_PROVIDER=profiles requires LLM_CONFIG_PATH.")
     if settings.llm_provider is LLMProvider.OPENAI and not settings.openai_api_key:
@@ -128,6 +179,9 @@ def validate_settings(settings: Settings) -> None:
             "LLM_PROVIDER=openai requires OPENAI_API_KEY to be set. "
             "Set LLM_PROVIDER=fake to run without a provider account."
         )
+
+
+def _check_openrouter(settings: Settings) -> None:
     if settings.llm_provider is LLMProvider.OPENROUTER:
         if not settings.openrouter_api_key or not settings.openrouter_api_key.strip():
             raise ConfigurationError(
@@ -151,6 +205,9 @@ def validate_settings(settings: Settings) -> None:
         if settings.openrouter_data_collection not in SUPPORTED_OPENROUTER_DATA_COLLECTION:
             supported = ", ".join(sorted(SUPPORTED_OPENROUTER_DATA_COLLECTION))
             raise ConfigurationError(f"OPENROUTER_DATA_COLLECTION must be one of: {supported}.")
+
+
+def _check_local_llm(settings: Settings) -> None:
     if settings.llm_provider is LLMProvider.LOCAL:
         if not settings.local_llm_model.strip():
             raise ConfigurationError(
@@ -185,11 +242,17 @@ def validate_settings(settings: Settings) -> None:
                 "LOCAL_LLM_MAX_OUTPUT_TOKENS must be positive and smaller than "
                 "LOCAL_LLM_CONTEXT_WINDOW_TOKENS."
             )
+
+
+def _check_persistence(settings: Settings) -> None:
     if settings.persistence_provider is PersistenceProvider.POSTGRES and not settings.database_url:
         raise ConfigurationError(
             "PERSISTENCE_PROVIDER=postgres requires DATABASE_URL. Start PostgreSQL and set "
             "DATABASE_URL, or use PERSISTENCE_PROVIDER=memory."
         )
+
+
+def _check_app_environment(settings: Settings) -> None:
     if settings.app_environment not in {"development", "test", "production"}:
         raise ConfigurationError("APP_ENV must be development, test, or production.")
     if (
@@ -197,6 +260,9 @@ def validate_settings(settings: Settings) -> None:
         and settings.persistence_provider is not PersistenceProvider.POSTGRES
     ):
         raise ConfigurationError("APP_ENV=production requires PERSISTENCE_PROVIDER=postgres.")
+
+
+def _check_document_limits(settings: Settings) -> None:
     if settings.document_max_file_bytes < 1:
         raise ConfigurationError("DOCUMENT_MAX_FILE_BYTES must be positive.")
     extraction_values = (
@@ -217,6 +283,9 @@ def validate_settings(settings: Settings) -> None:
             f"CATALOGUE_READING_CONCURRENCY must be between 1 and "
             f"{MAX_CATALOGUE_READING_CONCURRENCY}."
         )
+
+
+def _check_oidc(settings: Settings) -> None:
     if settings.identity_provider is IdentityProvider.OIDC:
         for name, value in (
             ("OIDC_ISSUER_URL", settings.oidc_issuer_url),
@@ -246,6 +315,10 @@ def validate_settings(settings: Settings) -> None:
             )
         if not settings.oidc_roles_claim.strip():
             raise ConfigurationError("OIDC_ROLES_CLAIM must not be blank.")
+
+
+def _check_production_refusals(settings: Settings) -> None:
+    """Offline stand-ins and debugging aids production refuses."""
     if (
         settings.app_environment == "production"
         and settings.identity_provider is IdentityProvider.FAKE
@@ -274,6 +347,9 @@ def validate_settings(settings: Settings) -> None:
             "Production architecture mapping requires KNOWLEDGE_EVALUATION_APPROVED=true "
             "after the bilingual architecture evaluation passes on the configured models."
         )
+
+
+def _check_database_pool(settings: Settings) -> None:
     if not 0 <= settings.database_pool_min_size <= settings.database_pool_max_size:
         raise ConfigurationError(
             "DATABASE_POOL_MIN_SIZE must be between 0 and DATABASE_POOL_MAX_SIZE."
@@ -282,6 +358,9 @@ def validate_settings(settings: Settings) -> None:
         raise ConfigurationError("DATABASE_POOL_MAX_SIZE must be at least 1.")
     if settings.database_pool_timeout_seconds <= 0:
         raise ConfigurationError("DATABASE_POOL_TIMEOUT_SECONDS must be greater than zero.")
+
+
+def _check_background_workers(settings: Settings) -> None:
     if (
         not settings.api_background_workers
         and settings.persistence_provider is PersistenceProvider.MEMORY
@@ -291,12 +370,21 @@ def validate_settings(settings: Settings) -> None:
             "API_BACKGROUND_WORKERS=false requires PERSISTENCE_PROVIDER=postgres so a "
             "separate worker process can claim queued jobs."
         )
+
+
+def _check_openai_timeout(settings: Settings) -> None:
     if settings.openai_timeout_seconds <= 0:
         raise ConfigurationError("OPENAI_TIMEOUT_SECONDS must be greater than zero.")
+
+
+def _check_ai_job_timing(settings: Settings) -> None:
     if settings.ai_job_poll_interval_seconds <= 0:
         raise ConfigurationError("AI_JOB_POLL_INTERVAL_SECONDS must be greater than zero.")
     if settings.ai_job_shutdown_grace_seconds <= 0:
         raise ConfigurationError("AI_JOB_SHUTDOWN_GRACE_SECONDS must be greater than zero.")
+
+
+def _check_debug_trace(settings: Settings) -> None:
     if settings.debug_trace_enabled and not settings.debug_trace_path.strip():
         raise ConfigurationError(
             "DEBUG_TRACE_PATH must not be blank when DEBUG_TRACE_ENABLED=true."
