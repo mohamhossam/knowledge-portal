@@ -1,12 +1,13 @@
-"""Adds the knowledge portal's sign-in entities to a Keycloak realm (ADR-0104).
+"""Adds the knowledge portal's sign-in entities to a Keycloak realm.
 
-The portal shares a realm with requirement work, so people keep one account,
-but defines its own client, audience and roles here. knowledge-portal.json
+The realm may be the portal's own or one it shares with other apps, so people
+keep one account; either way the portal defines its own client, audience and
+roles here. knowledge-portal.json
 holds them; this script fills in where the portal is served and hands the file
 to Keycloak's partial import. Entities that already exist are kept as they are
 unless --overwrite is given. docs/operations/deployment.md, "Sign-in".
 
-    KEYCLOAK_URL=https://login.example.com KEYCLOAK_REALM=requirement-ai \
+    KEYCLOAK_URL=https://login.example.com KEYCLOAK_REALM=platform \
     KEYCLOAK_ADMIN=... KEYCLOAK_ADMIN_PASSWORD=... \
     KNOWLEDGE_APP_ORIGIN=https://knowledge.example.com \
     python deploy/keycloak/apply.py

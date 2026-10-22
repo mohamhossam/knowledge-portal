@@ -105,7 +105,7 @@ def get_current_actor(
     credential: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
     actor_hint: Annotated[str | None, Header(alias="X-Fake-Actor-Id")] = None,
 ) -> ActorProfile:
-    """The signed-in knowledge admin; anyone else is refused (requirement-portal ADR-0099)."""
+    """The signed-in knowledge admin; anyone else is refused (ADR-0099)."""
     bearer = credential.credentials if credential is not None else None
     if container.settings.identity_provider is IdentityProvider.OIDC and actor_hint:
         raise AuthenticationRequiredError("Fake actor headers are disabled in OIDC mode.")
@@ -121,7 +121,7 @@ def get_signed_in_actor(
     actor_hint: Annotated[str | None, Header(alias="X-Fake-Actor-Id")] = None,
 ) -> ActorProfile:
     """Anyone signed in, admin or not: only the explorer's read routes take this
-    (requirement-portal ADR-0101)."""
+    (ADR-0101)."""
     bearer = credential.credentials if credential is not None else None
     if container.settings.identity_provider is IdentityProvider.OIDC and actor_hint:
         raise AuthenticationRequiredError("Fake actor headers are disabled in OIDC mode.")
@@ -131,8 +131,8 @@ def get_signed_in_actor(
 SignedInActorDep = Annotated[ActorProfile, Depends(get_signed_in_actor)]
 
 
-def require_service_caller(request: Request) -> str:
-    """The platform service the middleware authenticated on an /internal route.
+def require_app(request: Request) -> str:
+    """The app the middleware authenticated on an /apps route, by its registered name.
 
     The second wall: a route that somehow ran without the middleware's check
     still refuses, rather than answering as nobody.
@@ -140,8 +140,11 @@ def require_service_caller(request: Request) -> str:
     caller = request.scope.get(CALLER_SCOPE_KEY)
     if not isinstance(caller, str) or not caller:
         # The catalogue's own error, so the refusal carries a correlation id like any other.
-        raise AuthenticationRequiredError("An internal request needs a service token.")
+        raise AuthenticationRequiredError("A request from an app needs its token.")
     return caller
+
+
+AppDep = Annotated[str, Depends(require_app)]
 
 
 def require_authenticated_actor(actor: CurrentActorDep) -> None:
@@ -165,7 +168,7 @@ def limit_provider_calls(container: ContainerDep, actor: CurrentActorDep) -> Ite
 
 def limit_catalog_reads(container: ContainerDep, actor: SignedInActorDep) -> Iterator[None]:
     """Count one explorer reader's product catalogue lookup against their own per-minute
-    budget, apart from AI calls (requirement-portal ADR-0101, Amendment 3)."""
+    budget, apart from AI calls (ADR-0101, Amendment 3)."""
     yield from _counted(container.catalog_read_rate_limit, actor)
 
 
@@ -301,7 +304,7 @@ def get_delivery_summaries(container: ContainerDep) -> ReadDeliverySummaries:
     return container.delivery_summaries
 
 
-# What the internal routes, the change-request routes, the draft's readings and the sign-in
+# What the app routes, the change-request routes, the draft's readings and the sign-in
 # configuration need (review recommendation 12): each a use case or port, never the container.
 
 

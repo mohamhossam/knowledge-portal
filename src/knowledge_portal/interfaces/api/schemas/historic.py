@@ -421,7 +421,7 @@ StatusFilter = Literal["draft", "published", "withdrawn"]
 LineageNodeView.model_rebuild()
 
 
-# --- What requirement work reads, a page at a time (ADR-0102, amendment 1) -----------------
+# --- What an app reads, a page at a time (ADR-0102, amendment 1) ---------------------------
 
 
 class HistoricPassageEntry(BaseModel):

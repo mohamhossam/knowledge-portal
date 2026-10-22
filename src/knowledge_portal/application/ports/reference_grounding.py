@@ -1,8 +1,8 @@
-"""What the library offers requirement work's grounding (ADR-0099).
+"""What the library offers an app's grounding (ADR-0126).
 
-These are the values the internal API returns: an exact citable passage with its
-bounded, non-authoritative context. Whether requirement work still relies on a
-citation is answered on its side, from the events this service publishes.
+These are the values the app API returns: an exact citable passage with its
+bounded, non-authoritative context. Whether an app still relies on a citation is
+answered on its side, from the events this service publishes.
 """
 
 from dataclasses import dataclass

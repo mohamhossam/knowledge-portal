@@ -665,7 +665,7 @@ def _content(
     )
 
 
-# Channels (requirement-portal ADR-0101, step 3): where orders are placed.
+# Channels (ADR-0101, step 3): where orders are placed.
 def _channels(entries: list[dict[str, Any]]) -> list[Channel]:
     channels = []
     for number, item in enumerate(entries, start=1):
@@ -688,7 +688,7 @@ def _channels(entries: list[dict[str, Any]]) -> list[Channel]:
     return channels
 
 
-# Governance (requirement-portal ADR-0101, step 5): the source register and the conflicts
+# Governance (ADR-0101, step 5): the source register and the conflicts
 # between sources.
 def _sources(entries: list[dict[str, Any]]) -> list[KnowledgeSource]:
     sources = []
@@ -777,7 +777,7 @@ def _cross_cutting(
     return marked
 
 
-# Change history (requirement-portal ADR-0101, step 7): the change requests applied, each
+# Change history (ADR-0101, step 7): the change requests applied, each
 # with the approved requirement it comes from.
 
 
@@ -840,7 +840,9 @@ def _record(item: dict[str, Any], where: str) -> ChangeRequestRecord:
     try:
         source = ChangeOrigin(origin.casefold())
     except ValueError as exc:
-        raise InvalidKnowledgeError(f"{where}: origin must be requirement-ai or explorer.") from exc
+        raise InvalidKnowledgeError(
+            f"{where}: origin must be app, requirement-ai or explorer."
+        ) from exc
     return ChangeRequestRecord(
         id=_text(item.get("id"), where, "id"),
         title=_text(item.get("title"), where, "title"),

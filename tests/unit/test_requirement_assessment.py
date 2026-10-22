@@ -568,7 +568,7 @@ def served(world: _World) -> Iterator[tuple[_Fixed, TestClient]]:
     answer = world.assess("Let Business Pro Plus customers add a FortiAP from B2B Web.")
     fixed = _Fixed(answer)
     container: Container = replace(
-        build_container(replace(FAKE_PROVIDER_SETTINGS, requirement_service_token=TOKEN)),
+        build_container(replace(FAKE_PROVIDER_SETTINGS, app_tokens={"requirements": TOKEN})),
         requirement_assessment=fixed,
     )
     with TestClient(create_app(lambda: container)) as client:
@@ -581,8 +581,8 @@ def test_requirement_work_assesses_through_the_internal_route(
     fixed, client = served
     body = {"text": ["Add a FortiAP."], "release_id": "r1"}
 
-    assert client.post("/internal/architecture/assess", json=body).status_code == 401
-    answered = client.post("/internal/architecture/assess", json=body, headers=REQUIREMENTS)
+    assert client.post("/apps/v2/architecture/assess", json=body).status_code == 401
+    answered = client.post("/apps/v2/architecture/assess", json=body, headers=REQUIREMENTS)
 
     assert answered.status_code == 200, answered.text
     assert fixed.queries == [AssessmentQuery(("Add a FortiAP.",), release_id="r1")]

@@ -233,12 +233,14 @@ def test_the_hit_rate_counts_each_epic_once_by_its_latest_closure_and_not_dismis
     assert (older.release_id, older.delivered, older.undelivered) == ("older", 2, 1)
 
 
-def test_a_withdrawn_closure_is_dismissed_by_requirement_work() -> None:
-    withdrawn = _closure().withdraw(CLOSED_AT)
+def test_a_withdrawn_closure_is_dismissed_by_the_app_that_sent_it() -> None:
+    withdrawn = replace(_closure(), sent_by="reporting").withdraw(CLOSED_AT)
 
     assert withdrawn.status is IncomingStatus.DISMISSED
-    assert withdrawn.dismissed_by == WITHDRAWN_BY
+    assert withdrawn.dismissed_by == "reporting"
     assert "removed" in (withdrawn.dismissal_reason or "")
+    # One kept before apps were named says so, rather than naming an app.
+    assert _closure().withdraw(CLOSED_AT).dismissed_by == WITHDRAWN_BY
 
 
 # A capability suggestion that realises a concept.
@@ -394,17 +396,38 @@ def test_a_later_closure_replaces_one_waiting_and_a_removal_withdraws_it() -> No
     assert receive.removed("REQ-42", "4711") == ()
 
 
+def test_an_app_takes_back_only_what_it_sent() -> None:
+    inbox = InMemoryChangeRequests()
+    receive = ReceiveDelivery(inbox, FixedClock(CLOSED_AT))
+    delivery = _delivery(delivery_id="REQ-42:4711:evt-1")
+    kept, _ = receive.closed(
+        DeliveredEpic(
+            delivery_id=delivery.delivery_id,
+            subject_fingerprint="sha256:evt-1",
+            title="Static IP quota",
+            trace=TRACE,
+            features=_closure().features,
+            delivery=delivery,
+        ),
+        "reporting",
+    )
+    assert kept.sent_by == "reporting"
+
+    assert receive.removed("REQ-42", "4711", "another-app") == ()
+    assert receive.removed("REQ-42", "4711", "reporting") == (kept.id,)
+
+
 # The routes.
 
 
 @pytest.fixture
 def served() -> Iterator[tuple[Container, TestClient]]:
-    container = build_container(replace(FAKE_PROVIDER_SETTINGS, requirement_service_token=TOKEN))
+    container = build_container(replace(FAKE_PROVIDER_SETTINGS, app_tokens={"requirements": TOKEN}))
     with TestClient(create_app(lambda: container)) as client:
         yield container, client
 
 
-ROUTE = "/internal/change-requests/deliveries"
+ROUTE = "/apps/v2/change-requests/deliveries"
 
 
 def _body(**changes: Any) -> dict[str, Any]:
@@ -570,6 +593,11 @@ def test_a_removed_epic_withdraws_its_waiting_closure(served: tuple[Container, T
     (item,) = client.get("/architecture-knowledge/change-requests", headers=OWNER).json()[
         "change_requests"
     ]
-    assert (item["status"], item["dismissed_by"]) == ("dismissed", WITHDRAWN_BY)
+    # The app that sent it took it back, by the name it is registered under.
+    assert (item["status"], item["sent_by"], item["dismissed_by"]) == (
+        "dismissed",
+        "requirements",
+        "requirements",
+    )
     summary = client.get("/architecture-knowledge/deliveries/summary", headers=OWNER).json()
     assert summary["releases"] == []

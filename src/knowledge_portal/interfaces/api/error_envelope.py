@@ -1,10 +1,10 @@
 """One error body for every refusal: ``{code, message, correlation_id}`` (review recommendation 12).
 
 The public error catalogue already answers in this shape. Three refusals in the auth layer did
-not: the 404 the internal API answers when it is not served, the kernel guard's 401 and 503 for
+not: the 404 the app API answers when it is not served, the kernel guard's 401 and 503 for
 a missing or unreadable service token, and FastAPI's own ``HTTPException`` (an unknown path, a
 method the route does not take). They answered ``{"detail": ...}`` with no correlation id, so a
-refused internal call could not be traced to its log line.
+refused app call could not be traced to its log line.
 
 ``enveloped`` wraps an ASGI ``send`` so a ``{"detail": ...}`` refusal written below it, such as
 the kernel guard's, reaches the caller in this shape; the kernel's code stays the kernel's.

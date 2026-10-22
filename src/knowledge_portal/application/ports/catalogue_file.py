@@ -65,7 +65,7 @@ class CatalogueContent:
     channels: tuple[Channel, ...] = ()
     sources: tuple[KnowledgeSource, ...] = ()
     conflicts: tuple[SourceConflict, ...] = ()
-    # The change requests applied (requirement-portal ADR-0101, step 7). None when the file
+    # The change requests applied (ADR-0101, step 7). None when the file
     # has no change history, so importing it keeps the draft's own.
     change_history: tuple[ChangeRequestRecord, ...] | None = None
     # The product portfolio its offerings sit in.

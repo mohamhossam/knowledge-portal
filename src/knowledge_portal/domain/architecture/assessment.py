@@ -119,7 +119,7 @@ class PathKind(StrEnum):
     INTERFACE = "interface"
     # A CFS, RFS or resource a component is realised as (ontology plan Phase 8).
     REALISATION = "realisation"
-    # A decided requirement like this one, by requirement-portal's analysis id (Phase 5).
+    # A decided requirement like this one, by the app's analysis id (Phase 5).
     PRECEDENT = "precedent"
 
 

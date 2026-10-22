@@ -2,6 +2,10 @@
 
 ## Status
 
+Superseded on 2026-10-22 by [ADR-0126](adr-0126-a-knowledge-base-other-apps-read.md) in this
+repository: the knowledge portal is now a knowledge base other apps read, and keeps no link
+back to requirement-portal. The record below is kept as history.
+
 Accepted 2026-10-09 by the repository owner ("optional links"). It amends:
 - ADR-0098, where this repository deploys the whole platform: the knowledge portal's services,
   its Keycloak client and roles, and its place behind this repository's edge;

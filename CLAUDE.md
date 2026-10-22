@@ -34,12 +34,13 @@ Paper. Do not copy requirement-portal's tokens, primitives or shell.
 ## Service rules
 
 - Every public route requires `knowledge_admin`, except the explorer's read routes
-  (`/explorer/*`), which any signed-in user may read (requirement-portal ADR-0101). They read the
+  (`/explorer/*`), which any signed-in user may read (ADR-0101). They read the
   version in service only, with the change history applied to it (Amendment 3), never drafts,
   documents, the index or earlier versions, and write nothing. A plans lookup counts against the
   reader's own per-minute budget.
-- `/internal/*` routes require a service token (`smb_kernel.http.InternalRouteGuard`), and are
-  public API for requirement-portal (`AGENTS.md` §2.1).
+- `/apps/v2/*` routes require a registered app's credential (`APP_TOKENS` or `APP_CLIENT_IDS`,
+  checked by `smb_kernel.http.InternalRouteGuard`), and are public API for every app that reads
+  the knowledge base (`AGENTS.md` §2.1, ADR-0126). The portal itself calls no app.
 
 ## Design system (e& calm)
 

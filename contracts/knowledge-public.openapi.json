@@ -2647,6 +2647,7 @@
       "ChangeOrigin": {
         "description": "Where a change request came from.",
         "enum": [
+          "app",
           "requirement-ai",
           "explorer"
         ],
@@ -2715,7 +2716,7 @@
         "type": "object"
       },
       "ChangeRequestRecordSchema": {
-        "description": "A change request applied to the version (requirement-portal ADR-0101, step 7).",
+        "description": "A change request applied to the version (ADR-0101, step 7).",
         "properties": {
           "applied_at": {
             "anyOf": [
@@ -2972,6 +2973,18 @@
             "format": "date-time",
             "title": "Received At",
             "type": "string"
+          },
+          "sent_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The app that sent it, by its registered name; null if kept before apps were named.",
+            "title": "Sent By"
           },
           "status": {
             "$ref": "#/components/schemas/IncomingStatus"
@@ -4359,7 +4372,7 @@
         "type": "string"
       },
       "ExplorerReleaseResponse": {
-        "description": "The version in service as the explorer reads it: its content, never its documents,\nindex, version history or who accepted what (requirement-portal ADR-0101, ADR-0120).\nThe change requests applied to it are part of its content, for the Solution\nArchitecture document (step 7).",
+        "description": "The version in service as the explorer reads it: its content, never its documents,\nindex, version history or who accepted what (ADR-0101, ADR-0120).\nThe change requests applied to it are part of its content, for the Solution\nArchitecture document (step 7).",
         "properties": {
           "capability_domains": {
             "items": {
@@ -4936,7 +4949,7 @@
         "type": "object"
       },
       "GoldenMapper": {
-        "description": "The assessment (`/internal/architecture/assess`) or today's per-item match.",
+        "description": "The assessment (`/apps/v2/architecture/assess`) or today's per-item match.",
         "enum": [
           "assess",
           "match"
@@ -8427,7 +8440,7 @@
         "type": "object"
       },
       "OrderTrackingSchema": {
-        "description": "How an offering's orders are tracked once placed (requirement-portal ADR-0101).",
+        "description": "How an offering's orders are tracked once placed (ADR-0101).",
         "properties": {
           "channels": {
             "default": [],
@@ -13493,7 +13506,7 @@
     },
     "/architecture-knowledge/change-requests": {
       "get": {
-        "description": "Change requests from Requirement AI, newest first (requirement-portal ADR-0101, step 7).",
+        "description": "Change requests apps sent, newest first (ADR-0126).",
         "operationId": "list_change_requests_architecture_knowledge_change_requests_get",
         "parameters": [
           {

@@ -1,6 +1,6 @@
 """Where decided verdicts are kept and searched (ontology plan Phase 5).
 
-`POST /internal/architecture/precedents` receives a decision as a `PrecedentRequest`; the
+`POST /apps/v2/architecture/precedents` receives a decision as a `PrecedentRequest`; the
 store keeps it with the embedding of its text, so the assessment's precedent lane finds
 the nearest decided requirements without embedding them again.
 """
@@ -28,7 +28,7 @@ class PrecedentSystemRequest:
 
 @dataclass(frozen=True)
 class PrecedentRequest:
-    """A decision as requirement-portal sends it: the contract value."""
+    """A decision as an app sends it: the contract value."""
 
     precedent_id: str
     requirement_id: str

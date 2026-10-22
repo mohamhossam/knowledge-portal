@@ -132,7 +132,7 @@ def _build_llm_adapters(settings: Settings, resources: ExitStack, metrics: Metri
                 settings.openai_api_key,
                 settings.openrouter_api_key,
                 settings.database_url,
-                settings.requirement_service_token,
+                *settings.app_tokens.values(),
                 settings.reranker_api_key,
                 settings.product_catalog_token,
                 *(settings.llm_profiles.secrets if settings.llm_profiles else ()),

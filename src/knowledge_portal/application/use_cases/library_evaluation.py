@@ -17,7 +17,7 @@ of the passage, or the passage covers at least half of the chunk: a passage the 
 counts as found by either half.
 
 What is scored, over the first `k` chunks of each answer (`k` is 10 by default, the most
-`ReferenceKnowledge.retrieve` ever hands to requirement work):
+`ReferenceKnowledge.retrieve` ever hands to an app):
 - recall@k: of the passages each case expects, the share found, averaged over the cases;
 - mean reciprocal rank: 1 over the rank of the first expected passage, 0 when none is found,
   averaged over the cases;

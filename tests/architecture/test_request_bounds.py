@@ -12,7 +12,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from knowledge_portal.interfaces.api.main import create_app
-from knowledge_portal.interfaces.api.routes.internal import contract_openapi
+from knowledge_portal.interfaces.api.routes.apps import contract_openapi
 
 # Multipart uploads are bounded by the upload size limits, not by a schema.
 UNSCHEMA_BOUND_CONTENT = {"multipart/form-data"}
@@ -83,8 +83,8 @@ def test_every_request_string_and_list_is_bounded() -> None:
     assert DOMAIN_BOUNDED <= set(unbounded), "A domain-bounded entry is stale."
 
 
-def test_every_internal_request_string_and_list_is_bounded() -> None:
-    """The internal API's caller is a trusted service, but its text fields reach
+def test_every_app_request_string_and_list_is_bounded() -> None:
+    """The app API's caller is a registered app, but its text fields reach
     model prompts, so they carry declared maxima like every public field."""
     document = contract_openapi()
     components = document.get("components", {}).get("schemas", {})
@@ -99,4 +99,4 @@ def test_every_internal_request_string_and_list_is_bounded() -> None:
                     for field in _unbounded(body["schema"], components, "body", set())
                 )
 
-    assert not unbounded, "Unbounded internal request fields:\n" + "\n".join(sorted(unbounded))
+    assert not unbounded, "Unbounded app request fields:\n" + "\n".join(sorted(unbounded))

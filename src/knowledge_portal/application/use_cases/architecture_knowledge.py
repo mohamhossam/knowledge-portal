@@ -120,10 +120,10 @@ class ManageArchitectureKnowledge:
         return chunk
 
     def published_evidence(self, release_id: str, chunk_id: str) -> EvidenceChunk:
-        """Evidence of a published release, for requirement work's read-only viewer.
+        """Evidence of a published release, for an app's read-only viewer (ADR-0126).
 
-        Requirement work asks on behalf of any signed-in member (requirement-portal
-        ADR-0099), so a draft is never shown this way: it answers as if absent.
+        An app asks on behalf of any of its signed-in users, so a draft is never shown this
+        way: it answers as if absent.
         """
         release = self._repository.get(release_id)
         if release is None or release.status is not KnowledgeReleaseStatus.PUBLISHED:

@@ -6,7 +6,7 @@
 #   open http://localhost:8090/knowledge/
 #
 # The browser reaches only `edge` (127.0.0.1:8090): /knowledge/ is the browser
-# app, /knowledge-api/ the API, and /internal never passes. Fake sign-in lets
+# app, /knowledge-api/ the API. Fake sign-in lets
 # anyone who reaches the port act as any persona, so the port is published on
 # loopback only. A shared deployment is deploy/compose.production.yaml, which
 # runs the released images (requirement-portal ADR-0104).

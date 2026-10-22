@@ -197,7 +197,7 @@ class Container:
     reference_knowledge: ReferenceKnowledge
     architecture_knowledge: ArchitectureKnowledgePort
     requirement_assessment: RequirementAssessmentPort
-    # Decided verdicts from requirement work, and their counts (ontology plan Phase 5).
+    # Decided verdicts apps send, and their counts (ontology plan Phase 5).
     record_precedent: RecordPrecedent
     precedent_summaries: ReadPrecedentSummaries
     manage_architecture_knowledge: ManageArchitectureKnowledge
@@ -215,7 +215,7 @@ class Container:
     clean_up_vocabulary: CleanUpVocabulary
     suggest_derived_dependencies: SuggestDerivedDependencies
     suggest_component_capabilities: SuggestComponentCapabilities
-    # Change requests from Requirement AI (requirement-portal ADR-0101, step 7).
+    # Change requests apps send (ADR-0126).
     receive_change_request: ReceiveChangeRequest
     receive_delivery: ReceiveDelivery
     delivery_summaries: ReadDeliverySummaries
@@ -429,7 +429,7 @@ def _build_container(
 def _product_catalog(
     settings: Settings, resources: ExitStack, metrics: Metrics, clock: ClockPort
 ) -> ProductCatalogPort | None:
-    """The product catalog plans and prices are read from, live (requirement-portal ADR-0101)."""
+    """The product catalog plans and prices are read from, live (ADR-0101)."""
     provider = settings.product_catalog_provider
     catalog: ProductCatalogPort
     if provider is ProductCatalogProvider.NONE:

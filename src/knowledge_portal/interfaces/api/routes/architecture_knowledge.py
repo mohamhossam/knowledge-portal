@@ -744,7 +744,7 @@ def list_extractions(
 def list_change_requests(
     change_requests: ListChangeRequestsDep, actor: KnowledgeActorDep
 ) -> ChangeRequestsResponse:
-    """Change requests from Requirement AI, newest first (requirement-portal ADR-0101, step 7)."""
+    """Change requests apps sent, newest first (ADR-0126)."""
     return ChangeRequestsResponse(
         change_requests=[
             ChangeRequestResponse.from_domain(item) for item in change_requests.execute(actor)

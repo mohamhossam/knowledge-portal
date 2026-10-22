@@ -1,6 +1,6 @@
 """Keeping decided verdicts, and counting them per release (ontology plan Phase 5).
 
-requirement-portal sends each verdict decision to `POST /internal/architecture/precedents`.
+An app sends each verdict decision to `POST /apps/v2/architecture/precedents`.
 `RecordPrecedent` checks it against the release it was assessed on, embeds its text with
 the model the evidence index searches with, and keeps it; a later decision on the same
 analysis replaces it. `ReadPrecedentSummaries` counts, per release, how often reviewers

@@ -10,7 +10,7 @@ A component can say how it is realised, layer by layer (TM Forum SID): the
 customer-facing service it is sold as, the resource-facing services that deliver
 it, and the resources it runs on. An offering can state its non-functional
 requirements, each with how far its sources define it, so a missing one is a
-recorded gap rather than silence (requirement-portal ADR-0101).
+recorded gap rather than silence (ADR-0101).
 
 These are not the organisation catalogue's products, which group ownership,
 nor a system's components, which are its modules.
@@ -374,8 +374,8 @@ class OfferingPlan:
     """A plan of the offering as its sources describe it.
 
     Characteristics are named rather than fixed fields, so any product's plans
-    fit. What a plan costs is read live from the product catalog (requirement-portal
-    ADR-0101), never stored here.
+    fit. What a plan costs is read live from the product catalog (ADR-0101), never stored
+    here.
     """
 
     name: str
@@ -440,7 +440,7 @@ class ProductOffering:
     tracking: OrderTracking | None = None
     # What happens to it over its life: up/downgrades, renewals, cessation and the like.
     lifecycle_notes: tuple[LifecycleNote, ...] = ()
-    # Its governance (requirement-portal ADR-0101, step 5): the registered sources it is
+    # Its governance (ADR-0101, step 5): the registered sources it is
     # read from and the primary one among them, the questions they leave open, the
     # architecture decisions taken, what its sources cover and leave out, and what it no
     # longer uses.

@@ -20,7 +20,7 @@ MAX_REPEATS = 5
 
 
 class GoldenMapper(StrEnum):
-    """The assessment (`/internal/architecture/assess`) or today's per-item match."""
+    """The assessment (`/apps/v2/architecture/assess`) or today's per-item match."""
 
     ASSESS = "assess"
     MATCH = "match"

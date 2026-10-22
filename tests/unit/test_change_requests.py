@@ -133,8 +133,7 @@ def test_a_change_request_is_named_as_the_original_explorer_named_it() -> None:
         == "CR-20261004-Business_Pro_Plus-2"
     )
     assert TRACE.sentence() == (
-        "Requirement AI requirement REQ-2026-0412, revision 3, approved by Layla Haddad on "
-        "3 October 2026"
+        "Requirement REQ-2026-0412, revision 3, approved by Layla Haddad on 3 October 2026"
     )
 
 
@@ -212,8 +211,7 @@ def test_accepting_registers_the_change_request_as_a_source_and_records_it_in_th
         "3",
     )
     assert source.authority == (
-        "Requirement AI requirement REQ-2026-0412, revision 3, approved by Layla Haddad on "
-        "3 October 2026."
+        "Requirement REQ-2026-0412, revision 3, approved by Layla Haddad on 3 October 2026."
     )
     (offering,) = accepted.products
     assert offering.sources == ("CR-20261003-Business_Pro_Plus",)
@@ -286,7 +284,7 @@ def test_change_history_is_compared_and_round_trips_in_every_catalogue_file() ->
 
 @pytest.fixture
 def served() -> Iterator[tuple[Container, TestClient]]:
-    container = build_container(replace(FAKE_PROVIDER_SETTINGS, requirement_service_token=TOKEN))
+    container = build_container(replace(FAKE_PROVIDER_SETTINGS, app_tokens={"requirements": TOKEN}))
     with TestClient(create_app(lambda: container)) as client:
         yield container, client
 
@@ -298,31 +296,30 @@ def _export(**manifest: Any) -> dict[str, Any]:
     return raw
 
 
-def test_requirement_portal_delivers_once_per_approval(
+def test_an_app_delivers_once_per_approval(
     served: tuple[Container, TestClient],
 ) -> None:
     _, client = served
-    assert client.post("/internal/change-requests", json=_export()).status_code == 401
+    assert client.post("/apps/v2/change-requests", json=_export()).status_code == 401
 
-    first = client.post("/internal/change-requests", json=_export(), headers=REQUIREMENTS)
+    first = client.post("/apps/v2/change-requests", json=_export(), headers=REQUIREMENTS)
     assert first.status_code == 201, first.text
     assert first.json() == {
         "change_request_id": "CR-20261003-Business_Pro_Plus",
         "approval_id": "APR-77",
         "created": True,
     }
-    again = client.post("/internal/change-requests", json=_export(), headers=REQUIREMENTS)
+    again = client.post("/apps/v2/change-requests", json=_export(), headers=REQUIREMENTS)
     assert (again.status_code, again.json()["created"]) == (200, False)
 
     other = _export()
     other["manifest"]["final_approval"]["subject_fingerprint"] = "sha256:other"
     assert (
-        client.post("/internal/change-requests", json=other, headers=REQUIREMENTS).status_code
-        == 409
+        client.post("/apps/v2/change-requests", json=other, headers=REQUIREMENTS).status_code == 409
     )
     newer = _export()
     newer["schema_version"] = "2.0"
-    refused = client.post("/internal/change-requests", json=newer, headers=REQUIREMENTS)
+    refused = client.post("/apps/v2/change-requests", json=newer, headers=REQUIREMENTS)
     assert refused.status_code == 422 and "schema_version" in refused.text
 
 
@@ -330,10 +327,12 @@ def test_an_admin_reads_a_change_request_into_a_new_draft_and_accepts_its_questi
     served: tuple[Container, TestClient],
 ) -> None:
     _, client = served
-    client.post("/internal/change-requests", json=_export(), headers=REQUIREMENTS)
+    client.post("/apps/v2/change-requests", json=_export(), headers=REQUIREMENTS)
     inbox = client.get("/architecture-knowledge/change-requests", headers=OWNER).json()
     (item,) = inbox["change_requests"]
     assert (item["status"], item["trace"]["approved_by"]) == ("waiting", "Layla Haddad")
+    # It keeps the name of the app that sent it, as that app is registered.
+    assert item["sent_by"] == "requirements"
     # Only the name of who approved it is kept, never their email.
     assert "layla.haddad@example.com" not in json.dumps(item)
     observer = {"X-Fake-Actor-Id": "fake-observer"}
@@ -394,7 +393,7 @@ def test_an_admin_reads_a_change_request_into_a_new_draft_and_accepts_its_questi
 
 def test_a_dismissed_change_request_cannot_be_read(served: tuple[Container, TestClient]) -> None:
     _, client = served
-    client.post("/internal/change-requests", json=_export(), headers=REQUIREMENTS)
+    client.post("/apps/v2/change-requests", json=_export(), headers=REQUIREMENTS)
     url = "/architecture-knowledge/change-requests/CR-20261003-Business_Pro_Plus"
 
     assert client.post(f"{url}/dismissal", json={"reason": ""}, headers=OWNER).status_code == 422
@@ -533,10 +532,10 @@ def test_requirement_portal_delivers_a_draft_with_the_approved_backlog(
     }
     broken = json.loads(json.dumps(export))
     broken["product_impact"]["draft"]["journey"]["activities"][1]["number"] = "10"
-    refused = client.post("/internal/change-requests", json=broken, headers=REQUIREMENTS)
+    refused = client.post("/apps/v2/change-requests", json=broken, headers=REQUIREMENTS)
     assert refused.status_code == 422 and "product_impact.draft" in refused.text
 
-    delivered = client.post("/internal/change-requests", json=export, headers=REQUIREMENTS)
+    delivered = client.post("/apps/v2/change-requests", json=export, headers=REQUIREMENTS)
     assert delivered.status_code == 201, delivered.text
     (item,) = client.get("/architecture-knowledge/change-requests", headers=OWNER).json()[
         "change_requests"

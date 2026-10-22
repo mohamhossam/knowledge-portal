@@ -1,4 +1,4 @@
-"""The portal's own sign-in entities (requirement-portal ADR-0104, phase 4)."""
+"""The portal's own sign-in entities, and nothing of any app that reads it (ADR-0126)."""
 
 from __future__ import annotations
 
@@ -75,8 +75,10 @@ def test_nothing_is_imported_without_the_portal_origin() -> None:
         _rendered()
 
 
-def test_nothing_of_requirement_work_is_defined_here() -> None:
-    text = ENTITIES.read_text(encoding="utf-8")
+def test_nothing_of_another_app_is_defined_here() -> None:
+    text = ENTITIES.read_text(encoding="utf-8").casefold()
 
-    assert "requirement-spa" not in text
-    assert "requirement-api" not in text
+    # The portal calls no app, so it needs no credential of its own for one; an app's client
+    # lives with the app (deployment.md, "Register an app").
+    assert "requirement" not in text
+    assert "knowledge-service" not in text

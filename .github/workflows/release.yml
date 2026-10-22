@@ -70,11 +70,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # The internal contract requirement work's adapters pin (requirement-portal ADR-0099).
+          # The app API's contract, the one apps build against (ADR-0126).
           # The notes carry each pushed image's digest, so a deployment can pin
           # exactly what was scanned; the SBOMs describe those same bytes.
           digests="$(paste -sd ' and ' pushed-digests.txt)"
           gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" \
             --notes "Images (scanned at these digests): ${digests}. Changes: CHANGELOG.md." \
-            contracts/knowledge-internal.openapi.json contracts/knowledge-public.openapi.json \
+            contracts/knowledge-apps.openapi.json contracts/knowledge-public.openapi.json \
             sbom-knowledge-api.cdx.json sbom-knowledge-web.cdx.json

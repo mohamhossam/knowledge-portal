@@ -30,7 +30,7 @@ ADMIN = Actor(FAKE_ACTORS[0].id.value, FAKE_ACTORS[0].roles)
 def served() -> Iterator[tuple[Container, TestClient]]:
     container = build_container(
         replace(
-            FAKE_PROVIDER_SETTINGS, requirement_service_token=TOKEN, library_scan_mode="offline"
+            FAKE_PROVIDER_SETTINGS, app_tokens={"requirements": TOKEN}, library_scan_mode="offline"
         )
     )
     with TestClient(create_app(lambda: container)) as client:
@@ -55,7 +55,7 @@ def test_a_live_citation_reads_its_exact_passage(served: tuple[Container, TestCl
     container, client = served
     params = _published_citation(container)
 
-    response = client.get("/internal/library/passages", params=params, headers=REQUIREMENTS)
+    response = client.get("/apps/v2/library/passages", params=params, headers=REQUIREMENTS)
 
     assert response.status_code == 200, response.text
     body = response.json()
@@ -72,16 +72,16 @@ def test_a_citation_that_is_no_longer_live_is_refused(
     document = container.document_library.get(params["document_id"], owner())
 
     stale = client.get(
-        "/internal/library/passages",
+        "/apps/v2/library/passages",
         params={**params, "revision_id": "an-older-revision"},
         headers=REQUIREMENTS,
     )
     container.document_library.withdraw(
         params["document_id"], document.version, owner(), "Superseded"
     )
-    withdrawn = client.get("/internal/library/passages", params=params, headers=REQUIREMENTS)
+    withdrawn = client.get("/apps/v2/library/passages", params=params, headers=REQUIREMENTS)
     missing = client.get(
-        "/internal/library/passages",
+        "/apps/v2/library/passages",
         params={**params, "document_id": "no-such-document"},
         headers=REQUIREMENTS,
     )
@@ -104,13 +104,13 @@ def test_published_evidence_is_served_and_a_draft_s_is_not(
         knowledge._index.store(key, key, (chunk,))
 
     published = client.get(
-        f"/internal/architecture/releases/{active.id}/evidence/chunk-1", headers=REQUIREMENTS
+        f"/apps/v2/architecture/releases/{active.id}/evidence/chunk-1", headers=REQUIREMENTS
     )
     of_draft = client.get(
-        f"/internal/architecture/releases/{draft.id}/evidence/chunk-1", headers=REQUIREMENTS
+        f"/apps/v2/architecture/releases/{draft.id}/evidence/chunk-1", headers=REQUIREMENTS
     )
     unknown = client.get(
-        f"/internal/architecture/releases/{active.id}/evidence/no-such-chunk",
+        f"/apps/v2/architecture/releases/{active.id}/evidence/no-such-chunk",
         headers=REQUIREMENTS,
     )
 
@@ -125,9 +125,9 @@ def test_the_viewer_reads_need_requirement_work_s_token(
     _, client = served
     admin = {"X-Fake-Actor-Id": "fake-owner"}
 
-    assert client.get("/internal/library/passages", headers=admin).status_code == 401
+    assert client.get("/apps/v2/library/passages", headers=admin).status_code == 401
     assert (
-        client.get("/internal/architecture/releases/r/evidence/c", headers=admin).status_code == 401
+        client.get("/apps/v2/architecture/releases/r/evidence/c", headers=admin).status_code == 401
     )
 
 
@@ -137,7 +137,7 @@ def test_an_activation_names_the_version_for_requirement_work(
     container, client = served
     active = container.manage_architecture_knowledge.active()
 
-    feed = client.get("/internal/events", headers=REQUIREMENTS).json()
+    feed = client.get("/apps/v2/events", headers=REQUIREMENTS).json()
 
     (activated,) = [item for item in feed if item["kind"] == "architecture_release_activated"]
     assert activated["payload"] == {"release_id": active.id, "name": active.name}

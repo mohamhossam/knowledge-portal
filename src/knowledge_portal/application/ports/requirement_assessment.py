@@ -1,10 +1,10 @@
 """Ports for assessing a whole requirement against one pinned release (ontology plan Phase 3).
 
-`POST /internal/architecture/assess` answers with an `ArchitectureAssessment`: the
+`POST /apps/v2/architecture/assess` answers with an `ArchitectureAssessment`: the
 requirement's facets and the concepts they link to, how far the closest offering covers
 them, the product verdict (or the questions to ask first), the systems with their role,
 change type and path, the gaps, and who owns each impacted capability (ADR-0114,
-requirement-portal ADR-0115).
+ADR-0115).
 
 Two model-backed steps sit behind ports, each with a fake: reading the requirement as
 facets and picking concepts from a shortlist, and weighing the verdict and systems. Both
@@ -40,12 +40,12 @@ PROMPT_VERSION = "requirement-assessment-v3"
 
 @dataclass(frozen=True)
 class AssessmentQuery:
-    """A requirement as requirement-portal holds it: its text and its analysed facts."""
+    """A requirement as the asking app holds it: its text and its analysed facts."""
 
     text: tuple[str, ...]
     declared_systems: tuple[str, ...] = ()
     release_id: str | None = None
-    # requirement-portal's requirement id: its own decided verdicts are never shown back to
+    # The app's requirement id: its own decided verdicts are never shown back to
     # it as precedents (ontology plan Phase 5).
     requirement_id: str | None = None
 

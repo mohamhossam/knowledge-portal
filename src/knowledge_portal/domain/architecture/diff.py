@@ -351,7 +351,7 @@ class ChangedItem(StrEnum):
     CHANNEL = "channel"
     SOURCE = "source"
     CONFLICT = "conflict"
-    # A change request applied to the version (requirement-portal ADR-0101, step 7).
+    # A change request applied to the version (ADR-0101, step 7).
     CHANGE_REQUEST = "change_request"
     # A business capability concept (ADR-0114).
     CONCEPT = "concept"

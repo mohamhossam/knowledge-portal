@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 def validate_settings(settings: Settings) -> None:
     """Check the resolved settings one concern at a time, failing on the first problem."""
     _check_request_body_limit(settings)
-    _check_requirement_service_link(settings)
+    _check_apps(settings)
     _check_reranker(settings)
     _check_product_catalog(settings)
     _check_review_cycle(settings)
@@ -61,18 +61,33 @@ def _check_request_body_limit(settings: Settings) -> None:
         raise ConfigurationError("REQUEST_MAX_BODY_BYTES must be at least 1024.")
 
 
-def _check_requirement_service_link(settings: Settings) -> None:
-    """How requirement work proves itself on this service's internal API."""
-    token = settings.requirement_service_token
-    if token is not None and len(token) < 32:
-        raise ConfigurationError("REQUIREMENT_SERVICE_TOKEN must be at least 32 characters.")
+# An app's name: what it is admitted and recorded under, so a short, plain label.
+_APP_NAME = re.compile(r"[a-z0-9][a-z0-9._-]{0,62}")
+
+
+def _check_apps(settings: Settings) -> None:
+    """How the apps that read the knowledge base prove themselves (ADR-0126)."""
+    for name, token in settings.app_tokens.items():
+        if not _APP_NAME.fullmatch(name):
+            raise ConfigurationError(
+                f"APP_TOKENS: {name!r} is not an app name (lower-case letters, digits, . _ -)."
+            )
+        if len(token) < 32:
+            raise ConfigurationError(f"APP_TOKENS: {name}'s token must be at least 32 characters.")
+    if len(set(settings.app_tokens.values())) != len(settings.app_tokens):
+        raise ConfigurationError("APP_TOKENS gives two apps the same token.")
+    if len(set(settings.app_client_ids)) != len(settings.app_client_ids):
+        raise ConfigurationError("APP_CLIENT_IDS names a client twice.")
+    for client_id in settings.app_client_ids:
+        if not _APP_NAME.fullmatch(client_id):
+            raise ConfigurationError(
+                f"APP_CLIENT_IDS: {client_id!r} is not an app name "
+                "(lower-case letters, digits, . _ -)."
+            )
     issuer = urlsplit(settings.oidc_issuer_url)
-    if settings.requirement_service_client_id is not None and (
-        issuer.scheme != "https" or not issuer.netloc
-    ):
+    if settings.app_client_ids and (issuer.scheme != "https" or not issuer.netloc):
         raise ConfigurationError(
-            "REQUIREMENT_SERVICE_CLIENT_ID needs OIDC_ISSUER_URL, the HTTPS issuer that "
-            "grants service tokens."
+            "APP_CLIENT_IDS needs OIDC_ISSUER_URL, the HTTPS issuer that grants the apps' tokens."
         )
 
 

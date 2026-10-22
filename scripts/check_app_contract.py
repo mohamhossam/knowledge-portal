@@ -1,14 +1,16 @@
-"""Check the internal contract (review recommendation 11): regenerated, and versioned.
+"""Check the app contract (review recommendation 11, ADR-0126): regenerated, and versioned.
 
-1. The committed `contracts/knowledge-internal.openapi.json` is what the code generates now.
+1. The committed `contracts/knowledge-apps.openapi.json` is what the code generates now.
 2. Against the base it replaces (a git revision, by default `origin/main`), every change is
    sorted into breaking or additive, and the contract's version is raised to match: a breaking
    change raises MAJOR, an additive one MINOR (AGENTS.md §2.1).
 
-    uv run python scripts/check_internal_contract.py [--base REVISION]
+    uv run python scripts/check_app_contract.py [--base REVISION]
 
-A base with no contract file, or a revision git cannot read, is reported and skipped: there is
-nothing to pin against. Exit status 1 on any problem.
+A base that has the contract only under its earlier name (the internal API's,
+`contracts/knowledge-internal.openapi.json`) is compared under that name. A base with no
+contract file, or a revision git cannot read, is reported and skipped: there is nothing to
+pin against. Exit status 1 on any problem.
 """
 
 from __future__ import annotations
@@ -26,25 +28,30 @@ from knowledge_portal.interfaces.api.contract_compat import (
     required_bump,
     version_problems,
 )
-from knowledge_portal.interfaces.api.routes.internal import contract_openapi
+from knowledge_portal.interfaces.api.routes.apps import contract_openapi
 
 ROOT = Path(__file__).resolve().parents[1]
-CONTRACT = "contracts/knowledge-internal.openapi.json"
+CONTRACT = "contracts/knowledge-apps.openapi.json"
+# Where the contract lived before, newest first: the internal API's, until ADR-0126.
+EARLIER = ("contracts/knowledge-internal.openapi.json",)
 
 
 def _base(revision: str) -> dict[str, Any] | None:
-    shown = subprocess.run(
-        ["git", "show", f"{revision}:{CONTRACT}"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if shown.returncode != 0:
-        print(f"No contract at {revision} to compare against: {shown.stderr.strip()}")
-        return None
-    loaded: dict[str, Any] = json.loads(shown.stdout)
-    return loaded
+    problem = ""
+    for path in (CONTRACT, *EARLIER):
+        shown = subprocess.run(
+            ["git", "show", f"{revision}:{path}"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if shown.returncode == 0:
+            loaded: dict[str, Any] = json.loads(shown.stdout)
+            return loaded
+        problem = problem or shown.stderr.strip()
+    print(f"No contract at {revision} to compare against: {problem}")
+    return None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -57,7 +64,7 @@ def main(argv: list[str] | None = None) -> int:
     if committed != generated:
         print(
             f"{CONTRACT} is stale: regenerate it with "
-            "`uv run python scripts/dump_internal_openapi.py` and review the change."
+            "`uv run python scripts/dump_apps_openapi.py` and review the change."
         )
         return 1
 
@@ -73,7 +80,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"additive  {line}")
     problems = version_problems(base_version, version, bump)
     summary = {
-        Bump.MAJOR: "breaking: requirement-portal must release with it",
+        Bump.MAJOR: "breaking: every app that calls it must release with it",
         Bump.MINOR: "additive",
         Bump.PATCH: "descriptions only",
         Bump.NONE: "unchanged",

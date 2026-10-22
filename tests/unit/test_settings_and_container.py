@@ -42,17 +42,6 @@ PRODUCTION = Settings(
 @pytest.mark.parametrize(
     ("changes", "message"),
     [
-        ({"requirement_service_token": "short"}, "REQUIREMENT_SERVICE_TOKEN must be at least 32"),
-    ],
-)
-def test_service_settings_are_checked_at_startup(changes: dict[str, str], message: str) -> None:
-    with pytest.raises(ConfigurationError, match=message):
-        replace(FAKE_PROVIDER_SETTINGS, **changes)  # type: ignore[arg-type]
-
-
-@pytest.mark.parametrize(
-    ("changes", "message"),
-    [
         ({"llm_provider": LLMProvider.FAKE}, "refuses LLM_PROVIDER=fake"),
         (
             {"product_catalog_provider": ProductCatalogProvider.FAKE},
@@ -71,17 +60,6 @@ def test_production_refuses_development_conveniences(
             knowledge_evaluation_approved=True,
             **changes,  # type: ignore[arg-type]
         )
-
-
-def test_service_settings_are_read_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("LLM_PROVIDER", "fake")
-    monkeypatch.setenv("REQUIREMENT_SERVICE_TOKEN", TOKEN)
-
-    settings = Settings.from_env()
-
-    assert settings.requirement_service_token == TOKEN
-    # Secrets never reach a log line through the settings' repr.
-    assert TOKEN not in repr(settings)
 
 
 @pytest.mark.parametrize(

@@ -3,8 +3,8 @@
 A document whose title, extracted text or reviewed text holds any Arabic letter is refused,
 and so is a search in Arabic. The rule covers the library only: the architecture catalogue
 is English too, but nothing checks it. Search normalisation still folds Arabic forms
-(`normalize_search`), because that normal form is part of the citation contract shared with
-requirement work (ADR-0099) and must not change.
+(`normalize_search`), because that normal form is part of the citation contract apps rely
+on (ADR-0126) and must not change.
 """
 
 from __future__ import annotations

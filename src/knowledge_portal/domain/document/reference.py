@@ -86,8 +86,8 @@ class CurrentPublication:
 class ReferenceDocumentState:
     """A library document's citable state, as the reference library publishes it.
 
-    Requirement work keeps a local copy of these, fed by the library's events, so
-    it can check citations without reading the library (ADR-0099). `version`
+    An app may keep a local copy of these, fed by the library's events, so it can
+    check citations without reading the library (ADR-0126). `version`
     advances on every change to the document.
     """
 
@@ -96,7 +96,7 @@ class ReferenceDocumentState:
     title: str
     version: int
     published: CurrentPublication | None = None
-    # When it falls due for review again (Knowledge Center D); requirement work flags a
+    # When it falls due for review again (Knowledge Center D); an app flags a
     # citation of it as not reviewed since once that day has passed.
     review_due_on: date | None = None
 

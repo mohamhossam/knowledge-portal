@@ -21,10 +21,10 @@ from knowledge_portal.interfaces.api.contract_compat import (
     required_bump,
     version_problems,
 )
-from knowledge_portal.interfaces.api.routes.internal import INTERNAL_CONTRACT_VERSION
+from knowledge_portal.interfaces.api.routes.apps import APP_CONTRACT_VERSION
 
 ROOT = Path(__file__).resolve().parents[2]
-CONTRACT = ROOT / "contracts" / "knowledge-internal.openapi.json"
+CONTRACT = ROOT / "contracts" / "knowledge-apps.openapi.json"
 
 
 def _contract() -> dict[str, Any]:
@@ -33,7 +33,7 @@ def _contract() -> dict[str, Any]:
         "openapi": "3.1.0",
         "info": {"title": "Internal", "version": "1.0.0"},
         "paths": {
-            "/internal/match": {
+            "/apps/v2/match": {
                 "post": {
                     "summary": "Match",
                     "parameters": [
@@ -102,7 +102,7 @@ def _schema(contract: dict[str, Any], name: str) -> dict[str, Any]:
 
 
 def _operation(contract: dict[str, Any]) -> dict[str, Any]:
-    found: dict[str, Any] = contract["paths"]["/internal/match"]["post"]
+    found: dict[str, Any] = contract["paths"]["/apps/v2/match"]["post"]
     return found
 
 
@@ -145,7 +145,7 @@ def test_an_unchanged_contract_or_its_wording_needs_no_new_version() -> None:
         ),
         (
             lambda head: head["paths"].update(
-                {"/internal/other": {"get": {"responses": {"200": {"description": "ok"}}}}}
+                {"/apps/v2/other": {"get": {"responses": {"200": {"description": "ok"}}}}}
             ),
             "an operation",
         ),
@@ -159,7 +159,7 @@ def test_what_a_caller_may_ignore_raises_the_minor_version(edit: Any, why: str) 
 @pytest.mark.parametrize(
     ("edit", "why"),
     [
-        (lambda head: head["paths"].pop("/internal/match"), "an operation removed"),
+        (lambda head: head["paths"].pop("/apps/v2/match"), "an operation removed"),
         (
             lambda head: _schema(head, "Answer")["properties"].pop("system"),
             "a field it sent, removed",
@@ -238,12 +238,12 @@ def test_a_version_never_goes_back_and_rises_as_far_as_the_change_needs() -> Non
 def test_the_committed_contract_carries_the_package_s_version() -> None:
     committed = json.loads(CONTRACT.read_text(encoding="utf-8"))
 
-    assert committed["info"]["version"] == INTERNAL_CONTRACT_VERSION
+    assert committed["info"]["version"] == APP_CONTRACT_VERSION
 
 
 def test_the_committed_contract_compared_with_itself_needs_nothing() -> None:
     spec = importlib.util.spec_from_file_location(
-        "check_internal_contract", ROOT / "scripts" / "check_internal_contract.py"
+        "check_app_contract", ROOT / "scripts" / "check_app_contract.py"
     )
     assert spec is not None and spec.loader is not None
     script = importlib.util.module_from_spec(spec)

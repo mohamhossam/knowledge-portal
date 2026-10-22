@@ -1,4 +1,4 @@
-"""The inbox of change requests requirement-portal sends (requirement-portal ADR-0101, step 7)."""
+"""The inbox of change requests apps send (ADR-0126)."""
 
 from __future__ import annotations
 

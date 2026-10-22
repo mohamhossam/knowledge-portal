@@ -48,10 +48,10 @@ jobs:
           uv sync --locked --extra dev
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
-      - name: Internal contract regenerated and versioned against what it replaces
-        # Review recommendation 11: the committed contract is what the code generates, and a
-        # change to /internal/* raises its version as far as the change needs (breaking: MAJOR,
-        # additive: MINOR) against the pull request's base, or the commit a push replaces.
+      - name: App contract regenerated and versioned against what it replaces
+        # Review recommendation 11, ADR-0126: the committed contract is what the code generates,
+        # and a change to /apps/* raises its version as far as the change needs (breaking:
+        # MAJOR, additive: MINOR) against the pull request's base, or the commit a push replaces.
         env:
           BASE_REF: ${{ github.base_ref }}
           BEFORE: ${{ github.event.before }}
@@ -63,7 +63,7 @@ jobs:
           elif [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
             git fetch --no-tags --depth=1 origin "$BEFORE" && base="$BEFORE"
           fi
-          python scripts/check_internal_contract.py --base "$base"
+          python scripts/check_app_contract.py --base "$base"
 
       - name: pytest with coverage
         # The floor lives in pyproject.toml ([tool.coverage.report] fail_under)
@@ -199,10 +199,10 @@ jobs:
           docker compose -f deploy/compose.local.yaml config -q
           export KNOWLEDGE_IMAGE_TAG=ci KNOWLEDGE_POSTGRES_PASSWORD=ci
           docker compose -f deploy/compose.production.yaml config -q
-          docker network create platform-internal
-          docker compose -f deploy/compose.production.yaml -f deploy/compose.peer.yaml config -q
+          docker network create knowledge-apps
+          docker compose -f deploy/compose.production.yaml -f deploy/compose.apps.yaml config -q
 
-      - name: The edge serves the app and refuses /internal
+      - name: The edge serves the app and passes the app API to the API
         run: |
           docker network create edge-ci
           docker network connect --alias web edge-ci web
@@ -214,8 +214,8 @@ jobs:
           for attempt in $(seq 1 20); do curl -fsS http://127.0.0.1:8090/health && break; sleep 1; done
           curl -fsS http://127.0.0.1:8090/knowledge/ | grep -q '<title>Knowledge portal</title>'
           test "$(curl -s -o /dev/null -w '%{redirect_url}' http://127.0.0.1:8090/)" = "http://127.0.0.1:8090/knowledge/"
-          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8090/knowledge-api/internal/events)" = 404
-          curl -sI http://127.0.0.1:8090/knowledge-api/internal/events | grep -i "x-content-type-options: nosniff"
+          # No API runs here: the edge forwards the app API to it (a gateway error), never to `web`.
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8090/knowledge-api/apps/v2/events)" = 502
 
   web-image-root:
     # The same image built for the root of the portal's own hostname (ADR-0104).

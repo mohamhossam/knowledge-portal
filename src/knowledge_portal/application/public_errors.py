@@ -166,7 +166,7 @@ ERROR_CATALOGUE: tuple[tuple[type[Exception], str, FailureCategory], ...] = (
         FailureCategory.CONFLICT,
     ),
     (HistoricRequirementStateError, "historic_requirement_state", FailureCategory.CONFLICT),
-    # Requirement work asked for an older publication; a newer event is on its way.
+    # An app asked for an older publication; a newer event is on its way.
     (
         HistoricPublicationSupersededError,
         "historic_publication_superseded",

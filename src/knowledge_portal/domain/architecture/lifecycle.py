@@ -1,5 +1,4 @@
-"""What happens to an offering over its life, as its sources tell it (requirement-portal
-ADR-0101, step 4).
+"""What happens to an offering over its life, as its sources tell it (ADR-0101, step 4).
 
 Beyond the order journeys, an offering's sources describe how it changes once sold: an
 up/downgrade matrix, what cessation blocks, how a renewal carries the contract over, what

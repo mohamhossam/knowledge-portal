@@ -1,4 +1,4 @@
-"""The product architecture explorer: open to anyone signed in (requirement-portal ADR-0101).
+"""The product architecture explorer: open to anyone signed in (ADR-0101).
 
 These are the only public routes that do not require ``knowledge_admin``. They read the
 catalogue version in service with the change history applied to it, an offering's plans and

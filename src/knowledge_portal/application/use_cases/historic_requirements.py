@@ -294,7 +294,7 @@ class HistoricImports:
     def content(
         self, historic_id: str, publication: int, part: ContentPart, offset: int, limit: int
     ) -> ContentPage:
-        """A page of what a publication says, for requirement work (ADR-0102, amendment 1).
+        """A page of what a publication says, for an app (ADR-0102, amendment 1).
 
         Only a published record is read; a withdrawn or missing one is not found."""
         record = self.get(historic_id)

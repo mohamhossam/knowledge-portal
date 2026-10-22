@@ -1,8 +1,7 @@
 """Run leased background jobs: dispatch, claim, renew, and record how each attempt ended.
 
-The catalogue's jobs (index, extraction) and requirement work's mapping jobs
-each have their own queue and service (ADR-0099). Both run attempts the same
-way, which lives here.
+Each kind of job (index, extraction, historic imports, golden-set runs) has its own
+queue and service. They run attempts the same way, which lives here.
 """
 
 from __future__ import annotations

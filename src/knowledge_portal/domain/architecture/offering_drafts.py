@@ -15,7 +15,7 @@ requirement against the same release always gives the same draft:
    names (else its first). Keep the steps that serve a kept component or none, and add a
    step for each added component, performed by its system.
 
-Nothing here reaches the catalogue: requirement-portal sends the draft with the approved
+Nothing here reaches the catalogue: the app sends the draft with the approved
 backlog, and a curator edits and accepts it as two suggestions, the offering first.
 """
 

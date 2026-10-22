@@ -1,4 +1,4 @@
-"""Events the knowledge side publishes for requirement work to project (ADR-0099).
+"""Events the knowledge base publishes for apps to follow (`/apps/v2/events`, ADR-0126).
 
 An event is written in the same transaction as the change it reports. Each
 carries the subject's whole current state, so applying one is idempotent and a

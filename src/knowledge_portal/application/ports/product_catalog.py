@@ -1,4 +1,4 @@
-"""The product catalog: where plans and prices are recorded (requirement-portal ADR-0101)."""
+"""The product catalog: where plans and prices are recorded (ADR-0101)."""
 
 from __future__ import annotations
 

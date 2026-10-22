@@ -7,7 +7,7 @@ another table names. Reading those cells directly gives every row, cited by its
 own line, the same way each time. The model still reads everything else, and the
 system rows' Function cells for capabilities, which need wording.
 
-A product section's details are read the same way (requirement-portal ADR-0101, step 4):
+A product section's details are read the same way (ADR-0101, step 4):
 its realisation and NFR tables, the tables and notes under its "Order tracking" heading,
 and each "Lifecycle: <title>" section as one lifecycle note, its paragraphs, lists and
 tables in the order the document sets them out.
@@ -106,7 +106,7 @@ _REQUIREMENT = frozenset(
 )
 _CODE = frozenset({"code"})
 _SUBDOMAIN = frozenset({"sub domain", "subdomain"})
-# Channels (requirement-portal ADR-0101): a Channels table, and the channels an order type
+# Channels (ADR-0101): a Channels table, and the channels an order type
 # or an activity names.
 _CHANNEL = frozenset({"channel", "channel name"})
 _CHANNELS = frozenset({"channels", "channel", "ordered through", "available channels"})

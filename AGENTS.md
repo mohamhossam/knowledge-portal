@@ -2,23 +2,24 @@
 
 ## 1. Purpose
 
-This repository builds the **knowledge portal**. Knowledge administrators curate in it the
-organisation-wide knowledge that the requirement portal reasons with:
+This repository builds the **knowledge portal**, a stand-alone knowledge base (ADR-0126).
+Knowledge administrators curate in it the organisation-wide knowledge that people and other apps
+read:
 - the shared reference library: reviewed documents and their published passages;
 - the architecture catalogue: releases, systems, domains, components, product offerings,
   journeys, and the AI-suggested candidates for them;
 - the squad (organisation) catalogue: people, value streams, products and squads.
 
-It is a separate service with its own database and its own UI, open to the `knowledge_admin`
-role only, except the product architecture explorer: its read routes (`/explorer/*`) and screen
-are open to anyone signed in (requirement-portal ADR-0101). The requirement portal reaches it only through the internal API recorded in
-requirement-portal's ADR-0099.
+It is a service with its own database and its own UI, open to the `knowledge_admin` role only,
+except the product architecture explorer: its read routes (`/explorer/*`) and screen are open to
+anyone signed in (ADR-0101). Other apps, the requirement portal among them, read it only through
+its app API (`/apps/v2`). It calls no app, shows no app's data and links to no app.
 
 The coding agent MUST optimize for:
 1. Correct curation behaviour: nothing AI-proposed is published without a human accepting it.
 2. Clean Architecture dependency direction.
 3. Small vertical slices.
-4. A stable internal contract for the requirement portal.
+4. A stable, versioned app API for every app that reads it.
 5. Testability and maintainability.
 6. Minimal implementation necessary for the active slice.
 
@@ -30,27 +31,29 @@ Before changing code, read these files in this order:
 
 1. `AGENTS.md`: the mandatory engineering rules.
 2. `ROADMAP.md`: the approved slice sequence and scope.
-3. `docs/architecture/`: accepted ADRs. The platform-level ADRs (ADR-0098, ADR-0099, ADR-0100)
-   live in `requirement-portal` and bind this repository too.
+3. `docs/architecture/`: accepted ADRs. ADR-0126 sets this portal's place: a knowledge base
+   other apps read. The platform ADRs copied here (0077–0104) are history where it supersedes
+   them; ADR-0100 (the kernel) still binds.
 4. The active slice file in `docs/slices/`, if one exists.
 5. Existing tests and code in the area being changed.
 
 ### 2.1 Sibling repositories
 
-- `requirement-portal` owns the requirements service, its UI, and the deployment of the whole
-  platform. Never import its code.
+- `requirement-portal` is one app that reads the knowledge base through the app API. Never
+  import its code, call it, or build a screen around its data.
 - `platform-kernel` owns `smb_kernel`: shared mechanisms, never business meaning (ADR-0100).
   Re-export its errors and models rather than redefining them. Never copy kernel code here.
 
-**The internal contract is public API.**
-- `/internal/*` routes serve the requirement portal.
-- Change them only additively, or with a versioned path and a coordinated requirement-portal
-  release.
-- Raise the contract's version (`INTERNAL_CONTRACT_VERSION` in `interfaces/api/routes/internal.py`)
-  with every shape change: MAJOR for a breaking change, MINOR for an additive one. CI regenerates
-  the contract and checks the version against the base branch's
-  (`scripts/check_internal_contract.py`); run it before you push.
-- Publish the OpenAPI snapshot with every release.
+**The app API is public API.**
+- `/apps/v2/*` routes serve any registered app (`APP_TOKENS`, `APP_CLIENT_IDS`); never name an
+  app in code. What an app sends records the app's registered name.
+- Change them only additively, or with a new versioned path (`/apps/v3`) released with the apps
+  that call it.
+- Raise the contract's version (`APP_CONTRACT_VERSION` in `interfaces/api/routes/apps.py`) with
+  every shape change: MAJOR for a breaking change, MINOR for an additive one. CI regenerates the
+  contract and checks the version against the base branch's (`scripts/check_app_contract.py`);
+  run it before you push.
+- Publish the OpenAPI snapshot (`contracts/knowledge-apps.openapi.json`) with every release.
 
 The original `smb-ai-requirement-agent` stays maintained in parallel. Port its fixes to the
 library and catalogue code only by the procedure in `UPSTREAM.md`.
@@ -285,13 +288,13 @@ Prefer several focused LLM operations over one giant prompt when decomposition q
 
 ## 8. Human-in-the-Loop Rules
 
-Curated knowledge is reference data that requirement work trusts. These constraints are permanent:
+Curated knowledge is reference data that people and apps trust. These constraints are permanent:
 
 - AI-extracted catalogue candidates are review candidates. Nothing is published without a
   maintainer accepting each one, with its citations visible.
 - Library publications pass review before they are searchable or citable.
 - Withdrawing or superseding a publication, and activating a release, always write a
-  `knowledge_events` outbox row in the same transaction. The requirement portal depends on it.
+  `knowledge_events` outbox row in the same transaction. Apps follow the feed (`/apps/v2/events`).
 - Retired or withdrawn content stays readable in history, never silently deleted.
 
 ---

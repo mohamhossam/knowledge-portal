@@ -1,6 +1,6 @@
 """The product catalog over TM Forum's Product Catalog Management API (TMF620).
 
-An offering is found by its code (requirement-portal ADR-0101): by default the code is the
+An offering is found by its code (ADR-0101): by default the code is the
 catalog's own productOffering id; a deployment can name another field to search on. A
 bundled offering's plans are its bundled offerings; an offering that bundles nothing is its
 own one plan. Prices are its productOfferingPrice entries, fetched when only referred to.

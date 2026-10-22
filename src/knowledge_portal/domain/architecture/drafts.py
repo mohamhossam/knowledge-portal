@@ -1,6 +1,6 @@
 """A drafted offering and the journey that fulfils it (ontology plan Phase 9).
 
-`offering_drafts.draft_offering` builds one for a new-offering verdict; requirement-portal
+`offering_drafts.draft_offering` builds one for a new-offering verdict; the app that asked
 keeps it on the decided product impact and sends it back with the approved backlog, where
 it is read into two suggestions, the offering first.
 """

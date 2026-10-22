@@ -887,7 +887,7 @@ class ChangeItemSchema(BaseModel):
 
 
 class ChangeRequestRecordSchema(BaseModel):
-    """A change request applied to the version (requirement-portal ADR-0101, step 7)."""
+    """A change request applied to the version (ADR-0101, step 7)."""
 
     id: Identifier
     title: Name
@@ -1221,7 +1221,7 @@ class FalloutCaseSchema(BaseModel):
 
 
 class OrderTrackingSchema(BaseModel):
-    """How an offering's orders are tracked once placed (requirement-portal ADR-0101)."""
+    """How an offering's orders are tracked once placed (ADR-0101)."""
 
     order_types: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     scope_note: Text | None = None
@@ -2246,7 +2246,7 @@ class KnowledgeReleaseResponse(BaseModel):
     conflicts: list[SourceConflictSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
-    # The change requests applied to it (requirement-portal ADR-0101, step 7).
+    # The change requests applied to it (ADR-0101, step 7).
     change_history: list[ChangeRequestRecordSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
@@ -2330,7 +2330,7 @@ class KnowledgeReleaseResponse(BaseModel):
 
 class ExplorerReleaseResponse(BaseModel):
     """The version in service as the explorer reads it: its content, never its documents,
-    index, version history or who accepted what (requirement-portal ADR-0101, ADR-0120).
+    index, version history or who accepted what (ADR-0101, ADR-0120).
     The change requests applied to it are part of its content, for the Solution
     Architecture document (step 7)."""
 
@@ -2556,7 +2556,7 @@ class DraftUpdateRequest(BaseModel):
     )
     # Likewise for journeys (ADR-0096).
     journeys: list[JourneySchema] | None = Field(default=None, max_length=MAX_CATALOGUE_ITEMS)
-    # Likewise for channels (requirement-portal ADR-0101, step 3).
+    # Likewise for channels (ADR-0101, step 3).
     channels: list[ChannelSchema] | None = Field(default=None, max_length=MAX_CATALOGUE_ITEMS)
     # Likewise for the source register and the conflicts between sources (step 5).
     sources: list[KnowledgeSourceSchema] | None = Field(
@@ -2668,7 +2668,7 @@ class CandidateContentSchema(BaseModel):
     product: ProductOfferingSchema | None = None
     # The whole journey, for a journey suggestion (ADR-0096).
     journey: JourneySchema | None = None
-    # The whole channel, for a channel suggestion (requirement-portal ADR-0101).
+    # The whole channel, for a channel suggestion (ADR-0101).
     channel: ChannelSchema | None = None
     # An open question for the offering ``system_id`` names (step 7).
     question: OpenQuestionSchema | None = None
@@ -2828,7 +2828,7 @@ class CatalogueSuggestionResponse(BaseModel):
     id: str
     # The document it was read from, or the change request's id for one from a change request.
     document_version_id: str
-    # Set when it comes from a change request from Requirement AI (step 7).
+    # Set when it comes from a change request an app sent (ADR-0126).
     change_request: ChangeRequestCitationResponse | None = None
     content: CandidateContentSchema
     citations: list[CandidateCitationResponse]

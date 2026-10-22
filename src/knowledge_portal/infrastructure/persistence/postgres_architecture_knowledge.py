@@ -236,6 +236,6 @@ class PostgresArchitectureKnowledgeRepository:
 def _activated(connection: DbConnection, release: ArchitectureKnowledge) -> None:
     """Report the new active release, in the transaction that makes it active (ADR-0099).
 
-    The name travels with the id, so requirement work can label the version in use.
+    The name travels with the id, so an app can label the version in use.
     """
     append_event(connection, ARCHITECTURE_RELEASE_ACTIVATED, release.id, activation(release))

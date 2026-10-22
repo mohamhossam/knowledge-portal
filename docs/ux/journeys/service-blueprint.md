@@ -1,5 +1,10 @@
 # Service blueprint — knowledge portal
 
+> **Superseded in part by ADR-0126 (2026-10-22).** The knowledge portal no longer calls
+> requirement-portal or shows its data (the requirement-portal rows below that read from it,
+> and `requirement_client.py`, are gone), and the inbound `/internal/*` routes are now the app
+> API, `/apps/v2/*`, for any registered app. The curator's front and back stage stand.
+
 Phase 2 · Define. This blueprint shows the front stage (what the curator sees), the back stage
 (jobs, extraction, the AI model) and the requirement-portal touchpoints for the two burst
 journeys, plus the cross-cutting check-in.

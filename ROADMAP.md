@@ -12,7 +12,7 @@ built is archived in `docs/history/roadmap-to-v0.7.0.md`; each release is in `CH
 | Ontology and impact plan (ADR-0114 to ADR-0116) | The live-model baseline and the 80% verdict gate for both mappers; the concept screens and coverage line (redesign plan 03); requirement-portal keeping, showing and sending the drafted offering (Phase 9) |
 | The Product Architecture Explorer (requirement-portal ADR-0101) | Live-model extraction checks, and a live TMF620 catalog |
 | Knowledge Center (ADR-0099 Amendment 1, ADR-0102) | The Azure DevOps edition, for the REST adapter (historic requirements run on the fake connector until then); prior art stays off in production until requirement-portal's judge is evaluated |
-| Independent portals (requirement-portal ADR-0104) | Whether releases serve at the root, then the cutover with requirement-portal, and Phases 6 and 7 |
+| A knowledge base other apps read (ADR-0126, superseding ADR-0104) | Release it with requirement-portal's move to the app API (`/apps/v2`, audience `knowledge-apps`): the app contract 2.0.0 is breaking, so the two ship together. Then whether to open the library to every signed-in reader |
 | Customer's two masters (ADR-0123) | When the NC Digital migration ends, CBCM stops mastering Customer, and its note and NC CRM's go |
 
 ## Delivered

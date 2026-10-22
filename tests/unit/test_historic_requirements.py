@@ -517,7 +517,7 @@ def _served(clock: FixedClock) -> Container:
             llm_provider=LLMProvider.FAKE,
             library_scan_mode="offline",
             ado_provider=AdoProvider.FAKE,
-            requirement_service_token="r" * 40,
+            app_tokens={"requirements": "r" * 40},
         ),
         clock=clock,
     )
@@ -528,7 +528,7 @@ def test_requirement_work_reads_a_publication_a_page_at_a_time(clock: FixedClock
     historic_id = _linked(container)
     record = container.historic_imports.get(historic_id)
     container.historic_imports.publish(historic_id, record.version, CURATOR)
-    base = f"/internal/historic-requirements/{historic_id}"
+    base = f"/apps/v2/historic-requirements/{historic_id}"
     with TestClient(create_app(lambda: container)) as client:
         assert client.get(f"{base}/items?publication=1").status_code == 401
         first = client.get(f"{base}/items?publication=1&limit=2", headers=SERVICE)
@@ -544,7 +544,7 @@ def test_requirement_work_reads_a_publication_a_page_at_a_time(clock: FixedClock
             client.get(f"{base}/items?publication=1&limit=201", headers=SERVICE).status_code == 422
         )
         assert client.get(f"{base}/items?publication=0", headers=SERVICE).status_code == 422
-        missing = "/internal/historic-requirements/missing/items?publication=1"
+        missing = "/apps/v2/historic-requirements/missing/items?publication=1"
         assert client.get(missing, headers=SERVICE).status_code == 404
 
 
@@ -553,7 +553,7 @@ def test_a_draft_is_not_read_by_requirement_work(clock: FixedClock) -> None:
     historic_id = _linked(container)
     with TestClient(create_app(lambda: container)) as client:
         answer = client.get(
-            f"/internal/historic-requirements/{historic_id}/passages?publication=1",
+            f"/apps/v2/historic-requirements/{historic_id}/passages?publication=1",
             headers=SERVICE,
         )
         assert answer.status_code == 404

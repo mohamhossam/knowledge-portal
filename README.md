@@ -1,17 +1,14 @@
 # knowledge-portal
 
-The knowledge portal for the requirement platform. Knowledge administrators curate in it the
-shared reference library, the architecture catalogue and the squad (organisation) catalogue.
-It is a separate service with its own database and UI, served on the platform's host at
-`/knowledge/`, with its API at `/knowledge-api/`.
+A stand-alone knowledge base (ADR-0126). Knowledge administrators curate in it the shared
+reference library, the architecture catalogue and the squad (organisation) catalogue; people
+read the published catalogue in its explorer, and other apps read it through its app API,
+`/apps/v2`. It is a service with its own database and UI, served at `/knowledge/` (or the root of
+its own hostname), with its API at `/knowledge-api/`. It calls no other app.
 
-It is one of three repositories:
-- [`requirement-portal`](https://github.com/mohamhossam/requirement-portal), which owns the
-  requirements service, its UI and the platform deployment. Its platform ADRs are ADR-0098,
-  ADR-0099 and ADR-0100;
-- this portal;
-- [`platform-kernel`](https://github.com/mohamhossam/platform-kernel), which holds the shared
-  mechanisms.
+It builds on [`platform-kernel`](https://github.com/mohamhossam/platform-kernel), which holds
+shared mechanisms. [`requirement-portal`](https://github.com/mohamhossam/requirement-portal) is
+one app that reads it.
 
 > **Status: the portal is complete and released (v0.7.0).** The API, worker, schema, data
 > import, images and CI are in place. The browser app ships every curation screen on its
@@ -21,7 +18,7 @@ It is one of three repositories:
 ## Run it offline
 
 `START_GUIDE.md` walks through every way to start the portal: offline with sample content, with
-PostgreSQL, in Docker with `deploy/compose.local.yaml`, and beside requirement-portal. The short
+PostgreSQL, in Docker with `deploy/compose.local.yaml`, and with an app reading it. The short
 version:
 
 ```bash
@@ -33,9 +30,9 @@ uv run python -m knowledge_portal.interfaces.api.serve
 ```
 
 With the defaults it uses in-memory storage, fake models and fake sign-in. `fake-owner` and
-`fake-reviewer` are knowledge admins; `fake-observer` is not, so the portal refuses it. Without
-`REQUIREMENT_API_BASE_URL`, offline stand-ins answer for requirement work: no requirement cites
-anything and nothing is mapped.
+`fake-reviewer` are knowledge admins; `fake-observer` is not, so the portal refuses it (it can
+still read the explorer). The app API is not served until an app is registered in
+`APP_TOKENS` or `APP_CLIENT_IDS`.
 
 ## Checks
 
@@ -53,12 +50,13 @@ with `uv run python -m knowledge_portal.infrastructure.persistence.migrate`
 (`PERSISTENCE_PROVIDER=postgres` and `DATABASE_URL`).
 
 The public API's contract is `contracts/knowledge-public.openapi.json`; regenerate it with
-`uv run python scripts/dump_openapi.py`. The internal API's contract,
-`contracts/knowledge-internal.openapi.json`, is regenerated with
-`uv run python scripts/dump_internal_openapi.py`; it is shared with requirement-portal and
-changes only together with it. Its version (`INTERNAL_CONTRACT_VERSION`) rises with every shape
-change, MAJOR for a breaking one and MINOR for an additive one;
-`uv run python scripts/check_internal_contract.py` checks both against `origin/main`, as CI does.
+`uv run python scripts/dump_openapi.py`. The app API's contract,
+`contracts/knowledge-apps.openapi.json`, is regenerated with
+`uv run python scripts/dump_apps_openapi.py`; every app that reads the knowledge base builds
+against it, so it changes additively, or under a new path with a new MAJOR version. Its version
+(`APP_CONTRACT_VERSION`) rises with every shape change, MAJOR for a breaking one and MINOR for an
+additive one; `uv run python scripts/check_app_contract.py` checks both against `origin/main`,
+as CI does.
 
 ## Importing the existing knowledge
 
@@ -138,13 +136,12 @@ docker build -f deploy/api/Dockerfile .
 
 To run both images on one machine, with PostgreSQL, ClamAV and an edge proxy, use
 `deploy/compose.local.yaml` (`START_GUIDE.md`, section 7). To deploy the portal, use
-`deploy/compose.production.yaml` (`docs/operations/deployment.md`); requirement work is optional
-(requirement-portal ADR-0104).
+`deploy/compose.production.yaml` (`docs/operations/deployment.md`, which also says how to
+register an app).
 
 The browser app ships as its own image, nginx serving `/knowledge/`
 (`docker build -f deploy/web/Dockerfile .`; `--build-arg KNOWLEDGE_BASE_PATH=/` serves it at the
-root of its own hostname). The container's `CSP_IDENTITY_ORIGINS` names the OIDC issuer's origin,
-and its `REQUIREMENT_PORTAL_URL` where requirement work is, empty to leave out the links.
+root of its own hostname). The container's `CSP_IDENTITY_ORIGINS` names the OIDC issuer's origin.
 
 CI (`.github/workflows/ci.yml`) runs the checks with PostgreSQL, the frontend checks, audits
 dependencies, and builds, scans and starts both images. Pushing a tag `vX.Y.Z` that matches
@@ -158,11 +155,13 @@ each release changes; add its entry in the pull request that bumps the version.
 People with the `knowledge_admin` role curate. Anyone else who is signed in can read the
 product architecture explorer at `/knowledge/explorer`: for each offering and order type in the
 catalogue version in service, the journey, the systems that take part and what the catalogue
-does not say yet (requirement-portal ADR-0101). Any reader can download a scenario as a Solution
-Architecture document (.docx), written in the browser from the same version. requirement-portal sends each
-approved backlog here when its final approval is recorded; admins read it into a draft as
-suggested questions or dismiss it (requirement-portal ADR-0101, step 7). Citations and architecture evidence stay readable
-through the read-only viewers in requirement-portal.
+does not say yet (ADR-0101). Any reader can download a scenario as a Solution Architecture
+document (.docx), written in the browser from the same version.
+
+Apps registered by an operator read it through the app API (`/apps/v2`, ADR-0126): library
+search and cited passages, architecture match and assessment, historic requirements and the
+event feed. An app may also send an approved backlog when its final approval is recorded; admins
+read it into a draft as suggested questions or dismiss it, and it keeps the sending app's name.
 
 ## Origin
 

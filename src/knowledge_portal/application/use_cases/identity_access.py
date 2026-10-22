@@ -15,7 +15,7 @@ class ResolveCurrentActor:
     """Authenticate, admit knowledge admins only, and remember who signed in.
 
     The directory holds only admitted actors, so a document can be handed over
-    only to someone who can use the portal (requirement-portal ADR-0099).
+    only to someone who can use the portal (ADR-0099).
     """
 
     def __init__(self, identity: IdentityProviderPort, actors: ActorDirectoryPort) -> None:
@@ -33,7 +33,7 @@ class ResolveCurrentActor:
 class ResolveSignedInActor:
     """Authenticate anyone signed in, admin or not, for what every signed-in person may read.
 
-    Only the product architecture explorer uses it (requirement-portal ADR-0101). It admits
+    Only the product architecture explorer uses it (ADR-0101). It admits
     no one to curation and remembers no one: the directory holds admitted admins only.
     """
 
