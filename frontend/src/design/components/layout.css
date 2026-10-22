@@ -368,8 +368,9 @@
   container: main / inline-size;
 }
 
-/* A list and its record fill the window: the page ends at its bottom bar. */
-.ds-main:has(.ds-split) {
+/* A list and its record fill the window (a split desk or a bench): the page ends at its
+   bottom bar, so the main's own bottom padding would only push it past the screen. */
+.ds-main:has(.ds-split, .ds-bench) {
   padding-block-end: 0;
 }
 
@@ -547,12 +548,28 @@
   color: var(--color-ink-2);
 }
 
+/* Narrow, the facts wrap: a dot carried to the start of a line separates nothing, so the gap
+   separates them instead; and the facts wrap with the "About this page" button, which then
+   follows the last fact rather than standing alone on a line of its own. */
+@container main (max-width: 47.99rem) {
+  .ds-pagehead__titles {
+    column-gap: var(--space-4);
+  }
+
+  .ds-pagehead__meta {
+    display: contents;
+  }
+
+  .ds-pagehead__meta > * + :not(.ds-status)::before {
+    content: none;
+  }
+}
+
 /* Wide enough, the head stays one line whatever the name: the facts give way first, then the
    name ends in an ellipsis (its whole text on hover, and always to screen readers). */
 @container main (min-width: 48rem) {
   .ds-pagehead__top,
   .ds-pagehead__titles,
-  .ds-pagehead__meta,
   .ds-pagehead__actions {
     flex-wrap: nowrap;
   }
@@ -569,9 +586,14 @@
     white-space: nowrap;
   }
 
+  /* The facts give way whole: they wrap, and only the first line shows, so a fact that no
+     longer fits leaves with its dot instead of being cut mid-word or leaving the dot behind. */
   .ds-pagehead__meta {
     flex: 0 1000 auto;
+    flex-wrap: wrap;
+    align-content: flex-start;
     min-inline-size: 0;
+    max-block-size: var(--target-min);
     overflow: hidden;
     white-space: nowrap;
   }

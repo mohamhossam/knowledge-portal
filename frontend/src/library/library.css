@@ -450,6 +450,12 @@
   align-items: stretch;
 }
 
+/* The list fills the window down to this bar (--sticky-bottom), so the desk's grid gap before
+   the bar would only push the page past the screen. */
+.lib-desk > .ds-split + .ds-stickyfoot {
+  margin-block-start: calc(-1 * var(--space-2));
+}
+
 .lib-desk .ds-stickyfoot > .ds-bulkbar {
   position: static;
   padding: 0 0 var(--space-2);

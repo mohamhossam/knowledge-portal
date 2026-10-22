@@ -228,6 +228,12 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- The critique's low findings (`docs/ux/critique-2026-10-22.md`): a page head's facts no
+  longer leave a dot at the start of a line or after a clipped fact (narrow, the gap separates
+  them; wide, a fact that no longer fits leaves whole, with its dot); list-and-record pages end
+  at the screen's foot instead of 8 to 32px below it; and an empty state straight under a page
+  head (the failure screen, a page that couldn't read its data) no longer draws a second rule
+  or sits indented from the title.
 - The review desk, the draft's Decide desk and the catalogue's benches no longer stretch the
   page under themselves. Their rows' visually hidden labels escaped the list's scroll, making
   the page thousands of pixels tall, so focusing into the pane (opening the publish panel)

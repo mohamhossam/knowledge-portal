@@ -25,3 +25,20 @@ for (const item of PAGES) {
     expect(height).toBeLessThan(screen * 1.5);
   });
 }
+
+/** On a desktop screen a list-and-record page ends exactly at the screen's foot: nothing below
+ * it (the main's bottom padding or the desk's grid gap once pushed it 32px and 8px further). */
+test.describe("on a desktop screen", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  for (const item of [...PAGES, { key: "the library", path: () => "library" }]) {
+    test(`${item.key} ends at the screen's foot`, async ({ page }) => {
+      const path = item.path(await seeded());
+      expect(path, `the seed has no record for ${item.key}`).toBeDefined();
+      await page.goto(path!);
+      await settled(page);
+      const { height, screen } = await page.evaluate(() => ({ height: document.documentElement.scrollHeight, screen: innerHeight }));
+      expect(height).toBe(screen);
+    });
+  }
+});

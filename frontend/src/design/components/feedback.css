@@ -96,6 +96,13 @@
   max-inline-size: 64ch;
 }
 
+/* Straight under a page's head (a page that failed or holds nothing), the head's own rule is
+   the line: a second one, and padding that sets the words in from the title, only add noise. */
+.ds-pagehead + .ds-empty {
+  border-block-start: 0;
+  padding-inline: 0;
+}
+
 .ds-empty__title {
   font-weight: var(--weight-strong);
 }
