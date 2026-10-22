@@ -185,8 +185,8 @@ jobs:
           # The deployment's issuer reaches the policy; the placeholder never ships.
           curl -fsS http://127.0.0.1:8080/knowledge/ | grep -q 'connect-src .self. https://login.example.test'
           ! curl -fsS http://127.0.0.1:8080/knowledge/library | grep -q '__CSP_IDENTITY_ORIGINS__'
-          # Requirement work's address is filled in too: the platform's root unless set.
-          curl -fsS http://127.0.0.1:8080/knowledge/ | grep -q 'name="requirement-portal-url" content="/"'
+          # The knowledge base names no other app: nothing links out of it.
+          ! curl -fsS http://127.0.0.1:8080/knowledge/ | grep -q 'requirement-portal-url'
           test "$(curl -s -o /dev/null -w '%{redirect_url}' http://127.0.0.1:8080/)" = "http://127.0.0.1:8080/knowledge/"
           curl -fsSI http://127.0.0.1:8080/knowledge/ | grep -i "frame-ancestors 'none'"
           asset=$(curl -fsS http://127.0.0.1:8080/knowledge/ | grep -o '/knowledge/assets/[^"]*\.js' | head -1)
@@ -228,14 +228,14 @@ jobs:
       - name: Build the image for the root path
         run: DOCKER_BUILDKIT=1 docker build -f deploy/web/Dockerfile --build-arg KNOWLEDGE_BASE_PATH=/ -t "$IMAGE" .
 
-      - name: Serves the app at / with requirement work's address from the container
+      - name: Serves the app at / with the issuer from the container
         run: |
           docker run -d --name web --read-only -p 8080:8080 \
             --tmpfs /tmp:uid=101,gid=101 --tmpfs /etc/nginx/conf.d:uid=101,gid=101 \
-            -e REQUIREMENT_PORTAL_URL=https://requirements.example.test/ "$IMAGE"
+            -e CSP_IDENTITY_ORIGINS=https://login.example.test "$IMAGE"
           for attempt in $(seq 1 20); do curl -fsS http://127.0.0.1:8080/health && break; sleep 1; done
           curl -fsS http://127.0.0.1:8080/ | grep -q '<title>Knowledge portal</title>'
-          curl -fsS http://127.0.0.1:8080/library | grep -q 'content="https://requirements.example.test/"'
+          curl -fsS http://127.0.0.1:8080/library | grep -q 'connect-src .self. https://login.example.test'
           asset=$(curl -fsS http://127.0.0.1:8080/ | grep -o '"/assets/[^"]*\.js' | head -1 | tr -d '"')
           test -n "$asset"
           curl -fsSI "http://127.0.0.1:8080$asset" | grep -i "immutable"

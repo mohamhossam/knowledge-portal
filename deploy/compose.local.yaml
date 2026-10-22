@@ -113,8 +113,6 @@ services:
         KNOWLEDGE_BASE_PATH: ${KNOWLEDGE_BASE_PATH:-/knowledge/}
     environment:
       CSP_IDENTITY_ORIGINS: ""
-      # Empty: no links to requirement work.
-      REQUIREMENT_PORTAL_URL: ${REQUIREMENT_PORTAL_URL:-}
     restart: unless-stopped
     read_only: true
     tmpfs:

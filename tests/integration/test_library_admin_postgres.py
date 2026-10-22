@@ -10,7 +10,6 @@ from smb_kernel.persistence.connector import DirectPostgresConnector
 from smb_kernel.time.fixed import FixedClock
 
 from knowledge_portal.application.ports.library_admin import LibraryAdminAction
-from knowledge_portal.application.ports.requirement_dependents import RequirementDependentsPage
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
 from knowledge_portal.application.use_cases.documents import UploadDocumentInput
 from knowledge_portal.application.use_cases.library_admin import (
@@ -36,13 +35,6 @@ from knowledge_portal.infrastructure.persistence.postgres_store import PostgresS
 pytestmark = pytest.mark.skipif(
     not os.getenv("TEST_DATABASE_URL"), reason="TEST_DATABASE_URL is not configured"
 )
-
-
-class _NoDependents:
-    def proposals(
-        self, actor_id: ActorId, document_id: str, offset: int, limit: int
-    ) -> RequirementDependentsPage:
-        raise AssertionError("Not asked.")
 
 
 def test_grants_overrides_and_the_record_survive_a_restart() -> None:
@@ -74,7 +66,6 @@ def test_grants_overrides_and_the_record_survive_a_restart() -> None:
         InMemoryActorDirectory((target,)),
         store,
         clock,
-        _NoDependents(),
         stewardship,
     )
     service = AdministerLibraryDocument(repository, grants, record, stewardship, store, clock)

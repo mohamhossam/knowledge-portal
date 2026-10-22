@@ -62,43 +62,18 @@ def _check_request_body_limit(settings: Settings) -> None:
 
 
 def _check_requirement_service_link(settings: Settings) -> None:
-    """How this service reaches requirement work, and how requirement work reaches it."""
-    for name, token in (
-        ("REQUIREMENT_SERVICE_TOKEN", settings.requirement_service_token),
-        ("KNOWLEDGE_SERVICE_TOKEN", settings.knowledge_service_token),
-    ):
-        if token is not None and len(token) < 32:
-            raise ConfigurationError(f"{name} must be at least 32 characters.")
-    if (settings.knowledge_service_client_id is None) != (
-        settings.knowledge_service_client_secret is None
+    """How requirement work proves itself on this service's internal API."""
+    token = settings.requirement_service_token
+    if token is not None and len(token) < 32:
+        raise ConfigurationError("REQUIREMENT_SERVICE_TOKEN must be at least 32 characters.")
+    issuer = urlsplit(settings.oidc_issuer_url)
+    if settings.requirement_service_client_id is not None and (
+        issuer.scheme != "https" or not issuer.netloc
     ):
         raise ConfigurationError(
-            "KNOWLEDGE_SERVICE_CLIENT_ID and KNOWLEDGE_SERVICE_CLIENT_SECRET are set together."
+            "REQUIREMENT_SERVICE_CLIENT_ID needs OIDC_ISSUER_URL, the HTTPS issuer that "
+            "grants service tokens."
         )
-    proves_itself = (
-        settings.knowledge_service_token is not None
-        or settings.knowledge_service_client_id is not None
-    )
-    if (settings.requirement_api_base_url is None) == proves_itself:
-        raise ConfigurationError(
-            "REQUIREMENT_API_BASE_URL and KNOWLEDGE_SERVICE_TOKEN (or "
-            "KNOWLEDGE_SERVICE_CLIENT_ID and its secret) are set together: both to reach "
-            "requirement work, or neither to run without it."
-        )
-    for name, value in (
-        ("KNOWLEDGE_SERVICE_CLIENT_ID", settings.knowledge_service_client_id),
-        ("REQUIREMENT_SERVICE_CLIENT_ID", settings.requirement_service_client_id),
-    ):
-        issuer = urlsplit(settings.oidc_issuer_url)
-        if value is not None and (issuer.scheme != "https" or not issuer.netloc):
-            raise ConfigurationError(
-                f"{name} needs OIDC_ISSUER_URL, the HTTPS issuer that grants service tokens."
-            )
-    if (
-        settings.requirement_api_base_url is not None
-        and not settings.requirement_api_base_url.startswith(("http://", "https://"))
-    ):
-        raise ConfigurationError("REQUIREMENT_API_BASE_URL must be an http(s) URL.")
 
 
 def _check_reranker(settings: Settings) -> None:

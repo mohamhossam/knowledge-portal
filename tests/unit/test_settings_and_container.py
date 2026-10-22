@@ -22,14 +22,6 @@ from knowledge_portal.infrastructure.llm.embeddings import (
     OpenAIKnowledgeEmbedding,
     OpenRouterKnowledgeEmbedding,
 )
-from knowledge_portal.infrastructure.requirement_client import (
-    FakeArchitectureMappingStats,
-    FakeRequirementDependents,
-    FakeRequirementImpact,
-    HttpArchitectureMappingStats,
-    HttpRequirementDependents,
-    HttpRequirementImpact,
-)
 from knowledge_portal.interfaces.api.container import build_container
 from tests.conftest import FAKE_PROVIDER_SETTINGS
 
@@ -51,16 +43,6 @@ PRODUCTION = Settings(
     ("changes", "message"),
     [
         ({"requirement_service_token": "short"}, "REQUIREMENT_SERVICE_TOKEN must be at least 32"),
-        (
-            {"requirement_api_base_url": "http://requirements", "knowledge_service_token": "s"},
-            "KNOWLEDGE_SERVICE_TOKEN must be at least 32",
-        ),
-        ({"requirement_api_base_url": "http://requirements"}, "set together"),
-        ({"knowledge_service_token": TOKEN}, "set together"),
-        (
-            {"requirement_api_base_url": "requirements:8000", "knowledge_service_token": TOKEN},
-            r"http\(s\) URL",
-        ),
     ],
 )
 def test_service_settings_are_checked_at_startup(changes: dict[str, str], message: str) -> None:
@@ -91,59 +73,15 @@ def test_production_refuses_development_conveniences(
         )
 
 
-def test_production_runs_with_or_without_requirement_work() -> None:
-    # requirement-portal ADR-0104: requirement work is an optional link, in production too.
-    alone = replace(PRODUCTION, app_environment="production", knowledge_evaluation_approved=True)
-    assert alone.requirement_api_base_url is None
-    connected = replace(
-        PRODUCTION,
-        app_environment="production",
-        knowledge_evaluation_approved=True,
-        requirement_api_base_url="http://requirements",
-        knowledge_service_token=TOKEN,
-    )
-    assert connected.requirement_api_base_url == "http://requirements"
-
-
 def test_service_settings_are_read_from_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LLM_PROVIDER", "fake")
     monkeypatch.setenv("REQUIREMENT_SERVICE_TOKEN", TOKEN)
-    monkeypatch.setenv("REQUIREMENT_API_BASE_URL", "http://requirements:8000")
-    monkeypatch.setenv("KNOWLEDGE_SERVICE_TOKEN", "k" * 40)
 
     settings = Settings.from_env()
 
     assert settings.requirement_service_token == TOKEN
-    assert settings.requirement_api_base_url == "http://requirements:8000"
-    assert settings.knowledge_service_token == "k" * 40
     # Secrets never reach a log line through the settings' repr.
-    assert TOKEN not in repr(settings) and "k" * 40 not in repr(settings)
-
-
-def test_without_requirement_work_the_fakes_stand_in() -> None:
-    container = build_container(FAKE_PROVIDER_SETTINGS)
-    try:
-        assert isinstance(container.library_governance._dependents, FakeRequirementDependents)
-        assert isinstance(container.report_mapping_impact._stats, FakeArchitectureMappingStats)
-        assert isinstance(container.document_source_impact._impact, FakeRequirementImpact)
-    finally:
-        container.close_resources()
-
-
-def test_with_requirement_work_configured_the_http_adapters_are_used() -> None:
-    container = build_container(
-        replace(
-            FAKE_PROVIDER_SETTINGS,
-            requirement_api_base_url="http://requirements",
-            knowledge_service_token=TOKEN,
-        )
-    )
-    try:
-        assert isinstance(container.library_governance._dependents, HttpRequirementDependents)
-        assert isinstance(container.report_mapping_impact._stats, HttpArchitectureMappingStats)
-        assert isinstance(container.document_source_impact._impact, HttpRequirementImpact)
-    finally:
-        container.close_resources()
+    assert TOKEN not in repr(settings)
 
 
 @pytest.mark.parametrize(

@@ -45,9 +45,6 @@ RUN template=/etc/nginx/templates/default.conf.template \
 USER 101
 COPY deploy/web/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /app/frontend/dist /usr/share/nginx/html
-# Where requirement work is (requirement-portal ADR-0104): the platform's root by
-# default, an absolute URL when it has its own host, or empty to leave out every
-# link to it. Filled into each page at start-up.
-ENV CSP_IDENTITY_ORIGINS="" \
-    REQUIREMENT_PORTAL_URL="/"
+# The OIDC issuer's origins, filled into each page's Content-Security-Policy at start-up.
+ENV CSP_IDENTITY_ORIGINS=""
 EXPOSE 8080

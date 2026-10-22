@@ -10,7 +10,6 @@ from starlette.concurrency import run_in_threadpool
 from knowledge_portal.application.errors import UnsupportedDocumentError
 from knowledge_portal.application.ports.library_admin import AdminGrant, LibraryAdminRecord
 from knowledge_portal.application.ports.reference_index import ReferenceChunk
-from knowledge_portal.application.ports.source_impact import DependencyImpactPage
 from knowledge_portal.application.use_cases.document_library import (
     DocumentLibrary,
     LibraryView,
@@ -28,15 +27,11 @@ from knowledge_portal.application.use_cases.library_classification import (
     ClassificationOptions,
     LibraryClassification,
 )
-from knowledge_portal.application.use_cases.library_governance import (
-    LibraryDependencyPage,
-    LibraryGovernance,
-)
+from knowledge_portal.application.use_cases.library_governance import LibraryGovernance
 from knowledge_portal.application.use_cases.reference_knowledge import (
     CorpusBuildPreview,
     ReferenceKnowledge,
 )
-from knowledge_portal.application.use_cases.source_impact import DocumentSourceImpact
 from knowledge_portal.domain.document.library import (
     ADMIN_REASON_MAX,
     OwnershipTransfer,
@@ -47,7 +42,6 @@ from knowledge_portal.domain.identity.entities import ActorId
 from knowledge_portal.interfaces.api.dependencies import (
     CurrentActorDep,
     get_document_library,
-    get_document_source_impact,
     get_library_admin,
     get_library_classification,
     get_library_governance,
@@ -68,27 +62,8 @@ LibraryDep = Annotated[DocumentLibrary, Depends(get_document_library)]
 KnowledgeDep = Annotated[ReferenceKnowledge, Depends(get_reference_knowledge)]
 GovernanceDep = Annotated[LibraryGovernance, Depends(get_library_governance)]
 ClassificationDep = Annotated[LibraryClassification, Depends(get_library_classification)]
-ImpactDep = Annotated[DocumentSourceImpact, Depends(get_document_source_impact)]
 AdminDep = Annotated[AdministerLibraryDocument, Depends(get_library_admin)]
 RetryDep = Annotated[BulkRetryLibrary, Depends(get_library_retry)]
-
-
-@router.get("/documents/{document_id}/source-impact")
-def document_source_impact(
-    document_id: str,
-    actor: CurrentActorDep,
-    service: ImpactDep,
-    response: Response,
-    offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
-    active_only: bool = False,
-    query: str = Query("", max_length=200),
-) -> DependencyImpactPage:
-    """Where the owner's document is cited, and which citations need review."""
-    response.headers["Cache-Control"] = "private, no-store"
-    return service.page(
-        document_id, actor, active_only=active_only, query=query, offset=offset, limit=limit
-    )
 
 
 @router.get("/documents/{document_id}/versions/{version_id}/blocks/{block_id}/original-preview")
@@ -221,17 +196,6 @@ def ownership_history(
     document_id: str, service: GovernanceDep, actor: CurrentActorDep
 ) -> tuple[OwnershipTransfer, ...]:
     return service.history(document_id, actor)
-
-
-@router.get("/documents/{document_id}/dependencies")
-def dependencies(
-    document_id: str,
-    service: GovernanceDep,
-    actor: CurrentActorDep,
-    offset: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
-) -> LibraryDependencyPage:
-    return service.dependencies(document_id, actor, offset, limit)
 
 
 class ReviewCoverageRequest(BaseModel):

@@ -127,8 +127,6 @@ services:
     image: ${KNOWLEDGE_WEB_IMAGE:-ghcr.io/mohamhossam/knowledge-web:${KNOWLEDGE_IMAGE_TAG:?set KNOWLEDGE_IMAGE_TAG to a knowledge-portal release}}
     environment:
       CSP_IDENTITY_ORIGINS: ${CSP_IDENTITY_ORIGINS:-}
-      # Empty: no links to requirement work.
-      REQUIREMENT_PORTAL_URL: ${REQUIREMENT_PORTAL_URL:-}
     restart: unless-stopped
     read_only: true
     tmpfs:

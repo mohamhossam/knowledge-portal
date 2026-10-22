@@ -37,9 +37,6 @@ from knowledge_portal.application.use_cases.architecture_jobs import Architectur
 from knowledge_portal.application.use_cases.architecture_knowledge import (
     ManageArchitectureKnowledge,
 )
-from knowledge_portal.application.use_cases.architecture_mapping_impact import (
-    ReportMappingImpact,
-)
 from knowledge_portal.application.use_cases.architecture_preview import (
     PreviewArchitectureImpact,
 )
@@ -85,12 +82,6 @@ from knowledge_portal.application.use_cases.precedents import (
 )
 from knowledge_portal.application.use_cases.provider_call_rate import ProviderCallRateLimit
 from knowledge_portal.application.use_cases.reference_knowledge import ReferenceKnowledge
-from knowledge_portal.application.use_cases.requirement_corpus import (
-    ActOnRequirementCorpus,
-    NudgeFindingOwners,
-    ReadRequirementCorpus,
-)
-from knowledge_portal.application.use_cases.source_impact import DocumentSourceImpact
 from knowledge_portal.application.use_cases.vocabulary_cleanup import CleanUpVocabulary
 from knowledge_portal.domain.identity.entities import ActorProfile
 from knowledge_portal.infrastructure.config.options import IdentityProvider
@@ -246,10 +237,6 @@ def get_reference_knowledge(container: ContainerDep) -> ReferenceKnowledge:
     return container.reference_knowledge
 
 
-def get_document_source_impact(container: ContainerDep) -> DocumentSourceImpact:
-    return container.document_source_impact
-
-
 def get_explore_architecture(container: ContainerDep) -> ExploreArchitecture:
     return container.explore_architecture
 
@@ -312,22 +299,6 @@ def get_precedent_summaries(container: ContainerDep) -> ReadPrecedentSummaries:
 
 def get_delivery_summaries(container: ContainerDep) -> ReadDeliverySummaries:
     return container.delivery_summaries
-
-
-def get_report_mapping_impact(container: ContainerDep) -> ReportMappingImpact:
-    return container.report_mapping_impact
-
-
-def get_read_requirement_corpus(container: ContainerDep) -> ReadRequirementCorpus:
-    return container.read_requirement_corpus
-
-
-def get_nudge_finding_owners(container: ContainerDep) -> NudgeFindingOwners:
-    return container.nudge_finding_owners
-
-
-def get_act_on_requirement_corpus(container: ContainerDep) -> ActOnRequirementCorpus:
-    return container.act_on_requirement_corpus
 
 
 # What the internal routes, the change-request routes, the draft's readings and the sign-in

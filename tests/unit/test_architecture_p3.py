@@ -1,42 +1,27 @@
-"""Named versions, one draft at a time, publish impact counts, bulk rejection and passages.
+"""Named versions, one draft at a time, bulk rejection and passages.
 
-Ported from requirement-portal when the catalogue moved here. Mapping counts are
-requirement work's to give (ADR-0099), so these tests stub that port instead of
-mapping a backlog.
+Ported from requirement-portal when the catalogue moved here.
 """
 
 from __future__ import annotations
 
 import io
-from collections.abc import Generator
 
-import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
-from knowledge_portal.application.ports.architecture_mapping_stats import MappingCount
 from knowledge_portal.application.ports.identity import Actor
-from knowledge_portal.application.use_cases.architecture_mapping_impact import (
-    ReportMappingImpact,
-)
 from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
     InMemoryArchitectureKnowledgeRepository,
 )
-from knowledge_portal.infrastructure.requirement_client import (
-    FakeRequirementDependents,
-    FakeRequirementImpact,
-)
-from knowledge_portal.interfaces.api.container import Container, RequirementWork, build_container
-from knowledge_portal.interfaces.api.main import create_app
-from tests.conftest import FAKE_PROVIDER_SETTINGS
+from knowledge_portal.interfaces.api.container import Container
 from tests.spreadsheet_fixtures import XLSX_MIME, spreadsheet_document
 from tests.word_table_fixtures import DOCX_MIME, word_document, word_paragraph
 
 OWNER = {"X-Fake-Actor-Id": "fake-owner"}
 READER = {"X-Fake-Actor-Id": "fake-reviewer"}
 RELEASES = "/architecture-knowledge/releases"
-IMPACT = "/architecture-knowledge/mapping-impact"
 SEED = "smb-source-reference-v1"
 
 
@@ -113,77 +98,6 @@ def test_a_discarded_draft_is_gone_and_a_new_one_can_start(client: TestClient) -
         client.request("DELETE", base, json={"expected_revision": 1}, headers=READER).status_code
         == 403
     )
-
-
-class _StubMappingStats:
-    """Requirement work's answer: one requirement mapped against the seed catalogue."""
-
-    def by_release(self) -> tuple[MappingCount, ...]:
-        return (MappingCount(SEED, 1, 2, 3),)
-
-
-@pytest.fixture
-def mapped_client() -> Generator[TestClient, None, None]:
-    work = RequirementWork(
-        FakeRequirementDependents(), _StubMappingStats(), FakeRequirementImpact()
-    )
-    container = build_container(FAKE_PROVIDER_SETTINGS, requirement_work=work)
-    with TestClient(create_app(lambda: container)) as c:
-        yield c
-
-
-def test_nothing_is_mapped_while_requirement_work_reports_no_counts(client: TestClient) -> None:
-    body = client.get(IMPACT, headers=OWNER).json()
-
-    assert (body["requirements"], body["features"], body["stories"]) == (0, 0, 0)
-    assert body["outdated_requirements"] == 0
-
-
-def test_publishing_reports_how_much_now_uses_an_older_version(mapped_client: TestClient) -> None:
-    client = mapped_client
-    before = client.get(IMPACT, headers=OWNER).json()
-    assert (before["requirements"], before["features"], before["stories"]) == (1, 2, 3)
-    assert before["active_release_id"] == SEED
-    assert before["outdated_requirements"] == 0
-
-    draft = _start(client)
-    base = f"{RELEASES}/{draft['id']}"
-    client.post(f"{base}/build", json={"expected_revision": draft["revision"]}, headers=OWNER)
-    published = client.post(
-        f"{base}/publish",
-        json={"expected_revision": draft["revision"], "rationale": "Reviewed"},
-        headers=OWNER,
-    )
-    assert published.status_code == 200, published.text
-
-    after = client.get(IMPACT, headers=OWNER).json()
-    assert after["active_release_id"] == draft["id"]
-    assert (
-        after["outdated_requirements"],
-        after["outdated_features"],
-        after["outdated_stories"],
-    ) == (1, 2, 3)
-    assert client.get(IMPACT, headers=READER).status_code == 403
-
-
-def test_impact_sums_every_release_that_is_not_in_use() -> None:
-    class Stats:
-        def by_release(self) -> tuple[MappingCount, ...]:
-            return (
-                MappingCount(SEED, 2, 4, 9),
-                MappingCount("old-1", 1, 1, 2),
-                MappingCount("old-2", 3, 5, 7),
-            )
-
-    impact = ReportMappingImpact(InMemoryArchitectureKnowledgeRepository(seed_knowledge()), Stats())
-    report = impact.execute(Actor("amina", frozenset({"knowledge_maintainer"})))
-
-    assert (report.requirements, report.features, report.stories) == (6, 10, 18)
-    assert (
-        report.outdated_requirements,
-        report.outdated_features,
-        report.outdated_stories,
-    ) == (4, 6, 9)
 
 
 def _suggestions(client: TestClient) -> tuple[str, dict[str, object], list[dict[str, object]]]:

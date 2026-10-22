@@ -32,7 +32,6 @@ from knowledge_portal.application.use_cases.architecture_documents import (
     DocumentPassage,
     FileResult,
 )
-from knowledge_portal.application.use_cases.architecture_mapping_impact import MappingImpact
 from knowledge_portal.application.use_cases.catalog_plans import CatalogPlans, CatalogPlansStatus
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     CandidateOverview,
@@ -3017,30 +3016,6 @@ class ImpactComparisonResponse(BaseModel):
             query=comparison.query,
             in_use=ComparedImpactResponse.from_domain(comparison.in_use),
             this_version=ComparedImpactResponse.from_domain(comparison.this_version),
-        )
-
-
-class MappingImpactResponse(BaseModel):
-    """How much of the backlog is mapped, and how much uses an older catalogue version."""
-
-    active_release_id: str
-    requirements: int
-    features: int
-    stories: int
-    outdated_requirements: int
-    outdated_features: int
-    outdated_stories: int
-
-    @classmethod
-    def from_domain(cls, impact: MappingImpact) -> MappingImpactResponse:
-        return cls(
-            active_release_id=impact.active_release_id,
-            requirements=impact.requirements,
-            features=impact.features,
-            stories=impact.stories,
-            outdated_requirements=impact.outdated_requirements,
-            outdated_features=impact.outdated_features,
-            outdated_stories=impact.outdated_stories,
         )
 
 

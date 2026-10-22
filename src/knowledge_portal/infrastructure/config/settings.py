@@ -192,13 +192,6 @@ class Settings:
     # ADR-0104). With neither, the internal API is not served at all.
     requirement_service_token: str | None = field(default=None, repr=False)
     requirement_service_client_id: str | None = None
-    # Where requirement work's internal API is, and how this service proves itself
-    # there: a shared token, or this service's own client at the OIDC issuer,
-    # which then grants it tokens. Unset, offline fakes stand in for requirement work.
-    requirement_api_base_url: str | None = None
-    knowledge_service_token: str | None = field(default=None, repr=False)
-    knowledge_service_client_id: str | None = None
-    knowledge_service_client_secret: str | None = field(default=None, repr=False)
     # The product catalog plans and prices are read from, live (requirement-portal
     # ADR-0101): none, the offline sample, or a TMF620 Product Catalog Management API.
     product_catalog_provider: ProductCatalogProvider = ProductCatalogProvider.NONE
@@ -224,25 +217,6 @@ class Settings:
 
     def __post_init__(self) -> None:
         validate_settings(self)
-
-    @property
-    def uses_service_client(self) -> bool:
-        """Whether this service asks the OIDC issuer for its tokens to requirement work."""
-        return (
-            self.knowledge_service_client_id is not None
-            and self.knowledge_service_client_secret is not None
-        )
-
-    @property
-    def requirement_service_url(self) -> str | None:
-        """Requirement work's internal API, or None when offline fakes stand in.
-
-        It is called only with both its address and a way to prove this service
-        there: a shared token or this service's client credentials.
-        """
-        if self.knowledge_service_token is None and not self.uses_service_client:
-            return None
-        return self.requirement_api_base_url
 
     @classmethod
     def from_env(cls, *, config_path: str | None = None) -> Settings:
@@ -636,19 +610,11 @@ def _operability_from_env() -> dict[str, Any]:
 
 
 def _requirement_service_from_env() -> dict[str, Any]:
-    """The link with requirement work, both ways (requirement-portal ADR-0099, ADR-0104)."""
+    """How requirement work proves itself on this service's internal API."""
     return {
         "requirement_service_token": os.getenv("REQUIREMENT_SERVICE_TOKEN", "").strip() or None,
-        "requirement_api_base_url": os.getenv("REQUIREMENT_API_BASE_URL", "").strip() or None,
-        "knowledge_service_token": os.getenv("KNOWLEDGE_SERVICE_TOKEN", "").strip() or None,
         "requirement_service_client_id": (
             os.getenv("REQUIREMENT_SERVICE_CLIENT_ID", "").strip() or None
-        ),
-        "knowledge_service_client_id": (
-            os.getenv("KNOWLEDGE_SERVICE_CLIENT_ID", "").strip() or None
-        ),
-        "knowledge_service_client_secret": (
-            os.getenv("KNOWLEDGE_SERVICE_CLIENT_SECRET", "").strip() or None
         ),
     }
 
