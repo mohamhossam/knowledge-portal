@@ -18,7 +18,7 @@ MAX_DOMAIN_SUGGESTIONS = 2
 
 
 def normalise(value: str) -> str:
-    """Lower case, with every run of non-letters and non-digits as one space; keeps Arabic."""
+    """Lower case, with every run of non-letters and non-digits as one space."""
     return " ".join(re.sub(r"[\W_]+", " ", value.casefold()).split())
 
 

@@ -2642,11 +2642,6 @@ export interface components {
             expected_revision: number;
             /** File */
             file: string;
-            /**
-             * Language
-             * @default en
-             */
-            language: string;
             /** Title */
             title: string;
         };
@@ -2656,11 +2651,6 @@ export interface components {
             expected_revision: number;
             /** Files */
             files: string[];
-            /**
-             * Language
-             * @default en
-             */
-            language: string;
         };
         /**
          * BrdStage
@@ -2829,8 +2819,6 @@ export interface components {
              * @default
              */
             name: string;
-            /** Name Ar */
-            name_ar?: string | null;
             /** Parent Domain Id */
             parent_domain_id?: string | null;
             portfolio_node?: components["schemas"]["PortfolioNodeSchema"] | null;
@@ -2890,8 +2878,6 @@ export interface components {
             id: string;
             /** Name */
             name: string;
-            /** Name Ar */
-            name_ar?: string | null;
             /** Parent Id */
             parent_id?: string | null;
         };
@@ -4502,8 +4488,6 @@ export interface components {
             filename: string;
             /** Id */
             id: string;
-            /** Language */
-            language: string;
             /** Mime Type */
             mime_type: string;
             /** Storage Key */
@@ -4650,8 +4634,6 @@ export interface components {
             layout?: components["schemas"]["LandscapeLayout"] | null;
             /** Name */
             name: string;
-            /** Name Ar */
-            name_ar?: string | null;
             /** Parent Id */
             parent_id?: string | null;
         };
@@ -5902,8 +5884,6 @@ export interface components {
             heading_path: string[];
             /** Id */
             id: string;
-            /** Language */
-            language: string;
             /** Location */
             location: string;
             /** Original Text */
@@ -6581,8 +6561,6 @@ export interface components {
             id: string;
             /** Name */
             name: string;
-            /** Name Ar */
-            name_ar?: string | null;
             /** Source */
             source?: string | null;
             /** Technology */
@@ -6646,8 +6624,6 @@ export interface components {
             mastery_notes: components["schemas"]["MasteryNoteSchema"][];
             /** Name */
             name: string;
-            /** Name Ar */
-            name_ar?: string | null;
             /** Owner */
             owner?: string | null;
             /** Placement From */

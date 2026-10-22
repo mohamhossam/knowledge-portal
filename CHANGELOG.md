@@ -269,6 +269,27 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Removed
 
+- What the portal kept for Arabic, now that it is English only (PRODUCT.md):
+  - the Arabic name (`name_ar`) of systems, components, capability domains and landscape
+    domains: from the catalogue, its suggestions and diff, the matching, reasoning and
+    extraction prompts (catalogue extraction is now `catalogue-extraction-v21`), the index
+    text, YAML, JSON and the workbook (no `name_ar` column in the template), the API and the
+    screens that showed or edited it;
+  - an architecture document's language (`en`, `ar` or `mixed`), from the upload routes, the
+    document and its response; and the library passage's derived `language`, always "en"
+    since the library refuses Arabic;
+  - the Noto Sans Arabic typeface, its tokens (`--family-arabic`, `--font-arabic`,
+    `--leading-arabic`) and the Arabic and right-to-left type rules, which takes the built
+    fonts from 644 KB to 211 KB; and the gallery's Arabic sample;
+  - the Arabic rules in CLAUDE.md, DESIGN.md and the design-system, interaction and object
+    model documents.
+
+  Old data still loads: a catalogue file, workbook, stored version, stored suggestion or
+  library chunk that carries `name_ar` or `language` has the value ignored, and an older
+  client sending either is not refused. Kept on purpose: the library's refusal of Arabic text,
+  search's Arabic folding in the citation contract with requirement work (ADR-0099), and every
+  `dir="auto"` and `<bdi>`, which still isolate a name's own punctuation. The catalogue does not
+  refuse Arabic letters. Neither field was in the internal contract.
 - Guessing a text's language (review recommendation 15). The portal reads English only
   (`PRODUCT.md`), so passages, quotes, search hits and table cells no longer carry a `lang`
   guessed from their letters or from the document's language. `contentLang`, `langOf`,
