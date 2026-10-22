@@ -343,13 +343,6 @@ PLACES = {
     "integration-platform": ["tibco", "cns", "edms", "ocr", "adfs"],
 }
 
-ARABIC = {
-    "b2b-web": "بوابة الأعمال الإلكترونية",
-    "smb-app": "تطبيق الأعمال الصغيرة",
-    "cwom": "إدارة أوامر العمل",
-    "bscs": "نظام الفوترة",
-}
-
 
 def activity(
     number: str,
@@ -378,31 +371,20 @@ def sample_catalogue(release: dict[str, Any]) -> dict[str, Any]:
     EIDA is left unplaced on purpose, so the catalogue shows a system without a place.
     """
     domains = [
-        {"id": "channels", "name": "Customer channels (sample)", "name_ar": "قنوات العملاء"},
-        {
-            "id": "channels-digital",
-            "name": "Digital channels",
-            "parent_id": "channels",
-            "name_ar": "القنوات الرقمية",
-        },
+        {"id": "channels", "name": "Customer channels (sample)"},
+        {"id": "channels-digital", "name": "Digital channels", "parent_id": "channels"},
         {"id": "channels-assisted", "name": "Assisted channels", "parent_id": "channels"},
         {"id": "customer-sales", "name": "Customer and sales (sample)"},
         {"id": "orchestration", "name": "Order orchestration (sample)"},
         {"id": "network", "name": "Network and resources (sample)"},
         {"id": "assurance-ops", "name": "Service assurance (sample)"},
-        {
-            "id": "billing-revenue",
-            "name": "Billing and revenue (sample)",
-            "name_ar": "الفوترة والإيرادات",
-        },
+        {"id": "billing-revenue", "name": "Billing and revenue (sample)"},
         {"id": "integration-platform", "name": "Integration and enabling (sample)"},
     ]
     place = {system: domain for domain, systems in PLACES.items() for system in systems}
     systems = []
     for original in release["systems"]:
         system = {**original, "landscape_domain_id": place.get(original["id"])}
-        if system["id"] in ARABIC:
-            system["name_ar"] = ARABIC[system["id"]]
         if system["id"] == "cwom":
             system["description"] = (
                 "Orchestrates fixed-line orders from capture to closure (sample)."
@@ -413,7 +395,6 @@ def sample_catalogue(release: dict[str, Any]) -> dict[str, Any]:
                     "name": "Milestone tracker",
                     "technology": "Java",
                     "aliases": ["order milestones"],
-                    "name_ar": "متتبع المراحل",
                 },
                 {"id": "decomposition", "name": "Order decomposition", "aliases": []},
             ]
@@ -676,7 +657,7 @@ def seed_catalogue(client: httpx.Client) -> None:
     ):
         uploaded = client.post(
             f"{base}/documents",
-            data={"title": title, "language": "en", "expected_revision": str(revision)},
+            data={"title": title, "expected_revision": str(revision)},
             files={"file": (name, body.encode(), mime)},
             headers=OWNER,
         )

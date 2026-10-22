@@ -9,6 +9,9 @@ import { catalogue } from "./catalogue";
 import { ChannelsPage } from "./ChannelsPage";
 import { channelUses, draftBody, systemUses } from "./drafting";
 import type { CatalogueContext } from "./useCatalogue";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 afterEach(() => vi.restoreAllMocks());
 

@@ -1,8 +1,9 @@
 """Business capability concepts: what the business needs done, as a curated scheme (ADR-0114).
 
-A concept is SKOS-style: a preferred label, other labels people use, a definition,
-and a broader concept. The capability domains are the scheme's top levels: a
-top concept names the domain it sits in, and narrower concepts inherit it.
+A concept is SKOS-style (``skos.py``, shared with vocabulary terms): a preferred label,
+other labels people use, a definition, a broader concept, and matches in outside schemes.
+The capability domains are the scheme's top levels: a top concept names the domain it
+sits in, and narrower concepts inherit it.
 
 A system's capability and an offering's component are linked to concepts only
 by a maintainer, or by a suggestion a maintainer accepts. A linked concept may
@@ -11,7 +12,6 @@ then select the systems behind it; an unlinked one never does.
 
 from __future__ import annotations
 
-import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 
@@ -22,21 +22,29 @@ from knowledge_portal.domain.architecture.invariants import (
     required,
 )
 from knowledge_portal.domain.architecture.provenance import AcceptedFrom
+from knowledge_portal.domain.architecture.skos import (
+    check_entry,
+    check_tree,
+    label_key,
+    label_words,
+)
 from knowledge_portal.domain.architecture.sources import SourceConfidence, check_source
+
+__all__ = [
+    "BusinessCapability",
+    "CapabilityRef",
+    "check_concepts",
+    "check_link",
+    "concept_domain",
+    "concept_id_for",
+    "label_key",
+    "label_words",
+    "labels_in",
+]
 
 # Below a capability domain; a deeper scheme is a sign the concepts describe systems.
 MAX_CONCEPT_DEPTH = 3
 CONCEPT_ID_PREFIX = "cap-"
-
-
-def label_words(label: str) -> tuple[str, ...]:
-    """A label's words, ignoring case and punctuation."""
-    return tuple(re.findall(r"[^\W_]+", label.casefold()))
-
-
-def label_key(label: str) -> str:
-    """How two labels are compared: their letters and digits alone, so "Wi-Fi" is "WiFi"."""
-    return "".join(label_words(label))
 
 
 @dataclass(frozen=True)
@@ -61,6 +69,9 @@ class BusinessCapability:
     replaced_by: str | None = None
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
+    # Outside references near enough to read across, though not the same (SKOS closeMatch),
+    # such as a TM Forum ODA component beside the ODA capability it matches exactly.
+    close_match: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Concept id"))
@@ -77,13 +88,7 @@ class BusinessCapability:
             object.__setattr__(self, field, optional(getattr(self, field), label))
         check_source(self)
         check_retirement(self, self.pref_label)
-        keys = [label_key(item) for item in self.labels]
-        if any(not key for key in keys):
-            raise InvalidKnowledgeError(f"{self.pref_label}: a label needs a letter or digit.")
-        if len(set(keys)) != len(keys):
-            raise InvalidKnowledgeError(f"{self.pref_label}: each label must differ from the rest.")
-        if self.broader_id == self.id:
-            raise InvalidKnowledgeError(f"{self.pref_label} cannot be broader than itself.")
+        check_entry(self)
         if self.broader_id is not None and self.domain_id is not None:
             raise InvalidKnowledgeError(
                 f"{self.pref_label}: only a top concept names its domain; a narrower one sits "
@@ -115,40 +120,18 @@ def check_concepts(
 
     Returns the concepts by id, for checking what links name.
     """
-    by_id = {item.id: item for item in concepts}
-    if len(by_id) != len(concepts):
-        raise InvalidKnowledgeError("Concept ids must be unique.")
+    by_id = check_tree(
+        concepts,
+        kind="concept",
+        max_depth=MAX_CONCEPT_DEPTH,
+        outside=lambda _: "a concept in the catalogue",
+    )
     domains = set(domain_ids)
-    owners: dict[str, BusinessCapability] = {}
     for concept in concepts:
-        for label in concept.labels:
-            owner = owners.setdefault(label_key(label), concept)
-            if owner.id != concept.id:
-                raise InvalidKnowledgeError(
-                    f"{label!r} already names {owner.pref_label}, so it cannot also name "
-                    f"{concept.pref_label}. Each label must identify one concept."
-                )
         if concept.domain_id is not None and concept.domain_id not in domains:
             raise InvalidKnowledgeError(
                 f"{concept.pref_label} sits in domain {concept.domain_id!r}, which is not in "
                 "the catalogue."
-            )
-        if concept.broader_id is not None and concept.broader_id not in by_id:
-            raise InvalidKnowledgeError(
-                f"{concept.pref_label} narrows {concept.broader_id!r}, which is not a concept "
-                "in the catalogue."
-            )
-        depth, seen, current = 1, {concept.id}, concept
-        while current.broader_id is not None:
-            current = by_id[current.broader_id]
-            if current.id in seen:
-                raise InvalidKnowledgeError(f"{concept.pref_label} is narrower than itself.")
-            seen.add(current.id)
-            depth += 1
-        if depth > MAX_CONCEPT_DEPTH:
-            raise InvalidKnowledgeError(
-                f"Concepts are at most {MAX_CONCEPT_DEPTH} levels deep; {concept.pref_label!r} "
-                "is deeper."
             )
     return by_id
 

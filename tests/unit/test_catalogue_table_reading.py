@@ -110,7 +110,6 @@ def _change(**values: Any) -> ChangeOutput:
         "kind": "system",
         "system": "🧾 Order Gateway",
         "name": "🧾 Order Gateway",
-        "name_ar": None,
         "aliases": ["SYS-GATEWAY"],
         "triggers": [],
         "target_system": None,
@@ -186,7 +185,7 @@ def test_a_name_written_apart_finds_the_system_whose_alias_runs_it_together() ->
 
 
 def test_the_prompt_reads_tables_as_records_and_integrations_as_stated() -> None:
-    assert PROMPT_VERSION == "catalogue-extraction-v20"
+    assert PROMPT_VERSION == "catalogue-extraction-v21"
     for rule in (
         "Read each row as one record",
         "the ID value",
@@ -262,7 +261,7 @@ def _propose(
     documents = SafeDocumentTextExtractor()
     draft = manage.create_draft(MAINTAINER, "Next version")
     version = KnowledgeDocumentVersion(
-        "doc", "Landscape", "landscape.md", "text/markdown", "en", "sum", "doc", "amina", NOW
+        "doc", "Landscape", "landscape.md", "text/markdown", "sum", "doc", "amina", NOW
     )
     storage.put(DocumentVersionId("doc"), b"# Landscape\n\nSystems and their integrations.\n")
     drafted = draft.updated(documents=(version,))

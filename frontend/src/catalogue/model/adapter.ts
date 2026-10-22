@@ -7,8 +7,8 @@
  * events are placed where the flow branches, splits and joins. The model carries
  * kinds, never English: the lab's words.ts names them.
  */
-import type { Release } from "../../api/client";
-import { BAND_DOMAINS, parseDrop, parseProposition, parseQuestion } from "./conventions";
+import type { Release, SourceReference } from "../../api/client";
+import { ABOVE_BUS_DOMAIN, BAND_DOMAINS, BUS_DOMAIN, parseDrop, parseProposition, parseQuestion, SIDE_DOMAINS } from "./conventions";
 import {
   type Activity,
   type ActivityCall,
@@ -28,22 +28,26 @@ import {
   type Point,
   type Source,
   type Step,
+  type TamDomain,
 } from "./model";
-import { channelKindTerms, roleTerms, stepRole } from "./vocabulary";
+import { channelKindTerms, roleRank, roleTerms, stepRoleIn } from "./vocabulary";
 
 type ApiJourney = NonNullable<Release["journeys"]>[number];
 type ApiOrderType = NonNullable<Release["products"]>[number]["order_types"][number];
 type ApiEdge = ApiJourney["edges"][number];
 
-/** Evidence from a fact's confidence and its source line ("SDD v2.3 · §P1 · a note"). */
-export function parseEvidence(confidence: string | null | undefined, source: string | null | undefined, sources: Source[]): Evidence {
+/**
+ * Evidence from a fact's confidence and its source line ("SDD v2.3 · §P1 · a note"), as the
+ * service read the line against the register (review recommendation 5): its source, then
+ * where in it and any note. A line the service names no source for is all "where".
+ */
+export function parseEvidence(confidence: string | null | undefined, source: string | null | undefined, lines: ReadonlyMap<string, SourceReference>): Evidence {
   const status = confidence === "confirmed" || confidence === "inferred" || confidence === "gap" ? confidence : "inferred";
   if (!source) return { status };
-  const parts = source.split(" · ");
-  const named = sources.find((item) => item.short === parts[0] || item.id === parts[0]);
-  if (!named) return { status, where: source };
-  const [, where, ...rest] = parts;
-  return { status, source: named.id, ...(where ? { where } : {}), ...(rest.length ? { note: rest.join(" · ") } : {}) };
+  const line = lines.get(source.trim());
+  if (!line?.source_id) return { status, where: source };
+  const [where, ...rest] = (line.where ?? "").split(" · ").filter(Boolean);
+  return { status, source: line.source_id, ...(where ? { where } : {}), ...(rest.length ? { note: rest.join(" · ") } : {}) };
 }
 
 /** An order type's delivery drop and the rest of its description; read from the prose for a version saved before the service sent the drop. */
@@ -69,14 +73,19 @@ function performer(activity: ApiJourney["activities"][number]): Performer {
 }
 
 /** A journey's activities, flow and calls, mapped once. A call's id is stable across the channels' views. */
-function journeyOf(journey: ApiJourney, channels: string[], evidence: (item: { confidence?: string | null; source?: string | null }) => Evidence): Journey {
+function journeyOf(
+  journey: ApiJourney,
+  channels: string[],
+  evidence: (item: { confidence?: string | null; source?: string | null }) => Evidence,
+  roleOf: (role: string | null | undefined, roleId: string | null | undefined) => string | undefined,
+): Journey {
   const activities: Activity[] = journey.activities.map((item) => ({
     number: item.number,
     name: item.name,
     performer: performer(item),
     channels: item.channels,
     mainTrack: item.main_track,
-    role: stepRole(item.role, item.role_id),
+    role: roleOf(item.role, item.role_id),
     etom: item.etom ?? undefined,
     detail: item.description ?? undefined,
     ponr: item.point_of_no_return ?? undefined,
@@ -138,18 +147,31 @@ function sourcesOf(release: Release): Source[] {
   }));
 }
 
-/** The TAM domains, each with its groups, and whether it is a cross-cutting band. */
+/** Where TAM draws a domain, by id, for a version whose domains name no layout. */
+function conventionalLayout(id: string): TamDomain["layout"] {
+  if (id === BUS_DOMAIN) return "bus";
+  if (id === ABOVE_BUS_DOMAIN) return "above_bus";
+  return SIDE_DOMAINS.includes(id) ? "side" : undefined;
+}
+
+/** The TAM domains, each with its groups, whether it is a cross-cutting band, and where the map draws it. */
 function domainsOf(landscape: NonNullable<Release["landscape_domains"]>): Catalogue["domains"] {
   const tops = landscape.filter((item) => !item.parent_id);
   // A version saved before the service marked cross-cutting domains marks none: then they are known by id.
   const marked = landscape.some((item) => item.cross_cutting);
-  return tops.map((top) => ({
-    id: top.id,
-    name: top.name,
-    scope: top.description ?? "",
-    groups: landscape.filter((item) => item.parent_id === top.id).map((item) => ({ id: item.id, name: item.name })),
-    band: marked ? top.cross_cutting : BAND_DOMAINS.includes(top.id),
-  }));
+  // Likewise a version saved before domains named their place on the map (review recommendation 10).
+  const placed = landscape.some((item) => item.layout);
+  return tops.map((top) => {
+    const layout = placed ? top.layout ?? undefined : conventionalLayout(top.id);
+    return {
+      id: top.id,
+      name: top.name,
+      scope: top.description ?? "",
+      groups: landscape.filter((item) => item.parent_id === top.id).map((item) => ({ id: item.id, name: item.name })),
+      band: marked ? top.cross_cutting : BAND_DOMAINS.includes(top.id),
+      ...(layout ? { layout } : {}),
+    };
+  });
 }
 
 /** The systems, each placed in its domain and group. */
@@ -251,10 +273,11 @@ function orderTypesOf(products: NonNullable<Release["products"]>): Catalogue["or
 
 /** The journeys, each seen through the channels its order type is sold through. */
 function journeysOf(release: Release, offerings: Offering[], evidence: EvidenceOf): Journey[] {
+  const roleOf = stepRoleIn(release);
   return (release.journeys ?? []).map((journey) => {
     const offering = offerings.find((item) => item.id === journey.product_id);
     const support = offering?.orderTypes.find((type) => type.code === journey.order_type_code);
-    return journeyOf(journey, support?.channels ?? [], evidence);
+    return journeyOf(journey, support?.channels ?? [], evidence, roleOf);
   });
 }
 
@@ -289,7 +312,8 @@ function portfolioOf(release: Release): Catalogue["portfolio"] {
 /** A catalogue version as the lab reads it, mapped once from the API's release. */
 export function fromRelease(release: Release): Catalogue {
   const sources = sourcesOf(release);
-  const evidence: EvidenceOf = (item) => parseEvidence(item.confidence, item.source, sources);
+  const lines = new Map((release.source_references ?? []).map((item) => [item.text, item]));
+  const evidence: EvidenceOf = (item) => parseEvidence(item.confidence, item.source, lines);
   const channels = channelsOf(release);
   const products = release.products ?? [];
   const offerings = products.map((product) => offeringOf(product, channels, evidence));
@@ -309,6 +333,7 @@ export function fromRelease(release: Release): Catalogue {
     findings: findingsOf(release, products, evidence),
     roleTerms: roleTerms(release),
     channelKindTerms: channelKindTerms(release),
+    roleRank: roleRank(release),
   };
 }
 

@@ -43,8 +43,14 @@ from knowledge_portal.application.use_cases.change_requests import ReadDeliveryS
 from knowledge_portal.application.use_cases.precedents import ReadPrecedentSummaries
 from knowledge_portal.domain.architecture.knowledge import InvalidKnowledgeError
 from knowledge_portal.interfaces.api.dependencies import (
-    ContainerDep,
+    CleanUpVocabularyDep,
+    DismissChangeRequestDep,
     KnowledgeActorDep,
+    ListChangeRequestsDep,
+    ProposeCapabilityConceptsDep,
+    ReadChangeRequestDep,
+    SuggestComponentCapabilitiesDep,
+    SuggestDerivedDependenciesDep,
     get_architecture_jobs,
     get_clock,
     get_compare_architecture_impact,
@@ -62,11 +68,13 @@ from knowledge_portal.interfaces.api.dependencies import (
 )
 from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     AcceptAllResponse,
+    AcceptSuggestionsRequest,
     ActivateRequest,
     ArchitectureJobResponse,
     BatchUploadResponse,
     CatalogueDiffResponse,
     CatalogueSuggestionsResponse,
+    CoverageResponse,
     CreateVersionRequest,
     DocumentExtractionResponse,
     DocumentPassageResponse,
@@ -274,6 +282,9 @@ def update_draft(
                 if body.vocabulary is None
                 else tuple(item.to_domain() for item in body.vocabulary)
             ),
+            schemes=(
+                None if body.schemes is None else tuple(item.to_domain() for item in body.schemes)
+            ),
             interfaces=(
                 None
                 if body.interfaces is None
@@ -329,6 +340,14 @@ def citations(
         )
         for item in knowledge.unregistered_citations(release_id, actor)
     ]
+
+
+@router.get("/releases/{release_id}/coverage", response_model=CoverageResponse)
+def catalogue_coverage(
+    release_id: str, knowledge: KnowledgeDep, actor: KnowledgeActorDep
+) -> CoverageResponse:
+    """What the version holds that nothing links to; publishing is not held for it."""
+    return CoverageResponse.from_domain(knowledge.coverage(release_id, actor))
 
 
 @router.post(
@@ -467,7 +486,6 @@ async def upload_document(
     use_case: Annotated[UploadKnowledgeDocument, Depends(get_upload_knowledge_document)],
     file: Annotated[UploadFile, File()],
     title: Annotated[str, Form(max_length=MAX_NAME_CHARACTERS)],
-    language: Annotated[str, Form(max_length=20)],
     expected_revision: Annotated[int, Form()],
 ) -> KnowledgeReleaseResponse:
     # One byte past the limit is enough for validation to reject an oversized
@@ -481,7 +499,6 @@ async def upload_document(
         title,
         file.filename or "",
         file.content_type or "",
-        language,
         content,
         actor,
         clock.now(),
@@ -498,7 +515,6 @@ async def upload_documents(
     clock: ClockDep,
     use_case: Annotated[UploadArchitectureDocuments, Depends(get_upload_architecture_documents)],
     files: Annotated[list[UploadFile], File(max_length=MAX_BATCH_FILES)],
-    language: Annotated[str, Form(max_length=20)],
     expected_revision: Annotated[int, Form()],
 ) -> BatchUploadResponse:
     """Up to twenty files into a draft at once; each is added or refused with its reason."""
@@ -514,7 +530,6 @@ async def upload_documents(
         release_id,
         expected_revision,
         tuple(incoming),
-        language,
         actor,
         clock.now(),
     )
@@ -741,13 +756,12 @@ def list_extractions(
 
 @router.get("/change-requests", response_model=ChangeRequestsResponse)
 def list_change_requests(
-    container: ContainerDep, actor: KnowledgeActorDep
+    change_requests: ListChangeRequestsDep, actor: KnowledgeActorDep
 ) -> ChangeRequestsResponse:
     """Change requests from Requirement AI, newest first (requirement-portal ADR-0101, step 7)."""
     return ChangeRequestsResponse(
         change_requests=[
-            ChangeRequestResponse.from_domain(item)
-            for item in container.list_change_requests.execute(actor)
+            ChangeRequestResponse.from_domain(item) for item in change_requests.execute(actor)
         ]
     )
 
@@ -756,24 +770,22 @@ def list_change_requests(
     "/change-requests/{change_request_id}/reading", response_model=ChangeRequestReadingResponse
 )
 def read_change_request(
-    change_request_id: str, container: ContainerDep, actor: KnowledgeActorDep
+    change_request_id: str, reading: ReadChangeRequestDep, actor: KnowledgeActorDep
 ) -> ChangeRequestReadingResponse:
     """Read it into the draft in progress, or a new one: each approved feature becomes a
     suggested question."""
-    return ChangeRequestReadingResponse.from_domain(
-        container.read_change_request.execute(change_request_id, actor)
-    )
+    return ChangeRequestReadingResponse.from_domain(reading.execute(change_request_id, actor))
 
 
 @router.post("/change-requests/{change_request_id}/dismissal", response_model=ChangeRequestResponse)
 def dismiss_change_request(
     change_request_id: str,
     body: ChangeRequestDismissalRequest,
-    container: ContainerDep,
+    dismissal: DismissChangeRequestDep,
     actor: KnowledgeActorDep,
 ) -> ChangeRequestResponse:
     return ChangeRequestResponse.from_domain(
-        container.dismiss_change_request.execute(change_request_id, body.reason, actor)
+        dismissal.execute(change_request_id, body.reason, actor)
     )
 
 
@@ -812,13 +824,17 @@ def decide_suggestion(
 @router.post("/releases/{release_id}/suggestions/acceptance", response_model=AcceptAllResponse)
 def accept_all_suggestions(
     release_id: str,
-    body: RevisionRequest,
+    body: AcceptSuggestionsRequest,
     suggestions: SuggestionsDep,
     actor: KnowledgeActorDep,
     clock: ClockDep,
 ) -> AcceptAllResponse:
     release, remaining = suggestions.accept_all(
-        release_id, body.expected_revision, actor, clock.now()
+        release_id,
+        body.expected_revision,
+        actor,
+        clock.now(),
+        None if body.suggestion_ids is None else tuple(body.suggestion_ids),
     )
     return AcceptAllResponse(
         release=KnowledgeReleaseResponse.from_domain(release), remaining=remaining
@@ -831,15 +847,13 @@ def accept_all_suggestions(
     status_code=201,
 )
 def propose_capability_concepts(
-    release_id: str, container: ContainerDep, actor: KnowledgeActorDep
+    release_id: str, proposals: ProposeCapabilityConceptsDep, actor: KnowledgeActorDep
 ) -> ExtractionRunResponse:
     """Suggest one concept per distinct capability name the draft lists (ADR-0114).
 
     The suggestions replace the undecided ones of the previous backfill.
     """
-    return ExtractionRunResponse.from_domain(
-        container.propose_capability_concepts.execute(release_id, actor)
-    )
+    return ExtractionRunResponse.from_domain(proposals.execute(release_id, actor))
 
 
 @router.post(
@@ -848,16 +862,14 @@ def propose_capability_concepts(
     status_code=201,
 )
 def clean_up_vocabulary(
-    release_id: str, container: ContainerDep, actor: KnowledgeActorDep
+    release_id: str, cleanup: CleanUpVocabularyDep, actor: KnowledgeActorDep
 ) -> ExtractionRunResponse:
     """Suggest the term each eTOM process, channel kind, component kind, role and Open API
     value the draft writes means; a value no term names is suggested as a new term.
 
     The suggestions replace the undecided ones of the previous clean-up.
     """
-    return ExtractionRunResponse.from_domain(
-        container.clean_up_vocabulary.execute(release_id, actor)
-    )
+    return ExtractionRunResponse.from_domain(cleanup.execute(release_id, actor))
 
 
 @router.post(
@@ -866,7 +878,7 @@ def clean_up_vocabulary(
     status_code=201,
 )
 def suggest_derived_dependencies(
-    release_id: str, container: ContainerDep, actor: KnowledgeActorDep
+    release_id: str, derived: SuggestDerivedDependenciesDep, actor: KnowledgeActorDep
 ) -> ExtractionRunResponse:
     """Suggest each dependency the draft's interfaces and journeys say between two systems
     in service, citing what says it (ADR-0119).
@@ -874,9 +886,7 @@ def suggest_derived_dependencies(
     The suggestions replace the undecided ones of the previous reading; a dependency in the
     draft already, or rejected before, is left out.
     """
-    return ExtractionRunResponse.from_domain(
-        container.suggest_derived_dependencies.execute(release_id, actor)
-    )
+    return ExtractionRunResponse.from_domain(derived.execute(release_id, actor))
 
 
 @router.post(
@@ -886,15 +896,13 @@ def suggest_derived_dependencies(
     dependencies=[Depends(limit_provider_calls)],
 )
 def suggest_component_capabilities(
-    release_id: str, container: ContainerDep, actor: KnowledgeActorDep
+    release_id: str, links: SuggestComponentCapabilitiesDep, actor: KnowledgeActorDep
 ) -> ExtractionRunResponse:
     """Ask the configured model which concepts each unlinked offering component delivers.
 
     The suggestions replace the undecided ones of the previous request (ADR-0114).
     """
-    return ExtractionRunResponse.from_domain(
-        container.suggest_component_capabilities.execute(release_id, actor)
-    )
+    return ExtractionRunResponse.from_domain(links.execute(release_id, actor))
 
 
 @router.post("/releases/{release_id}/publish", response_model=KnowledgeReleaseResponse)

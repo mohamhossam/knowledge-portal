@@ -16,7 +16,7 @@ It is one of three repositories:
 > **Status: the portal is complete and released (v0.7.0).** The API, worker, schema, data
 > import, images and CI are in place. The browser app ships every curation screen on its
 > design system ("The Calm Ledger", `DESIGN.md`), with sign-in, the no-access page and the
-> read-only Product Architecture Explorer. See `ROADMAP.md` for what each stage delivered.
+> read-only Product Architecture Explorer. See `ROADMAP.md` for what is open and what each stage delivered.
 
 ## Run it offline
 
@@ -56,7 +56,9 @@ The public API's contract is `contracts/knowledge-public.openapi.json`; regenera
 `uv run python scripts/dump_openapi.py`. The internal API's contract,
 `contracts/knowledge-internal.openapi.json`, is regenerated with
 `uv run python scripts/dump_internal_openapi.py`; it is shared with requirement-portal and
-changes only together with it.
+changes only together with it. Its version (`INTERNAL_CONTRACT_VERSION`) rises with every shape
+change, MAJOR for a breaking one and MINOR for an additive one;
+`uv run python scripts/check_internal_contract.py` checks both against `origin/main`, as CI does.
 
 ## Importing the existing knowledge
 

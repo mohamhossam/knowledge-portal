@@ -4,8 +4,8 @@ import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { Button } from "./actions";
-import { BulkActionBar, type Column, DataTable, DecisionButtons, DiffView, FilterStrip, type Sort } from "./data";
-import { ConsequencePanel, EvidenceQuote, ImpactPanel, ProvenanceTrail } from "./evidence";
+import { BulkActionBar, type Column, DataTable, FilterStrip, type Sort } from "./data";
+import { ConsequencePanel, EvidenceQuote } from "./evidence";
 import { checkAxeAfterEach } from "../../test/axe";
 
 // Every test's rendered state is also checked by axe (Phase 7).
@@ -149,21 +149,6 @@ describe("filters, decisions and bulk", () => {
     expect(document.querySelector("select")).toBeNull();
   });
 
-  it("names decision buttons for their row and declares their keys", async () => {
-    const onDecide = vi.fn();
-    render(<DecisionButtons kind="suggestion" subject="Adds the system Dynamics CRM" onDecide={onDecide} />);
-    const group = screen.getByRole("group", { name: "Decide Adds the system Dynamics CRM" });
-    expect(within(group).getByRole("button", { name: "Reject" })).toHaveAttribute("aria-keyshortcuts", "r");
-    await userEvent.click(within(group).getByRole("button", { name: "Accept" }));
-    expect(onDecide).toHaveBeenCalledWith("accept");
-  });
-
-  it("shows the decided state instead of buttons", () => {
-    render(<DecisionButtons kind="passage" subject="Passage 14" state="Excluded: internal floor price" onDecide={() => {}} />);
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
-    expect(screen.getByText("Excluded: internal floor price")).toBeInTheDocument();
-  });
-
   it("appears only with a selection, says how many, and clears", async () => {
     const onClear = vi.fn();
     const { rerender } = render(<BulkActionBar count={0} noun={["passage", "passages"]} onClear={onClear}><Button>Exclude…</Button></BulkActionBar>);
@@ -176,26 +161,6 @@ describe("filters, decisions and bulk", () => {
 });
 
 describe("compare and evidence", () => {
-  it("says each change's kind in words, with from → to and origin", () => {
-    render(
-      <DiffView
-        fromLabel="Initial catalogue"
-        toLabel="October integration update"
-        changes={[
-          { key: "order-hub", kind: "added", item: "System", label: "Order Hub", origin: "Suggestion, accepted by Amina Owner" },
-          { key: "cwom", kind: "changed", item: "System", label: "CWOM", fields: [{ name: "Owner", from: "Fulfilment", to: "Care" }] },
-          { key: "bcrm", kind: "removed", item: "System", label: "BCRM" },
-        ]}
-      />,
-    );
-    expect(screen.getByRole("status")).toHaveTextContent("1 added · 1 changed · 1 removed");
-    const items = screen.getAllByRole("listitem");
-    expect(items[0]).toHaveTextContent("Added");
-    expect(items[0]).toHaveTextContent("Suggestion, accepted by Amina Owner");
-    expect(items[1]).toHaveTextContent("Fulfilment → changed to Care");
-    expect(items[2]).toHaveTextContent("Removed");
-  });
-
   it("puts consequence first, needs a reason, and closes on Escape (§5)", async () => {
     const onConfirm = vi.fn();
     const onKeep = vi.fn();
@@ -226,36 +191,14 @@ describe("compare and evidence", () => {
     expect(onKeep).toHaveBeenCalledOnce();
   });
 
-  it("says an unknown impact is unknown, not zero", () => {
-    render(<ImpactPanel title="Cited by" state={{ kind: "unknown", why: "Couldn't ask Requirement AI." }} />);
-    expect(screen.getByText(/unknown, not zero/)).toBeInTheDocument();
-  });
-
-  it("marks a stale check and offers to check again", async () => {
-    const onCheck = vi.fn();
-    render(<ImpactPanel title="Mapping impact" state={{ kind: "stale", at: "14:02" }} counts={[{ label: "Requirements that would map differently", value: 3 }]} onCheck={onCheck} />);
-    expect(screen.getByText(/Out of date/)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Check again" }));
-    expect(onCheck).toHaveBeenCalledOnce();
-    // The button goes away while the check runs, so focus stays on the panel's title.
-    expect(screen.getByRole("heading", { name: "Mapping impact" })).toHaveFocus();
-  });
-
-  it("lays the provenance trail out as an ordered, labelled list of hops", () => {
-    render(<ProvenanceTrail hops={[{ label: "Evidence", value: "lines 1–12", href: "#e" }, { label: "Document", value: "Integration design, version 2" }, { label: "Decided by", value: "Amina Owner, 8 Oct" }]} />);
-    const trail = screen.getByRole("navigation", { name: "Where this comes from" });
-    expect(within(trail).getAllByRole("listitem")).toHaveLength(3);
-  });
-
   it("highlights only the quoted line, in the passage's own direction", () => {
     render(<EvidenceQuote text={"System: Order Hub\nCaptures business orders."} quote="System: Order Hub" source="Integration design · lines 1–12" />);
     expect(screen.getByText("System: Order Hub").tagName).toBe("MARK");
     expect(document.querySelector("blockquote")).toHaveAttribute("dir", "auto");
   });
 
-  it("marks the passage's language on the quote alone, not its source line", () => {
-    render(<EvidenceQuote text="نظام الطلبات" source="Integration design · lines 1–12" lang="ar" />);
-    expect(document.querySelector("blockquote")).toHaveAttribute("lang", "ar");
-    expect(document.querySelector("figcaption")).not.toHaveAttribute("lang");
+  it("leaves the quote to the page's language: content is English", () => {
+    render(<EvidenceQuote text="Order Hub" source="Integration design · lines 1–12" />);
+    expect(document.querySelector("blockquote")).not.toHaveAttribute("lang");
   });
 });

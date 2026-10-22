@@ -194,7 +194,7 @@ def _suggestions(client: TestClient) -> tuple[str, dict[str, object], list[dict[
     )
     uploaded = client.post(
         f"{base}/documents",
-        data={"title": "Design", "language": "en", "expected_revision": str(draft["revision"])},
+        data={"title": "Design", "expected_revision": str(draft["revision"])},
         files={"file": ("design.txt", content.encode(), "text/plain")},
         headers=OWNER,
     ).json()
@@ -249,7 +249,7 @@ def test_a_cited_passage_is_shown_with_its_neighbours(client: TestClient) -> Non
     base = f"{RELEASES}/{draft['id']}"
     uploaded = client.post(
         f"{base}/documents",
-        data={"title": "Design", "language": "en", "expected_revision": str(draft["revision"])},
+        data={"title": "Design", "expected_revision": str(draft["revision"])},
         files={"file": ("design.docx", _docx(), DOCX_MIME)},
         headers=OWNER,
     ).json()
@@ -281,7 +281,7 @@ def test_a_markdown_citation_from_before_passages_followed_headings_still_opens(
     base = f"{RELEASES}/{draft['id']}"
     uploaded = client.post(
         f"{base}/documents",
-        data={"title": "Notes", "language": "en", "expected_revision": str(draft["revision"])},
+        data={"title": "Notes", "expected_revision": str(draft["revision"])},
         files={
             "file": (
                 "notes.md",
@@ -310,7 +310,7 @@ def test_a_cited_spreadsheet_row_is_shown_with_its_neighbours(client: TestClient
     workbook = spreadsheet_document(
         {"A1": "System", "A2": "Order Hub", "A3": "BCRM", "A4": "Billing", "A5": "CRM"}
     )
-    form = {"title": "Inventory", "language": "en", "expected_revision": str(draft["revision"])}
+    form = {"title": "Inventory", "expected_revision": str(draft["revision"])}
     mislabelled = client.post(
         f"{base}/documents",
         data=form,
@@ -338,7 +338,7 @@ def test_a_csv_is_accepted_as_a_source(client: TestClient) -> None:
     draft = _start(client)
     uploaded = client.post(
         f"{RELEASES}/{draft['id']}/documents",
-        data={"title": "Links", "language": "en", "expected_revision": str(draft["revision"])},
+        data={"title": "Links", "expected_revision": str(draft["revision"])},
         files={"file": ("links.csv", b"From,To\nOrder Hub,BCRM\n", "text/csv")},
         headers=OWNER,
     )
@@ -354,7 +354,7 @@ def test_an_image_has_no_passage_to_show(client: TestClient) -> None:
     Image.new("RGB", (4, 4), "white").save(buffer, format="PNG")
     uploaded = client.post(
         f"{base}/documents",
-        data={"title": "Diagram", "language": "en", "expected_revision": str(draft["revision"])},
+        data={"title": "Diagram", "expected_revision": str(draft["revision"])},
         files={"file": ("diagram.png", buffer.getvalue(), "image/png")},
         headers=OWNER,
     )

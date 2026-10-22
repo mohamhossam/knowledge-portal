@@ -22,7 +22,7 @@ export function useFocusAfterRender() {
   }, []);
 }
 
-type StickyVariable = "--sticky-top" | "--sticky-state" | "--sticky-head" | "--sticky-bottom";
+type StickyVariable = "--sticky-top" | "--sticky-head" | "--sticky-bottom";
 
 /**
  * The sticky regions measuring each variable right now (e.g. a selection bar inside a save
@@ -110,59 +110,6 @@ export function useDisclosure(fallback?: () => HTMLElement | null) {
 }
 
 export type Pending<T> = { id: string; label: string; value: T; until: number };
-
-/**
- * §4: a decision shows at once and is sent after `ms`; undo inside the window
- * cancels it. The API cannot reopen a decision (BG3), so this is the undo there is.
- */
-export function useDelayedCommit<T>(commit: (value: T) => Promise<void> | void, ms = 6000) {
-  const [pending, setPending] = useState<Pending<T>[]>([]);
-  const list = useRef<Pending<T>[]>([]);
-  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
-
-  useEffect(() => {
-    const all = timers.current;
-    return () => all.forEach(clearTimeout);
-  }, []);
-
-  const replace = useCallback((next: Pending<T>[]) => {
-    list.current = next;
-    setPending(next);
-  }, []);
-
-  const schedule = useCallback((id: string, label: string, value: T) => {
-    clearTimeout(timers.current.get(id));
-    const timer = setTimeout(() => {
-      timers.current.delete(id);
-      replace(list.current.filter((item) => item.id !== id));
-      void commit(value);
-    }, ms);
-    timers.current.set(id, timer);
-    replace([...list.current.filter((item) => item.id !== id), { id, label, value, until: Date.now() + ms }]);
-  }, [commit, ms, replace]);
-
-  /** Cancels one pending decision (the newest when no id is given) and returns it. */
-  const undo = useCallback((id?: string): Pending<T> | undefined => {
-    const undone = id ? list.current.find((item) => item.id === id) : list.current.at(-1);
-    if (!undone) return undefined;
-    clearTimeout(timers.current.get(undone.id));
-    timers.current.delete(undone.id);
-    replace(list.current.filter((item) => item !== undone));
-    return undone;
-  }, [replace]);
-
-  /** Sends every pending decision now (before leaving the page). */
-  const flush = useCallback(() => {
-    for (const item of list.current) {
-      clearTimeout(timers.current.get(item.id));
-      void commit(item.value);
-    }
-    timers.current.clear();
-    replace([]);
-  }, [commit, replace]);
-
-  return { pending, schedule, undo, flush };
-}
 
 /**
  * §2.2 lists and toolbars: one tab stop for the group; arrows move between

@@ -88,6 +88,10 @@ class Activity:
     # text; None while unmapped.
     etom_id: str | None = None
     role_id: str | None = None
+    # The terms of curated vocabularies ``mode`` and ``phase`` mean, beside the text; None
+    # while unmapped (review recommendation 9).
+    mode_id: str | None = None
+    phase_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "number", required(self.number, "Activity number"))
@@ -104,6 +108,8 @@ class Activity:
             ("etom", "eTOM"),
             ("etom_id", "eTOM process term"),
             ("role_id", "Role term"),
+            ("mode_id", "Mode term"),
+            ("phase_id", "Phase term"),
             ("performer", "Performer"),
             ("point_of_no_return", "Point of no return"),
         ):
@@ -273,6 +279,9 @@ class ActivityIntegration:
     tmf_equivalent: str | None = None
     # The Open API terms ``tmf_equivalent`` names, beside the text; empty while unmapped.
     open_api_ids: tuple[str, ...] = ()
+    # The interface record the call goes through, by id, beside ``interface`` as the source
+    # writes it (review recommendation 8); None while unlinked.
+    interface_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "from_activity", required(self.from_activity, "From activity"))
@@ -288,6 +297,7 @@ class ActivityIntegration:
             ("purpose", "Purpose"),
             ("style", "Style"),
             ("tmf_equivalent", "TMF equivalent"),
+            ("interface_id", "Interface record"),
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
         object.__setattr__(self, "timing", call_timing(self.timing))
@@ -459,6 +469,23 @@ def check_journeys(
     ids = [item.id for item in journeys]
     if len(set(ids)) != len(ids):
         raise InvalidKnowledgeError("Journey ids must be unique.")
+    # Two journeys the suggestion matcher would take for one cannot both be in a version: a
+    # reading would update whichever it met first (review recommendation 17).
+    named: dict[str, list[Journey]] = {}
+    for journey in journeys:
+        same_name = named.setdefault(journey.name.casefold().strip(), [])
+        other = next((item for item in same_name if same_journey(item, journey)), None)
+        if other is not None:
+            both = f"Journeys {other.id!r} and {journey.id!r} are both named {journey.name!r}"
+            if other.product_id and journey.product_id:
+                raise InvalidKnowledgeError(
+                    f"{both} for the same offering. Rename one, or give each its own offering."
+                )
+            raise InvalidKnowledgeError(
+                f"{both}, and one names no offering, so a reading could mean either. Rename "
+                "one, or give each the offering it is for."
+            )
+        same_name.append(journey)
     by_id = {item.id: item for item in offerings}
     for journey in journeys:
         offering = by_id.get(journey.product_id or "")

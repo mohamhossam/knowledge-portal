@@ -29,6 +29,7 @@ export function RoutedDiagram(props: Omit<DiagramProps, "link">) {
   };
   return (
     // The click is the link's own (a pointer or Enter on it): this only hands it to the router.
+    // eslint-disable-next-line jsx-a11y-x/click-events-have-key-events, jsx-a11y-x/no-static-element-interactions
     <div className="routed-diagram" onClick={onClick}>
       <Diagram {...props} link={TableLink} />
     </div>

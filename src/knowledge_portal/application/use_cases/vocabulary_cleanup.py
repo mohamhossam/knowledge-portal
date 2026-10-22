@@ -1,7 +1,8 @@
 """The vocabulary clean-up as suggestions: existing values mapped onto controlled terms.
 
 One reading of a draft's own catalogue. Each eTOM process, channel kind, component
-kind, role and Open API value is proposed as a link to the term it names, or, when no
+kind, role and Open API value, and each value of a field a curated vocabulary covers, is
+proposed as a link to the term it names, or, when no
 term names it, as a new term a maintainer decides alone. Nothing is linked until a
 maintainer accepts it; a new reading replaces the undecided suggestions of the last.
 """
@@ -49,6 +50,17 @@ _PLACES = {
     VocabularyField.INTEGRATION_OPEN_API: (
         "integration's TMF equivalent",
         "integrations' TMF equivalent",
+    ),
+    VocabularyField.NFR_QUALITY: ("NFR's quality", "NFRs' quality"),
+    VocabularyField.OFFERING_FAMILY: ("offering's family", "offerings' family"),
+    VocabularyField.OFFERING_LIFECYCLE: ("offering's lifecycle", "offerings' lifecycle"),
+    VocabularyField.RULE_KIND: ("business rule's kind", "business rules' kind"),
+    VocabularyField.ACTIVITY_MODE: ("activity's mode", "activities' mode"),
+    VocabularyField.ACTIVITY_PHASE: ("activity's phase", "activities' phase"),
+    VocabularyField.PORTFOLIO_LEVEL: ("portfolio node's level", "portfolio nodes' level"),
+    VocabularyField.COMPONENT_TECHNOLOGY: (
+        "system component's technology",
+        "system components' technology",
     ),
 }
 

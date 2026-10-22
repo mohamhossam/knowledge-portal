@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, RotateCw } from "lucide-react";
 import { type FormEvent, Fragment, useState } from "react";
 
-import { api, type ImpactComparison, type Release, type SampleRequirement } from "../../api/client";
+import { api, type ImpactComparison, type Orphan, type Release, type SampleRequirement } from "../../api/client";
 import { ApiError, errorMessage } from "../../api/errors";
 import {
   ActionGroup, Button, type Column, DataTable, EmptyState, Lines, Section, Skeleton, Status, type StatusTone, TextArea, TextField,
@@ -14,6 +14,7 @@ import { lines } from "../editing";
 import { type SharedEntity, sharedMastery } from "../mastery";
 import { useCatalogueContext } from "../useCatalogue";
 import { useBuild, useSamples } from "../useEditing";
+import { ORPHAN_KINDS, type OrphanKind, orphanTotal, useCoverage } from "./coverage";
 import { Said } from "./parts";
 import { type SampleResult, useSampleResults } from "./progress";
 
@@ -42,6 +43,7 @@ export function CheckStep() {
       <BuildSection release={release} build={build} state={state} />
       <Citations release={release} base={base} />
       <Samples release={release} built={state === "built"} />
+      <Coverage release={release} base={base} />
       <SharedData release={release} />
       <p className="draft-next">
         <ButtonLink to={`${base}/publish`} variant={state === "built" ? "primary" : "secondary"}>Next: publish</ButtonLink>
@@ -84,6 +86,64 @@ function Citations({ release, base }: { release: Release; base: string }) {
             ))}
           </Lines>
         </>
+      )}
+    </Section>
+  );
+}
+
+/** What the draft holds that nothing links to (review recommendation 17): each reads as
+ * complete on its own page, yet nothing in the catalogue leads to it. Publishing is not held. */
+function Coverage({ release, base }: { release: Release; base: string }) {
+  const found = useCoverage(release);
+  const total = found.data ? orphanTotal(found.data) : undefined;
+  return (
+    <Section title="What nothing links to" count={total}>
+      {found.isPending ? (
+        <Skeleton label="Reading what the draft links" rows={2} />
+      ) : found.isError ? (
+        <p role="status"><Status tone="attention">This couldn’t be checked: {errorMessage(found.error)}</Status></p>
+      ) : !total ? (
+        <p role="status"><Status tone="done">Every capability, system, interface and term is linked.</Status></p>
+      ) : (
+        <>
+          <p className="draft-lead">
+            Each of these reads as complete on its own page, but nothing in the catalogue leads to it, so nobody finds it by following links.
+            Publishing is not held for them.
+          </p>
+          {ORPHAN_KINDS.filter((kind) => found.data[kind.key].length).map((kind) => (
+            <OrphanTable key={kind.key} kind={kind} items={found.data[kind.key]} base={base} />
+          ))}
+        </>
+      )}
+    </Section>
+  );
+}
+
+const FIRST_ORPHANS = 10;
+
+/** One kind of orphan as dense rows (the review-work density), the first ten until asked for all. */
+function OrphanTable({ kind, items, base }: { kind: OrphanKind; items: Orphan[]; base: string }) {
+  const [all, setAll] = useState(false);
+  const shown = all ? items : items.slice(0, FIRST_ORPHANS);
+  const columns: Column<Orphan>[] = [
+    {
+      id: "name",
+      header: "Name",
+      rowHeader: true,
+      bidi: true,
+      cell: (item) => {
+        const system = kind.onSystem === "self" ? item.id : kind.onSystem === "owner" ? item.owner_id : null;
+        return system ? <RouterLink href={`${base}/systems/${system}`}><bdi>{item.name}</bdi></RouterLink> : <bdi>{item.name}</bdi>;
+      },
+    },
+    ...(kind.ownerHeader ? [{ id: "owner", header: kind.ownerHeader, bidi: true, cell: (item: Orphan) => <bdi>{item.owner}</bdi> }] : []),
+  ];
+  return (
+    <Section title={kind.title} count={items.length} headingLevel={3}>
+      <p className="draft-lead">{kind.settle}</p>
+      <DataTable caption={kind.title} captionHidden columns={columns} rows={shown} rowId={(item) => `${item.owner_id ?? ""}/${item.id}`} />
+      {items.length > FIRST_ORPHANS && (
+        <Button variant="link" onClick={() => setAll(!all)}>{all ? `Show the first ${FIRST_ORPHANS}` : `Show all ${items.length.toLocaleString("en")}`}</Button>
       )}
     </Section>
   );
@@ -323,6 +383,7 @@ function SamplesEdit({ items, save, onDone }: { items: SampleRequirement[]; save
         error={tried ? problem : null}
         onChange={(event) => setText(event.target.value)}
         // The panel opens on a press of "Edit the samples": its one field is where the reader goes next.
+        // eslint-disable-next-line jsx-a11y-x/no-autofocus
         autoFocus
       />
       <Said text={save.isError ? errorMessage(save.error) : null} failed />

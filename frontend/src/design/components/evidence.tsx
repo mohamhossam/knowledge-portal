@@ -1,11 +1,10 @@
 import "./evidence.css";
 
-import { AlertTriangle, ChevronRight } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { type ReactNode, type RefObject, useEffect, useId, useState } from "react";
 
 import { Button } from "./actions";
 import { Status, type StatusTone } from "./feedback";
-import type { LinkLike } from "./layout";
 
 /**
  * §5: the consequence panel, in place, never a modal. In order: what happens,
@@ -29,7 +28,7 @@ export function ConsequencePanel({
   busyLabel = "Working…",
   panelRef,
 }: {
-  /** May hold a name (wrap it in <bdi> so a title in either language reads in order). */
+  /** May hold a name (wrap it in <bdi> so a title with punctuation reads in order). */
   title: ReactNode;
   happens: ReactNode;
   affects?: ReactNode;
@@ -121,111 +120,20 @@ export function ConsequencePanel({
   );
 }
 
-export type ImpactState =
-  | { kind: "not-checked" }
-  | { kind: "checking" }
-  | { kind: "checked"; at: string }
-  | { kind: "stale"; at: string }
-  | { kind: "unknown"; why: string };
-
-/**
- * §11: what a change does to requirement work, beside the action that makes
- * it. Counts first, then named items, with the visibility caveat; states say
- * honestly when the impact is unchecked, stale or unknown (never "0").
- */
-export function ImpactPanel({
-  title,
-  state,
-  counts,
-  items,
-  caveat,
-  onCheck,
-}: {
-  title: string;
-  state: ImpactState;
-  counts?: { label: string; value: number }[];
-  items?: ReactNode[];
-  caveat?: string;
-  onCheck?: () => void;
-}) {
-  const id = useId();
-  // The button that started the check goes away while it runs; focus stays in the panel, on its title.
-  const check = onCheck && (() => {
-    onCheck();
-    document.getElementById(`${id}-t`)?.focus();
-  });
-  return (
-    <section className="ds-impact" aria-labelledby={`${id}-t`}>
-      <h3 id={`${id}-t`} className="ds-impact__title" tabIndex={-1}>{title}</h3>
-      {state.kind === "unknown" ? (
-        <p><Status tone="attention">{state.why} The impact is unknown, not zero.</Status></p>
-      ) : state.kind === "not-checked" ? (
-        <p className="ds-impact__state">Not checked yet.{check && <>{" "}<Button variant="link" onClick={check}>Check now</Button></>}</p>
-      ) : state.kind === "checking" ? (
-        <p className="ds-impact__state"><Status tone="working">Checking…</Status></p>
-      ) : (
-        <>
-          <p className="ds-impact__state">
-            {state.kind === "stale" ? <Status tone="held">Out of date: changed since the check at {state.at}</Status> : <>Checked at {state.at}</>}
-            {state.kind === "stale" && check && <>{" "}<Button variant="link" onClick={check}>Check again</Button></>}
-          </p>
-          {counts && (
-            <dl className="ds-impact__counts">
-              {counts.map((count) => (
-                <div key={count.label}>
-                  <dt>{count.label}</dt>
-                  <dd className="ds-num">{count.value.toLocaleString("en")}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-          {items && items.length > 0 && <ul className="ds-impact__items">{items.map((item, i) => <li key={i}>{item}</li>)}</ul>}
-        </>
-      )}
-      {caveat && <p className="ds-impact__caveat">{caveat}</p>}
-    </section>
-  );
-}
-
-export type Hop = { label: string; value: ReactNode; href?: string };
-
-/**
- * §10: the provenance trail, one hop per link: fact → evidence passage →
- * document and version → catalogue version → decided by.
- */
-export function ProvenanceTrail({ hops, label = "Where this comes from", link: Link }: { hops: Hop[]; label?: string; link?: LinkLike }) {
-  return (
-    <nav className="ds-trail" aria-label={label}>
-      <ol>
-        {hops.map((hop, index) => (
-          <li key={hop.label} className="ds-trail__hop">
-            {index > 0 && <ChevronRight size={14} aria-hidden="true" className="ds-trail__sep" />}
-            <span className="ds-trail__label">{hop.label}</span>
-            {hop.href ? (Link ? <Link href={hop.href}><bdi>{hop.value}</bdi></Link> : <a href={hop.href}><bdi>{hop.value}</bdi></a>) : <bdi>{hop.value}</bdi>}
-          </li>
-        ))}
-      </ol>
-    </nav>
-  );
-}
-
 /**
  * The cited passage with the quoted line highlighted (not the whole chunk),
- * in its own direction, and its source underneath. `lang` is the passage's
- * language, set on the quote alone: the source line is the portal's English.
+ * and its source underneath. Content is English, the page's language.
  */
-export function EvidenceQuote({ text, quote, source, lang }: {
+export function EvidenceQuote({ text, quote, source }: {
   text: string;
   /** The line within `text` the citation quotes; marked when found, else nothing is. */
   quote?: string;
   source: ReactNode;
-  /** The passage's language ("ar", "en"), when known. */
-  lang?: string;
 }) {
   const at = quote ? text.indexOf(quote) : -1;
   return (
     <figure className="ds-quote">
-      <blockquote dir="auto" lang={lang} className="ds-quote__text">
+      <blockquote dir="auto" className="ds-quote__text">
         {at < 0 || !quote ? (
           text
         ) : (

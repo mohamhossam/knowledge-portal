@@ -23,7 +23,7 @@ from knowledge_portal.domain.architecture.knowledge import (
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import ProductOffering
 from knowledge_portal.domain.architecture.realisations import RealisationRecord
-from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm
+from knowledge_portal.domain.architecture.vocabularies import ConceptScheme, VocabularyTerm
 
 
 class CatalogueFileFormat(StrEnum):
@@ -78,6 +78,8 @@ class CatalogueContent:
     interfaces: tuple[SystemInterface, ...] = ()
     # The CFSs, RFSs and resources components are realised as.
     realisations: tuple[RealisationRecord, ...] = ()
+    # The vocabularies curators define beside the built-in ones (review recommendation 9).
+    schemes: tuple[ConceptScheme, ...] = ()
 
 
 class CatalogueFilePort(Protocol):

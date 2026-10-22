@@ -9,7 +9,7 @@ import { formatDay } from "../../home/format";
 import { traceLine, useChangeRequests } from "../inbox";
 import { SuggestionEditor } from "../SuggestionEditor";
 import { type Lexicon, changeSentence, decideWhy, fromCatalogue, offeringHolds, suggestionState, waitsFor, waitsForMany } from "../suggestions";
-import { NEW, STATE_TONE, citedPart, citedSource, documentLang, linked, stateWords } from "./decide";
+import { NEW, STATE_TONE, citedPart, citedSource, linked, stateWords } from "./decide";
 
 const TABLE_READER = "catalogue-table-reader";
 
@@ -246,18 +246,18 @@ function Citation({ release, suggestion, document, location, quote }: {
   const source = <bdi>{citedSource(suggestion, document, location)}</bdi>;
   return (
     <div className="draft-citation">
-      {quote ? <EvidenceQuote text={quote} source={source} lang={documentLang(document)} /> : <p>{source}</p>}
+      {quote ? <EvidenceQuote text={quote} source={source} /> : <p>{source}</p>}
       {document && (
         <Button variant="link" icon={image ? <ImageIcon size={14} /> : undefined} aria-expanded={open} onClick={() => setOpen(!open)}>
           {open ? (image ? "Hide the image" : "Hide the passage") : image ? "Show the image" : "Show the passage around it"}
         </Button>
       )}
-      {open && document && (image ? <CitedImage versionId={document.id} title={document.title} /> : <CitedPassage releaseId={release.id} versionId={document.id} location={location} lang={documentLang(document)} />)}
+      {open && document && (image ? <CitedImage versionId={document.id} title={document.title} /> : <CitedPassage releaseId={release.id} versionId={document.id} location={location} />)}
     </div>
   );
 }
 
-function CitedPassage({ releaseId, versionId, location, lang }: { releaseId: string; versionId: string; location: string; lang?: string }) {
+function CitedPassage({ releaseId, versionId, location }: { releaseId: string; versionId: string; location: string }) {
   const passage = useQuery({
     queryKey: ["architecture", "releases", releaseId, "passage", versionId, location],
     queryFn: () => api.citedPassage(releaseId, versionId, location),
@@ -272,7 +272,7 @@ function CitedPassage({ releaseId, versionId, location, lang }: { releaseId: str
       {places.map((place) => (
         <li key={place.location} className={place.location === cited ? "draft-context__place is-cited" : "draft-context__place"}>
           <span className="draft-context__where">{place.location}{place.location === cited && <span className="ds-visually-hidden">, cited</span>}</span>
-          <span dir="auto" lang={lang}>{place.text.replace(/^#{1,6}\s+/gm, "").trim()}</span>
+          <span dir="auto">{place.text.replace(/^#{1,6}\s+/gm, "").trim()}</span>
         </li>
       ))}
     </ol>
@@ -290,5 +290,5 @@ function CitedImage({ versionId, title }: { versionId: string; title: string }) 
     if (url) URL.revokeObjectURL(url);
   }, [url]);
   if (image.isError) return <p role="status"><Status tone="attention">{errorMessage(image.error)}</Status></p>;
-  return url ? <img className="draft-citation__image" src={url} alt={`The image ${title}`} /> : <p className="draft-quiet" role="status">Opening the image…</p>;
+  return url ? <img className="draft-citation__image" src={url} alt={`From ${title}`} /> : <p className="draft-quiet" role="status">Opening the image…</p>;
 }

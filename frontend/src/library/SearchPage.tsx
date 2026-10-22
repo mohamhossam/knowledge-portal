@@ -11,7 +11,7 @@ import { Breadcrumbs, Button, EmptyState, PageHeader, Skeleton, Status, TextFiel
 import { RouterLink } from "../shell/links";
 import { Content } from "./parts";
 import { contextPlaces } from "./searchContext";
-import { humanWhere, langOf, plural } from "./where";
+import { humanWhere, plural } from "./where";
 
 /**
  * Browse archetype for passages (plan 02 §1): every passage in service, across
@@ -78,7 +78,7 @@ export function SearchPage() {
         <>
           {results.length === 0 ? (
             <EmptyState title="Nothing in service matches." action={<Button onClick={() => { setDraft(""); setParams({}); }}>Clear the search</Button>}>
-              <p>Only passages in service are searched. Try fewer words, or words in the document's own language.</p>
+              <p>Only passages in service are searched. Try fewer words.</p>
             </EmptyState>
           ) : (
             <ol className="lib-results">
@@ -96,11 +96,10 @@ function Result({ hit }: { hit: ReferenceChunk }) {
   // Surrounding text earns its toggle only when it reaches beyond the passage's own place.
   const hasContext = hit.context_locations.length >= 2 && hit.context_text.trim() !== hit.original_text.trim();
   const place = humanWhere([...hit.heading_path.filter((part) => !hit.location.includes(part)), hit.location].join(" › "));
-  const lang = langOf(hit.language, hit.original_text);
   return (
     <li>
       <figure className="ds-quote">
-        <blockquote dir="auto" lang={lang} className="ds-quote__text">{hit.original_text}</blockquote>
+        <blockquote dir="auto" className="ds-quote__text">{hit.original_text}</blockquote>
         <figcaption className="ds-quote__source">
           <Content text={hit.document_title} /> · version {hit.version_number} · <bdi>{place}</bdi>
           {hit.field_context && <> · <bdi>{hit.field_context}</bdi></>} ·{" "}
@@ -119,7 +118,7 @@ function Result({ hit }: { hit: ReferenceChunk }) {
               {contextPlaces(hit.context_text, hit.location).map((item) => (
                 <div key={item.location}>
                   <dt>{humanWhere(item.location)}{item.cited && <span className="ds-visually-hidden"> (the passage found)</span>}</dt>
-                  <dd dir="auto" lang={langOf(hit.language, item.text)} className={item.cited ? "lib-context__cited" : undefined}>{item.text}</dd>
+                  <dd dir="auto" className={item.cited ? "lib-context__cited" : undefined}>{item.text}</dd>
                 </div>
               ))}
             </dl>

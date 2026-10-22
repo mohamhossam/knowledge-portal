@@ -17,6 +17,7 @@ from knowledge_portal.application.ports.organisation_repository import (
     OrganisationRepositoryPort,
 )
 from knowledge_portal.domain.architecture.deprecation import in_service, successor
+from knowledge_portal.domain.architecture.identity import forwards
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
 from knowledge_portal.domain.architecture.products import ProductOffering
 from knowledge_portal.domain.organisation.catalogue import (
@@ -182,8 +183,9 @@ class ManageOrganisationCatalogue:
 
 
 def _release_references(release: ArchitectureKnowledge) -> ReleaseReferences:
-    """What a squad or product may point at: the systems in service; a retired system
-    forwards to the one that replaced it (ADR-0121)."""
+    """What a squad or product may point at: the systems, offerings and portfolio nodes in
+    service; a retired one forwards to the one that replaced it (ADR-0121), and a renamed
+    offering to its new id (ADR-0124)."""
     successors = {
         system.id: current.id
         for system in release.systems
@@ -196,9 +198,15 @@ def _release_references(release: ArchitectureKnowledge) -> ReleaseReferences:
             for system in in_service(release.systems)
         },
         offering_systems={
-            offering.id: _offering_systems(release, offering) for offering in release.products
+            offering.id: _offering_systems(release, offering)
+            for offering in in_service(release.products)
         },
-        portfolio_node_ids={item.id for item in release.portfolio},
+        portfolio_node_ids={item.id for item in in_service(release.portfolio)},
+        # Renamed or replaced: a product or seat that still names the old id is forwarded
+        # (review recommendation 7).
+        offering_forwards=forwards(release.products),
+        portfolio_forwards=forwards(release.portfolio),
+        concept_forwards=forwards(release.business_capabilities),
     )
 
 

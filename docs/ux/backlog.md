@@ -26,8 +26,8 @@ review findings here (step 7).
 | ID | Item | Severity | Area | State |
 |---|---|---|---|---|
 | K1 | At 1280×800 the review desk's save bar wraps to two lines (chrome 22%, target ≤ 15%), because the "why unavailable" reasons sit beside the buttons. Never hide the reason (§1.2); shorten it, or move it under the bar only when narrow. Re-measure. | Medium | 2 Library | Done (area 2: one line at 1280×800; chrome by height ≈ 14–15%, see the gate report) |
-| K2 | Content has `dir="auto"` but no `lang`, so NVDA probably reads Arabic with the English voice. Set `lang` where the language is known (a document's `language`). | Medium | 2 Library, 3 Catalogue curation | Done for the library (area 2, HYPOTHESIS script heuristic: documents have no language field); search results use the API's `language`. area 3 done in the backlog sweep: `EvidenceQuote lang` from the draft document's `language` |
-| K3 | Arabic titles ending in Latin text ("… (sample)") render `'(sample) …'` inside English sentences. The bidi is correct; the reading may still be odd. Watch it in the critique and in any user test. | Low | 1 Shell + Home | Open |
+| K2 | Content has `dir="auto"` but no `lang`, so NVDA probably reads Arabic with the English voice. Set `lang` where the language is known (a document's `language`). | Medium | 2 Library, 3 Catalogue curation | Superseded (2026-10-22): the portal is English only (PRODUCT.md), so content is in the page's language and needs no `lang` of its own |
+| K3 | Arabic titles ending in Latin text ("… (sample)") render `'(sample) …'` inside English sentences. The bidi is correct; the reading may still be odd. Watch it in the critique and in any user test. | Low | 1 Shell + Home | Closed (2026-10-22): the portal is English only (PRODUCT.md) |
 | K4 | On a phone, the masthead's account name wraps to two lines. Use a short account label below 480px. | Low | 1 Shell + Home | Done (area 1: one line, truncated, full name in `title` and the accessible name) |
 | K5 | A missing favicon logs a 404 on every page (it predates the redesign). | Low | 1 Shell + Home | Done (area 1: a neutral ledger mark; swap for the e& asset when supplied) |
 | K6 | The maroon share is about 4–6% of a view, under the calm rule's "about 8–10%"; red is at most 0.06%. This is read as within the calm intent (a ceiling, not a quota). Don't add maroon to hit a number; revisit only if the critique finds actions or selection hard to spot. | Low | all | Open |
@@ -40,8 +40,8 @@ is **Blocked** until the service changes, and then it becomes a follow-up item.
 | ID | Gap | UI workaround today |
 |---|---|---|
 | BG1 | No job-list endpoint | Jobs derived from documents plus this session's jobs |
-| BG2 | Approval doesn't record coverage ("seen") | Coverage is shown at approval, but not stored |
-| BG3 | No reopen of decisions | A 6-second delayed commit with undo |
+| BG2 | ~~Approval doesn't record coverage ("seen")~~ Done: the approval keeps `coverage`, and "seen" is kept in the browser per reviewer and version | ~~Coverage is shown at approval, but not stored~~ |
+| BG3 | No reopen of decisions | None built: a suggestion decision is sent at once, and focus mode sends nothing until its summary is confirmed. The planned 6-second delayed commit with undo (interaction model §4) was never wired in; its unused `useDelayedCommit` and `UndoToast` were removed (review recommendation 14) |
 | BG4 | Bulk marking is not recorded | Known in this session only |
 | BG5 | The organisation audit has no field diff | History lists events without "what changed" |
 | BG6 | Check results are not stored | Kept for the session, marked stale on change |
@@ -82,7 +82,7 @@ Filled in by `/redesign-area` step 7 (MEDIUM and LOW findings), one row per find
 | Area 2 | `frontend/src/library/ReviewDesk.tsx` (`PassageColumns`) — LOW — "Flagged" uses the `held` tone, whose icon is the malware-scan shield; a reading warning wants its own (warning) tone and icon in the design system | Low | Done (backlog sweep): a `warning` status tone with a flag icon |
 | Area 2 | `frontend/src/design/components/data.css` — LOW — selected and current rows share `--table-row-current` in normal colours (forced colours now differ: dashed vs solid); a distinct selected-row token. No `:active` states anywhere yet | Low | Done (backlog sweep): `--table-row-selected` (`--color-selected-row`) |
 | Area 2 | `frontend/src/library/DocumentPage.tsx` (`Processing`) — LOW — the record's reading line has no elapsed time or "Still reading (1 min 20 s)" after 60 s (§6 slow state); only Jobs shows it — reuse `elapsed()` | Low | Done (backlog sweep): "Still reading (1 min 20 s)" after 60 s |
-| Area 2 | `frontend/src/library/ReviewDesk.tsx` (`OriginalPreview`) — LOW — the preview image has no width/height, so the pane shifts when it loads; the API doesn't return its size | Low | Open |
+| Area 2 | `frontend/src/library/review/OriginalPreview.tsx` — LOW — the preview image has no width/height, so the pane shifts when it loads; the API doesn't return its size | Low | Open |
 | Area 2 | `frontend/src/library/*.tsx` — LOW — clock times are formatted in four places with a hard-coded "en-GB" (`timeOf`, `clock`); one shared formatter in `home/format.ts` | Low | Done (backlog sweep): `formatClock` and `formatElapsed` in `home/format.ts` |
 | Area 2 | `frontend/src/app/App.tsx` — LOW — each library page is its own `lazy()`; the first open of each tab suspends for a tick (the chunk is preloaded 1.5 s after the first paint) | Low | Done (backlog sweep): one loader per area, so a loaded area's other pages render without a second loading state |
 | Area 2 | `frontend/src/shell/panels.tsx` — LOW — Jobs' Try again / Stop show no busy state (a second press is ignored, `actions.act`); `JobTray` could take a busy job id | Low | Done (backlog sweep): "Trying again…" / "Stopping…" with `aria-busy` |

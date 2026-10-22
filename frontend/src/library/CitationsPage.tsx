@@ -9,7 +9,7 @@ import { requirementWorkHref } from "../auth/paths";
 import { formatDay } from "../home/format";
 import { useDocumentContext } from "./documentContext";
 
-import { contentLang, humanWhere, plural } from "./where";
+import { humanWhere, plural } from "./where";
 
 /** A requirement's page in requirement work, or null when it is not connected. */
 const requirementHref = (requirementId: string) =>
@@ -18,7 +18,7 @@ const requirementHref = (requirementId: string) =>
 /** A requirement's title: a link into Requirement AI when it is connected, its words alone otherwise. */
 function RequirementTitle({ id, title }: { id: string; title: string }) {
   const href = requirementHref(id);
-  const words = <bdi lang={contentLang(title)}>{title}</bdi>;
+  const words = <bdi>{title}</bdi>;
   return href === null ? words : <a href={href}>{words}<Leaves /></a>;
 }
 
@@ -95,7 +95,7 @@ function Proposals() {
         </>
       ),
     },
-    { id: "statement", header: "Proposal", bidi: true, cell: (item) => <span className="lib-clamp" lang={contentLang(item.statement)}>{item.statement}</span> },
+    { id: "statement", header: "Proposal", bidi: true, cell: (item) => <span className="lib-clamp">{item.statement}</span> },
     {
       id: "status",
       header: "Status",
@@ -181,7 +181,7 @@ function SourceImpact() {
       bidi: true,
       cell: (item) => (
         <>
-          <span className="lib-clamp" lang={contentLang(item.dependency.statement)}>{item.dependency.statement}</span>
+          <span className="lib-clamp">{item.dependency.statement}</span>
           <span className="lib-detail lib-detail--plain">
             {item.dependency.lineage.via.length > 0 ? <>Through <bdi>{item.dependency.lineage.via.join(" › ")}</bdi></> : "Cites it directly"} · version {item.dependency.lineage.citation.version_number}, <bdi>{humanWhere(item.dependency.lineage.citation.location)}</bdi>
           </span>

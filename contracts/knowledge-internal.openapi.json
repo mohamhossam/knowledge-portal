@@ -1,12 +1,106 @@
 {
   "components": {
     "schemas": {
+      "AcceptedCitation": {
+        "description": "Where an accepted suggestion was read, kept with the fact it produced.\n\n``location`` is where in the source the passage is, as the reading named it (\"\u00a74.1 \u203a\nTable 2, row 3\"), and ``quote`` its words. For a document reading, ``document_version_id``\nand ``document`` name the uploaded version and its title, so the passage can be found\nagain after the suggestion itself is gone; a suggestion read from the catalogue or from\na change request names none.",
+        "properties": {
+          "document": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document"
+          },
+          "document_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Version Id"
+          },
+          "location": {
+            "title": "Location",
+            "type": "string"
+          },
+          "quote": {
+            "title": "Quote",
+            "type": "string"
+          }
+        },
+        "required": [
+          "location",
+          "quote"
+        ],
+        "title": "AcceptedCitation",
+        "type": "object"
+      },
+      "AcceptedCitationSchema": {
+        "description": "Where an accepted suggestion was read: the place and its words, and the document\nversion and title when it came from one of the draft's documents.",
+        "properties": {
+          "document": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document"
+          },
+          "document_version_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Version Id"
+          },
+          "location": {
+            "maxLength": 10000,
+            "title": "Location",
+            "type": "string"
+          },
+          "quote": {
+            "maxLength": 10000,
+            "title": "Quote",
+            "type": "string"
+          }
+        },
+        "required": [
+          "location",
+          "quote"
+        ],
+        "title": "AcceptedCitationSchema",
+        "type": "object"
+      },
       "AcceptedFrom": {
-        "description": "One accepted suggestion that created or extended an entity.\n\nIt records that the suggestion contributed, not which fields it touched: the\ncandidate's citations are the detail while the draft keeps them.",
+        "description": "One accepted suggestion that created or extended an entity.\n\nIt records that the suggestion contributed, not which fields it touched, and where the\nsuggestion was read (its first citations), so the fact still leads to its passage once\nthe draft's suggestions are replaced by a later reading (review recommendation 6).",
         "properties": {
           "candidate_id": {
             "title": "Candidate Id",
             "type": "string"
+          },
+          "citations": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedCitation"
+            },
+            "title": "Citations",
+            "type": "array"
           },
           "decided_at": {
             "format": "date-time",
@@ -37,12 +131,21 @@
         "type": "object"
       },
       "AcceptedFromSchema": {
-        "description": "An accepted suggestion recorded on what it produced: the model and prompt that\nsuggested it, and who accepted it when (ADR-0120).",
+        "description": "An accepted suggestion recorded on what it produced: the model and prompt that\nsuggested it, who accepted it when (ADR-0120), and where it was read.",
         "properties": {
           "candidate_id": {
             "maxLength": 200,
             "title": "Candidate Id",
             "type": "string"
+          },
+          "citations": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedCitationSchema"
+            },
+            "maxItems": 3,
+            "title": "Citations",
+            "type": "array"
           },
           "decided_at": {
             "format": "date-time",
@@ -174,6 +277,17 @@
             ],
             "title": "Mode"
           },
+          "mode_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode Id"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -225,6 +339,17 @@
               }
             ],
             "title": "Phase"
+          },
+          "phase_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phase Id"
           },
           "point_of_no_return": {
             "anyOf": [
@@ -368,6 +493,17 @@
               }
             ],
             "title": "Interface"
+          },
+          "interface_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interface Id"
           },
           "open_api_ids": {
             "default": [],
@@ -540,6 +676,18 @@
               }
             ],
             "title": "Interface"
+          },
+          "interface_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interface Id"
           },
           "open_api_ids": {
             "default": [],
@@ -771,6 +919,18 @@
             ],
             "title": "Mode"
           },
+          "mode_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode Id"
+          },
           "name": {
             "maxLength": 300,
             "title": "Name",
@@ -828,6 +988,18 @@
               }
             ],
             "title": "Phase"
+          },
+          "phase_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phase Id"
           },
           "point_of_no_return": {
             "anyOf": [
@@ -1830,6 +2002,17 @@
             ],
             "title": "Kind"
           },
+          "kind_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind Id"
+          },
           "source": {
             "anyOf": [
               {
@@ -1881,6 +2064,18 @@
               }
             ],
             "title": "Kind"
+          },
+          "kind_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind Id"
           },
           "source": {
             "anyOf": [
@@ -5150,6 +5345,17 @@
             "title": "Quality",
             "type": "string"
           },
+          "quality_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality Id"
+          },
           "source": {
             "anyOf": [
               {
@@ -5200,6 +5406,18 @@
             "maxLength": 300,
             "title": "Quality",
             "type": "string"
+          },
+          "quality_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality Id"
           },
           "source": {
             "anyOf": [
@@ -6459,6 +6677,11 @@
             "title": "Decisions",
             "type": "array"
           },
+          "deprecated": {
+            "default": false,
+            "title": "Deprecated",
+            "type": "boolean"
+          },
           "family": {
             "anyOf": [
               {
@@ -6469,6 +6692,17 @@
               }
             ],
             "title": "Family"
+          },
+          "family_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Family Id"
           },
           "former_ids": {
             "default": [],
@@ -6492,6 +6726,17 @@
               }
             ],
             "title": "Lifecycle"
+          },
+          "lifecycle_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifecycle Id"
           },
           "lifecycle_notes": {
             "default": [],
@@ -6588,6 +6833,17 @@
             },
             "title": "Questions",
             "type": "array"
+          },
+          "replaced_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By"
           },
           "rules": {
             "default": [],
@@ -6733,6 +6989,11 @@
             "title": "Decisions",
             "type": "array"
           },
+          "deprecated": {
+            "default": false,
+            "title": "Deprecated",
+            "type": "boolean"
+          },
           "family": {
             "anyOf": [
               {
@@ -6744,6 +7005,18 @@
               }
             ],
             "title": "Family"
+          },
+          "family_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Family Id"
           },
           "former_ids": {
             "default": [],
@@ -6771,6 +7044,18 @@
               }
             ],
             "title": "Lifecycle"
+          },
+          "lifecycle_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifecycle Id"
           },
           "lifecycle_notes": {
             "default": [],
@@ -6879,6 +7164,18 @@
             "maxItems": 5000,
             "title": "Questions",
             "type": "array"
+          },
+          "replaced_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By"
           },
           "rules": {
             "default": [],
@@ -7838,6 +8135,17 @@
             ],
             "title": "Interface"
           },
+          "interface_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interface Id"
+          },
           "label": {
             "title": "Label",
             "type": "string"
@@ -7895,6 +8203,18 @@
               }
             ],
             "title": "Interface"
+          },
+          "interface_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interface Id"
           },
           "label": {
             "maxLength": 10000,
@@ -7980,7 +8300,7 @@
   },
   "info": {
     "title": "Knowledge service internal API",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
   "openapi": "3.1.0",
   "paths": {

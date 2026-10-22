@@ -180,3 +180,22 @@ The product owner decided that the explorer keeps the version's change history.
 - **It is rate-limited.** Each lookup can call the external product catalogue, so it is counted
   per reader against the provider-call limit (`PROVIDER_RATE_LIMIT_PER_MINUTE`), separately from
   admins' AI calls. Past the limit the reader gets 429 with `Retry-After`.
+
+## Amendment 4 — the taxonomy is content (2026-10-22, proposed)
+
+Proposed with recommendation 10 of the 22 October portal review: the explorer's frontend kept
+the catalogue's taxonomy in its own code because the explorer response left it out.
+
+- **The taxonomy is content.** `GET /explorer/release` also returns the version in service's
+  vocabulary terms and curated vocabularies (ADR-0125), its capability domains, and its
+  interface records. Like the rest, they come without who accepted them (ADR-0120), and the
+  route still never returns a draft, documents, the index or an earlier version.
+- **What the frontend hard-coded is data.** Role terms carry a `rank` (strongest first), and a
+  top landscape domain carries a `layout` (`bus`, `above_bus` or `side`) for the landscape map.
+  The committed catalogue holds the order and layout the frontend kept. A version saved before
+  these fields falls back to that order and layout, as the adapter already does for
+  cross-cutting domains.
+- **Read by the label, not the id.** A role or channel-kind term is matched by the codes its
+  labels read as ("Customer data" is `customer-data`), not by an id prefix (`role-`,
+  `channel-`). The explorer names a role by its vocabulary term, and the Solution Architecture
+  document names an interface a step links by its record.

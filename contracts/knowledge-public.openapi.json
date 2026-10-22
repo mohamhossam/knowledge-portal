@@ -18,13 +18,97 @@
         "title": "AcceptAllResponse",
         "type": "object"
       },
+      "AcceptSuggestionsRequest": {
+        "description": "Accept what needs no decision; given ids, only those (the set the person was shown).",
+        "properties": {
+          "expected_revision": {
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "suggestion_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                "maxItems": 5000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggestion Ids"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "AcceptSuggestionsRequest",
+        "type": "object"
+      },
+      "AcceptedCitationSchema": {
+        "description": "Where an accepted suggestion was read: the place and its words, and the document\nversion and title when it came from one of the draft's documents.",
+        "properties": {
+          "document": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document"
+          },
+          "document_version_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Version Id"
+          },
+          "location": {
+            "maxLength": 10000,
+            "title": "Location",
+            "type": "string"
+          },
+          "quote": {
+            "maxLength": 10000,
+            "title": "Quote",
+            "type": "string"
+          }
+        },
+        "required": [
+          "location",
+          "quote"
+        ],
+        "title": "AcceptedCitationSchema",
+        "type": "object"
+      },
       "AcceptedFromSchema": {
-        "description": "An accepted suggestion recorded on what it produced: the model and prompt that\nsuggested it, and who accepted it when (ADR-0120).",
+        "description": "An accepted suggestion recorded on what it produced: the model and prompt that\nsuggested it, who accepted it when (ADR-0120), and where it was read.",
         "properties": {
           "candidate_id": {
             "maxLength": 200,
             "title": "Candidate Id",
             "type": "string"
+          },
+          "citations": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AcceptedCitationSchema"
+            },
+            "maxItems": 3,
+            "title": "Citations",
+            "type": "array"
           },
           "decided_at": {
             "format": "date-time",
@@ -135,6 +219,18 @@
               }
             ],
             "title": "Interface"
+          },
+          "interface_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interface Id"
           },
           "open_api_ids": {
             "default": [],
@@ -366,6 +462,18 @@
             ],
             "title": "Mode"
           },
+          "mode_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode Id"
+          },
           "name": {
             "maxLength": 300,
             "title": "Name",
@@ -423,6 +531,18 @@
               }
             ],
             "title": "Phase"
+          },
+          "phase_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phase Id"
           },
           "point_of_no_return": {
             "anyOf": [
@@ -1057,11 +1177,6 @@
             "title": "File",
             "type": "string"
           },
-          "language": {
-            "maxLength": 20,
-            "title": "Language",
-            "type": "string"
-          },
           "title": {
             "maxLength": 300,
             "title": "Title",
@@ -1071,7 +1186,6 @@
         "required": [
           "file",
           "title",
-          "language",
           "expected_revision"
         ],
         "title": "Body_upload_document_architecture_knowledge_releases__release_id__documents_post",
@@ -1091,16 +1205,10 @@
             "maxItems": 20,
             "title": "Files",
             "type": "array"
-          },
-          "language": {
-            "maxLength": 20,
-            "title": "Language",
-            "type": "string"
           }
         },
         "required": [
           "files",
-          "language",
           "expected_revision"
         ],
         "title": "Body_upload_documents_architecture_knowledge_releases__release_id__documents_batch_post",
@@ -1285,6 +1393,16 @@
             ],
             "title": "Broader Id"
           },
+          "close_match": {
+            "default": [],
+            "items": {
+              "maxLength": 300,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Close Match",
+            "type": "array"
+          },
           "confidence": {
             "anyOf": [
               {
@@ -1406,6 +1524,18 @@
               }
             ],
             "title": "Kind"
+          },
+          "kind_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind Id"
           },
           "source": {
             "anyOf": [
@@ -1625,18 +1755,6 @@
             "maxLength": 300,
             "title": "Name",
             "type": "string"
-          },
-          "name_ar": {
-            "anyOf": [
-              {
-                "maxLength": 300,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name Ar"
           },
           "parent_domain_id": {
             "anyOf": [
@@ -1860,18 +1978,6 @@
             "maxLength": 300,
             "title": "Name",
             "type": "string"
-          },
-          "name_ar": {
-            "anyOf": [
-              {
-                "maxLength": 300,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name Ar"
           },
           "parent_id": {
             "anyOf": [
@@ -2931,6 +3037,7 @@
           "change_request",
           "concept",
           "vocabulary_term",
+          "vocabulary",
           "interface",
           "realisation",
           "portfolio_node"
@@ -3394,6 +3501,49 @@
         "title": "ConceptOverridesResponse",
         "type": "object"
       },
+      "ConceptSchemeSchema": {
+        "description": "A vocabulary a curator defines beside the built-in ones, and the free-text fields\nits terms are linked to (review recommendation 9).",
+        "properties": {
+          "definition": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "fields": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/VocabularyField"
+            },
+            "maxItems": 5000,
+            "title": "Fields",
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 300,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ConceptSchemeSchema",
+        "type": "object"
+      },
       "ConflictScopeSchema": {
         "properties": {
           "order_types": {
@@ -3759,6 +3909,47 @@
         ],
         "title": "CorpusState",
         "type": "string"
+      },
+      "CoverageResponse": {
+        "description": "What the version holds that nothing links to (review recommendation 17).",
+        "properties": {
+          "unconsumed_interfaces": {
+            "items": {
+              "$ref": "#/components/schemas/OrphanResponse"
+            },
+            "title": "Unconsumed Interfaces",
+            "type": "array"
+          },
+          "unlinked_capabilities": {
+            "items": {
+              "$ref": "#/components/schemas/OrphanResponse"
+            },
+            "title": "Unlinked Capabilities",
+            "type": "array"
+          },
+          "unplaced_systems": {
+            "items": {
+              "$ref": "#/components/schemas/OrphanResponse"
+            },
+            "title": "Unplaced Systems",
+            "type": "array"
+          },
+          "unused_terms": {
+            "items": {
+              "$ref": "#/components/schemas/OrphanResponse"
+            },
+            "title": "Unused Terms",
+            "type": "array"
+          }
+        },
+        "required": [
+          "unlinked_capabilities",
+          "unused_terms",
+          "unconsumed_interfaces",
+          "unplaced_systems"
+        ],
+        "title": "CoverageResponse",
+        "type": "object"
       },
       "CreateVersionRequest": {
         "properties": {
@@ -4478,6 +4669,21 @@
             "title": "Relationships",
             "type": "array"
           },
+          "schemes": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ConceptSchemeSchema"
+                },
+                "maxItems": 5000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schemes"
+          },
           "sources": {
             "anyOf": [
               {
@@ -4595,6 +4801,14 @@
       "ExplorerReleaseResponse": {
         "description": "The version in service as the explorer reads it: its content, never its documents,\nindex, version history or who accepted what (requirement-portal ADR-0101, ADR-0120).\nThe change requests applied to it are part of its content, for the Solution\nArchitecture document (step 7).",
         "properties": {
+          "capability_domains": {
+            "items": {
+              "$ref": "#/components/schemas/CapabilityDomainSchema"
+            },
+            "maxItems": 5000,
+            "title": "Capability Domains",
+            "type": "array"
+          },
           "change_history": {
             "items": {
               "$ref": "#/components/schemas/ChangeRequestRecordSchema"
@@ -4622,6 +4836,14 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "interfaces": {
+            "items": {
+              "$ref": "#/components/schemas/SystemInterfaceSchema"
+            },
+            "maxItems": 5000,
+            "title": "Interfaces",
+            "type": "array"
           },
           "journeys": {
             "items": {
@@ -4686,6 +4908,22 @@
             "title": "Relationships",
             "type": "array"
           },
+          "schemes": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptSchemeSchema"
+            },
+            "maxItems": 5000,
+            "title": "Schemes",
+            "type": "array"
+          },
+          "source_references": {
+            "items": {
+              "$ref": "#/components/schemas/SourceReferenceSchema"
+            },
+            "maxItems": 50000,
+            "title": "Source References",
+            "type": "array"
+          },
           "sources": {
             "items": {
               "$ref": "#/components/schemas/KnowledgeSourceSchema"
@@ -4700,6 +4938,14 @@
             },
             "maxItems": 5000,
             "title": "Systems",
+            "type": "array"
+          },
+          "vocabulary": {
+            "items": {
+              "$ref": "#/components/schemas/VocabularyTermSchema"
+            },
+            "maxItems": 5000,
+            "title": "Vocabulary",
             "type": "array"
           }
         },
@@ -5128,6 +5374,51 @@
           "to_activity"
         ],
         "title": "FlowRuleSchema",
+        "type": "object"
+      },
+      "ForwardedResponse": {
+        "description": "An id still held that the version in service names otherwise now: the same thing\nrenamed, or retired with another in its place (review recommendation 7). A squad seat's\nconcept says which system the seat is scoped to.",
+        "properties": {
+          "kind": {
+            "enum": [
+              "offering",
+              "portfolio_node",
+              "concept"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "new_id": {
+            "title": "New Id",
+            "type": "string"
+          },
+          "old_id": {
+            "title": "Old Id",
+            "type": "string"
+          },
+          "renamed": {
+            "title": "Renamed",
+            "type": "boolean"
+          },
+          "system_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Id"
+          }
+        },
+        "required": [
+          "kind",
+          "old_id",
+          "new_id",
+          "renamed"
+        ],
+        "title": "ForwardedResponse",
         "type": "object"
       },
       "GoldenMapper": {
@@ -6661,6 +6952,16 @@
             ],
             "title": "Concept Id"
           },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "domain_id": {
             "anyOf": [
               {
@@ -6682,6 +6983,18 @@
             "maxLength": 300,
             "title": "Name",
             "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
           },
           "triggers": {
             "items": {
@@ -6727,10 +7040,6 @@
             "title": "Id",
             "type": "string"
           },
-          "language": {
-            "title": "Language",
-            "type": "string"
-          },
           "mime_type": {
             "title": "Mime Type",
             "type": "string"
@@ -6758,7 +7067,6 @@
           "title",
           "filename",
           "mime_type",
-          "language",
           "checksum",
           "storage_key",
           "uploaded_by",
@@ -6981,6 +7289,22 @@
             "title": "Revision",
             "type": "integer"
           },
+          "schemes": {
+            "items": {
+              "$ref": "#/components/schemas/ConceptSchemeSchema"
+            },
+            "maxItems": 5000,
+            "title": "Schemes",
+            "type": "array"
+          },
+          "source_references": {
+            "items": {
+              "$ref": "#/components/schemas/SourceReferenceSchema"
+            },
+            "maxItems": 50000,
+            "title": "Source References",
+            "type": "array"
+          },
           "sources": {
             "items": {
               "$ref": "#/components/schemas/KnowledgeSourceSchema"
@@ -7188,22 +7512,20 @@
             "title": "Id",
             "type": "string"
           },
-          "name": {
-            "maxLength": 300,
-            "title": "Name",
-            "type": "string"
-          },
-          "name_ar": {
+          "layout": {
             "anyOf": [
               {
-                "maxLength": 300,
-                "type": "string"
+                "$ref": "#/components/schemas/LandscapeLayout"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Name Ar"
+            ]
+          },
+          "name": {
+            "maxLength": 300,
+            "title": "Name",
+            "type": "string"
           },
           "parent_id": {
             "anyOf": [
@@ -7224,6 +7546,16 @@
         ],
         "title": "LandscapeDomainSchema",
         "type": "object"
+      },
+      "LandscapeLayout": {
+        "description": "Where the landscape map draws a top domain apart from the order of layers.",
+        "enum": [
+          "bus",
+          "above_bus",
+          "side"
+        ],
+        "title": "LandscapeLayout",
+        "type": "string"
       },
       "LibraryAdminAction": {
         "enum": [
@@ -7337,6 +7669,16 @@
       },
       "LibraryApprovalRequest": {
         "properties": {
+          "coverage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewCoverageRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "expected_version": {
             "minimum": 1.0,
             "title": "Expected Version",
@@ -8673,6 +9015,18 @@
             "title": "Quality",
             "type": "string"
           },
+          "quality_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quality Id"
+          },
           "source": {
             "anyOf": [
               {
@@ -9209,6 +9563,49 @@
         "title": "OriginalPreview",
         "type": "object"
       },
+      "OrphanResponse": {
+        "description": "An item nothing links to, with the system or vocabulary it belongs to.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "owner_id",
+          "owner"
+        ],
+        "title": "OrphanResponse",
+        "type": "object"
+      },
       "OwnedSeatResponse": {
         "properties": {
           "resource": {
@@ -9549,6 +9946,11 @@
               }
             ]
           },
+          "deprecated": {
+            "default": false,
+            "title": "Deprecated",
+            "type": "boolean"
+          },
           "description": {
             "anyOf": [
               {
@@ -9571,6 +9973,18 @@
             "title": "Level",
             "type": "string"
           },
+          "level_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level Id"
+          },
           "name": {
             "maxLength": 300,
             "title": "Name",
@@ -9587,6 +10001,18 @@
               }
             ],
             "title": "Parent Id"
+          },
+          "replaced_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By"
           },
           "source": {
             "anyOf": [
@@ -9804,6 +10230,11 @@
             "title": "Decisions",
             "type": "array"
           },
+          "deprecated": {
+            "default": false,
+            "title": "Deprecated",
+            "type": "boolean"
+          },
           "family": {
             "anyOf": [
               {
@@ -9815,6 +10246,18 @@
               }
             ],
             "title": "Family"
+          },
+          "family_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Family Id"
           },
           "former_ids": {
             "default": [],
@@ -9842,6 +10285,18 @@
               }
             ],
             "title": "Lifecycle"
+          },
+          "lifecycle_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifecycle Id"
           },
           "lifecycle_notes": {
             "default": [],
@@ -9950,6 +10405,18 @@
             "maxItems": 5000,
             "title": "Questions",
             "type": "array"
+          },
+          "replaced_by": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced By"
           },
           "rules": {
             "default": [],
@@ -10180,6 +10647,16 @@
           "chunking_policy": {
             "title": "Chunking Policy",
             "type": "string"
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewCoverage"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "fingerprint": {
             "title": "Fingerprint",
@@ -10702,10 +11179,6 @@
             "title": "Id",
             "type": "string"
           },
-          "language": {
-            "title": "Language",
-            "type": "string"
-          },
           "location": {
             "title": "Location",
             "type": "string"
@@ -10763,7 +11236,6 @@
           "original_text",
           "search_text",
           "content_hash",
-          "language",
           "token_count",
           "chunking_policy",
           "start_offset",
@@ -10775,6 +11247,14 @@
       "ReferenceFlagResponse": {
         "description": "A squad or product naming what the version in service no longer has, or a product\nwhose systems differ from what its offerings name, or that is linked to nothing.",
         "properties": {
+          "forwarded": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ForwardedResponse"
+            },
+            "title": "Forwarded",
+            "type": "array"
+          },
           "replaced_systems": {
             "default": [],
             "items": {
@@ -11455,6 +11935,72 @@
           "reviewer"
         ],
         "title": "ReviewConfirmation",
+        "type": "object"
+      },
+      "ReviewCoverage": {
+        "description": "How much of a version the approver looked at, as their review desk counted it.\n\nA passage counts as seen once it held the reviewer's focus for a moment; passing\nthrough it does not. Flagged passages are those extraction warned about. The counts\nare the reviewer's own record, kept with the approval (PRODUCT.md: reviewed means seen).",
+        "properties": {
+          "flagged": {
+            "default": 0,
+            "title": "Flagged",
+            "type": "integer"
+          },
+          "flagged_seen": {
+            "default": 0,
+            "title": "Flagged Seen",
+            "type": "integer"
+          },
+          "passages": {
+            "title": "Passages",
+            "type": "integer"
+          },
+          "seen": {
+            "title": "Seen",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "passages",
+          "seen"
+        ],
+        "title": "ReviewCoverage",
+        "type": "object"
+      },
+      "ReviewCoverageRequest": {
+        "description": "How much of the version the approver looked at, as their review desk counted it.",
+        "properties": {
+          "flagged": {
+            "default": 0,
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Flagged",
+            "type": "integer"
+          },
+          "flagged_seen": {
+            "default": 0,
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Flagged Seen",
+            "type": "integer"
+          },
+          "passages": {
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Passages",
+            "type": "integer"
+          },
+          "seen": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Seen",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "passages",
+          "seen"
+        ],
+        "title": "ReviewCoverageRequest",
         "type": "object"
       },
       "ReviewRequest": {
@@ -12157,6 +12703,69 @@
         "title": "SourceLineage",
         "type": "object"
       },
+      "SourceReferenceSchema": {
+        "description": "A source line the version's facts write, read once against its register (review\nrecommendation 5): the registered source it names, the words that name it, what follows\nthem as written, and where in the source. Screens look a fact's line up here rather than\nmatching it themselves.",
+        "properties": {
+          "cited": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cited"
+          },
+          "rest": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rest"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "text": {
+            "maxLength": 10000,
+            "title": "Text",
+            "type": "string"
+          },
+          "where": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Where"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "SourceReferenceSchema",
+        "type": "object"
+      },
       "SquadRequest": {
         "properties": {
           "expected_revision": {
@@ -12376,6 +12985,16 @@
             "title": "Aliases",
             "type": "array"
           },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceConfidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "description": {
             "anyOf": [
               {
@@ -12398,17 +13017,17 @@
             "title": "Name",
             "type": "string"
           },
-          "name_ar": {
+          "source": {
             "anyOf": [
               {
-                "maxLength": 300,
+                "maxLength": 10000,
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Name Ar"
+            "title": "Source"
           },
           "technology": {
             "anyOf": [
@@ -12421,6 +13040,18 @@
               }
             ],
             "title": "Technology"
+          },
+          "technology_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Technology Id"
           }
         },
         "required": [
@@ -12551,18 +13182,6 @@
             "maxLength": 300,
             "title": "Name",
             "type": "string"
-          },
-          "name_ar": {
-            "anyOf": [
-              {
-                "maxLength": 300,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name Ar"
           },
           "owner": {
             "anyOf": [
@@ -13236,6 +13855,18 @@
             ],
             "title": "Interface"
           },
+          "interface_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interface Id"
+          },
           "label": {
             "maxLength": 10000,
             "title": "Label",
@@ -13521,13 +14152,22 @@
         "type": "object"
       },
       "VocabularyField": {
+        "description": "Where the catalogue writes a value a vocabulary covers.\n\nThe first six are bound to built-in schemes. The rest are free text until a curator\nbinds a scheme of their own to them (``ConceptScheme.fields``).",
         "enum": [
           "activity_etom",
           "activity_role",
           "channel_kind",
           "component_kind",
           "responsibility_role",
-          "integration_open_api"
+          "integration_open_api",
+          "nfr_quality",
+          "offering_family",
+          "offering_lifecycle",
+          "rule_kind",
+          "activity_mode",
+          "activity_phase",
+          "portfolio_level",
+          "component_technology"
         ],
         "title": "VocabularyField",
         "type": "string"
@@ -13581,21 +14221,8 @@
         "title": "VocabularyRefSchema",
         "type": "object"
       },
-      "VocabularyScheme": {
-        "enum": [
-          "etom_process",
-          "channel_kind",
-          "component_kind",
-          "responsibility_role",
-          "open_api",
-          "information_entity",
-          "document_type"
-        ],
-        "title": "VocabularyScheme",
-        "type": "string"
-      },
       "VocabularyTermSchema": {
-        "description": "A term of a controlled vocabulary: an eTOM process, a channel or component kind, a\nrole, an Open API or an information entity.",
+        "description": "A term of a controlled vocabulary: an eTOM process, a channel or component kind, a\nrole, an Open API or an information entity, or a term of a vocabulary a curator\ndefined (review recommendation 9).",
         "properties": {
           "accepted": {
             "default": [],
@@ -13627,6 +14254,16 @@
               }
             ],
             "title": "Broader Id"
+          },
+          "close_match": {
+            "default": [],
+            "items": {
+              "maxLength": 300,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Close Match",
+            "type": "array"
           },
           "confidence": {
             "anyOf": [
@@ -13689,6 +14326,18 @@
             "title": "Pref Label",
             "type": "string"
           },
+          "rank": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
           "replaced_by": {
             "anyOf": [
               {
@@ -13702,7 +14351,10 @@
             "title": "Replaced By"
           },
           "scheme": {
-            "$ref": "#/components/schemas/VocabularyScheme"
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Scheme",
+            "type": "string"
           },
           "source": {
             "anyOf": [
@@ -15684,6 +16336,70 @@
         ]
       }
     },
+    "/architecture-knowledge/releases/{release_id}/coverage": {
+      "get": {
+        "description": "What the version holds that nothing links to; publishing is not held for it.",
+        "operationId": "catalogue_coverage_architecture_knowledge_releases__release_id__coverage_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "release_id",
+            "required": true,
+            "schema": {
+              "title": "Release Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Fake-Actor-Id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Fake-Actor-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Catalogue Coverage",
+        "tags": [
+          "architecture knowledge"
+        ]
+      }
+    },
     "/architecture-knowledge/releases/{release_id}/derived-dependencies": {
       "post": {
         "description": "Suggest each dependency the draft's interfaces and journeys say between two systems\nin service, citing what says it (ADR-0119).\n\nThe suggestions replace the undecided ones of the previous reading; a dependency in the\ndraft already, or rejected before, is left out.",
@@ -16889,7 +17605,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RevisionRequest"
+                "$ref": "#/components/schemas/AcceptSuggestionsRequest"
               }
             }
           },

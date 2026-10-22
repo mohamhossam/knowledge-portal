@@ -209,7 +209,6 @@ def test_a_lost_upload_rolls_its_blob_back() -> None:
             "Atomic design notes",
             "notes.txt",
             "text/plain",
-            "en",
             b"System: Atomic Hub",
             MAINTAINER,
             NOW,

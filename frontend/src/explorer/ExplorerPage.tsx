@@ -8,12 +8,12 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import { api, type ExplorerRelease } from "../api/client";
 import { errorMessage } from "../api/errors";
-import { concerns, roleLabel, sentenceCase } from "../catalogue/catalogue";
+import { concerns, roleNamer, sentenceCase } from "../catalogue/catalogue";
 import { ConnectionsFlowDiagram } from "../catalogue/diagrams/CatalogueDiagrams";
 import type { JourneyView } from "../catalogue/journey/JourneyViews";
 import { NfrSection, RealisationKey, RealisedAs } from "../catalogue/Realisation";
 import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions } from "../catalogue/GovernanceSections";
-import { conflictsFor, questionOf, SourcesContext } from "../catalogue/governance";
+import { conflictsFor, questionOf, sourceRegister, SourcesContext } from "../catalogue/governance";
 import { LifecycleSection } from "../catalogue/LifecycleNotes";
 import { SOURCE_TONE, SOURCE_WORD } from "../catalogue/ontology";
 import { TrackingSection } from "../catalogue/Tracking";
@@ -100,7 +100,7 @@ export function ExplorerPage({ linkSystems }: { linkSystems: boolean }) {
       {scenario ? (
         <>
           <Choose release={release} scenario={scenario} onChoose={choose} />
-          <SourcesContext.Provider value={release.sources ?? []}>
+          <SourcesContext.Provider value={sourceRegister(release)}>
             <ScenarioSheet
               key={`${scenario.offering.id}:${scenario.orderType.code}:${scenario.channel?.id ?? ""}`}
               release={release}
@@ -174,6 +174,8 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
   const orderName = (code: string) => offering.order_types.find((item) => item.code === code)?.name ?? code;
   const names = new Map(release.systems.map((item) => [item.id, item.name]));
   const nameOf = (systemId: string) => names.get(systemId) ?? systemId;
+  // A role by the version's own vocabulary, which the explorer now reads (review recommendation 10).
+  const roleName = roleNamer(release.vocabulary);
   const system = (systemId: string): ReactNode =>
     linkSystems ? (
       <Link to={`/architecture/systems/${encodeURIComponent(systemId)}`} dir="auto">{nameOf(systemId)}</Link>
@@ -229,7 +231,7 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
                 : "Takes part in order tracking"}
           {item.performs.length > 0 && item.supports.length > 0 && <span className="cat-detail">Supports {steps(item.supports)}</span>}
           {item.parts.map(({ part, responsibility }) => (
-            <span key={`${part.id}:${responsibility.role}`} className="cat-detail"><bdi>{roleLabel(responsibility.role)}</bdi> for <bdi>{part.name}</bdi></span>
+            <span key={`${part.id}:${responsibility.role}`} className="cat-detail"><bdi>{roleName(responsibility.role, responsibility.role_id)}</bdi> for <bdi>{part.name}</bdi></span>
           ))}
           {item.tracks && (item.performs.length > 0 || item.supports.length > 0 || item.parts.length > 0) && (
             <span className="cat-detail">Takes part in order tracking</span>
@@ -268,7 +270,7 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
           <ul className="cat-plain">
             {responsibilities.map((item) => (
               <li key={`${item.system_id}:${item.role}`}>
-                <bdi>{roleLabel(item.role)}</bdi>: {system(item.system_id)}
+                <bdi>{roleName(item.role, item.role_id)}</bdi>: {system(item.system_id)}
                 {item.description && <span className="cat-detail" dir="auto">{item.description}</span>}
               </li>
             ))}

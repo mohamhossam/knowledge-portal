@@ -33,6 +33,7 @@ from knowledge_portal.domain.architecture.citations import (
     unregistered_citations,
 )
 from knowledge_portal.domain.architecture.concepts import BusinessCapability
+from knowledge_portal.domain.architecture.coverage import CatalogueCoverage, coverage
 from knowledge_portal.domain.architecture.diff import CatalogueDiff, diff_releases
 from knowledge_portal.domain.architecture.governance import KnowledgeSource, SourceConflict
 from knowledge_portal.domain.architecture.identity import renamed_journey, renamed_offering
@@ -54,7 +55,7 @@ from knowledge_portal.domain.architecture.knowledge import (
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import ProductOffering
 from knowledge_portal.domain.architecture.realisations import RealisationRecord
-from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm
+from knowledge_portal.domain.architecture.vocabularies import ConceptScheme, VocabularyTerm
 
 
 class KnowledgeNotFoundError(Exception):
@@ -244,6 +245,7 @@ class ManageArchitectureKnowledge:
         vocabulary: tuple[VocabularyTerm, ...] | None = None,
         interfaces: tuple[SystemInterface, ...] | None = None,
         realisations: tuple[RealisationRecord, ...] | None = None,
+        schemes: tuple[ConceptScheme, ...] | None = None,
     ) -> ArchitectureKnowledge:
         require_maintainer(actor)
         current = self.get(release_id)
@@ -262,6 +264,7 @@ class ManageArchitectureKnowledge:
             portfolio=portfolio,
             business_capabilities=business_capabilities,
             vocabulary=vocabulary,
+            schemes=schemes,
             interfaces=interfaces,
             realisations=realisations,
         )
@@ -294,6 +297,12 @@ class ManageArchitectureKnowledge:
         """What the version's facts cite that is not in its source register."""
         require_maintainer(actor)
         return unregistered_citations(self.get(release_id))
+
+    def coverage(self, release_id: str, actor: Actor) -> CatalogueCoverage:
+        """What the version holds that nothing links to: unlinked capabilities, unused terms,
+        unconsumed interfaces and unplaced systems."""
+        require_maintainer(actor)
+        return coverage(self.get(release_id))
 
     def rename_offering(
         self, release_id: str, expected_revision: int, old_id: str, new_id: str, actor: Actor
@@ -430,6 +439,7 @@ class ManageArchitectureKnowledge:
             portfolio=imported.portfolio,
             business_capabilities=imported.business_capabilities,
             vocabulary=imported.vocabulary,
+            schemes=imported.schemes,
             interfaces=imported.interfaces,
             realisations=imported.realisations,
         )
@@ -468,6 +478,7 @@ class ManageArchitectureKnowledge:
             portfolio=imported.portfolio,
             business_capabilities=imported.business_capabilities,
             vocabulary=imported.vocabulary,
+            schemes=imported.schemes,
             interfaces=imported.interfaces,
             realisations=imported.realisations,
         )

@@ -30,7 +30,8 @@ export function Gate({ children, readers }: { children: ReactNode; readers?: Rea
   return <>{children}</>;
 }
 
-function Notice({ title, busy = false, children }: { title: string; busy?: boolean; children: ReactNode }) {
+/** A page of its own, outside the shell: sign-in, no access, or the portal failing as a whole. */
+export function Notice({ title, busy = false, children }: { title: string; busy?: boolean; children: ReactNode }) {
   useEffect(() => {
     document.title = `${title} · Knowledge portal`;
   }, [title]);

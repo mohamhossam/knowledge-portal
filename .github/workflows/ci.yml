@@ -48,6 +48,23 @@ jobs:
           uv sync --locked --extra dev
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
+      - name: Internal contract regenerated and versioned against what it replaces
+        # Review recommendation 11: the committed contract is what the code generates, and a
+        # change to /internal/* raises its version as far as the change needs (breaking: MAJOR,
+        # additive: MINOR) against the pull request's base, or the commit a push replaces.
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          base=HEAD
+          if [ -n "$BASE_REF" ]; then
+            git fetch --no-tags --depth=1 origin "$BASE_REF"
+            base="origin/$BASE_REF"
+          elif [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
+            git fetch --no-tags --depth=1 origin "$BEFORE" && base="$BEFORE"
+          fi
+          python scripts/check_internal_contract.py --base "$base"
+
       - name: pytest with coverage
         # The floor lives in pyproject.toml ([tool.coverage.report] fail_under)
         # and is measured with PostgreSQL, as here.

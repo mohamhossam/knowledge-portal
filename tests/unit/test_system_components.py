@@ -77,7 +77,6 @@ OWNER = {"X-Fake-Actor-Id": "fake-owner"}
 QUOTE_ENGINE = SystemComponent(
     "quote-engine",
     "Quote engine",
-    name_ar="محرك العروض",
     description="Prices and issues quotes.",
     aliases=("CPQ",),
     technology="Microservice",
@@ -325,7 +324,6 @@ def _change(**values: Any) -> ChangeOutput:
         "kind": "component",
         "system": "BCRM",
         "name": "Quote engine",
-        "name_ar": None,
         "aliases": [],
         "triggers": [],
         "target_system": None,
@@ -440,7 +438,7 @@ def test_suggested_components_are_accepted_before_their_capabilities(client: Tes
     base = f"/architecture-knowledge/releases/{draft['id']}"
     uploaded = client.post(
         f"{base}/documents",
-        data={"title": "Order Hub", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Order Hub", "expected_revision": draft["revision"]},
         files={"file": ("design.txt", SOURCE, "text/plain")},
         headers=OWNER,
     )

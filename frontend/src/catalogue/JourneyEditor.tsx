@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 
 import type { CatalogueSystem, Channel, Journey, JourneyActivity, Offering, SourceConfidence } from "../api/client";
+import type { Interface } from "./ontology";
 import { Button } from "../design/components";
 import { CONFIDENCE, orderedSteps } from "./catalogue";
 import { AreaField, CheckField, Rows, SelectField, SystemField, TextField } from "./forms";
@@ -31,13 +32,15 @@ const RULE_KINDS = [
  * A whole journey: the offering it fulfils, its steps and who performs each,
  * where it branches, and how steps hand over. Controlled; the caller keeps the value.
  */
-export function JourneyEditor({ value, onChange, systems, offerings, channels = [], names }: {
+export function JourneyEditor({ value, onChange, systems, offerings, channels = [], interfaces = [], names }: {
   value: Journey;
   onChange: (value: Journey) => void;
   systems: CatalogueSystem[];
   offerings: Offering[];
   /** The draft's channels, to say which channels a step happens in. */
   channels?: Channel[];
+  /** The draft's interface records, to say which one a hand-over goes through (review recommendation 8). */
+  interfaces?: Interface[];
   /** Names for things a document mentions that the draft does not have yet. */
   names?: { system: (id: string) => string; offering: (id: string) => string };
 }) {
@@ -58,6 +61,21 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
       : []),
   ];
   const stepOptions = orderedSteps(value).map((step) => ({ value: step.number, label: `${step.number}. ${step.name || "unnamed"}` }));
+  const systemName = (id: string) => systems.find((system) => system.id === id)?.name ?? names?.system(id) ?? id;
+  /** The records a hand-over can go through: those a system of the call exposes, as the service checks. */
+  const interfaceOptions = (link: Handover) => {
+    const performer = (number: string) => value.activities.find((step) => step.number === number)?.performing_system_id ?? null;
+    const touched = new Set(
+      [link.from_system_id ?? performer(link.from_activity), link.to_system_id ?? performer(link.to_activity), link.via_system_id].filter(
+        (id): id is string => !!id,
+      ),
+    );
+    const usable = interfaces.filter((item) => touched.has(item.system_id) || item.id === link.interface_id);
+    return [
+      { value: "", label: usable.length ? "Not linked to a record" : "No record a system of this call exposes" },
+      ...usable.map((item) => ({ value: item.id, label: `${item.name} (${systemName(item.system_id)})` })),
+    ];
+  };
   const firstStep = stepOptions[0]?.value ?? "";
 
   return (
@@ -187,7 +205,13 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
             <SelectField label="From step" value={link.from_activity} options={stepOptions} onChange={(from_activity) => update({ from_activity })} />
             <SelectField label="To step" value={link.to_activity} options={stepOptions} onChange={(to_activity) => update({ to_activity })} />
             <TextField label="Interaction" value={link.interaction} onChange={(interaction) => update({ interaction: interaction || null })} />
-            <TextField label="Interface" value={link.interface} onChange={(item) => update({ interface: item || null })} />
+            <TextField label="Interface" value={link.interface} hint="As the source writes it." onChange={(item) => update({ interface: item || null })} />
+            <SelectField
+              label="Goes through the interface record"
+              value={link.interface_id ?? ""}
+              options={interfaceOptions(link)}
+              onChange={(id) => update({ interface_id: id || null })}
+            />
             <TextField label="Payload" value={link.payload} onChange={(payload) => update({ payload: payload || null })} />
             <SelectField
               label="Timing"

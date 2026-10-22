@@ -7,6 +7,9 @@ import type { Release, Suggestion } from "../../api/client";
 import { blockers, bulkAcceptable, changeSentence, lexicon, waitsFor } from "../suggestions";
 import { NextStep } from "./NextStep";
 import { decideChoices, decideQuestions } from "./questions";
+import { checkAxeAfterEach } from "../../test/axe";
+
+checkAxeAfterEach();
 
 const suggestion = (id: string, content: object, extra: object = {}) =>
   ({ id, status: "proposed", match: "new", basis: "stated", possible_matches: [], system_name: null, content: { name: "", text: "", ...content }, ...extra }) as unknown as Suggestion;

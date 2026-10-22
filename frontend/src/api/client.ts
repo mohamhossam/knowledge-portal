@@ -16,6 +16,8 @@ export type LibraryDocument = Schemas["LibraryView"];
 export type ClassificationOptions = Schemas["ClassificationOptions"];
 export type LibraryVersion = Schemas["LibraryVersion"];
 export type Publication = Schemas["Publication"];
+/** How much of a version its approver looked at, as the review desk counted it. */
+export type ReviewCoverage = Schemas["ReviewCoverageRequest"];
 export type Release = Schemas["KnowledgeReleaseResponse"];
 /** The version in service as the explorer reads it: content only, for anyone signed in. */
 export type ExplorerRelease = Schemas["ExplorerReleaseResponse"];
@@ -49,6 +51,8 @@ export type Journey = Schemas["JourneySchema"];
 /** Where orders are placed, and the system each is entered through. */
 export type Channel = Schemas["ChannelSchema"];
 export type KnowledgeSource = Schemas["KnowledgeSourceSchema"];
+/** A fact's source line as the service read it against the register (review recommendation 5). */
+export type SourceReference = Schemas["SourceReferenceSchema"];
 export type SourceLevel = Schemas["SourceLevel"];
 export type SourceConflict = Schemas["SourceConflictSchema"];
 export type JourneyActivity = Schemas["ActivitySchema"];
@@ -126,7 +130,6 @@ export type CorpusFilters = {
 export type FindingFilters = { kind?: FindingKind; age?: FindingAge; ownerId?: string };
 type CitedPassage = Schemas["DocumentPassageResponse"];
 export type CatalogueDocument = Schemas["KnowledgeDocumentVersionResponse"];
-export type DocumentLanguage = "en" | "ar" | "mixed";
 export type Person = Schemas["PersonSchema"];
 export type ValueStream = Schemas["ValueStreamSchema"];
 export type OrgProduct = Schemas["ProductSchema"];
@@ -139,6 +142,8 @@ type SampleRequirements = Schemas["SampleRequirementsResponse"];
 export type SampleRequirement = Schemas["SampleRequirementSchema"];
 export type ImpactComparison = Schemas["ImpactComparisonResponse"];
 export type UnregisteredCitation = Schemas["UnregisteredCitationResponse"];
+export type CatalogueCoverage = Schemas["CoverageResponse"];
+export type Orphan = Schemas["OrphanResponse"];
 export type DraftUpdate = Schemas["DraftUpdateRequest"];
 /** A change request from Requirement AI waiting in the inbox (requirement-portal ADR-0101, step 7). */
 export type ChangeRequest = Schemas["ChangeRequestResponse"];
@@ -276,6 +281,7 @@ export const api = {
   createDraft: (name: string) => post<Release>("/architecture-knowledge/releases", { name }),
   /** What the version's facts cite that its source register does not hold. */
   citations: (releaseId: string) => apiRequest<UnregisteredCitation[]>(`${releasePath(releaseId)}/citations`),
+  coverage: (releaseId: string) => apiRequest<CatalogueCoverage>(`${releasePath(releaseId)}/coverage`),
   /** A new id for an offering or journey; the old one is kept as a former id. */
   renameEntity: (releaseId: string, kind: "offerings" | "journeys", id: string, body: { expected_revision: number; new_id: string }) =>
     post<Release>(`${releasePath(releaseId)}/${kind}/${encodeURIComponent(id)}/rename`, body),
@@ -284,19 +290,17 @@ export const api = {
   discardDraft: async (releaseId: string, expectedRevision: number) => {
     await send(releasePath(releaseId), { method: "DELETE", body: JSON.stringify({ expected_revision: expectedRevision }) });
   },
-  addCatalogueDocument: (releaseId: string, input: { file: File; title: string; language: DocumentLanguage; expectedRevision: number }) => {
+  addCatalogueDocument: (releaseId: string, input: { file: File; title: string; expectedRevision: number }) => {
     const body = new FormData();
     body.set("file", input.file);
     body.set("title", input.title);
-    body.set("language", input.language);
     body.set("expected_revision", String(input.expectedRevision));
     return apiRequest<Release>(`${releasePath(releaseId)}/documents`, { method: "POST", body });
   },
   /** Several files at once: each is added or refused with its reason. */
-  addCatalogueDocuments: (releaseId: string, input: { files: File[]; language: DocumentLanguage; expectedRevision: number }) => {
+  addCatalogueDocuments: (releaseId: string, input: { files: File[]; expectedRevision: number }) => {
     const body = new FormData();
     for (const file of input.files) body.append("files", file);
-    body.set("language", input.language);
     body.set("expected_revision", String(input.expectedRevision));
     return apiRequest<BatchUpload>(`${releasePath(releaseId)}/documents/batch`, { method: "POST", body });
   },
@@ -318,8 +322,12 @@ export const api = {
     (await send(`/architecture-knowledge/documents/versions/${encodeURIComponent(versionId)}/content`)).blob(),
   decide: (releaseId: string, suggestionId: string, body: { expected_revision: number; accept: boolean; content?: SuggestionContent | null }) =>
     post<Release>(`${releasePath(releaseId)}/suggestions/${encodeURIComponent(suggestionId)}/decision`, body),
-  acceptAll: (releaseId: string, expectedRevision: number) =>
-    post<Schemas["AcceptAllResponse"]>(`${releasePath(releaseId)}/suggestions/acceptance`, { expected_revision: expectedRevision }),
+  /** Accepts what needs no decision: only `suggestionIds`, the set the person was shown. */
+  acceptAll: (releaseId: string, expectedRevision: number, suggestionIds: string[]) =>
+    post<Schemas["AcceptAllResponse"]>(`${releasePath(releaseId)}/suggestions/acceptance`, {
+      expected_revision: expectedRevision,
+      suggestion_ids: suggestionIds,
+    }),
   rejectMany: (releaseId: string, expectedRevision: number, suggestionIds: string[]) =>
     post<{ rejected: number }>(`${releasePath(releaseId)}/suggestions/rejection`, {
       expected_revision: expectedRevision,
@@ -441,7 +449,7 @@ export const api = {
   },
   review: (documentId: string, versionId: string, body: ReviewRequest) =>
     post<LibraryDocument>(`${versionPath(documentId, versionId)}/review`, body),
-  approve: (documentId: string, versionId: string, body: { expected_version: number; revision_id: string; fingerprint: string }) =>
+  approve: (documentId: string, versionId: string, body: { expected_version: number; revision_id: string; fingerprint: string; coverage?: ReviewCoverage }) =>
     post<LibraryDocument>(`${versionPath(documentId, versionId)}/approval`, body),
   withdraw: (documentId: string, body: { expected_version: number; reason: string }) =>
     post<LibraryDocument>(`${documentPath(documentId)}/withdrawal`, body),

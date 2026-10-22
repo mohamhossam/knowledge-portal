@@ -7,15 +7,18 @@ import { api, type Release } from "../api/client";
 import { EXPLORED } from "../explorer/fixtures";
 import { catalogue } from "./catalogue";
 import { sourceUses } from "./drafting";
-import { conflictsFor, namedSource, questionProblem, SourcesContext, withLevel } from "./governance";
+import { conflictsFor, namedSource, questionProblem, sourceRegister, SourcesContext, withLevel } from "./governance";
 import { GovernancePage } from "./GovernancePage";
 import { OfferingsPage } from "./OfferingsPage";
 import type { CatalogueContext } from "./useCatalogue";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 afterEach(() => vi.restoreAllMocks());
 
 const RELEASE = { ...EXPLORED, revision: 3, status: "draft", documents: [] } as unknown as Release;
-const SOURCES = RELEASE.sources ?? [];
+const REGISTER = sourceRegister(RELEASE);
 const OFFERING = RELEASE.products![0]!;
 
 function open(path: string, editable = true) {
@@ -23,7 +26,7 @@ function open(path: string, editable = true) {
   render(
     <QueryClientProvider client={new QueryClient()}>
       <MemoryRouter initialEntries={[path]}>
-        <SourcesContext.Provider value={SOURCES}>
+        <SourcesContext.Provider value={REGISTER}>
           <Routes>
             <Route path="architecture" element={<Outlet context={context} />}>
               <Route path="governance" element={<GovernancePage />} />
@@ -38,13 +41,25 @@ function open(path: string, editable = true) {
 }
 
 describe("source levels on facts", () => {
-  it("finds the registered source a fact's source text begins with, the longest name first", () => {
-    expect(namedSource("BPP SDD §11.1.3", SOURCES)?.id).toBe("SDD");
-    expect(namedSource("SDDX §1", SOURCES)).toBeNull();
-    expect(withLevel("BPP SDD §10", SOURCES)).toBe("BPP SDD (L2) §10");
-    expect(withLevel("v8.2 OrderEvaluate", SOURCES)).toBe("v8.2 (L3, not supplied) OrderEvaluate");
-    expect(withLevel("SDD", SOURCES)).toBe("SDD (L2)");
-    expect(withLevel("An email", SOURCES)).toBe("An email");
+  it("says a fact's source with its level as the service read the line, never matching it itself", () => {
+    // What the service sends for these lines (citations.source_reference).
+    const register = sourceRegister({
+      sources: RELEASE.sources,
+      source_references: [
+        { text: "BPP SDD §10", source_id: "SDD", cited: "BPP SDD", rest: "§10", where: "§10" },
+        { text: "v8.2 OrderEvaluate", source_id: "V82", cited: "v8.2", rest: "OrderEvaluate", where: "OrderEvaluate" },
+        { text: "SDD", source_id: "SDD", cited: "SDD", rest: null, where: null },
+        { text: "An email", source_id: null, cited: null, rest: null, where: "An email" },
+      ],
+    });
+    expect(namedSource("BPP SDD §10", register)?.id).toBe("SDD");
+    expect(namedSource("An email", register)).toBeNull();
+    expect(withLevel("BPP SDD §10", register)).toBe("BPP SDD (L2) §10");
+    expect(withLevel("v8.2 OrderEvaluate", register)).toBe("v8.2 (L3, not supplied) OrderEvaluate");
+    expect(withLevel("SDD", register)).toBe("SDD (L2)");
+    expect(withLevel("An email", register)).toBe("An email");
+    // A line the service has not read yet (typed, not saved) reads as written.
+    expect(withLevel("BPP SDD §99", register)).toBe("BPP SDD §99");
   });
 
   it("reads the conflicts of an offering and of one of its order types", () => {

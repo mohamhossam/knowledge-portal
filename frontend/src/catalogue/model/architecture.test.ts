@@ -27,10 +27,17 @@ describe("a catalogue version as the views read it", () => {
     expect(data.systems.find((system) => system.id === "bscs")?.proposedMove?.from).toBe("Resource");
   });
 
-  it("reads evidence from a fact's confidence and source line", () => {
-    expect(parseEvidence("confirmed", "SDD v2.3 · §P1 · a note", data.sources)).toEqual({ status: "confirmed", source: "sdd", where: "§P1", note: "a note" });
-    expect(parseEvidence("gap", "Somewhere else", data.sources)).toEqual({ status: "gap", where: "Somewhere else" });
-    expect(parseEvidence(null, null, data.sources)).toEqual({ status: "inferred" });
+  it("reads evidence from a fact's confidence and source line, as the service read the line", () => {
+    // What the service sends for these lines (citations.source_reference).
+    const lines = new Map([
+      ["SDD v2.3 · §P1 · a note", { text: "SDD v2.3 · §P1 · a note", source_id: "sdd", cited: "SDD v2.3", rest: "· §P1 · a note", where: "§P1 · a note" }],
+      ["Somewhere else", { text: "Somewhere else", source_id: null, cited: null, rest: null, where: "Somewhere else" }],
+    ]);
+    expect(parseEvidence("confirmed", "SDD v2.3 · §P1 · a note", lines)).toEqual({ status: "confirmed", source: "sdd", where: "§P1", note: "a note" });
+    expect(parseEvidence("gap", "Somewhere else", lines)).toEqual({ status: "gap", where: "Somewhere else" });
+    expect(parseEvidence(null, null, lines)).toEqual({ status: "inferred" });
+    // The committed catalogue's facts name their sources through the service's readings.
+    expect(data.offerings.flatMap((offering) => offering.components).some((part) => part.evidence?.source === "sdd")).toBe(true);
   });
 
   it("keeps the portfolio, and an offering's plans as named characteristics with no price", () => {

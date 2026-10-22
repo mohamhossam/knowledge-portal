@@ -58,7 +58,9 @@ from knowledge_portal.domain.architecture.change_requests import (
     TracedFeature,
 )
 from knowledge_portal.domain.architecture.channels import Channel
+from knowledge_portal.domain.architecture.citations import SourceReference, source_references
 from knowledge_portal.domain.architecture.concepts import BusinessCapability, CapabilityRef
+from knowledge_portal.domain.architecture.coverage import CatalogueCoverage, Orphan
 from knowledge_portal.domain.architecture.diff import (
     CatalogueDiff,
     ChangedItem,
@@ -96,6 +98,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     KnowledgeDocumentVersion,
     KnowledgeReleaseStatus,
     LandscapeDomain,
+    LandscapeLayout,
     MasteryNote,
     RelationshipKind,
     SystemComponent,
@@ -127,7 +130,7 @@ from knowledge_portal.domain.architecture.products import (
     SourceConfidence,
     measure_disagrees,
 )
-from knowledge_portal.domain.architecture.provenance import AcceptedFrom
+from knowledge_portal.domain.architecture.provenance import AcceptedCitation, AcceptedFrom
 from knowledge_portal.domain.architecture.realisations import RealisationRecord
 from knowledge_portal.domain.architecture.samples import MAX_SAMPLES, SampleRequirementSet
 from knowledge_portal.domain.architecture.tracking import (
@@ -137,12 +140,14 @@ from knowledge_portal.domain.architecture.tracking import (
     TrackingEvent,
     TrackingFlow,
 )
-from knowledge_portal.domain.architecture.vocabularies import VocabularyScheme, VocabularyTerm
+from knowledge_portal.domain.architecture.vocabularies import ConceptScheme, VocabularyTerm
 from knowledge_portal.domain.architecture.vocabulary_links import VocabularyField, VocabularyRef
 from knowledge_portal.interfaces.api.schemas.bounds import (
     MAX_CATALOGUE_ITEMS,
+    MAX_SOURCE_REFERENCES,
     Identifier,
     Name,
+    RequiredIdentifier,
     Sentence,
     Text,
 )
@@ -152,15 +157,35 @@ from knowledge_portal.interfaces.api.schemas.bounds import (
 # validation, so a stored release always reads back.
 
 
+class AcceptedCitationSchema(BaseModel):
+    """Where an accepted suggestion was read: the place and its words, and the document
+    version and title when it came from one of the draft's documents."""
+
+    location: Text
+    quote: Text
+    document_version_id: Identifier | None = None
+    document: Name | None = None
+
+    @classmethod
+    def from_domain(cls, citation: AcceptedCitation) -> AcceptedCitationSchema:
+        return cls.model_construct(
+            location=citation.location,
+            quote=citation.quote,
+            document_version_id=citation.document_version_id,
+            document=citation.document,
+        )
+
+
 class AcceptedFromSchema(BaseModel):
     """An accepted suggestion recorded on what it produced: the model and prompt that
-    suggested it, and who accepted it when (ADR-0120)."""
+    suggested it, who accepted it when (ADR-0120), and where it was read."""
 
     candidate_id: Identifier
     model: Name
     prompt_version: Name
     decided_by: Identifier
     decided_at: datetime
+    citations: list[AcceptedCitationSchema] = Field(default=[], max_length=3)
 
     @classmethod
     def from_domain(cls, entry: AcceptedFrom) -> AcceptedFromSchema:
@@ -170,6 +195,7 @@ class AcceptedFromSchema(BaseModel):
             prompt_version=entry.prompt_version,
             decided_by=entry.decided_by,
             decided_at=entry.decided_at,
+            citations=[AcceptedCitationSchema.from_domain(item) for item in entry.citations],
         )
 
 
@@ -182,6 +208,9 @@ class KnowledgeCapabilitySchema(BaseModel):
     # The business capability concept it delivers (ADR-0114), or why none fits.
     concept_id: Identifier | None = None
     unlinked_reason: Sentence | None = None
+    # Where it comes from and how sure its source is, as for every other fact.
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
 
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
@@ -196,6 +225,8 @@ class KnowledgeCapabilitySchema(BaseModel):
             component_id=capability.component_id,
             concept_id=capability.concept_id,
             unlinked_reason=capability.unlinked_reason,
+            confidence=capability.confidence,
+            source=capability.source,
             accepted=[AcceptedFromSchema.from_domain(item) for item in capability.accepted],
         )
 
@@ -208,6 +239,8 @@ class KnowledgeCapabilitySchema(BaseModel):
             self.component_id,
             self.concept_id,
             self.unlinked_reason,
+            confidence=self.confidence,
+            source=self.source,
         )
 
 
@@ -221,6 +254,9 @@ class BusinessCapabilitySchema(BaseModel):
     broader_id: Identifier | None = None
     domain_id: Identifier | None = None
     exact_match: Name | None = None
+    # Outside references near enough to read across, though not the same (SKOS closeMatch,
+    # review recommendation 9).
+    close_match: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     confidence: SourceConfidence | None = None
     source: Text | None = None
 
@@ -240,6 +276,7 @@ class BusinessCapabilitySchema(BaseModel):
             broader_id=concept.broader_id,
             domain_id=concept.domain_id,
             exact_match=concept.exact_match,
+            close_match=list(concept.close_match),
             confidence=concept.confidence,
             source=concept.source,
             deprecated=concept.deprecated,
@@ -260,6 +297,7 @@ class BusinessCapabilitySchema(BaseModel):
             self.source,
             deprecated=self.deprecated,
             replaced_by=self.replaced_by,
+            close_match=tuple(self.close_match),
         )
 
 
@@ -270,16 +308,23 @@ class CapabilityRefSchema(BaseModel):
 
 class VocabularyTermSchema(BaseModel):
     """A term of a controlled vocabulary: an eTOM process, a channel or component kind, a
-    role, an Open API or an information entity."""
+    role, an Open API or an information entity, or a term of a vocabulary a curator
+    defined (review recommendation 9)."""
 
     id: Identifier
-    scheme: VocabularyScheme
+    # A built-in vocabulary's id, or a curated one's (``schemes``).
+    scheme: RequiredIdentifier
     pref_label: Name
     alt_labels: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     notation: Name | None = None
+    # Its place among its scheme's terms, 1 first (review recommendation 10).
+    rank: int | None = Field(default=None, ge=1)
     definition: Text | None = None
     broader_id: Identifier | None = None
     exact_match: Name | None = None
+    # Outside references near enough to read across, though not the same (SKOS closeMatch,
+    # review recommendation 9).
+    close_match: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     confidence: SourceConfidence | None = None
     source: Text | None = None
 
@@ -293,13 +338,15 @@ class VocabularyTermSchema(BaseModel):
     def from_domain(cls, term: VocabularyTerm) -> VocabularyTermSchema:
         return cls.model_construct(
             id=term.id,
-            scheme=term.scheme,
+            scheme=str(term.scheme),
             pref_label=term.pref_label,
             alt_labels=list(term.alt_labels),
             notation=term.notation,
+            rank=term.rank,
             definition=term.definition,
             broader_id=term.broader_id,
             exact_match=term.exact_match,
+            close_match=list(term.close_match),
             confidence=term.confidence,
             source=term.source,
             deprecated=term.deprecated,
@@ -321,7 +368,31 @@ class VocabularyTermSchema(BaseModel):
             self.source,
             deprecated=self.deprecated,
             replaced_by=self.replaced_by,
+            close_match=tuple(self.close_match),
+            rank=self.rank,
         )
+
+
+class ConceptSchemeSchema(BaseModel):
+    """A vocabulary a curator defines beside the built-in ones, and the free-text fields
+    its terms are linked to (review recommendation 9)."""
+
+    id: RequiredIdentifier
+    name: Name
+    definition: Text | None = None
+    fields: list[VocabularyField] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+
+    @classmethod
+    def from_domain(cls, scheme: ConceptScheme) -> ConceptSchemeSchema:
+        return cls.model_construct(
+            id=scheme.id,
+            name=scheme.name,
+            definition=scheme.definition,
+            fields=list(scheme.fields),
+        )
+
+    def to_domain(self) -> ConceptScheme:
+        return ConceptScheme(self.id, self.name, self.definition, tuple(self.fields))
 
 
 class SystemInterfaceSchema(BaseModel):
@@ -401,10 +472,15 @@ class VocabularyRefSchema(BaseModel):
 class SystemComponentSchema(BaseModel):
     id: Identifier
     name: Name
-    name_ar: Name | None = None
     description: Text | None = None
     aliases: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     technology: Name | None = None
+    # The term of a curated vocabulary the technology means, beside the text (review
+    # recommendation 9).
+    technology_id: Identifier | None = None
+    # Where it comes from and how sure its source is, as for every other fact.
+    confidence: SourceConfidence | None = None
+    source: Text | None = None
 
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
@@ -414,28 +490,31 @@ class SystemComponentSchema(BaseModel):
         return cls.model_construct(
             id=component.id,
             name=component.name,
-            name_ar=component.name_ar,
             description=component.description,
             aliases=list(component.aliases),
             technology=component.technology,
+            technology_id=component.technology_id,
+            confidence=component.confidence,
+            source=component.source,
             accepted=[AcceptedFromSchema.from_domain(item) for item in component.accepted],
         )
 
     def to_domain(self) -> SystemComponent:
         return SystemComponent(
-            self.id,
-            self.name,
-            self.name_ar,
-            self.description,
-            tuple(self.aliases),
-            self.technology,
+            id=self.id,
+            name=self.name,
+            description=self.description,
+            aliases=tuple(self.aliases),
+            technology=self.technology,
+            confidence=self.confidence,
+            source=self.source,
+            technology_id=self.technology_id,
         )
 
 
 class CapabilityDomainSchema(BaseModel):
     id: Identifier
     name: Name
-    name_ar: Name | None = None
     parent_id: Identifier | None = None
     description: Text | None = None
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
@@ -446,14 +525,15 @@ class CapabilityDomainSchema(BaseModel):
         return cls.model_construct(
             id=domain.id,
             name=domain.name,
-            name_ar=domain.name_ar,
             parent_id=domain.parent_id,
             description=domain.description,
             accepted=[AcceptedFromSchema.from_domain(item) for item in domain.accepted],
         )
 
     def to_domain(self) -> CapabilityDomain:
-        return CapabilityDomain(self.id, self.name, self.name_ar, self.parent_id, self.description)
+        return CapabilityDomain(
+            id=self.id, name=self.name, parent_id=self.parent_id, description=self.description
+        )
 
 
 class LandscapeDomainSchema(BaseModel):
@@ -461,11 +541,12 @@ class LandscapeDomainSchema(BaseModel):
 
     id: Identifier
     name: Name
-    name_ar: Name | None = None
     parent_id: Identifier | None = None
     description: Text | None = None
     # It serves every other domain (the enterprise domain, the integration layer).
     cross_cutting: bool = False
+    # Where the landscape map draws a top domain (review recommendation 10).
+    layout: LandscapeLayout | None = None
 
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
@@ -475,21 +556,21 @@ class LandscapeDomainSchema(BaseModel):
         return cls.model_construct(
             id=domain.id,
             name=domain.name,
-            name_ar=domain.name_ar,
             parent_id=domain.parent_id,
             description=domain.description,
             cross_cutting=domain.cross_cutting,
+            layout=domain.layout,
             accepted=[AcceptedFromSchema.from_domain(item) for item in domain.accepted],
         )
 
     def to_domain(self) -> LandscapeDomain:
         return LandscapeDomain(
-            self.id,
-            self.name,
-            self.name_ar,
-            self.parent_id,
-            self.description,
+            id=self.id,
+            name=self.name,
+            parent_id=self.parent_id,
+            description=self.description,
             cross_cutting=self.cross_cutting,
+            layout=self.layout,
         )
 
 
@@ -499,10 +580,15 @@ class PortfolioNodeSchema(BaseModel):
     id: Identifier
     name: Name
     level: Name
+    # The term of a curated vocabulary the level means, beside the text (recommendation 9).
+    level_id: Identifier | None = None
     parent_id: Identifier | None = None
     description: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # Retired, and the one of its kind that takes its place (ADR-0121, review recommendation 7).
+    deprecated: bool = False
+    replaced_by: Identifier | None = None
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
@@ -512,10 +598,13 @@ class PortfolioNodeSchema(BaseModel):
             id=node.id,
             name=node.name,
             level=node.level,
+            level_id=node.level_id,
             parent_id=node.parent_id,
             description=node.description,
             confidence=node.confidence,
             source=node.source,
+            deprecated=node.deprecated,
+            replaced_by=node.replaced_by,
             accepted=[AcceptedFromSchema.from_domain(item) for item in node.accepted],
         )
 
@@ -524,10 +613,13 @@ class PortfolioNodeSchema(BaseModel):
             id=self.id,
             name=self.name,
             level=self.level,
+            level_id=self.level_id,
             parent_id=self.parent_id,
             description=self.description,
             confidence=self.confidence,
             source=self.source,
+            deprecated=self.deprecated,
+            replaced_by=self.replaced_by,
         )
 
 
@@ -978,6 +1070,8 @@ class OfferingNfrSchema(BaseModel):
     statement: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The term of a curated vocabulary the quality means, beside the text (recommendation 9).
+    quality_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, item: OfferingNfr) -> OfferingNfrSchema:
@@ -987,11 +1081,17 @@ class OfferingNfrSchema(BaseModel):
             statement=item.statement,
             confidence=item.confidence,
             source=item.source,
+            quality_id=item.quality_id,
         )
 
     def to_domain(self) -> OfferingNfr:
         return OfferingNfr(
-            self.quality, self.coverage, self.statement, self.confidence, self.source
+            self.quality,
+            self.coverage,
+            self.statement,
+            self.confidence,
+            self.source,
+            quality_id=self.quality_id,
         )
 
 
@@ -1004,6 +1104,8 @@ class TrackingFlowSchema(BaseModel):
     interface: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The interface record the events pass over, by id (review recommendation 8).
+    interface_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, item: TrackingFlow) -> TrackingFlowSchema:
@@ -1014,6 +1116,7 @@ class TrackingFlowSchema(BaseModel):
             interface=item.interface,
             confidence=item.confidence,
             source=item.source,
+            interface_id=item.interface_id,
         )
 
     def to_domain(self) -> TrackingFlow:
@@ -1024,6 +1127,7 @@ class TrackingFlowSchema(BaseModel):
             self.interface,
             self.confidence,
             self.source,
+            self.interface_id,
         )
 
 
@@ -1461,6 +1565,8 @@ class BusinessRuleSchema(BaseModel):
     kind: Name | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # The term of a curated vocabulary the kind means, beside the text (recommendation 9).
+    kind_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, rule: BusinessRule) -> BusinessRuleSchema:
@@ -1470,6 +1576,7 @@ class BusinessRuleSchema(BaseModel):
             kind=rule.kind,
             confidence=rule.confidence,
             source=rule.source,
+            kind_id=rule.kind_id,
         )
 
     def to_domain(self) -> BusinessRule:
@@ -1479,6 +1586,7 @@ class BusinessRuleSchema(BaseModel):
             kind=self.kind,
             confidence=self.confidence,
             source=self.source,
+            kind_id=self.kind_id,
         )
 
 
@@ -1491,6 +1599,10 @@ class ProductOfferingSchema(BaseModel):
     family: Name | None = None
     version: Name | None = None
     lifecycle: Name | None = None
+    # The terms of curated vocabularies ``family`` and ``lifecycle`` mean, beside the text
+    # (review recommendation 9).
+    family_id: Identifier | None = None
+    lifecycle_id: Identifier | None = None
     proposition: Text | None = None
     rules: list[Text] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     order_types: list[OrderTypeSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
@@ -1521,6 +1633,9 @@ class ProductOfferingSchema(BaseModel):
     purpose: Text | None = None
     # Ids it was known by before a rename; set by renaming, kept when a file says so.
     former_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # Retired, and the one of its kind that takes its place (ADR-0121, review recommendation 7).
+    deprecated: bool = False
+    replaced_by: Identifier | None = None
 
     @classmethod
     def from_domain(cls, offering: ProductOffering) -> ProductOfferingSchema:
@@ -1531,6 +1646,8 @@ class ProductOfferingSchema(BaseModel):
             family=offering.family,
             version=offering.version,
             lifecycle=offering.lifecycle,
+            family_id=offering.family_id,
+            lifecycle_id=offering.lifecycle_id,
             proposition=offering.proposition,
             rules=list(offering.rules),
             order_types=[OrderTypeSchema.from_domain(item) for item in offering.order_types],
@@ -1560,6 +1677,8 @@ class ProductOfferingSchema(BaseModel):
             accepted=[AcceptedFromSchema.from_domain(item) for item in offering.accepted],
             purpose=offering.purpose,
             former_ids=list(offering.former_ids),
+            deprecated=offering.deprecated,
+            replaced_by=offering.replaced_by,
         )
 
     def to_domain(self) -> ProductOffering:
@@ -1570,6 +1689,8 @@ class ProductOfferingSchema(BaseModel):
             family=self.family,
             version=self.version,
             lifecycle=self.lifecycle,
+            family_id=self.family_id,
+            lifecycle_id=self.lifecycle_id,
             proposition=self.proposition,
             rules=tuple(self.rules),
             order_types=tuple(item.to_domain() for item in self.order_types),
@@ -1592,6 +1713,8 @@ class ProductOfferingSchema(BaseModel):
             business_rules=tuple(item.to_domain() for item in self.business_rules),
             purpose=self.purpose,
             former_ids=tuple(self.former_ids),
+            deprecated=self.deprecated,
+            replaced_by=self.replaced_by,
         )
 
 
@@ -1624,6 +1747,9 @@ class ActivitySchema(BaseModel):
     # The eTOM process and role terms ``etom`` and ``role`` mean.
     etom_id: Identifier | None = None
     role_id: Identifier | None = None
+    # The terms of curated vocabularies ``mode`` and ``phase`` mean (review recommendation 9).
+    mode_id: Identifier | None = None
+    phase_id: Identifier | None = None
     # Derived on the way out and ignored on the way in: on the main track, which is also
     # where it is when ``track`` names none.
     main_track: bool = False
@@ -1654,6 +1780,8 @@ class ActivitySchema(BaseModel):
             role=item.role,
             etom_id=item.etom_id,
             role_id=item.role_id,
+            mode_id=item.mode_id,
+            phase_id=item.phase_id,
             main_track=item.main,
         )
 
@@ -1682,6 +1810,8 @@ class ActivitySchema(BaseModel):
             role=self.role,
             etom_id=self.etom_id,
             role_id=self.role_id,
+            mode_id=self.mode_id,
+            phase_id=self.phase_id,
         )
 
 
@@ -1762,6 +1892,8 @@ class ActivityIntegrationSchema(BaseModel):
     tmf_equivalent: Name | None = None
     # The Open API terms ``tmf_equivalent`` names.
     open_api_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    # The interface record the call goes through, by id (review recommendation 8).
+    interface_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, link: ActivityIntegration) -> ActivityIntegrationSchema:
@@ -1782,6 +1914,7 @@ class ActivityIntegrationSchema(BaseModel):
             style=link.style,
             tmf_equivalent=link.tmf_equivalent,
             open_api_ids=list(link.open_api_ids),
+            interface_id=link.interface_id,
         )
 
     def to_domain(self) -> ActivityIntegration:
@@ -1802,6 +1935,7 @@ class ActivityIntegrationSchema(BaseModel):
             style=self.style,
             tmf_equivalent=self.tmf_equivalent,
             open_api_ids=tuple(self.open_api_ids),
+            interface_id=self.interface_id,
         )
 
 
@@ -1925,7 +2059,6 @@ class SystemDefinitionSchema(BaseModel):
         default=[], max_length=MAX_CATALOGUE_ITEMS
     )
     constraints: list[Text] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
-    name_ar: Name | None = None
     components: list[SystemComponentSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     description: Text | None = None
     landscape_domain_id: Identifier | None = None
@@ -1957,7 +2090,6 @@ class SystemDefinitionSchema(BaseModel):
             aliases=list(system.aliases),
             capabilities=[KnowledgeCapabilitySchema.from_domain(c) for c in system.capabilities],
             constraints=list(system.constraints),
-            name_ar=system.name_ar,
             components=[SystemComponentSchema.from_domain(c) for c in system.components],
             description=system.description,
             landscape_domain_id=system.landscape_domain_id,
@@ -1983,7 +2115,6 @@ class SystemDefinitionSchema(BaseModel):
             aliases=tuple(self.aliases),
             capabilities=tuple(item.to_domain() for item in self.capabilities),
             constraints=tuple(self.constraints),
-            name_ar=self.name_ar,
             components=tuple(item.to_domain() for item in self.components),
             description=self.description,
             landscape_domain_id=self.landscape_domain_id,
@@ -2041,7 +2172,6 @@ class KnowledgeDocumentVersionResponse(BaseModel):
     title: str
     filename: str
     mime_type: str
-    language: str
     checksum: str
     storage_key: str
     uploaded_by: str
@@ -2054,11 +2184,33 @@ class KnowledgeDocumentVersionResponse(BaseModel):
             title=version.title,
             filename=version.filename,
             mime_type=version.mime_type,
-            language=version.language,
             checksum=version.checksum,
             storage_key=version.storage_key,
             uploaded_by=version.uploaded_by,
             uploaded_at=version.uploaded_at,
+        )
+
+
+class SourceReferenceSchema(BaseModel):
+    """A source line the version's facts write, read once against its register (review
+    recommendation 5): the registered source it names, the words that name it, what follows
+    them as written, and where in the source. Screens look a fact's line up here rather than
+    matching it themselves."""
+
+    text: Text
+    source_id: Identifier | None = None
+    cited: Name | None = None
+    rest: Text | None = None
+    where: Text | None = None
+
+    @classmethod
+    def from_domain(cls, reference: SourceReference) -> SourceReferenceSchema:
+        return cls.model_construct(
+            text=reference.text,
+            source_id=reference.source_id,
+            cited=reference.cited,
+            rest=reference.rest,
+            where=reference.where,
         )
 
 
@@ -2099,6 +2251,10 @@ class KnowledgeReleaseResponse(BaseModel):
     change_history: list[ChangeRequestRecordSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
+    # Every source line its facts write, read once against the register (review recommendation 5).
+    source_references: list[SourceReferenceSchema] = Field(
+        default_factory=list, max_length=MAX_SOURCE_REFERENCES
+    )
     portfolio: list[PortfolioNodeSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
@@ -2110,6 +2266,8 @@ class KnowledgeReleaseResponse(BaseModel):
     vocabulary: list[VocabularyTermSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
+    # The vocabularies curators define beside the built-in ones (review recommendation 9).
+    schemes: list[ConceptSchemeSchema] = Field(default_factory=list, max_length=MAX_CATALOGUE_ITEMS)
     # The contracts systems expose and consume (ontology plan Phase 8).
     interfaces: list[SystemInterfaceSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
@@ -2155,11 +2313,15 @@ class KnowledgeReleaseResponse(BaseModel):
             change_history=[
                 ChangeRequestRecordSchema.from_domain(item) for item in release.change_history
             ],
+            source_references=[
+                SourceReferenceSchema.from_domain(item) for item in source_references(release)
+            ],
             portfolio=[PortfolioNodeSchema.from_domain(item) for item in release.portfolio],
             business_capabilities=[
                 BusinessCapabilitySchema.from_domain(item) for item in release.business_capabilities
             ],
             vocabulary=[VocabularyTermSchema.from_domain(item) for item in release.vocabulary],
+            schemes=[ConceptSchemeSchema.from_domain(item) for item in release.schemes],
             interfaces=[SystemInterfaceSchema.from_domain(item) for item in release.interfaces],
             realisations=[
                 RealisationRecordSchema.from_domain(item) for item in release.realisations
@@ -2195,7 +2357,24 @@ class ExplorerReleaseResponse(BaseModel):
     change_history: list[ChangeRequestRecordSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
+    # Every source line its facts write, read once against the register (review recommendation 5).
+    source_references: list[SourceReferenceSchema] = Field(
+        default_factory=list, max_length=MAX_SOURCE_REFERENCES
+    )
     portfolio: list[PortfolioNodeSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
+    # The taxonomy the explorer reads its content by (review recommendation 10): the
+    # vocabularies and their terms (a role's or a channel kind's name, roles by rank), the
+    # business areas, and the interface records journey steps go through.
+    vocabulary: list[VocabularyTermSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
+    schemes: list[ConceptSchemeSchema] = Field(default_factory=list, max_length=MAX_CATALOGUE_ITEMS)
+    capability_domains: list[CapabilityDomainSchema] = Field(
+        default_factory=list, max_length=MAX_CATALOGUE_ITEMS
+    )
+    interfaces: list[SystemInterfaceSchema] = Field(
         default_factory=list, max_length=MAX_CATALOGUE_ITEMS
     )
 
@@ -2221,7 +2400,16 @@ class ExplorerReleaseResponse(BaseModel):
             change_history=[
                 ChangeRequestRecordSchema.from_domain(item) for item in release.change_history
             ],
+            source_references=[
+                SourceReferenceSchema.from_domain(item) for item in source_references(release)
+            ],
             portfolio=[PortfolioNodeSchema.from_domain(item) for item in release.portfolio],
+            vocabulary=[VocabularyTermSchema.from_domain(item) for item in release.vocabulary],
+            schemes=[ConceptSchemeSchema.from_domain(item) for item in release.schemes],
+            capability_domains=[
+                CapabilityDomainSchema.from_domain(item) for item in release.capability_domains
+            ],
+            interfaces=[SystemInterfaceSchema.from_domain(item) for item in release.interfaces],
         )
 
 
@@ -2390,6 +2578,8 @@ class DraftUpdateRequest(BaseModel):
     vocabulary: list[VocabularyTermSchema] | None = Field(
         default=None, max_length=MAX_CATALOGUE_ITEMS
     )
+    # Likewise for the vocabularies curators define (review recommendation 9).
+    schemes: list[ConceptSchemeSchema] | None = Field(default=None, max_length=MAX_CATALOGUE_ITEMS)
     # Likewise for interfaces (ontology plan Phase 8).
     interfaces: list[SystemInterfaceSchema] | None = Field(
         default=None, max_length=MAX_CATALOGUE_ITEMS
@@ -2464,7 +2654,6 @@ class CandidateContentSchema(BaseModel):
     kind: CandidateKind
     system_id: Identifier
     name: Name = ""
-    name_ar: Name | None = None
     aliases: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     capability_id: Identifier | None = None
     triggers: list[Sentence] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
@@ -2509,7 +2698,6 @@ class CandidateContentSchema(BaseModel):
             kind=content.kind,
             system_id=content.system_id,
             name=content.name,
-            name_ar=content.name_ar,
             aliases=list(content.aliases),
             capability_id=content.capability_id,
             triggers=list(content.triggers),
@@ -2571,38 +2759,39 @@ class CandidateContentSchema(BaseModel):
 
     def to_domain(self) -> CandidateContent:
         return CandidateContent(
-            self.kind,
-            self.system_id,
-            self.name,
-            self.name_ar,
-            tuple(self.aliases),
-            self.capability_id,
-            tuple(self.triggers),
-            self.target_system_id,
-            self.text,
-            self.relationship_kind,
-            self.component_id,
-            self.description,
-            self.technology,
-            self.landscape_domain_id,
-            self.parent_domain_id,
-            self.product.to_domain() if self.product else None,
-            self.journey.to_domain() if self.journey else None,
-            self.channel.to_domain() if self.channel else None,
-            self.question.to_domain() if self.question else None,
-            self.concept.to_domain() if self.concept else None,
-            tuple(
+            kind=self.kind,
+            system_id=self.system_id,
+            name=self.name,
+            aliases=tuple(self.aliases),
+            capability_id=self.capability_id,
+            triggers=tuple(self.triggers),
+            target_system_id=self.target_system_id,
+            text=self.text,
+            relationship_kind=self.relationship_kind,
+            component_id=self.component_id,
+            description=self.description,
+            technology=self.technology,
+            landscape_domain_id=self.landscape_domain_id,
+            parent_domain_id=self.parent_domain_id,
+            product=self.product.to_domain() if self.product else None,
+            journey=self.journey.to_domain() if self.journey else None,
+            channel=self.channel.to_domain() if self.channel else None,
+            question=self.question.to_domain() if self.question else None,
+            concept=self.concept.to_domain() if self.concept else None,
+            capability_refs=tuple(
                 CapabilityRef(item.system_id, item.capability_id) for item in self.capability_refs
             ),
-            tuple(self.concept_ids),
-            self.term.to_domain() if self.term else None,
-            tuple(item.to_domain() for item in self.value_refs),
-            self.interface.to_domain() if self.interface else None,
-            self.capability_domain.to_domain() if self.capability_domain else None,
-            self.portfolio_node.to_domain() if self.portfolio_node else None,
-            self.realisation.to_domain() if self.realisation else None,
-            self.knowledge_source.to_domain() if self.knowledge_source else None,
-            self.conflict.to_domain() if self.conflict else None,
+            concept_ids=tuple(self.concept_ids),
+            term=self.term.to_domain() if self.term else None,
+            value_refs=tuple(item.to_domain() for item in self.value_refs),
+            interface=self.interface.to_domain() if self.interface else None,
+            capability_domain=(
+                self.capability_domain.to_domain() if self.capability_domain else None
+            ),
+            portfolio_node=self.portfolio_node.to_domain() if self.portfolio_node else None,
+            realisation=self.realisation.to_domain() if self.realisation else None,
+            knowledge_source=(self.knowledge_source.to_domain() if self.knowledge_source else None),
+            conflict=self.conflict.to_domain() if self.conflict else None,
         )
 
 
@@ -2855,6 +3044,12 @@ class MappingImpactResponse(BaseModel):
         )
 
 
+class AcceptSuggestionsRequest(RevisionRequest):
+    """Accept what needs no decision; given ids, only those (the set the person was shown)."""
+
+    suggestion_ids: list[Identifier] | None = Field(default=None, max_length=MAX_CATALOGUE_ITEMS)
+
+
 class RejectSuggestionsRequest(RevisionRequest):
     suggestion_ids: list[Identifier] = Field(max_length=MAX_CATALOGUE_ITEMS)
 
@@ -2966,3 +3161,36 @@ class UnregisteredCitationResponse(BaseModel):
     facts: int
     # A few of the facts, by kind and name: "Offering component CPE device".
     examples: list[str]
+
+
+class OrphanResponse(BaseModel):
+    """An item nothing links to, with the system or vocabulary it belongs to."""
+
+    id: str
+    name: str
+    owner_id: str | None
+    owner: str | None
+
+
+class CoverageResponse(BaseModel):
+    """What the version holds that nothing links to (review recommendation 17)."""
+
+    unlinked_capabilities: list[OrphanResponse]
+    unused_terms: list[OrphanResponse]
+    unconsumed_interfaces: list[OrphanResponse]
+    unplaced_systems: list[OrphanResponse]
+
+    @classmethod
+    def from_domain(cls, found: CatalogueCoverage) -> CoverageResponse:
+        def listed(items: tuple[Orphan, ...]) -> list[OrphanResponse]:
+            return [
+                OrphanResponse(id=item.id, name=item.name, owner_id=item.owner_id, owner=item.owner)
+                for item in items
+            ]
+
+        return cls(
+            unlinked_capabilities=listed(found.unlinked_capabilities),
+            unused_terms=listed(found.unused_terms),
+            unconsumed_interfaces=listed(found.unconsumed_interfaces),
+            unplaced_systems=listed(found.unplaced_systems),
+        )

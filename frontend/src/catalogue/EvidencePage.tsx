@@ -5,7 +5,6 @@ import { api } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { EvidenceQuote, Section, Skeleton, Status } from "../design/components";
 import { RouterLink } from "../shell/links";
-import { documentLang } from "./draft/decide";
 import { useCatalogueContext } from "./useCatalogue";
 
 /** One passage of a version's index, as it is cited for a system. */
@@ -31,7 +30,6 @@ export function EvidencePage() {
         <EvidenceQuote
           text={evidence.data.text}
           quote={quote}
-          lang={aboutSystem ? undefined : documentLang(document)}
           source={
             aboutSystem ? (
               <>

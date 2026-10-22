@@ -278,24 +278,24 @@ describe("squadOverview", () => {
     squads: [{ id: "sales", name: "Sales", resources: [{ system_id: "bcrm", role: "system_contact", person_id: "layla" }] }],
   } as unknown as Organisation;
 
-  it("lists the systems in force that no squad owns, keeping their Arabic names", () => {
+  it("lists the systems in force that no squad owns", () => {
     const active = release({
       status: "published",
       systems: [
-        { id: "bcrm", name: "BCRM", name_ar: null },
-        { id: "cim", name: "CIM", name_ar: "إدارة العملاء" },
+        { id: "bcrm", name: "BCRM" },
+        { id: "cim", name: "CIM" },
       ] as never,
     });
 
     const overview = squadOverview(organisation, active, [], nameDirectory([]));
 
-    expect(overview.lines).toMatchObject([{ key: "cim", rank: "due", nameAr: "إدارة العملاء" }]);
+    expect(overview.lines).toMatchObject([{ key: "cim", rank: "due", name: "CIM" }]);
     expect(overview.edition.text).toBe("1 squad owning 1 system of the 2 in force (Table 2)");
     expect(overview.next.label).toBe("1 system in force has no owning squad");
   });
 
   it("shows the first eight and says how many more", () => {
-    const systems = Array.from({ length: 11 }, (_, index) => ({ id: `s${index}`, name: `System ${index}`, name_ar: null }));
+    const systems = Array.from({ length: 11 }, (_, index) => ({ id: `s${index}`, name: `System ${index}` }));
     const overview = squadOverview(organisation, release({ systems: systems as never }), [], nameDirectory([]));
 
     expect(overview.lines).toHaveLength(8);

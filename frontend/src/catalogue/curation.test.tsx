@@ -5,6 +5,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api, type CatalogueDiff, type Release } from "../api/client";
 import { ComparePage } from "./ComparePage";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 afterEach(() => vi.restoreAllMocks());
 

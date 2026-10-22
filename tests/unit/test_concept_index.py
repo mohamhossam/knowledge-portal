@@ -176,7 +176,7 @@ def _build(release: ArchitectureKnowledge) -> tuple[_Recording, ArchitectureKnow
     storage = InMemoryDocumentStorage()
     storage.put(DocumentVersionId("notes"), PASSAGES.encode())
     notes = KnowledgeDocumentVersion(
-        "notes", "Design notes", "reference", "text/markdown", "en", "sum", "notes", "amina", NOW
+        "notes", "Design notes", "reference", "text/markdown", "sum", "notes", "amina", NOW
     )
     repository.save(
         draft.updated(

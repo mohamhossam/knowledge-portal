@@ -6,15 +6,19 @@
  * - for a catalogue version saved before the service sent them, the delivery drop (from
  *   "Delivered in drop …" in an order type's description) and the cross-cutting domains
  *   (from their ids in `BAND_DOMAINS`). Newer versions carry `delivery_drop` and
- *   `cross_cutting`, and the adapter reads those.
+ *   `cross_cutting`, and the adapter reads those;
+ * - for a version saved before the service sent them (review recommendation 10), where the
+ *   landscape map draws its bus, the layer above it and its side layers (newer versions carry
+ *   each top domain's `layout`), and how roles rank (newer versions rank role terms).
  */
 
 /** The cross-cutting TAM domains, for a catalogue version that marks none. */
 export const BAND_DOMAINS: readonly string[] = ["enterprise", "integration"];
 
 /*
- * Where TAM's layers sit on the map. The order is the version's own (its landscape
- * domains, top to bottom); these say only where TAM draws two kinds of layer.
+ * Where TAM's layers sit on the map, for a version whose domains name no layout. The order
+ * is the version's own (its landscape domains, top to bottom); these say only where TAM
+ * draws two kinds of layer.
  */
 /** The integration layer: the bus, drawn just under the last customer-facing layer. */
 export const BUS_DOMAIN = "integration";
@@ -45,3 +49,19 @@ export function parseQuestion(text: string): { title: string; detail: string } {
   const at = text.indexOf(": ");
   return at > 0 ? { title: text.slice(0, at), detail: text.slice(at + 2) } : { title: text, detail: "" };
 }
+
+/** Roles from strongest to weakest, for a version whose role terms carry no rank. */
+export const LEGACY_ROLE_RANK: readonly string[] = [
+  "orchestrate",
+  "capture",
+  "activate",
+  "field",
+  "validate",
+  "customer-data",
+  "catalog",
+  "logistics",
+  "bill",
+  "track",
+  "notify",
+  "record",
+];

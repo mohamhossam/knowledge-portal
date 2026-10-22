@@ -1,7 +1,7 @@
 import "./overlays.css";
 
-import { CircleHelp, X } from "lucide-react";
-import { Fragment, type ReactNode, type RefObject, useEffect, useId, useRef, useState } from "react";
+import { X } from "lucide-react";
+import { Fragment, type ReactNode, type RefObject, useEffect, useId, useRef } from "react";
 
 import { Button } from "./actions";
 
@@ -97,25 +97,6 @@ export function Drawer({
       </div>
       <div className="ds-drawer__body">{children}</div>
     </aside>
-  );
-}
-
-/**
- * §14 inline help: a toggletip, opened by click or Enter (never hover alone),
- * announced politely, closed by Esc or pressing again.
- */
-export function Toggletip({ label, children }: { label: string; children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const id = useId();
-  return (
-    <span className="ds-toggletip" onKeyDown={(event) => event.key === "Escape" && setOpen(false)}>
-      <button type="button" className="ds-icon-button ds-toggletip__button" aria-label={`About ${label}`} aria-expanded={open} aria-controls={id} onClick={() => setOpen((on) => !on)}>
-        <CircleHelp size={14} aria-hidden="true" />
-      </button>
-      <span id={id} role="status" className="ds-toggletip__bubble" hidden={!open}>
-        {open ? children : null}
-      </span>
-    </span>
   );
 }
 

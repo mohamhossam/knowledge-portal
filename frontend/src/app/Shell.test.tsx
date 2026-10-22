@@ -47,6 +47,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+function Broken(): never {
+  throw new Error("The page broke");
+}
+
 function open(path: string) {
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
@@ -57,6 +61,7 @@ function open(path: string) {
               <Route index element={<HomePage />} />
               <Route path="explorer/older" element={<h1>An older page</h1>} />
               <Route path="library/:documentId" element={<h1>A library document</h1>} />
+              <Route path="broken" element={<Broken />} />
             </Route>
           </Routes>
         </MemoryRouter>
@@ -66,6 +71,18 @@ function open(path: string) {
 }
 
 describe("the shell", () => {
+  it("keeps its navigation when a page fails, and leaving the page clears the failure", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    open("/broken");
+
+    expect(await screen.findByRole("alert", { name: "This page stopped working" })).toHaveTextContent("The page broke");
+    const areas = screen.getByRole("navigation", { name: "Areas" });
+    await userEvent.click(within(areas).getByRole("link", { name: /To do/ }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "To do" })).toBeInTheDocument();
+    expect(screen.queryByRole("alert", { name: "This page stopped working" })).not.toBeInTheDocument();
+  });
+
   it("offers the same utilities, skip links and areas on every page", async () => {
     for (const [path, title] of [["/", "To do"], ["/explorer/older", "An older page"]] as const) {
       open(path);

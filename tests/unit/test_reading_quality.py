@@ -80,7 +80,6 @@ def _item(**values: Any) -> dict[str, Any]:
         "kind": "system",
         "system": "Order Hub",
         "name": "Order Hub",
-        "name_ar": None,
         "aliases": [],
         "triggers": [],
         "target_system": None,

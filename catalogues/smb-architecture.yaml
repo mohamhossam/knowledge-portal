@@ -912,6 +912,7 @@ landscape_domains:
 - id: customer
   name: Customer
   description: Engagement channels, customer data, customer orders, order tracking, problems and bills.
+  layout: above_bus
 - id: customer.self-service
   name: Self-service channels
   parent_id: customer
@@ -957,6 +958,7 @@ landscape_domains:
 - id: engaged-party
   name: Engaged Party
   description: Government bodies, identity and document services, partners and vendors.
+  layout: side
 - id: engaged-party.government
   name: Government & identity
   parent_id: engaged-party
@@ -967,6 +969,7 @@ landscape_domains:
   name: Enterprise
   description: 'Cross-cutting: notification, documents, IT service management, single sign-on.'
   cross_cutting: true
+  layout: side
 - id: enterprise.common
   name: Common services
   parent_id: enterprise
@@ -974,6 +977,7 @@ landscape_domains:
   name: Integration layer
   description: The bus and gateways every domain talks through.
   cross_cutting: true
+  layout: bus
 - id: integration.bus
   name: Integration
   parent_id: integration
@@ -7180,24 +7184,28 @@ vocabulary:
   definition: Takes in the order, or facts the order needs, from the customer or the field.
   confidence: inferred
   source: Ontology plan Phase 6 · the catalogue's own activity roles
+  rank: 2
 - id: role-catalog
   scheme: responsibility_role
   pref_label: Catalog
   definition: Supplies the offer, its rules and its eligibility from the product catalogue.
   confidence: inferred
   source: Ontology plan Phase 6 · the catalogue's own activity roles
+  rank: 7
 - id: role-customer-data
   scheme: responsibility_role
   pref_label: Customer data
   definition: Keeps the customer's account and party record.
   confidence: inferred
   source: Ontology plan Phase 6 · the catalogue's own activity roles
+  rank: 6
 - id: role-validate
   scheme: responsibility_role
   pref_label: Validate
   definition: Checks that the order, the customer or the site qualifies.
   confidence: inferred
   source: Ontology plan Phase 6 · the catalogue's own activity roles
+  rank: 5
 - id: role-orchestrate
   scheme: responsibility_role
   pref_label: Orchestrate
@@ -7206,6 +7214,7 @@ vocabulary:
   definition: Splits the order into sub-orders and drives each to completion.
   confidence: inferred
   source: Ontology plan Phase 6 · the catalogue's own activity roles
+  rank: 1
 - id: role-activate
   scheme: responsibility_role
   pref_label: Activate
@@ -7216,6 +7225,7 @@ vocabulary:
   definition: Configures and activates the service or resource on the network.
   confidence: inferred
   source: Ontology plan Phase 6 · the catalogue's own activity roles
+  rank: 3
 - id: role-field
   scheme: responsibility_role
   pref_label: Field
@@ -7224,36 +7234,42 @@ vocabulary:
   definition: Schedules and records the work done at the customer's site.
   confidence: inferred
   source: Ontology plan Phase 6 · the catalogue's own activity roles
+  rank: 4
 - id: role-logistics
   scheme: responsibility_role
   pref_label: Logistics
   definition: Ships, delivers or collects equipment.
   confidence: inferred
   source: Ontology plan Phase 6 · the catalogue's own activity roles
+  rank: 8
 - id: role-bill
   scheme: responsibility_role
   pref_label: Bill
   definition: Starts, changes or stops billing for what was delivered.
   confidence: inferred
   source: Ontology plan Phase 6 · the catalogue's own activity roles
+  rank: 9
 - id: role-track
   scheme: responsibility_role
   pref_label: Track
   definition: Shows the order's progress to the customer and to the operator.
   confidence: inferred
   source: Ontology plan Phase 6 · the catalogue's own activity roles
+  rank: 10
 - id: role-notify
   scheme: responsibility_role
   pref_label: Notify
   definition: Tells the customer, or another party, that something happened.
   confidence: inferred
   source: Ontology plan Phase 6 · the catalogue's own activity roles
+  rank: 11
 - id: role-record
   scheme: responsibility_role
   pref_label: Record
   definition: Keeps the record of what was delivered, such as the inventory.
   confidence: inferred
   source: Ontology plan Phase 6 · the catalogue's own activity roles
+  rank: 12
 - id: role-configure
   scheme: responsibility_role
   pref_label: Configure

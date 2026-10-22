@@ -5,7 +5,7 @@
  */
 import { createContext, useContext } from "react";
 
-import type { ChangeRecord, KnowledgeSource, Offering, SourceConflict, SourceLevel } from "../api/client";
+import type { ChangeRecord, KnowledgeSource, Offering, SourceConflict, SourceLevel, SourceReference } from "../api/client";
 
 /** A level as the original explorer ranked its sources. */
 export const LEVEL: Record<SourceLevel, { short: string; word: string; long: string }> = {
@@ -17,24 +17,29 @@ export const LEVEL: Record<SourceLevel, { short: string; word: string; long: str
 export const LEVEL_OPTIONS = (Object.keys(LEVEL) as SourceLevel[]).map((level) => ({ value: level, label: `${level}: ${LEVEL[level].word}` }));
 
 /**
- * The registered source a fact's source text begins with, by id or short name: "BPP SDD
- * §10" names the source short-named "BPP SDD". The longest name wins, and a name ends
- * where a word does, as the service reads it.
+ * A version's source register, with every source line its facts write as the service read
+ * it (review recommendation 5). The service reads a line once, by one rule; a screen looks
+ * a line up here and never matches it itself.
  */
-export function namedSource(text: string | null | undefined, sources: KnowledgeSource[]): KnowledgeSource | null {
-  const written = (text ?? "").trim().toLocaleLowerCase();
-  if (!written) return null;
-  let best: { length: number; source: KnowledgeSource } | null = null;
-  for (const source of sources) {
-    for (const name of [source.id, source.short]) {
-      const key = (name ?? "").trim().toLocaleLowerCase();
-      if (!key || !written.startsWith(key)) continue;
-      const next = written.charAt(key.length);
-      if (next && /[\p{L}\p{N}]/u.test(next)) continue;
-      if (!best || key.length > best.length) best = { length: key.length, source };
-    }
-  }
-  return best?.source ?? null;
+export type SourceRegister = {
+  sources: ReadonlyMap<string, KnowledgeSource>;
+  lines: ReadonlyMap<string, SourceReference>;
+};
+
+export const EMPTY_REGISTER: SourceRegister = { sources: new Map(), lines: new Map() };
+
+/** The register of a version as the API sends it. */
+export function sourceRegister(release: { sources?: KnowledgeSource[] | null; source_references?: SourceReference[] | null }): SourceRegister {
+  return {
+    sources: new Map((release.sources ?? []).map((item) => [item.id, item])),
+    lines: new Map((release.source_references ?? []).map((item) => [item.text, item])),
+  };
+}
+
+/** The registered source a fact's source line names, as the service read it; null when it names none. */
+export function namedSource(text: string | null | undefined, register: SourceRegister): KnowledgeSource | null {
+  const id = register.lines.get((text ?? "").trim())?.source_id;
+  return (id && register.sources.get(id)) || null;
 }
 
 /** A source's level as it follows its name: "(L2)", "(L3, not supplied)". */
@@ -44,29 +49,25 @@ export function levelTag(source: KnowledgeSource): string {
 
 /**
  * A fact's source text with its source's level after the name it cites, when it names a
- * registered one: "BPP SDD §10" reads "BPP SDD (L2) §10", as a conflict's sides do.
+ * registered one: "BPP SDD §10" reads "BPP SDD (L2) §10", as a conflict's sides do. A line
+ * the service has not read yet (typed in an editor, not yet saved) reads as written.
  */
-export function withLevel(text: string | null | undefined, sources: KnowledgeSource[]): string | null {
+export function withLevel(text: string | null | undefined, register: SourceRegister): string | null {
   const written = (text ?? "").trim();
   if (!written) return null;
-  const source = namedSource(written, sources);
-  if (!source) return written;
-  const name = [source.short, source.id]
-    .filter((item): item is string => !!item)
-    .sort((a, b) => b.length - a.length)
-    .find((item) => written.toLocaleLowerCase().startsWith(item.trim().toLocaleLowerCase())) ?? "";
-  const cited = written.slice(0, name.trim().length);
-  const rest = written.slice(name.trim().length).trim();
-  return [cited, levelTag(source), rest].filter(Boolean).join(" ");
+  const line = register.lines.get(written);
+  const source = line?.source_id ? register.sources.get(line.source_id) : undefined;
+  if (!line || !source || !line.cited) return written;
+  return [line.cited, levelTag(source), line.rest].filter(Boolean).join(" ");
 }
 
 /** The source register a page reads from, so any fact's source can say its level. */
-export const SourcesContext = createContext<KnowledgeSource[]>([]);
+export const SourcesContext = createContext<SourceRegister>(EMPTY_REGISTER);
 
 /** Says a fact's source text with its level, from the register in context. */
 export function useSourceText(): (text: string | null | undefined) => string | null {
-  const sources = useContext(SourcesContext);
-  return (text) => withLevel(text, sources);
+  const register = useContext(SourcesContext);
+  return (text) => withLevel(text, register);
 }
 
 /** The conflicts that concern an offering, and one of its order types when given. */

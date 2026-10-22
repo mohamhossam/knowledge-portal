@@ -16,7 +16,7 @@ import { Outcome } from "./parts";
 import { approveReason } from "./approval";
 import { PassageText } from "./ReviewDesk";
 import { CitingNow } from "./StandingPanel";
-import { contentLang, plural, sheetHeadings } from "./where";
+import { plural, sheetHeadings } from "./where";
 
 type Choice = "keep" | "exclude" | "accept" | "noted";
 type Answer = { choice: Choice; reason: string };
@@ -42,7 +42,7 @@ export function ReviewFocus() {
   const back = params.get("from") === "todo" ? "/" : base;
   if (!version || version.stage !== "ready_for_review" || !document.can_edit) {
     return (
-      <FocusFrame work={<bdi lang={contentLang(document.title)}>{document.title}</bdi>} place="Nothing to review" steps={[]} onLeave={() => leaveTo(back)} documentTitle={`Review · ${document.title}`}>
+      <FocusFrame work={<bdi>{document.title}</bdi>} place="Nothing to review" steps={[]} onLeave={() => leaveTo(back)} documentTitle={`Review · ${document.title}`}>
         <FocusTitle>Nothing here waits for your review</FocusTitle>
         <EmptyState
           title={document.can_edit ? "Its newest version isn't ready for review." : "Only its owner and the Knowledge admins review it."}
@@ -122,7 +122,7 @@ function Run({ document, version, back, base }: { document: LibraryDocument; ver
 
   const steps: FocusStep[] = questions.map((item, at) =>
     at === index ? "current" : answers[item.id] ? "answered" : skipped.has(item.id) ? "skipped" : "open");
-  const work = <bdi lang={contentLang(document.title)}>{document.title}</bdi>;
+  const work = <bdi>{document.title}</bdi>;
   const place = atSummary ? "Summary" : `Question ${index + 1} of ${questions.length}`;
   const frame = (children: ReactNode) => (
     <FocusFrame work={work} place={place} steps={steps} onLeave={() => leaveTo(back)} leaveLabel="Leave focus mode" documentTitle={`${place} · Review · ${document.title}`}>
@@ -254,7 +254,7 @@ function Run({ document, version, back, base }: { document: LibraryDocument; ver
             <li key={at}><Status tone={warning.severity === "blocking" ? "attention" : "warning"}>{warning.severity === "blocking" ? "Blocks approval" : "Flagged"}</Status> {unplaced(warning.message, item.row.where)}</li>
           ))}
         </Lines>
-        <div className="lib-passage" dir="auto" lang={contentLang(item.row.draft?.text)}><PassageText row={item.row} headings={headings} /></div>
+        <div className="lib-passage" dir="auto"><PassageText row={item.row} headings={headings} /></div>
       </>
     );
     choices = blocking

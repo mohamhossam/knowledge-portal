@@ -9,6 +9,9 @@ import { type Accepted, acceptances } from "./accepted";
 import { AcceptedFrom } from "./AcceptedFrom";
 import { catalogue } from "./catalogue";
 import type { CatalogueContext } from "./useCatalogue";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 const RELEASE = { ...EXPLORED, revision: 3, status: "draft", documents: [] } as unknown as Release;
 const NAMES: Record<string, string> = { amina: "Amina Owner", ravi: "Ravi Curator" };
@@ -31,8 +34,8 @@ function shown(children: ReactNode) {
   );
 }
 
-const FIRST: Accepted = { candidate_id: "c1", model: "model-x", prompt_version: "prompt-7", decided_by: "amina", decided_at: "2026-10-20T09:00:00Z" };
-const SECOND: Accepted = { candidate_id: "c2", model: "model-y", prompt_version: "prompt-8", decided_by: "ravi", decided_at: "2026-10-21T09:00:00Z" };
+const FIRST: Accepted = { candidate_id: "c1", model: "model-x", prompt_version: "prompt-7", decided_by: "amina", decided_at: "2026-10-20T09:00:00Z", citations: [] };
+const SECOND: Accepted = { candidate_id: "c2", model: "model-y", prompt_version: "prompt-8", decided_by: "ravi", decided_at: "2026-10-21T09:00:00Z", citations: [] };
 
 describe("AcceptedFrom (ADR-0120)", () => {
   it("shows nothing for a record written by hand", () => {
@@ -57,6 +60,29 @@ describe("AcceptedFrom (ADR-0120)", () => {
   it("reads a record from an API that predates acceptances as having none", () => {
     expect(acceptances({})).toEqual([]);
     expect(acceptances({ accepted: [FIRST] })).toEqual([FIRST]);
+  });
+
+  it("says where it was read, after its suggestion is gone (review recommendation 6)", () => {
+    const read: Accepted = {
+      ...FIRST,
+      citations: [
+        { document_version_id: "doc-1", document: "Integration design", location: "§4.1 › Table 2, row 3", quote: "CWOM tracks orders" },
+        { location: "Catalogue › 3 activities", quote: "Order Handling" },
+      ],
+    };
+    shown(<AcceptedFrom accepted={[read]} />);
+    const cited = within(screen.getByRole("list", { name: "Where it was read" })).getAllByRole("listitem");
+    expect(cited.map((item) => item.textContent)).toEqual([
+      "Integration design, §4.1 › Table 2, row 3: “CWOM tracks orders”",
+      // Read from the catalogue itself or a change request: no document to name.
+      "Catalogue › 3 activities: “Order Handling”",
+    ]);
+  });
+
+  it("names where the last one was read in the heading's one line", () => {
+    const read: Accepted = { ...SECOND, citations: [{ document_version_id: "doc-1", document: "Integration design", location: "§4.1", quote: "CWOM tracks orders" }] };
+    shown(<AcceptedFrom accepted={[FIRST, read]} summary />);
+    expect(screen.getByTestId("record")).toHaveTextContent(/accepted by Ravi Curator on .*2026, read in Integration design, §4\.1$/);
   });
 
   it("sums them up in one line for a record's heading", () => {

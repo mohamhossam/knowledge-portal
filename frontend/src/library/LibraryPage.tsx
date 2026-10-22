@@ -22,7 +22,7 @@ import { LibraryRetry } from "./LibraryRetry";
 import { LifecycleDiagram } from "./LifecycleDiagram";
 import { newestState, newestVersion, standing } from "./model";
 import { Outcome } from "./parts";
-import { contentLang, plural } from "./where";
+import { plural } from "./where";
 import { UploadFlow } from "./UploadFlow";
 
 /** The filters always offered, then any other state only while a document is in it. */
@@ -132,7 +132,7 @@ export function LibraryPage() {
         items: members.map((row) => ({
           id: row.doc.id,
           href: hrefFor(row.doc.id),
-          name: <span lang={contentLang(row.doc.title)}>{row.doc.title}</span>,
+          name: <span>{row.doc.title}</span>,
           bidi: true,
           detail: row.state === "attention" && newestState(row.doc)?.error
             ? newestState(row.doc)?.error
@@ -287,7 +287,7 @@ function DocumentSummary({ row, takeFocus, stopped, onRetried }: {
   const mine = (title: string) => title === doc.title;
   return (
     <RecordView
-      title={<span lang={contentLang(doc.title)}>{doc.title}</span>}
+      title={<span>{doc.title}</span>}
       takeFocus={takeFocus}
       meta={<Status tone={DOC_TONE[state]}>{DOC_STATE_WORDS[state]}</Status>}
       actions={

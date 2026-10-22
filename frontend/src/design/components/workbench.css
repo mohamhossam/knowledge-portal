@@ -14,6 +14,9 @@
 
   .ds-bench__list,
   .ds-bench__record {
+    /* The containing block of what they hold, so a visually hidden label is clipped by their
+       scroll too, not stretching the page under the bench (as in .ds-split). */
+    position: relative;
     min-block-size: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -34,6 +37,7 @@
    it), so the record follows close under the list. */
 @container main (max-width: 59.99rem) {
   .ds-bench[data-chosen] .ds-records {
+    position: relative;
     max-block-size: 16rem;
     overflow-y: auto;
     overscroll-behavior: contain;

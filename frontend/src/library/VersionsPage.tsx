@@ -10,8 +10,8 @@ import { useDocumentContext } from "./documentContext";
 import { newestVersion } from "./model";
 import { Failure } from "./parts";
 import { CitingNow } from "./StandingPanel";
-import { ATTEMPT_LIMIT, buildStaleness, canRetryIndexing, pendingBuild, type PublicationState, publicationState } from "./publications";
-import { contentLang, humanWhere, plural } from "./where";
+import { ATTEMPT_LIMIT, buildStaleness, canRetryIndexing, coverageWords, pendingBuild, type PublicationState, publicationState } from "./publications";
+import { humanWhere, plural } from "./where";
 
 /** A publication's state in the glossary's words, with a tone that never leans on colour alone. */
 const PUBLISHED: Record<PublicationState, { words: string; tone: StatusTone }> = {
@@ -70,7 +70,20 @@ export function VersionsPage() {
   ];
 
   const publishedColumns: Column<Publication>[] = [
-    { id: "approved", header: "Published", rowHeader: true, width: "14rem", cell: (item) => <>{formatDay(item.approved_at)}<span className="lib-detail lib-detail--plain">by <bdi>{item.approved_by.display_name}</bdi>{item.on_behalf ? ", as admin" : ""}</span></> },
+    {
+      id: "approved", header: "Published", rowHeader: true, width: "14rem",
+      cell: (item) => {
+        const looked = coverageWords(item);
+        return (
+          <>
+            {formatDay(item.approved_at)}
+            <span className="lib-detail lib-detail--plain">by <bdi>{item.approved_by.display_name}</bdi>{item.on_behalf ? ", as admin" : ""}</span>
+            {/* Reviewed means seen: what the approver looked at, as their review desk counted it. */}
+            {looked && <span className="lib-detail lib-detail--plain">{looked}</span>}
+          </>
+        );
+      },
+    },
     {
       id: "state",
       header: "State",
@@ -272,7 +285,7 @@ function SavedPassages() {
 function ChunkTable({ chunks, caption }: { chunks: ReferenceChunk[]; caption: string }) {
   const columns: Column<ReferenceChunk>[] = [
     { id: "where", header: "Where", rowHeader: true, width: "12rem", cell: (chunk) => <>{humanWhere(chunk.location)}{chunk.field_context && <span className="lib-detail lib-detail--plain"><bdi>{chunk.field_context}</bdi></span>}</> },
-    { id: "text", header: "Passage", bidi: true, cell: (chunk) => <span className="lib-clamp" lang={contentLang(chunk.original_text)}>{chunk.original_text}</span> },
+    { id: "text", header: "Passage", bidi: true, cell: (chunk) => <span className="lib-clamp">{chunk.original_text}</span> },
     { id: "tokens", header: "Tokens", numeric: true, width: "6rem", cell: (chunk) => chunk.token_count },
   ];
   return <DataTable caption={caption} captionHidden columns={columns} rows={chunks} rowId={(chunk) => chunk.id} />;

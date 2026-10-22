@@ -37,6 +37,22 @@ const words = (blocks: DocBlock[]) =>
     .join("\n");
 
 describe("the Solution Architecture document", () => {
+  it("names a linked interface by its record and a role by the vocabulary (review recommendation 10)", () => {
+    const release = structuredClone(EXPLORED);
+    const journey = release.journeys![0]!;
+    journey.integrations[0]!.interface_id = "if-rtf-sr";
+    release.interfaces = [{ id: "if-rtf-sr", name: "RTF service request API", system_id: "rtf", style: "api", consumer_ids: ["cwom"], open_api_ids: [], entity_ids: [], relays: [], accepted: [] }];
+    release.vocabulary = [{ id: "r-1", scheme: "responsibility_role", pref_label: "Fulfil the order", alt_labels: ["Fulfilment"], close_match: [], deprecated: false, accepted: [] }];
+    const model = solutionDocument({ release, scenario: pickScenario(release, "bpp", "NEW", "online")!, plans: PLANS, at: AT, by: "Amina" });
+
+    const integration = words(section(model.blocks, "8. Integration Architecture"));
+    // The hand-overs keep the text as the source wrote it; the named interfaces use the record.
+    expect(integration).toMatch(/RTF \| CWOM \| SR request \| RTF SR \| Sync/);
+    expect(integration).toMatch(/^RTF service request API \| /m);
+    // FULFILMENT reads as the role term whose label it is.
+    expect(words(model.blocks)).toMatch(/\(fulfil the order\)/);
+  });
+
   it("keeps the original's document control and eighteen numbered sections, in order", () => {
     const model = made();
 

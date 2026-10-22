@@ -60,7 +60,7 @@ def test_a_flagged_document_upload_is_refused_and_not_stored(client: TestClient)
 
     refused = client.post(
         f"{base}/documents",
-        data={"title": "Design", "language": "en", "expected_revision": str(draft["revision"])},
+        data={"title": "Design", "expected_revision": str(draft["revision"])},
         files={"file": ("design.txt", EICAR, "text/plain")},
         headers=OWNER,
     )
@@ -80,7 +80,7 @@ def test_a_flagged_file_in_a_batch_is_refused_while_the_rest_are_added(
 
     response = client.post(
         f"{base}/documents/batch",
-        data={"language": "en", "expected_revision": str(draft["revision"])},
+        data={"expected_revision": str(draft["revision"])},
         files=[
             ("files", ("clean.txt", b"System: Order Hub\n", "text/plain")),
             ("files", ("flagged.txt", EICAR, "text/plain")),
@@ -150,7 +150,7 @@ def test_a_document_upload_is_refused_with_503_when_the_scanner_gives_no_verdict
 
     refused = scanner_down.post(
         f"{base}/documents",
-        data={"title": "Design", "language": "en", "expected_revision": str(draft["revision"])},
+        data={"title": "Design", "expected_revision": str(draft["revision"])},
         files={"file": ("design.txt", b"System: Order Hub\n", "text/plain")},
         headers=OWNER,
     )
@@ -170,7 +170,7 @@ def test_a_batch_stops_at_a_silent_scanner_and_still_reports_each_file(
 
     response = scanner_down.post(
         f"{base}/documents/batch",
-        data={"language": "en", "expected_revision": str(draft["revision"])},
+        data={"expected_revision": str(draft["revision"])},
         files=[
             ("files", ("first.txt", b"System: Order Hub\n", "text/plain")),
             ("files", ("second.txt", b"System: Billing\n", "text/plain")),
@@ -255,7 +255,6 @@ def test_a_scanner_that_stops_mid_batch_keeps_the_files_already_added() -> None:
             IncomingFile("second.txt", "text/plain", b"System: Billing"),
             IncomingFile("third.txt", "text/plain", b"System: Inventory"),
         ),
-        "en",
         MAINTAINER,
         NOW,
     )

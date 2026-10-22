@@ -108,7 +108,7 @@ export type RecordItem = {
   detail?: ReactNode;
   /** At the row's end: a status or a gap badge, one at most. */
   meta?: ReactNode;
-  /** Set on a name of either language (§13). */
+  /** Set on a name: it takes its own direction (§13). */
   bidi?: boolean;
 };
 

@@ -228,7 +228,6 @@ class StructureAwareChunks:
                         original,
                         search,
                         digest,
-                        "ar" if re.search(r"[\u0600-\u06ff]", original) else "en",
                         count(f"{child_label}\n{original}"),
                         identity,
                         start,

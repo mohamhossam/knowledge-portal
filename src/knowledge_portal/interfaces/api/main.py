@@ -18,6 +18,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from knowledge_portal.infrastructure.config.settings import Settings
 from knowledge_portal.interfaces.api.composition.identity import build_internal_verifier
 from knowledge_portal.interfaces.api.container import Container, build_container
+from knowledge_portal.interfaces.api.error_envelope import enveloped, send_error
 from knowledge_portal.interfaces.api.error_handlers import register_error_handlers
 from knowledge_portal.interfaces.api.routes.architecture_knowledge import (
     job_router as architecture_job_router,
@@ -78,16 +79,11 @@ class InternalAccess:
             return
         guard = self._guard_for(scope["app"].state.container.settings)
         if guard is None:
-            await send(
-                {
-                    "type": "http.response.start",
-                    "status": 404,
-                    "headers": [(b"content-type", b"application/json")],
-                }
-            )
-            await send({"type": "http.response.body", "body": b'{"detail":"Not Found"}'})
+            await send_error(send, scope, 404, "Not Found")
             return
-        await guard(scope, receive, send)
+        # The kernel's guard refuses in its own shape; the caller gets the one error shape,
+        # with the correlation id that traces it (review recommendation 12).
+        await guard(scope, receive, enveloped(send, scope))
 
     def _guard_for(self, settings: Settings) -> InternalRouteGuard | None:
         key = (

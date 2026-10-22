@@ -100,10 +100,10 @@ NOW = datetime(2026, 9, 30, 9, 0, tzinfo=UTC)
 MAINTAINER = Actor("amina", frozenset({"knowledge_maintainer"}))
 OWNER = {"X-Fake-Actor-Id": "fake-owner"}
 BCRM = MatchableSystem(
-    "bcrm", "BCRM", None, ("Microsoft Dynamics sales CRM", "sales CRM"), ("Assisted sales",)
+    "bcrm", "BCRM", ("Microsoft Dynamics sales CRM", "sales CRM"), ("Assisted sales",)
 )
-DCRM = MatchableSystem("dcrm", "DCRM", None, ("backoffice order capture",), ("Back-office orders",))
-BILLING = MatchableSystem("billing", "Billing Engine", None, (), ("Invoicing",))
+DCRM = MatchableSystem("dcrm", "DCRM", ("backoffice order capture",), ("Back-office orders",))
+BILLING = MatchableSystem("billing", "Billing Engine", (), ("Invoicing",))
 SYSTEMS = (BCRM, DCRM, BILLING)
 QUERY = MatchQuery("Dynamics CRM", "Quotes are prepared in Dynamics CRM.")
 
@@ -333,7 +333,6 @@ def _change(**values: Any) -> ChangeOutput:
         "kind": "relationship",
         "system": "Order Hub",
         "name": None,
-        "name_ar": None,
         "aliases": [],
         "triggers": [],
         "target_system": "Dynamics CRM",
@@ -440,7 +439,7 @@ def _setup(
     )
     draft = manage.create_draft(MAINTAINER, "Next version")
     version = KnowledgeDocumentVersion(
-        "doc", "Doc", "doc.txt", "text/plain", "en", "sum", "doc", "amina", NOW
+        "doc", "Doc", "doc.txt", "text/plain", "sum", "doc", "amina", NOW
     )
     storage.put(DocumentVersionId("doc"), text)
     drafted = draft.updated(documents=(version,))
@@ -513,7 +512,7 @@ def test_a_possible_match_is_confirmed_and_inferred_items_wait_for_a_person(
     ).json()
     draft = client.post(
         f"/architecture-knowledge/releases/{draft['id']}/documents",
-        data={"title": "Quotes", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Quotes", "expected_revision": draft["revision"]},
         files={"file": ("quotes.txt", SOURCE, "text/plain")},
         headers=OWNER,
     ).json()
@@ -613,3 +612,12 @@ def test_suggestions_and_runs_stored_before_this_change_still_load() -> None:
         (),
     )
     assert TypeAdapter(ExtractionRun).validate_python(old_run).match_model is None
+
+
+def test_a_suggestion_stored_with_an_arabic_name_still_loads() -> None:
+    # Suggested before the catalogue was English only; the Arabic name is read past.
+    content = CandidateContent(CandidateKind.SYSTEM, "hub", name="Order Hub")
+    stored = TypeAdapter(CatalogueCandidate).dump_python(_candidate(content), mode="json")
+    stored["content"]["name_ar"] = "المركز"
+
+    assert TypeAdapter(CatalogueCandidate).validate_python(stored).content == content

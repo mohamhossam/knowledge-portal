@@ -406,7 +406,6 @@ def _journey_change(journey: JourneyOutput | None, quote: str) -> ChangeOutput:
         kind="journey",
         system="",
         name="New Activation",
-        name_ar=None,
         aliases=[],
         triggers=[],
         target_system=None,
@@ -570,7 +569,7 @@ def test_a_journey_read_in_parts_is_one_suggestion_naming_the_suggested_offering
     documents = SafeDocumentTextExtractor()
     draft = manage.create_draft(MAINTAINER, "Next version")
     version = KnowledgeDocumentVersion(
-        "doc", "Journeys", "journeys.md", "text/markdown", "en", "sum", "doc", "amina", NOW
+        "doc", "Journeys", "journeys.md", "text/markdown", "sum", "doc", "amina", NOW
     )
     storage.put(DocumentVersionId("doc"), b"# Journeys\n\nNew Activation.\n")
     drafted = draft.updated(documents=(version,))
@@ -620,7 +619,7 @@ def test_accepting_a_landscape_document_adds_its_journey_after_its_offering(
     ).json()
     uploaded = client.post(
         f"/architecture-knowledge/releases/{draft['id']}/documents",
-        data={"title": "Landscape", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Landscape", "expected_revision": draft["revision"]},
         files={"file": ("landscape.md", FIXTURE.read_bytes(), "text/markdown")},
         headers=OWNER,
     ).json()

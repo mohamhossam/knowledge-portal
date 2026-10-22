@@ -25,3 +25,4 @@ the same platform-wide series.
 | [0122](adr-0122-golden-set-report-runs.md) | Golden set report: stored runs on their own queue (proposed) |
 | [0123](adr-0123-catalogue-model-open-questions.md) | Co-mastery, the remaining suggestion kinds, and library classification (proposed) |
 | [0124](adr-0124-stable-offering-and-journey-ids.md) | Stable ids for offerings and journeys (proposed) |
+| [0125](adr-0125-vocabularies-as-data.md) | Vocabularies as data, on one SKOS base (proposed) |

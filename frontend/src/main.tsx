@@ -8,6 +8,7 @@ import "./design";
 
 import { ApiError } from "./api/errors";
 import { App } from "./app/App";
+import { ErrorBoundary, RootFailed } from "./app/ErrorBoundary";
 import { AuthProvider } from "./auth/AuthProvider";
 import { Gate } from "./auth/Gate";
 import { BASE } from "./auth/paths";
@@ -29,20 +30,24 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Gate
-          readers={
+    {/* The last line of defence: a failure outside any page (sign-in, the shell) still says what to do. */}
+    <ErrorBoundary fallback={(error) => <RootFailed error={error} />}>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Gate
+            readers={
+              <BrowserRouter basename={BASE || "/"}>
+                <ReaderApp />
+              </BrowserRouter>
+            }
+          >
             <BrowserRouter basename={BASE || "/"}>
-              <ReaderApp />
+              <App />
             </BrowserRouter>
-          }
-        >
-          <BrowserRouter basename={BASE || "/"}>
-            <App />
-          </BrowserRouter>
-        </Gate>
-      </AuthProvider>
-    </QueryClientProvider>
+          </Gate>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );
+

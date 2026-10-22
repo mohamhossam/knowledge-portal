@@ -342,24 +342,3 @@ def check_governance(
                     f"The conflict {conflict.title} raises question {scope.question_id!r}, "
                     f"which {affected.name} does not have."
                 )
-
-
-def named_source(text: str | None, sources: tuple[KnowledgeSource, ...]) -> KnowledgeSource | None:
-    """The registered source a fact's source text begins with, by id or short name: "BPP SDD
-    §10" is the source short-named "BPP SDD". The longest name wins, so "SDD" never takes
-    "SDD Annex"'s facts."""
-    written = (text or "").strip().casefold()
-    if not written:
-        return None
-    best: tuple[int, KnowledgeSource] | None = None
-    for source in sources:
-        for name in (source.id, source.short):
-            key = (name or "").strip().casefold()
-            if not key or not written.startswith(key):
-                continue
-            rest = written[len(key) :]
-            if rest and rest[0].isalnum():
-                continue
-            if best is None or len(key) > best[0]:
-                best = (len(key), source)
-    return best[1] if best else None

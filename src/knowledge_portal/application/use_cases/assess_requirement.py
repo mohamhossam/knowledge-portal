@@ -73,7 +73,7 @@ from knowledge_portal.domain.architecture.assessment import (
 from knowledge_portal.domain.architecture.deprecation import in_service
 from knowledge_portal.domain.architecture.drafts import OfferingDraft
 from knowledge_portal.domain.architecture.entities import OrganisationReference
-from knowledge_portal.domain.architecture.identity import current_id
+from knowledge_portal.domain.architecture.identity import resolved_id
 from knowledge_portal.domain.architecture.impact_graph import realised_nowhere, realisers
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
@@ -143,7 +143,14 @@ class AssessRequirement(RequirementAssessmentPort):
             for item in coverage
             if item.concept_id in gaps
         )
-        nearest = precedent_lane(self._precedents, self._index, text, needed, query.requirement_id)
+        nearest = precedent_lane(
+            self._precedents,
+            self._index,
+            text,
+            needed,
+            query.requirement_id,
+            release.business_capabilities,
+        )
         common = {
             "precedents": tuple(
                 _precedent(release, needed, match, verdict, score)
@@ -327,7 +334,10 @@ class AssessRequirement(RequirementAssessmentPort):
                     FacetKind.OFFERING,
                     "Which offering does this change, or is it for a new one?",
                     (
-                        *(QuestionOption(item.name, item.id) for item in release.products),
+                        *(
+                            QuestionOption(item.name, item.id)
+                            for item in in_service(release.products)
+                        ),
                         QuestionOption("A new offering"),
                     ),
                 )
@@ -398,11 +408,24 @@ def _precedent(
         release_id=precedent.release_id,
         verdict=verdict,
         decision=precedent.decision,
-        # Named as it is now, when it was renamed since the precedent was decided.
-        offering_id=current_id(release.products, precedent.offering_id) or precedent.offering_id,
+        # Named as they are now, when renamed or replaced since the precedent was decided
+        # (review recommendation 7).
+        offering_id=resolved_id(release.products, precedent.offering_id) or precedent.offering_id,
         score=round(score, 4),
-        system_ids=tuple(item.system_id for item in precedent.systems if item.system_id in systems),
-        shared_concept_ids=tuple(item for item in precedent.concept_ids if item in needed),
+        system_ids=tuple(
+            dict.fromkeys(
+                now
+                for item in precedent.systems
+                if (now := resolved_id(release.systems, item.system_id)) in systems
+            )
+        ),
+        shared_concept_ids=tuple(
+            dict.fromkeys(
+                now
+                for item in precedent.concept_ids
+                if (now := resolved_id(release.business_capabilities, item)) in needed
+            )
+        ),
     )
 
 
@@ -432,7 +455,7 @@ def _coverage(
             concept_path(release, concept_id),
             tuple(
                 offering.id
-                for offering in release.products
+                for offering in in_service(release.products)
                 if any(concept_id in part.capability_ids for part in offering.components)
             ),
             tuple(dict.fromkeys(item.system_id for item in realisers(release, concept_id))),

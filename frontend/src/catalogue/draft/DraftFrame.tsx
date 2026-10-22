@@ -13,7 +13,7 @@ import { useDisclosure } from "../../design/hooks";
 import { count } from "../../home/format";
 import { ButtonLink, RouterLink } from "../../shell/links";
 import { type Catalogue, contents } from "../catalogue";
-import { SourcesContext } from "../governance";
+import { sourceRegister, SourcesContext } from "../governance";
 import { type CatalogueContext, useReleases } from "../useCatalogue";
 import { useDraftLifecycle } from "../useDraft";
 import { DRAFT_STEPS, type DraftStep, draftSteps, useDraftProgress } from "./progress";
@@ -102,7 +102,7 @@ function Draft({ release, step, context }: { release: Release; step: DraftStep; 
       </PageHeader>
       {renaming.open && <Rename release={release} panelRef={renaming.panel} onDone={renaming.close} />}
       {removing.open && <Remove release={release} panelRef={removing.panel} onKeep={removing.close} />}
-      <SourcesContext.Provider value={release.sources ?? []}>
+      <SourcesContext.Provider value={sourceRegister(release)}>
         <Outlet context={context} />
       </SourcesContext.Provider>
     </div>

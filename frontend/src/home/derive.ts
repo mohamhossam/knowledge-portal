@@ -34,11 +34,9 @@ export type Line = {
   key: string;
   rank: Rank;
   cells: Record<string, string>;
-  /** The item's name may be Arabic, English or both. */
   name: string;
   /** Where the item's own page is, when it has one. */
   to?: string;
-  nameAr?: string | null;
   note?: string;
   /** A secondary fact kept under the status (the Kept Column Rule). */
   statusDetail?: string;
@@ -578,7 +576,6 @@ export function squadOverview(
       key: system.id,
       rank: "due",
       name: system.name,
-      nameAr: system.name_ar,
       cells: { id: system.id },
     });
   }

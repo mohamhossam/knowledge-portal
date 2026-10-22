@@ -41,6 +41,9 @@ Slots are written `{like this}`. Names in slots are always isolated with `<bdi>`
 
 ## 3. Undo (delayed commit)
 
+Not built: the delayed commit this copy is for has no screen yet (backlog BG3).
+
+
 - `"{Accepted|Rejected} '{label}'. Undo (z)"`. It is visible for 6 s, then becomes the row's
   decided state.
 - When it is undone, the message is "Undone. '{label}' is back to decide.".

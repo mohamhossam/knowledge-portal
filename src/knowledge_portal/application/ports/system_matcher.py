@@ -22,7 +22,6 @@ class MatchQuery:
 class MatchableSystem:
     id: str
     name: str
-    name_ar: str | None
     aliases: tuple[str, ...]
     capabilities: tuple[str, ...]
 

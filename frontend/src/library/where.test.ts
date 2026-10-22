@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { contentLang, humanWhere, labelledCells, langOf, locationGroup, sheetHeadings, tableCells } from "./where";
+import { humanWhere, labelledCells, locationGroup, sheetHeadings, tableCells } from "./where";
 
 describe("locations in words", () => {
   it("says sheets and rows, never the reader's cell notation", () => {
@@ -44,28 +44,5 @@ describe("table rows as labelled cells (O-3)", () => {
     ]);
     // The headings row itself is not relabelled.
     expect(labelledCells(rows[0]!.text, rows[0]!.where, headings)).toBeNull();
-  });
-});
-
-describe("the language of content (K2, HYPOTHESIS heuristic)", () => {
-  it("says Arabic only when most letters are Arabic", () => {
-    expect(contentLang("سياسة التحقق من العنوان (sample)")).toBe("ar");
-    expect(contentLang("XGPON coverage rules (sample)")).toBeUndefined();
-    expect(contentLang("Bundle 001 · باقة")).toBeUndefined();
-    expect(contentLang("")).toBeUndefined();
-    // A tie isn't a majority; presentation forms count as Arabic.
-    expect(contentLang("ab يج")).toBeUndefined();
-    expect(contentLang("\uFEFB\uFEFB a")).toBe("ar");
-  });
-
-  it("decides as soon as the rest can't change the answer, on long text too", () => {
-    expect(contentLang(`${"يجب ".repeat(5000)}${"policy ".repeat(100)}`)).toBe("ar");
-    expect(contentLang(`${"policy ".repeat(5000)}${"يجب ".repeat(100)}`)).toBeUndefined();
-    expect(contentLang(`${"x".repeat(10)}${"ي".repeat(11)}`)).toBe("ar");
-  });
-
-  it("prefers the language the API gives, but never 'mixed'", () => {
-    expect(langOf("en", "يجب")).toBe("en");
-    expect(langOf("mixed", "يجب التحقق من هوية العميل")).toBe("ar");
   });
 });

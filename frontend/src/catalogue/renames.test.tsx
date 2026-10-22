@@ -9,6 +9,9 @@ import { catalogue } from "./catalogue";
 import { JourneysPage } from "./JourneysPage";
 import { OfferingsPage } from "./OfferingsPage";
 import type { CatalogueContext } from "./useCatalogue";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 afterEach(() => vi.restoreAllMocks());
 

@@ -3,19 +3,22 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { api, type DocumentExtraction, type Release, type Suggestion } from "../../api/client";
+import { api, type CatalogueCoverage, type DocumentExtraction, type Release, type Suggestion } from "../../api/client";
 import { CataloguePage } from "../CataloguePage";
 import { ChangesStep } from "./ChangesStep";
 import { CheckStep } from "./CheckStep";
 import { DecideStep } from "./DecideStep";
 import { PublishStep } from "./PublishStep";
 import { SourcesStep } from "./SourcesStep";
+import { checkAxeAfterEach } from "../../test/axe";
+
+checkAxeAfterEach();
 
 afterEach(() => vi.restoreAllMocks());
 
 const draft = (extra: Partial<Release> = {}) => ({
   id: "d", name: "October", revision: 3, built_revision: 3, status: "draft", relationships: [], index_profile: "p", created_by: "fake-owner",
-  documents: [{ id: "v1", title: "Integration design", filename: "design.txt", language: "en", mime_type: "text/plain", uploaded_by: "fake-owner" }],
+  documents: [{ id: "v1", title: "Integration design", filename: "design.txt", mime_type: "text/plain", uploaded_by: "fake-owner" }],
   systems: [
     { id: "cwom", name: "CWOM", aliases: [], capabilities: [], components: [{ id: "milestones", name: "Milestone tracker", aliases: [] }], constraints: [] },
     { id: "bcrm", name: "BCRM", aliases: [], capabilities: [], components: [], constraints: [] },
@@ -40,6 +43,14 @@ const SUGGESTIONS = [
   }),
 ];
 
+const LINKED: CatalogueCoverage = { unlinked_capabilities: [], unused_terms: [], unconsumed_interfaces: [], unplaced_systems: [] };
+const ORPHANS: CatalogueCoverage = {
+  ...LINKED,
+  unlinked_capabilities: [{ id: "tracking", name: "Tracking", owner_id: "cwom", owner: "CWOM" }],
+  unplaced_systems: [{ id: "order-hub", name: "Order Hub", owner_id: null, owner: null }],
+  unused_terms: [{ id: "entity-loyalty", name: "Loyalty", owner_id: "information_entity", owner: "information entity" }],
+};
+
 /** A draft's step, inside the catalogue's own frame, as the app routes it. */
 function renderStep(
   step: string,
@@ -55,6 +66,8 @@ function renderStep(
   vi.spyOn(api, "buildJob").mockResolvedValue(null);
   // Nothing unregistered unless a test says otherwise.
   if (!vi.isMockFunction(api.citations)) vi.spyOn(api, "citations").mockResolvedValue([]);
+  // Everything linked unless a test says otherwise.
+  if (!vi.isMockFunction(api.coverage)) vi.spyOn(api, "coverage").mockResolvedValue(LINKED);
   vi.spyOn(api, "releaseChanges").mockResolvedValue({
     base_release_id: "live", draft_release_id: "d",
     changes: [{ item: "system", key: "order-hub", label: "Order Hub", change: "added", fields: [] }],
@@ -148,8 +161,8 @@ describe("Decide", () => {
     expect(within(pane).getByRole("heading", { level: 2 })).toHaveTextContent("Adds the constraint “Nights only”");
     expect(within(pane).getByText(/Suggested · stated in the source/)).toBeInTheDocument();
     expect(within(pane).getByText("From the document")).toBeInTheDocument();
-    // The quote carries its document's language; the source line under it stays the page's.
-    expect(within(pane).getByText("System: x").closest("blockquote")).toHaveAttribute("lang", "en");
+    // Content is English, so the quote takes the page's language rather than its own.
+    expect(within(pane).getByText("System: x").closest("blockquote")).not.toHaveAttribute("lang");
   });
 
   it("cites a dependency derived from the draft's own catalogue by its place there, not as a document", async () => {
@@ -261,6 +274,58 @@ describe("Decide", () => {
     await waitFor(() => expect(reject).toHaveBeenCalledWith("d", 4, ["crm", "store"]));
   });
 
+  it("accepts the ready ones only through a consequence that lists them, and sends exactly that set", async () => {
+    const acceptAll = vi.spyOn(api, "acceptAll").mockResolvedValue({ release: draft({ revision: 4 }), remaining: 1 } as never);
+    renderStep("decide");
+    await screen.findByRole("grid");
+
+    fireEvent.click(screen.getByRole("button", { name: /^Accept the 3 ready/ }));
+    const panel = screen.getByRole("region", { name: "Accept 3 suggestions" });
+    const listed = within(within(panel).getByRole("list", { name: "Suggestions to accept" })).getAllByRole("listitem").map((item) => item.textContent);
+    expect(listed).toEqual(expect.arrayContaining(["Adds the system Order Hub", "Adds the constraint “Nights only”"]));
+    expect(listed).toHaveLength(3);
+    // The one with a possible match needs a person: it is not in the set.
+    expect(within(panel).queryByText(/Dynamics CRM/)).toBeNull();
+    expect(within(panel).getByText(/Nothing reaches requirement work until the draft is published/)).toBeInTheDocument();
+
+    // Not yet: nothing is sent.
+    fireEvent.click(within(panel).getByRole("button", { name: "Not yet" }));
+    expect(acceptAll).not.toHaveBeenCalled();
+    expect(screen.queryByRole("region", { name: "Accept 3 suggestions" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /^Accept the 3 ready/ }));
+    fireEvent.click(within(screen.getByRole("region", { name: "Accept 3 suggestions" })).getByRole("button", { name: "Accept 3 suggestions" }));
+    await waitFor(() => expect(acceptAll).toHaveBeenCalledOnce());
+    const [releaseId, revision, ids] = acceptAll.mock.calls[0]!;
+    expect([releaseId, revision]).toEqual(["d", 3]);
+    expect([...ids].sort()).toEqual(["cap", "hub", "store"]);
+    expect(await screen.findByText(/Accepted 3 suggestions\. 1 still wait for you\./)).toBeInTheDocument();
+  });
+
+  it("tells two suggestions that read alike apart by where each was read", async () => {
+    const twice = [
+      base("hub", { kind: "system", system_id: "order-hub", name: "Order Hub" }, { citations: [{ location: "lines 1-12", quote: "Order Hub" }] }),
+      base("hub-again", { kind: "system", system_id: "order-hub", name: "Order Hub" }, { citations: [{ location: "line 13", quote: "Order Hub" }] }),
+      base("store", { kind: "constraint", system_id: "cwom", text: "Nights only" }, { system_name: "CWOM" }),
+    ];
+    renderStep("decide", { suggestions: twice });
+    await screen.findByRole("grid");
+    fireEvent.click(screen.getByRole("button", { name: /^Accept the \d+ ready/ }));
+    const listed = within(screen.getByRole("list", { name: "Suggestions to accept" })).getAllByRole("listitem").map((item) => item.textContent);
+    expect(listed).toEqual(expect.arrayContaining(["Adds the system Order HubRead at lines 1-12", "Adds the system Order HubRead at line 13"]));
+    // A sentence that reads once needs no place.
+    expect(listed).toContain("Adds the constraint “Nights only”");
+  });
+
+  it("lists under Ready to accept exactly what accepting the ready ones would take", async () => {
+    renderStep("decide");
+    await screen.findByRole("grid");
+    fireEvent.click(screen.getByRole("button", { name: /Ready to accept/ }));
+    const listed = screen.getAllByRole("rowheader").map((row) => row.textContent ?? "");
+    expect(listed).toHaveLength(3);
+    expect(listed.some((text) => text.includes("Dynamics CRM"))).toBe(false);
+  });
+
   it("keeps the filter in the address and finds by any word", async () => {
     renderStep("decide");
     await screen.findByRole("grid");
@@ -273,7 +338,7 @@ describe("Decide", () => {
 describe("Sources", () => {
   it("adds several documents in one go and says what became of each", async () => {
     const files = [new File(["# Billing"], "billing.md", { type: "text/markdown" }), new File(["CRM"], "crm.txt", { type: "text/plain" })];
-    vi.spyOn(api, "addCatalogueDocuments").mockResolvedValue({
+    const add = vi.spyOn(api, "addCatalogueDocuments").mockResolvedValue({
       release: draft({ revision: 4 }),
       results: [
         { filename: "billing.md", outcome: "added", version_id: "v2" },
@@ -286,6 +351,8 @@ describe("Sources", () => {
     expect(screen.getByText("2 files chosen; each is titled by its file name.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Add the 2 files and read them" }));
     expect(await screen.findByText("1 of 2 files added.")).toBeInTheDocument();
+    // The portal is English only: an upload says nothing of its language.
+    expect(add).toHaveBeenCalledWith("d", { files: expect.any(Array), expectedRevision: 3 });
     expect(read).toHaveBeenCalledWith("d", "v2");
     expect(screen.getByText(/Not added: It can't be read./)).toBeInTheDocument();
   });
@@ -390,6 +457,41 @@ describe("Check: sources it cites but doesn't register", () => {
   });
 });
 
+describe("Check: what nothing links to", () => {
+  const section = async () => (await screen.findByRole("heading", { name: /^What nothing links to/ })).closest("section")!;
+
+  it("lists each kind with how to settle it, opening the system the item is on", async () => {
+    vi.spyOn(api, "coverage").mockResolvedValue(ORPHANS);
+    renderStep("check");
+    const found = within(await section());
+    expect(await found.findByRole("heading", { name: "Capabilities with no concept 1" })).toBeInTheDocument();
+    expect(found.getByRole("link", { name: "Tracking" })).toHaveAttribute("href", "/architecture/versions/d/systems/cwom");
+    expect(found.getByRole("link", { name: "Order Hub" })).toHaveAttribute("href", "/architecture/versions/d/systems/order-hub");
+    // A term has no page of its own: its name and vocabulary, and how to settle it.
+    expect(found.queryByRole("link", { name: "Loyalty" })).toBeNull();
+    expect(found.getByText("information entity")).toBeInTheDocument();
+    expect(found.queryByRole("heading", { name: /Interfaces nobody consumes/ })).toBeNull();
+    expect(found.getByText(/Publishing is not held for them\./)).toBeInTheDocument();
+  });
+
+  it("shows a long kind as its first ten rows until all are asked for", async () => {
+    const many = Array.from({ length: 12 }, (_, at) => ({ id: `cap-${at + 1}`, name: `Capability ${at + 1}`, owner_id: "cwom", owner: "CWOM" }));
+    vi.spyOn(api, "coverage").mockResolvedValue({ ...LINKED, unlinked_capabilities: many });
+    renderStep("check");
+    const found = within(await section());
+    const table = await found.findByRole("table", { name: "Capabilities with no concept" });
+    expect(within(table).getAllByRole("rowheader")).toHaveLength(10);
+    fireEvent.click(found.getByRole("button", { name: "Show all 12" }));
+    expect(within(table).getAllByRole("rowheader")).toHaveLength(12);
+    expect(within(table).getByRole("link", { name: "Capability 12" })).toHaveAttribute("href", "/architecture/versions/d/systems/cwom");
+  });
+
+  it("says so when everything is linked", async () => {
+    renderStep("check");
+    expect(await within(await section()).findByText("Every capability, system, interface and term is linked.")).toBeInTheDocument();
+  });
+});
+
 describe("Publish", () => {
   it("lists the checks first, then publishes through its consequence with what was checked", async () => {
     const publish = vi.spyOn(api, "publish").mockResolvedValue(draft({ status: "published" }));
@@ -400,6 +502,7 @@ describe("Publish", () => {
     expect(within(checks).getByText("Built for matching at this revision")).toBeInTheDocument();
     expect(within(checks).getByText("5 requirements to map again")).toBeInTheDocument();
     expect(within(checks).getByRole("link", { name: "Decide them" })).toHaveAttribute("href", "/architecture/versions/d/decide");
+    expect(within(checks).getByText("Every capability, system, interface and term is linked")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Publish ‘October’…" }));
     const panel = screen.getByRole("region", { name: "Publish ‘October’" });
@@ -412,6 +515,16 @@ describe("Publish", () => {
     await waitFor(() => expect(publish).toHaveBeenCalledWith("d", { expected_revision: 3, rationale: "Compared the samples." }));
     expect(build).not.toHaveBeenCalled();
     expect(await screen.findByText("In service now")).toBeInTheDocument();
+  });
+
+  it("counts what nothing links to as worth a look, never holding publishing", async () => {
+    vi.spyOn(api, "coverage").mockResolvedValue(ORPHANS);
+    renderStep("publish");
+    const checks = await screen.findByRole("list", { name: "Checks before publishing" });
+    expect(await within(checks).findByText("3 items nothing links to")).toBeInTheDocument();
+    expect(within(checks).getByText("Capabilities with no concept: 1; Systems outside the landscape: 1; Terms nothing names: 1")).toBeInTheDocument();
+    expect(within(checks).getByRole("link", { name: "See them on Check" })).toHaveAttribute("href", "/architecture/versions/d/check");
+    expect(screen.getByRole("button", { name: "Publish ‘October’…" })).toBeEnabled();
   });
 
   it("builds first when the draft is not built at its revision", async () => {

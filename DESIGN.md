@@ -34,35 +34,35 @@ colors:
   red-on-dark: "#ff4a3d"
 typography:
   display:
-    fontFamily: "Archivo Variable, Noto Sans Arabic Variable, system-ui, sans-serif"
+    fontFamily: "Archivo Variable, system-ui, sans-serif"
     fontSize: "2rem"
     fontWeight: 680
     lineHeight: 1.25
     fontVariation: "'wdth' 92"
   headline:
-    fontFamily: "Archivo Variable, Noto Sans Arabic Variable, system-ui, sans-serif"
+    fontFamily: "Archivo Variable, system-ui, sans-serif"
     fontSize: "1.625rem"
     fontWeight: 680
     lineHeight: 1.25
     fontVariation: "'wdth' 92"
   title:
-    fontFamily: "Archivo Variable, Noto Sans Arabic Variable, system-ui, sans-serif"
+    fontFamily: "Archivo Variable, system-ui, sans-serif"
     fontSize: "1.25rem"
     fontWeight: 680
     lineHeight: 1.25
     fontVariation: "'wdth' 92"
   body:
-    fontFamily: "Archivo Variable, Noto Sans Arabic Variable, system-ui, sans-serif"
+    fontFamily: "Archivo Variable, system-ui, sans-serif"
     fontSize: "0.9375rem"
     fontWeight: 400
     lineHeight: 1.45
   reading:
-    fontFamily: "Archivo Variable, Noto Sans Arabic Variable, system-ui, sans-serif"
+    fontFamily: "Archivo Variable, system-ui, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.65
   label:
-    fontFamily: "Archivo Variable, Noto Sans Arabic Variable, system-ui, sans-serif"
+    fontFamily: "Archivo Variable, system-ui, sans-serif"
     fontSize: "0.875rem"
     fontWeight: 600
     lineHeight: 1.45
@@ -73,11 +73,6 @@ typography:
     fontWeight: 500
     fontFeature: "'tnum' 1, 'lnum' 1"
     fontVariation: "'wdth' 80"
-  arabic:
-    fontFamily: "Noto Sans Arabic Variable, Archivo Variable, system-ui, sans-serif"
-    fontSize: "1rem"
-    fontWeight: 400
-    lineHeight: 1.75
 rounded:
   none: "0"
   control: "2px"
@@ -157,8 +152,8 @@ Density serves review bursts. On a review desk, rows are 32px with hairline divi
 condensed and tabular, and the detail sits in a full-height pane beside the list. Check-in pages
 breathe at 44px rows. The surface is flat: depth exists only for things that float (drawers,
 listboxes, the one dialog). States speak in rust, ochre, sage and slate-teal, always with an icon
-and a word. Arabic and English sit side by side, each in its own direction, without either being
-mangled.
+and a word. The portal is English only (PRODUCT.md); names still sit in sentences isolated, so
+their punctuation never scrambles the line.
 
 This is direction A ("Timetable, evolved") of the 2026-10-08 redesign. Its split-pane review desk
 comes from direction C. The previous "Timetable Book" world is archived in
@@ -173,8 +168,7 @@ until their area migrates.
 - Maroon carries action, selection, focus and the masthead (≈ 7% of a view). Red is ≤ 0.2%: the
   logo and the active marker.
 - States are their own low-saturation hues, always with an icon and words.
-- Archivo's width axis condenses titles (92%), labels (87%) and numerals (80%). Noto Sans Arabic
-  carries Arabic.
+- Archivo's width axis condenses titles (92%), labels (87%) and numerals (80%).
 - Flat, with one overlay elevation. Motion is opacity and transform only, at 200 ms or less.
 
 ## Colors
@@ -210,9 +204,8 @@ is paired with an icon and a word.
 ### Neutral
 
 - **Page White** (#ffffff): the page and every working surface.
-- **Paper** (#fbfaf7) and **Sand** (#f3f2ec): panes, consequence panels, state lines and bands.
-- **e& Beige** (#e6e6dc): the proof tint (a catalogue version not in service) and the evidence
-  highlight.
+- **Paper** (#fbfaf7) and **Sand** (#f3f2ec): panes, consequence panels and bands.
+- **e& Beige** (#e6e6dc): the evidence highlight.
 - **Warm Ink** (#1f1b1a): body text and the ledger rule.
 - **Warm Ink 2** (#4a4542): secondary text, column heads.
 - **e& Grey** (#636363): tertiary text, only on white or sand-or-lighter (6.0:1 on white).
@@ -242,12 +235,10 @@ severe states are never lighter than routine ones.
 ## Typography
 
 **Display, body and label:** Archivo Variable (self-hosted, OFL), using its width axis.
-**Arabic:** Noto Sans Arabic Variable (self-hosted, OFL).
 **Codes:** the platform monospace, for identifiers only.
 
 **Character:** one grotesk in several widths, quietly engineered: condensed where it carries
-tables and numbers, full width where it carries prose. Arabic gets its own face and more air,
-never squeezed into Latin metrics.
+tables and numbers, full width where it carries prose.
 
 ### Hierarchy
 
@@ -258,7 +249,6 @@ never squeezed into Latin metrics.
 - **Reading** (400, 1rem, 1.65, ≤ 70ch): passages, evidence and long descriptions.
 - **Label** (600, 0.875rem, 87% width): column heads, field labels.
 - **Numeral** (500, 0.875rem, 80% width, tabular): counts, dates and figures in tables.
-- **Arabic** (400, 1rem, 1.75): any RTL content.
 
 ### Named Rules
 
@@ -293,7 +283,7 @@ to the end. Weight never shouts a date.
 - **Spacing:** a 4px grid (4, 8, 12, 16, 20, 24, 32, 48), with 24px between sections.
 - **Density:** comfortable (44px rows, 15px text) or compact (32px rows, 14px text), set per
   person. Automatic is compact on review desks.
-- **Sticky regions:** each sticky region (masthead, state line, bulk or save bar) publishes its
+- **Sticky regions:** each sticky region (masthead, table head, bulk or save bar) publishes its
   measured height. Scroll padding uses those heights, so a focused row is never hidden.
 
 ## Elevation & Depth
@@ -305,8 +295,8 @@ Flat by default. Depth comes from rules and tints:
 - Paper and Sand bands;
 - the maroon-mist selection.
 
-One shadow exists, for things that genuinely float above the page: drawers, the combobox listbox,
-the toggletip, the dialog, and the undo toast.
+One shadow exists, for things that genuinely float above the page: drawers, the combobox listbox
+and the dialog.
 
 ### Shadow Vocabulary
 
@@ -397,7 +387,7 @@ with each side scrolling on its own, so the original and the decision sit togeth
   teal).
 - **Do** put the ledger rule under every table head, section head and consequence panel.
 - **Do** write numbers in tables condensed, tabular and end-aligned at weight 500.
-- **Do** give Arabic its own face, direction and 1.75 leading. Isolate names inside sentences.
+- **Do** isolate names inside sentences (`<bdi>`), so a name's punctuation stays its own.
 - **Do** read only semantic and component tokens in components. e& values live in
   `tokens/primitive.css`.
 - **Do** keep every target at least 24px by its own size, and every text at least 14px.
@@ -410,4 +400,3 @@ with each side scrolling on its own, so the original and the decision sit togeth
 - **Don't** animate colour, or animate for longer than 200 ms. Nothing pulses or loops.
 - **Don't** fade a disabled primary. Show the outline and say why.
 - **Don't** put a thick coloured border on the side of a panel, card or callout.
-- **Don't** mirror the English UI chrome for Arabic content.

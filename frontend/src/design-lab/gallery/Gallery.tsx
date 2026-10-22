@@ -21,20 +21,15 @@ import {
   Combobox,
   ConsequencePanel,
   DataTable,
-  DecisionButtons,
   Dialog,
-  DiffView,
   Drawer,
   EmptyState,
   EvidenceQuote,
   FilterStrip,
   HelpContent,
-  ImpactPanel,
   JobTray,
   MastheadButton,
   PageHeader,
-  Pagination,
-  ProvenanceTrail,
   RadioGroup,
   SearchDialog,
   SearchTrigger,
@@ -44,16 +39,12 @@ import {
   Skeleton,
   type Sort,
   SplitPane,
-  StateLine,
   Status,
   SubNav,
   Suggested,
   Tabs,
   TextArea,
   TextField,
-  Toggletip,
-  Toolbar,
-  UndoToast,
   Upload,
 } from "../../design/components";
 import { useDisclosure } from "../../design/hooks";
@@ -156,7 +147,6 @@ function Foundations() {
         <p style={{ fontSize: "var(--text-h2)", fontWeight: "var(--weight-heading)" }}>Heading 2 · 20/680</p>
         <p>Body 15/400 for UI, 1.45 leading. The ledger rule sits under every head.</p>
         <p className="ds-num" style={{ fontStretch: "var(--stretch-numeral)" }}>Numerals 1,204 · 404 · 2026-10-08, condensed and tabular</p>
-        <p dir="rtl" lang="ar" style={{ fontSize: "var(--text-reading)" }}>يجب التحقق من العنوان قبل تفعيل الخدمة. نص عربي بخط Noto Sans Arabic وبتباعد أسطر أوسع.</p>
         <p style={{ fontSize: "var(--text-meta)", color: "var(--color-ink-2)" }}>Meta 14/400: the floor. No text is smaller.</p>
       </div>
       <div className="gallery-chart" aria-label="Chart palette" role="img">
@@ -182,20 +172,15 @@ function ShellAndPage() {
         >
           <SubNav label="Document" items={[{ href: "#", label: "Review", current: true }, { href: "#", label: "Versions" }, { href: "#", label: "Cited by", count: 7 }, { href: "#", label: "Ownership" }]} />
         </PageHeader>
-        <StateLine>Draft 'October integration update' · 18 to decide · Not built · Not checked</StateLine>
-        <StateLine tone="proof">You're reading a replaced version, 'Initial catalogue'. · <a href="#">Read the version in service</a></StateLine>
         <Tabs label="Draft view" tabs={[{ id: "changes", label: "Changes" }, { id: "check", label: "Check" }]} selected={tab} onSelect={setTab}>
           <p>{tab === "changes" ? "Changes against the version in service." : "Build and sample checks."}</p>
         </Tabs>
-        <Toolbar label="Draft actions"><Button>Rename…</Button><Button>Download as Excel</Button><Button variant="quiet" icon={<Trash2 size={14} />}>Delete the draft…</Button></Toolbar>
-        <Pagination page={2} pages={9} onPage={() => {}} />
       </div>
     </Section>
   );
 }
 
 function ActionsAndStatus() {
-  const [undo, setUndo] = useState(true);
   return (
     <Section title="Actions and status">
       <div id="actions" className="gallery-stack">
@@ -212,8 +197,7 @@ function ActionsAndStatus() {
           <Status tone="neutral">Waiting</Status><Status tone="working">Working</Status><Status tone="done">Done</Status>
           <Status tone="attention">Needs attention</Status><Status tone="held">Held</Status><Status tone="stopped">Stopped</Status>
         </p>
-        <p className="gallery-row"><a href="#">Your work<Badge count={6} label="need you" /></a> <Suggested basis="stated" /> <Suggested basis="inferred" detail="Model fake-catalogue-extractor" /></p>
-        {undo && <UndoToast message="Rejected: Adds the system Dynamics CRM." onUndo={() => setUndo(false)} onDismiss={() => setUndo(false)} />}
+        <p className="gallery-row"><a href="#actions">Your work<Badge count={6} label="need you" /></a> <Suggested basis="stated" /> <Suggested basis="inferred" detail="Model fake-catalogue-extractor" /></p>
         <EmptyState title="Nothing needs you." action={<Button>See everyone's work</Button>}>No re-confirmations are due until 3 Nov.</EmptyState>
         <Skeleton rows={3} label="Reading the library" />
         <JobTray jobs={[
@@ -257,7 +241,7 @@ function DataAndReview() {
     return [...shown].sort((a, b) => key(a).localeCompare(key(b)) * (sort.direction === "ascending" ? 1 : -1));
   }, [filter, find, sort]);
   const columns: Column<Row>[] = [
-    { id: "title", header: "Document", cell: (r) => <a href="#">{r.title}</a>, rowHeader: true, sortable: true, bidi: true },
+    { id: "title", header: "Document", cell: (r) => <a href={`#${r.id}`}>{r.title}</a>, rowHeader: true, sortable: true, bidi: true },
     { id: "state", header: "State", cell: (r) => (r.state === "review" ? <Status tone="neutral">Ready for review</Status> : r.state === "service" ? <Status tone="done">In service</Status> : <Status tone="attention">Needs attention</Status>) },
     { id: "owner", header: "Owner", cell: (r) => r.owner },
     { id: "passages", header: "Passages", cell: (r) => r.passages, numeric: true, sortable: true },
@@ -284,8 +268,6 @@ function DataAndReview() {
             active ? (
               <>
                 <h3 dir="auto">{active.title}</h3>
-                <ProvenanceTrail hops={[{ label: "Version", value: "2 · eligibility.xlsx" }, { label: "Uploaded by", value: active.owner }]} />
-                <DecisionButtons kind="passage" subject={`passage 1 of ${active.title}`} onDecide={() => {}} />
               </>
             ) : null
           }
@@ -293,8 +275,6 @@ function DataAndReview() {
         <BulkActionBar count={selected.size} noun={["document", "documents"]} onClear={() => setSelected(new Set())}>
           <Button>Transfer {selected.size}…</Button>
         </BulkActionBar>
-        <DecisionButtons kind="suggestion" subject="Adds the system Dynamics CRM" onDecide={() => {}} />
-        <DecisionButtons kind="suggestion" subject="Depends on CWOM" state="Accepted by Amina Owner · 8 Oct" onDecide={() => {}} />
       </div>
     </Section>
   );
@@ -305,20 +285,7 @@ function CompareAndProvenance() {
   return (
     <Section title="Compare, impact, provenance">
       <div id="compare" className="gallery-stack">
-        <DiffView
-          fromLabel="Initial catalogue"
-          toLabel="October integration update"
-          changes={[
-            { key: "oh", kind: "added", item: "System", label: "Order Hub", origin: "Suggestion, accepted by Amina Owner" },
-            { key: "cw", kind: "changed", item: "System", label: "CWOM", fields: [{ name: "Owner", from: "Fulfilment squad", to: "Care squad" }, { name: "Landscape area", from: "Order orchestration", to: "Service assurance" }], origin: "Hand edit by Ravi Reviewer" },
-            { key: "ad", kind: "removed", item: "System", label: "Legacy ADSL gateway", origin: "Catalogue file" },
-          ]}
-        />
-        <ImpactPanel title="Mapping impact" state={{ kind: "checked", at: "14:02" }} counts={[{ label: "Requirements that would map differently", value: 3 }, { label: "Features", value: 1 }]} caveat="Only requirements you can see." />
-        <ImpactPanel title="Cited by" state={{ kind: "unknown", why: "Couldn't ask Requirement AI." }} />
-        <ImpactPanel title="Check" state={{ kind: "stale", at: "14:02" }} onCheck={() => {}} />
         <EvidenceQuote text={"System: Order Hub\nCaptures business orders from the web (sample)."} quote="System: Order Hub" source="Integration design (sample) · version 2 · lines 1–12" />
-        <ProvenanceTrail hops={[{ label: "Fact", value: "Order Hub captures business orders" }, { label: "Evidence", value: "lines 1–12", href: "#" }, { label: "Document", value: "Integration design, version 2", href: "#" }, { label: "Catalogue version", value: "October integration update" }, { label: "Decided by", value: "Amina Owner, 8 Oct" }]} />
         {open ? (
           <ConsequencePanel
             tone="danger"
@@ -348,7 +315,6 @@ function OverlaysAndHelp() {
   return (
     <Section title="Overlays and help">
       <div id="overlays" className="gallery-stack">
-        <p>Search index for tables <Toggletip label="Search index for tables">A second index that keeps table rows together, so searches over tables find whole rows.</Toggletip></p>
         <div><Button onClick={() => setDialog(true)}>Open the 409 dialog</Button></div>
         <Dialog open={dialog} title="Someone changed this draft" onClose={() => setDialog(false)} actions={<><Button variant="primary" onClick={() => setDialog(false)}>Reload</Button><Button onClick={() => setDialog(false)}>Review their change</Button></>}>
           Reload to see their change; your unsaved decisions stay listed.
@@ -365,7 +331,7 @@ function OverlaysAndHelp() {
           onOpen={() => setSearching(false)}
           groups={query ? [
             { id: "documents", label: "Documents", hits: [{ id: "d", href: "#", title: "XGPON coverage rules (sample)", detail: "Document · owner you · version 2" }] },
-            { id: "systems", label: "Systems", hits: [{ id: "s", href: "#", title: "سياسة التحقق من العنوان (sample)", lang: "ar", detail: "System" }] },
+            { id: "systems", label: "Systems", hits: [{ id: "s", href: "#", title: "Address verification policy (sample)", detail: "System" }] },
             { id: "passages", label: "Passages in service", note: "searching…", hits: [{ id: "p", href: "#", title: "High-speed bundles require XGPON coverage at the address.", detail: "Passage in XGPON coverage rules (sample) · Line 1" }] },
           ] : []}
         />

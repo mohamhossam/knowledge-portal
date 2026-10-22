@@ -6,9 +6,12 @@ import type { Offering } from "../api/client";
 import { EXPLORED } from "../explorer/fixtures";
 import { fieldsInWords } from "./drafting";
 import { offeringProblem } from "./editing";
-import { SourcesContext } from "./governance";
+import { sourceRegister, SourcesContext } from "./governance";
 import { OfferingEditor } from "./OfferingEditor";
 import { NfrSection, RealisationKey, RealisedAs } from "./Realisation";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 const OFFERING = EXPLORED.products![0]!;
 
@@ -74,7 +77,7 @@ describe("realisation and NFRs read on a sheet", () => {
 
   it("lists the offering's non-functional requirements, an undefined one as due", () => {
     render(
-      <SourcesContext.Provider value={EXPLORED.sources ?? []}>
+      <SourcesContext.Provider value={sourceRegister(EXPLORED)}>
         <NfrSection offering={OFFERING} headingId="nfrs" level={2} />
       </SourcesContext.Provider>,
     );

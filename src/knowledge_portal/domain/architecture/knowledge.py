@@ -30,6 +30,7 @@ from knowledge_portal.domain.architecture.governance import (
     check_governance,
 )
 from knowledge_portal.domain.architecture.identity import check_former_ids
+from knowledge_portal.domain.architecture.interface_links import check_interface_links
 from knowledge_portal.domain.architecture.interfaces import (
     SystemInterface,
     check_data_roles,
@@ -50,7 +51,13 @@ from knowledge_portal.domain.architecture.realisations import (
     check_realisations,
 )
 from knowledge_portal.domain.architecture.sources import SourceConfidence, check_source
-from knowledge_portal.domain.architecture.vocabularies import VocabularyTerm, check_vocabulary
+from knowledge_portal.domain.architecture.vocabularies import (
+    ConceptScheme,
+    VocabularyTerm,
+    check_schemes,
+    check_vocabulary,
+    field_schemes,
+)
 from knowledge_portal.domain.architecture.vocabulary_links import check_vocabulary_links
 
 
@@ -91,7 +98,6 @@ class CapabilityDomain:
 
     id: str
     name: str
-    name_ar: str | None = None
     parent_id: str | None = None
     description: str | None = None
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
@@ -99,6 +105,17 @@ class CapabilityDomain:
 
     def __post_init__(self) -> None:
         _check_node(self, "Domain")
+
+
+class LandscapeLayout(StrEnum):
+    """Where the landscape map draws a top domain apart from the order of layers."""
+
+    # The integration layer, drawn as a bus across the map.
+    BUS = "bus"
+    # The layer the bus is drawn under, such as TAM's customer domain.
+    ABOVE_BUS = "above_bus"
+    # Drawn last, side by side, such as TAM's engaged party and enterprise domains.
+    SIDE = "side"
 
 
 @dataclass(frozen=True)
@@ -112,7 +129,6 @@ class LandscapeDomain:
 
     id: str
     name: str
-    name_ar: str | None = None
     parent_id: str | None = None
     description: str | None = None
     # It serves every other domain (TAM's enterprise domain, the integration layer), so the
@@ -120,9 +136,39 @@ class LandscapeDomain:
     cross_cutting: bool = False
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
+    # Where the landscape map draws a top domain, when not as a layer in the version's order
+    # (review recommendation 10): the bus, the layer the bus runs under, or a side layer.
+    layout: LandscapeLayout | None = None
 
     def __post_init__(self) -> None:
         _check_node(self, "Landscape domain")
+        if self.layout is not None:
+            try:
+                object.__setattr__(self, "layout", LandscapeLayout(self.layout))
+            except ValueError as exc:
+                names = ", ".join(item.value for item in LandscapeLayout)
+                raise InvalidKnowledgeError(
+                    f"{self.name}: a layout is one of {names}, not {self.layout!r}."
+                ) from exc
+            if self.parent_id is not None:
+                raise InvalidKnowledgeError(
+                    f"{self.name}: only a top landscape domain has a place on the map."
+                )
+
+
+def check_layout(domains: tuple[LandscapeDomain, ...]) -> None:
+    """One bus at most, one layer above it at most, and that layer only with a bus."""
+    placed = {
+        layout: [item for item in domains if item.layout is layout] for layout in LandscapeLayout
+    }
+    for layout in (LandscapeLayout.BUS, LandscapeLayout.ABOVE_BUS):
+        if len(placed[layout]) > 1:
+            names = ", ".join(item.name for item in placed[layout])
+            raise InvalidKnowledgeError(f"One landscape domain is the {layout.value}, not {names}.")
+    if placed[LandscapeLayout.ABOVE_BUS] and not placed[LandscapeLayout.BUS]:
+        raise InvalidKnowledgeError(
+            f"{placed[LandscapeLayout.ABOVE_BUS][0].name} sits above a bus no domain is."
+        )
 
 
 class _Node(Protocol):
@@ -131,9 +177,6 @@ class _Node(Protocol):
 
     @property
     def name(self) -> str: ...
-
-    @property
-    def name_ar(self) -> str | None: ...
 
     @property
     def parent_id(self) -> str | None: ...
@@ -146,7 +189,6 @@ def _check_node(node: _Node, noun: str) -> None:
     _required(node.id, f"{noun} id")
     _required(node.name, f"{noun} name")
     for value, label in (
-        (node.name_ar, f"Arabic {noun.casefold()} name"),
         (node.parent_id, f"Parent {noun.casefold()}"),
         (node.description, f"{noun} description"),
     ):
@@ -210,8 +252,13 @@ class KnowledgeCapability:
     unlinked_reason: str | None = None
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
+    # Where it comes from and how sure its source is, as for every other fact: a capability
+    # and its concept link select systems (ADR-0114), so they carry their evidence too.
+    confidence: SourceConfidence | None = None
+    source: str | None = None
 
     def __post_init__(self) -> None:
+        check_source(self)
         if self.domain_id is not None:
             _required(self.domain_id, "Capability domain")
         if self.component_id is not None:
@@ -237,21 +284,27 @@ class SystemComponent:
 
     id: str
     name: str
-    name_ar: str | None = None
     description: str | None = None
     aliases: tuple[str, ...] = ()
     # What it is built as, in the maintainer's words: "Microservice", "Batch job".
     technology: str | None = None
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
+    # Where it comes from and how sure its source is, as for every other fact.
+    confidence: SourceConfidence | None = None
+    source: str | None = None
+    # The term of a curated vocabulary ``technology`` means, beside the text; None while
+    # unmapped (review recommendation 9).
+    technology_id: str | None = None
 
     def __post_init__(self) -> None:
+        check_source(self)
         _required(self.id, "Component id")
         _required(self.name, "Component name")
         for value, label in (
-            (self.name_ar, "Arabic component name"),
             (self.description, "Component description"),
             (self.technology, "Component technology"),
+            (self.technology_id, "Component technology term"),
         ):
             if value is not None:
                 _required(value, label)
@@ -260,7 +313,7 @@ class SystemComponent:
 
     @property
     def labels(self) -> tuple[str, ...]:
-        return (self.name, *((self.name_ar,) if self.name_ar else ()), *self.aliases)
+        return (self.name, *self.aliases)
 
 
 @dataclass(frozen=True)
@@ -283,7 +336,6 @@ class SystemDefinition:
     aliases: tuple[str, ...] = ()
     capabilities: tuple[KnowledgeCapability, ...] = ()
     constraints: tuple[str, ...] = ()
-    name_ar: str | None = None
     components: tuple[SystemComponent, ...] = ()
     # What the system is for, in a sentence or two; None while nobody has said.
     description: str | None = None
@@ -319,7 +371,6 @@ class SystemDefinition:
         _required(self.id, "System id")
         _required(self.name, "System name")
         for value, label in (
-            (self.name_ar, "Arabic system name"),
             (self.description, "System description"),
             (self.landscape_domain_id, "System landscape domain"),
             (self.owner, "System owner"),
@@ -337,7 +388,7 @@ class SystemDefinition:
         check_retirement(self, self.name)
         if any(not value.strip() for value in (*self.aliases, *self.constraints)):
             raise InvalidKnowledgeError("System aliases and constraints must not be blank.")
-        labels = (self.name, *((self.name_ar,) if self.name_ar else ()), *self.aliases)
+        labels = (self.name, *self.aliases)
         if len({_compared(value) for value in labels}) != len(labels):
             raise InvalidKnowledgeError("System names and aliases must be unique.")
         noted = [item.entity_id for item in self.mastery_notes]
@@ -470,7 +521,6 @@ class KnowledgeDocumentVersion:
     title: str
     filename: str
     mime_type: str
-    language: str
     checksum: str
     storage_key: str
     uploaded_by: str
@@ -485,8 +535,6 @@ class KnowledgeDocumentVersion:
             ("Actor", self.uploaded_by),
         ):
             _required(value, label)
-        if self.language not in {"en", "ar", "mixed"}:
-            raise InvalidKnowledgeError("Document language must be en, ar, or mixed.")
         if self.uploaded_at.tzinfo is None:
             raise InvalidKnowledgeError("Document timestamp must have a timezone.")
 
@@ -549,6 +597,9 @@ class ArchitectureKnowledge:
     # The controlled vocabularies behind eTOM process, channel kind, component kind,
     # role and Open API values, each beside the text it covers (ADR-0114).
     vocabulary: tuple[VocabularyTerm, ...] = ()
+    # The vocabularies curators define beside the built-in ones, each covering free-text
+    # fields such as an offering's NFR quality (review recommendation 9).
+    schemes: tuple[ConceptScheme, ...] = ()
     # The contracts systems expose and consume (ontology plan Phase 8); with the
     # information entities systems master or read, what a data change ripples through.
     interfaces: tuple[SystemInterface, ...] = ()
@@ -571,7 +622,7 @@ class ArchitectureKnowledge:
             raise InvalidKnowledgeError("System ids must be unique.")
         owners: dict[str, SystemDefinition] = {}
         for system in self.systems:
-            for alias in (system.id, system.name, system.name_ar or "", *system.aliases):
+            for alias in (system.id, system.name, *system.aliases):
                 if not alias:
                     continue
                 owner = owners.setdefault(label_key(alias) or _compared(alias), system)
@@ -634,11 +685,22 @@ class ArchitectureKnowledge:
         check_journeys(self.journeys, system_ids, self.products, channel_ids)
         check_former_ids("offering", self.products)
         check_former_ids("journey", self.journeys)
-        terms = check_vocabulary(self.vocabulary)
-        check_vocabulary_links(terms, self.products, self.journeys, self.channels)
+        scheme_names = check_schemes(self.schemes)
+        terms = check_vocabulary(self.vocabulary, scheme_names)
+        check_vocabulary_links(
+            terms,
+            self.products,
+            self.journeys,
+            self.channels,
+            portfolio=self.portfolio,
+            systems=self.systems,
+            bound=field_schemes(self.schemes),
+            names=scheme_names,
+        )
         for system in self.systems:
             check_data_roles(system.name, system.masters, system.reads, terms)
         check_interfaces(self.interfaces, system_ids, terms)
+        check_interface_links(self.interfaces, self.journeys, self.products)
         check_realisations(self.realisations, system_ids, self.products)
         check_governance(
             self.sources,
@@ -656,9 +718,12 @@ class ArchitectureKnowledge:
         )
         check_change_history(self.change_history)
         check_replacements(self.systems, "System")
+        check_replacements(self.products, "Offering")
+        check_replacements(self.portfolio, "Portfolio node")
         check_replacements(self.business_capabilities, "Concept")
-        check_replacements(self.vocabulary, "Term", lambda old, new: old.scheme is new.scheme)
+        check_replacements(self.vocabulary, "Term", lambda old, new: old.scheme == new.scheme)
         landscape = _check_domains(self.landscape_domains, "Landscape domain")
+        check_layout(self.landscape_domains)
         for system in self.systems:
             if (
                 system.landscape_domain_id is not None
@@ -689,6 +754,7 @@ class ArchitectureKnowledge:
         portfolio: tuple[PortfolioNode, ...] | None = None,
         business_capabilities: tuple[BusinessCapability, ...] | None = None,
         vocabulary: tuple[VocabularyTerm, ...] | None = None,
+        schemes: tuple[ConceptScheme, ...] | None = None,
         interfaces: tuple[SystemInterface, ...] | None = None,
         realisations: tuple[RealisationRecord, ...] | None = None,
     ) -> ArchitectureKnowledge:
@@ -723,6 +789,7 @@ class ArchitectureKnowledge:
                 else business_capabilities
             ),
             vocabulary=self.vocabulary if vocabulary is None else vocabulary,
+            schemes=self.schemes if schemes is None else schemes,
             interfaces=self.interfaces if interfaces is None else interfaces,
             realisations=self.realisations if realisations is None else realisations,
         )

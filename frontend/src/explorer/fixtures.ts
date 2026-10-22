@@ -25,6 +25,15 @@ export const EXPLORED = {
       authority: "Functional baseline.", boundary: "Workflow images are not machine-readable.",
     },
   ],
+  // Each source line its facts write, as the service reads it against the register
+  // (review recommendation 5; generated with citations.source_reference).
+  source_references: [
+    { text: "BPP SDD §11.1.3", source_id: "SDD", cited: "BPP SDD", rest: "§11.1.3", where: "§11.1.3" },
+    { text: "BPP SDD §11.2", source_id: "SDD", cited: "BPP SDD", rest: "§11.2", where: "§11.2" },
+    { text: "SDD §10", source_id: "SDD", cited: "SDD", rest: "§10", where: "§10" },
+    { text: "SDD §11", source_id: "SDD", cited: "SDD", rest: "§11", where: "§11" },
+    { text: "SDD", source_id: "SDD", cited: "SDD", rest: null, where: null },
+  ],
   conflicts: [
     {
       id: "CF-01",

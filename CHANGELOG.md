@@ -7,6 +7,138 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- The Check step lists what nothing in the draft links to (review recommendation 17):
+  capabilities with no concept and no "none fits" reason, systems outside the landscape,
+  interfaces no system consumes and no journey step or tracking flow goes through, and terms
+  nothing names (a term counts as used when a narrower one is; document types, which the
+  library uses, are left out). Retired items are not listed. Each item opens its system's
+  page where it has one. The publish checklist counts them as worth a look; publishing is
+  not held for them. `GET /architecture-knowledge/releases/{id}/coverage` serves the list
+  to knowledge admins. The committed catalogue has none. Public contract, additive.
+- Accessibility is checked at every layer (review recommendation 15). ESLint runs the
+  jsx-a11y rules (`eslint-plugin-jsx-a11y-x`, the fork that supports ESLint 10) on every
+  component, tuned so scroll regions may take focus and only pointer handlers count as
+  interaction; each remaining exception carries its reason. Every component test file that
+  renders runs axe after each test (26 more files). The Playwright axe suite now also covers the
+  governance source record, a replaced version and its system, an evidence passage, a corpus
+  requirement and finding, a historic requirement (the records the offline stack cannot hold
+  are mocked for that page alone, `e2e/mocks.ts`), and the reader's explorer, the "for
+  knowledge admins" page, the sign-in page and the collapsed sidebar. A route whose seeded
+  record is missing now fails instead of skipping.
+- Route handlers take the use cases they need, never the container (review recommendation
+  12). The 21 handlers that read the container directly (the internal API, the change-request
+  routes, the draft's readings and the sign-in configuration) take providers from
+  `dependencies.py`, and a test fails any handler that takes the container again. Every
+  refusal now answers `{code, message, correlation_id}`: the 404 of an internal API that is
+  not served, the kernel guard's 401 and 503 for a missing or unreadable service token (its
+  body rewritten on the way out; the kernel is unchanged), the route's own second check, and
+  FastAPI's unknown path (404) and method (405). They answered `{"detail": ...}` with no
+  correlation id; now a refused internal call carries the id its log line has, and
+  `X-Request-ID` matches it. Status codes and headers are unchanged. requirement-portal
+  should read `message` where it read `detail`.
+- The internal contract has a version that means something. `INTERNAL_CONTRACT_VERSION` in
+  the package sets it (1.0.0; the file carried FastAPI's default, 0.1.0), and every shape change
+  raises it: MAJOR for a breaking change, MINOR for an additive one. A new CI step regenerates
+  the contract, fails when the committed file is stale, and compares it with the base branch's
+  (`scripts/check_internal_contract.py`). Each change is listed as breaking or additive, and a
+  version that does not rise as far as the change needs fails the build.
+  `interfaces/api/contract_compat.py` does the sorting. Removed operations, parameters,
+  responses, schemas or fields, changed types, new required request input, stricter request
+  limits, lost enum values, and response fields that may now be missing or null are breaking.
+  Review recommendation 11. Internal contract: version 1.0.0, additive against main.
+- The explorer reads the catalogue's taxonomy as data (ADR-0101, Amendment 4, proposed). Its
+  response carries the vocabulary terms and curated vocabularies, the capability domains and
+  the interface records, without who accepted them. Role terms gain a `rank` (strongest
+  first) and top landscape domains a `layout` (`bus`, `above_bus`, `side`). The committed
+  catalogue holds the order and layout the frontend hard-coded, and a version without them
+  falls back to that. Role and channel-kind terms are matched by their labels, not by an id
+  prefix. The explorer names roles by their vocabulary terms, and the Solution Architecture
+  document names a linked interface by its record. YAML, JSON and the workbook carry `rank`
+  (Vocabulary) and `layout` (LandscapeDomains), both optional. Review recommendation 10.
+  Public contract, additive; the internal contract is unchanged.
+- Vocabularies are data, on one SKOS base (ADR-0125, proposed). A version holds the
+  vocabularies a curator defines beside the seven built-in ones, each covering free-text
+  fields: an offering's NFR quality, family, lifecycle and business-rule kind, an activity's
+  mode and phase, a portfolio node's level, and a system component's technology. Each of those
+  fields gains a term id beside its text, and the vocabulary clean-up proposes links for a
+  field once a vocabulary covers it, so a new list needs no deploy. Concepts and terms check
+  their shape in one place and both gain `close_match` beside `exact_match`. Every catalogue
+  file format carries vocabularies (`schemes`; a Schemes sheet), the new links (`*_term`
+  columns, optional) and close matches; the version diff reports a vocabulary as its own
+  item. Labels carry no language tag: the portal is English only. Review recommendation 9.
+  Public contract: a term's `scheme` is any vocabulary id, no longer one of seven. Internal
+  contract, additive.
+- Offerings and portfolio nodes retire like systems, and everything outside a version follows
+  an id to what names it now. An offering or portfolio node takes `deprecated` and
+  `replaced_by` (ADR-0121, amended), checked as a system's are; the offering's editor has a
+  "Retired" box and a "Replaced by" choice, and its page and list say "Retired". One resolver
+  follows an id through its former ids and its replacements. The organisation catalogue tells
+  a product naming a renamed or replaced offering or portfolio node, or a squad seat scoped to
+  a replaced concept, where the id went ("this offering is now X (renamed); link that
+  instead") rather than that it is gone. Precedents count for the system, offering and
+  concepts their old ids name now, and a retired offering is no longer matched by an
+  assessment. YAML, JSON and the workbook's Products and Portfolio sheets carry the two
+  columns, which are optional. Review recommendation 7. Public and internal contracts,
+  additive.
+- Journey steps and tracking flows can name the interface record they go through. An
+  integration or a tracking flow takes an optional `interface_id`, checked against the
+  version: the record must exist and be exposed by a system of the call. The journey editor
+  offers the records of the systems a step touches beside the interface text its source
+  writes. A dependency derived from a linked step takes the record's kind and direction
+  (ADR-0119, amended); an unlinked step whose text names exactly one record is read the same
+  way only when the direction agrees. A journey read again keeps a maintainer's links. YAML,
+  JSON and the workbook's ActivityIntegrations and TrackingFlows sheets carry `interface_id`,
+  an optional column. The committed catalogue is unchanged. Review recommendation 8. Public
+  and internal contracts, additive.
+- A fact's source line is read once, by one rule. The service reads every source line a
+  version's facts write against its source register ("SDD v2.3 · §4.1" names the source
+  short-named "SDD v2.3", at "§4.1") and sends those readings with the version as
+  `source_references` (source id, the words that name it, and where in it). The catalogue's
+  pages, the explorer, its Solution Architecture export and the catalogue lab look a line up
+  there instead of matching it themselves: four implementations with three different
+  boundary rules are now one (`citations.source_reference`), and the unused
+  `governance.named_source` is gone. A conflict's side, which names its source by id, says the
+  level directly. A line typed in an editor and not yet saved reads as written until it is.
+  Review recommendation 5. Public contract, additive.
+- An accepted suggestion keeps where it was read. Its acceptance record (ADR-0120, amended)
+  holds the suggestion's first three citations, each with its location and quote, and the
+  document version and title when it came from one of the draft's documents, so a fact still
+  leads to its passage after a later reading replaces the draft's suggestions. A system's or
+  offering's "Accepted from" lists them ("Integration design, §4.1 › Table 2, row 3: “…”"),
+  and the heading's one line names where the last one was read. YAML and JSON carry them with
+  each acceptance, and the workbook's Acceptances sheet in a `citations` column. Review
+  recommendation 6. Public and internal contracts, additive: an acceptance's `citations` list
+  defaults to empty.
+- A system's capabilities and components say where they come from. Like every other catalogue
+  fact, each now carries an optional confidence (confirmed, inferred or gap) and a source, checked
+  the same way: a capability's phrases and its concept link are what select a system
+  (ADR-0114), and until now they were the only facts with no evidence. The system's page shows a
+  Source column for both ("Not stated" when nothing says), its editor takes them row by row, the
+  version diff reports a changed confidence or source, and the draft's Check step lists the
+  sources they cite that the register lacks. An accepted suggestion keeps what a maintainer said.
+  YAML, JSON and the workbook's Capabilities and Components sheets carry `confidence` and
+  `source`; the columns are optional, so older workbooks still import. Review recommendation 4.
+  Public contract, additive; the internal contract is unchanged.
+- Approvals keep what their approver looked at. Publishing from the review desk sends how many
+  passages the reviewer looked at, of how many, and how many of the flagged ones, as the publish
+  panel already said; the publication keeps it as `coverage`, and a version's publications list
+  it ("looked at 3 of 4 passages, 1 of 2 flagged"). "Seen" is kept in the browser per reviewer and
+  version, so a closed tab no longer starts the count again. Counts that cannot be (more seen than
+  there are) are refused. A version put back on an earlier review keeps none. Closes backlog BG2.
+  `POST /library/documents/{id}/versions/{version_id}/approval` takes an optional `coverage`;
+  public contract, additive.
+- Accepting the ready suggestions goes through its consequence. "Accept the N ready" on the
+  Decide step opens a panel that lists what it will accept and says that nothing reaches
+  requirement work until the draft is published; a new "Ready to accept" filter lists the whole
+  set. The service accepts only the suggestions listed, never one a reading added since:
+  `POST /architecture-knowledge/releases/{id}/suggestions/acceptance` takes optional
+  `suggestion_ids`. Focus mode sends the suggestions its summary lists under "What follows".
+  Public contract, additive.
+- A page that fails no longer blanks the portal. A render error, or a page's code gone after an
+  update, shows what happened in place of the page, with "Try again" and "Reload the page"; the
+  sidebar keeps working, and moving to another page clears it. A failure outside any page shows
+  the same on a page of its own.
+
 - Sources a draft cites but doesn't register. A fact cites its source as the source's id or
   short name, then where in it; one whose source the register doesn't hold can't show that
   source's level or title. The Check step lists each such source with how many facts cite it
@@ -51,6 +183,38 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Changed
 
+- `ROADMAP.md` says what is open, then what each stage delivered in a line (review
+  recommendation 18). The full delivery record moved, unchanged, to
+  `docs/history/roadmap-to-v0.7.0.md`. `docs/ux/ia/route-map.md` is marked superseded by
+  `frontend/src/app/App.tsx`, with which of its routes were adopted, which were not, and which
+  the app serves that it never listed. `docs/operations/branch-protection.md` says what to
+  require on `main`; turning it on is the repository owner's step in GitHub's settings.
+- Offerings and journeys a reading would take for one another are refused (review
+  recommendation 17). No two offerings may share an id, code or name, compared ignoring case
+  and punctuation as the suggestion matcher reads them; the message names the offering that
+  already has it. No two journeys may share a name for the same offering, or when one names
+  no offering. Systems, concepts and terms were already unique by label. The committed
+  catalogue has no such pair.
+- `opentelemetry-api` 1.45.0 → 1.45.1 for CVE-2026-114603, which the supply-chain gate
+  reported.
+- The five largest modules are split by concern (review recommendation 16); behaviour, the
+  API and both contracts are unchanged.
+  - `catalogue_files.py` (4,357 lines) is a package by format: field readers, YAML/JSON
+    reading and writing, offerings, workbook sheets, workbook reading and writing. The
+    workbook's 321-, 302- and 249-line functions read or write one sheet per function.
+  - `candidates.classify` (257 lines) and `apply_candidate` (164) pick one handler per
+    suggestion kind from a table, checked at import to cover every kind.
+  - `Settings.from_env` (293 lines) reads one section per function, and `validate_settings`
+    (270) runs one check per concern in the same order. When values in two sections are
+    malformed at once, the first one reported can differ; each message is unchanged.
+  - The review desk (840 lines) is composed from its parts in `library/review/`: the desk's
+    state hook, the seen hook, the pane, the save bar, the panels and the grid.
+  - `suggestions.ts` (1,120 lines) is a folder by concern: state, keys, lexicon, sentences,
+    waits, dependencies, groups, readings and files.
+  - One reader for untyped JSON, `infrastructure/json_reading.py`, replaces the private
+    `_text` helpers of the requirement client, the product catalogue, the catalogue
+    extraction, the library golden set, the PostgreSQL values and the catalogue files.
+    `_integer` for stored integers now refuses true and false, which those columns never hold.
 - Dependabot no longer proposes TypeScript 6 or later (`.github/dependabot.yml`):
   openapi-typescript and typescript-eslint, even at their latest, require TypeScript below 6.1,
   so such a bump cannot install. Lift the rule once both accept a newer major.
@@ -64,6 +228,20 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- The critique's low findings (`docs/ux/critique-2026-10-22.md`): a page head's facts no
+  longer leave a dot at the start of a line or after a clipped fact (narrow, the gap separates
+  them; wide, a fact that no longer fits leaves whole, with its dot); list-and-record pages end
+  at the screen's foot instead of 8 to 32px below it; and an empty state straight under a page
+  head (the failure screen, a page that couldn't read its data) no longer draws a second rule
+  or sits indented from the title.
+- The review desk, the draft's Decide desk and the catalogue's benches no longer stretch the
+  page under themselves. Their rows' visually hidden labels escaped the list's scroll, making
+  the page thousands of pixels tall, so focusing into the pane (opening the publish panel)
+  scrolled the whole window. The split and bench lists and panes now contain what they hold;
+  `e2e/layout.spec.ts` keeps each page about one screen tall. Found by the critique of #144's
+  screens (`docs/ux/critique-2026-10-22.md`), which also made the Check step's orphans a dense
+  table after the samples, and has the accept panel say where two look-alike suggestions were
+  read.
 - An architecture catalogue workbook whose Tracking sheet has a column named `flows`,
   `channels`, `milestones`, `statuses` or `fallout` imports again. The column's cell replaced
   the list the TrackingFlows, TrackingChannels and TrackingEvents sheets add to, and the import
@@ -102,6 +280,49 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   "…" past two lines, now cut between words; and its drawn lines are spaced apart in the
   markup, so their words no longer run together. The squads bench's seat button reads "Edit
   seats of {squad}", its visible "Edit seats" first. `docs/design-system.md` says so.
+
+### Removed
+
+- What the portal kept for Arabic, now that it is English only (PRODUCT.md):
+  - the Arabic name (`name_ar`) of systems, components, capability domains and landscape
+    domains: from the catalogue, its suggestions and diff, the matching, reasoning and
+    extraction prompts (catalogue extraction is now `catalogue-extraction-v21`), the index
+    text, YAML, JSON and the workbook (no `name_ar` column in the template), the API and the
+    screens that showed or edited it;
+  - an architecture document's language (`en`, `ar` or `mixed`), from the upload routes, the
+    document and its response; and the library passage's derived `language`, always "en"
+    since the library refuses Arabic;
+  - the Noto Sans Arabic typeface, its tokens (`--family-arabic`, `--font-arabic`,
+    `--leading-arabic`) and the Arabic and right-to-left type rules, which takes the built
+    fonts from 644 KB to 211 KB; and the gallery's Arabic sample;
+  - the Arabic rules in CLAUDE.md, DESIGN.md and the design-system, interaction and object
+    model documents.
+
+  Old data still loads: a catalogue file, workbook, stored version, stored suggestion or
+  library chunk that carries `name_ar` or `language` has the value ignored, and an older
+  client sending either is not refused. Kept on purpose: the library's refusal of Arabic text,
+  search's Arabic folding in the citation contract with requirement work (ADR-0099), and every
+  `dir="auto"` and `<bdi>`, which still isolate a name's own punctuation. The catalogue does not
+  refuse Arabic letters. Neither field was in the internal contract.
+- Guessing a text's language (review recommendation 15). The portal reads English only
+  (`PRODUCT.md`), so passages, quotes, search hits and table cells no longer carry a `lang`
+  guessed from their letters or from the document's language. `contentLang`, `langOf`,
+  `isArabic`, `isLatin` and `documentLang` go. Adding a document no longer asks "Written in";
+  it is sent as English. The empty-search hints no longer suggest searching in another
+  language. The API still accepts `ar` and `mixed`, and the Arabic names (`name_ar`) keep their
+  `lang="ar"` until they are retired.
+- The design system's unused components, and what the docs said about them (review
+  recommendation 14). `ImpactPanel`, `ProvenanceTrail`, `DiffView`, `StateLine`,
+  `DecisionButtons`, `UndoToast`, `Toolbar`, `Pagination`, `Toggletip` and the
+  `useDelayedCommit` hook were used by no screen, only by their tests and the dev gallery, yet
+  `docs/design-system.md` presented four of them as how impact, provenance, diffs and a
+  replaced version are shown. They go, with their styles, their component tokens, the
+  proof tint and `--sticky-state`, which nothing else used. The design-system document now
+  describes the patterns the screens use (ConsequencePanel, "Accepted from", the Suggested
+  mark, EvidenceQuote, the catalogue's change table, the header's "Replaced" status), and
+  DESIGN.md, the interaction model, the object model, the microcopy and backlog BG3 say that
+  the 6-second undo was never built: a decision is sent at once. The production bundle is
+  unchanged, as none of it shipped.
 
 ## 0.7.0 — 2026-10-21
 

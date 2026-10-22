@@ -138,7 +138,6 @@ export const DIFF_ORDER: { item: Item; one: string; many: string }[] = [
 
 const FIELD: Record<string, string> = {
   name: "name",
-  name_ar: "Arabic name",
   aliases: "other names",
   description: "description",
   capabilities: "capabilities",
@@ -203,7 +202,7 @@ const FIELD: Record<string, string> = {
   gaps: "what could not be mapped",
 };
 
-/** A changed item's fields, said as words: "Arabic name and where it sits". */
+/** A changed item's fields, said as words: "other names and where it sits". */
 export function fieldsInWords(fields: string[]): string {
   return list([...new Set(fields.map((field) => FIELD[field] ?? field.replace(/_/g, " ")))]);
 }

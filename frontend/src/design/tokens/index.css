@@ -90,14 +90,6 @@ body {
   font-variant-numeric: tabular-nums lining-nums;
 }
 
-/* §13: Arabic and other RTL content gets air and its own face; the UI chrome never mirrors. */
-:where(.ds-root) :where(:lang(ar), [dir="rtl"]),
-:where(.ds-root) :where(p, span, a, td, th, li, dd, [role="gridcell"]):dir(rtl) {
-  font-family: var(--font-arabic);
-  line-height: var(--leading-arabic);
-  text-underline-offset: 0.4em;
-}
-
 :where(.ds-root) :where(kbd) {
   font: inherit;
   font-size: var(--text-meta);
@@ -109,7 +101,7 @@ body {
 /* §1.1: sticky regions publish their measured sizes; scrolling keeps focus clear of them. */
 html:has(.ds-root) {
   scroll-padding-block:
-    calc(var(--sticky-top) + var(--sticky-state) + var(--sticky-head, 0px) + var(--space-2))
+    calc(var(--sticky-top) + var(--sticky-head, 0px) + var(--space-2))
     calc(var(--sticky-bottom) + var(--space-2));
 }
 

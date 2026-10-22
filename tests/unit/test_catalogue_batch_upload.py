@@ -16,7 +16,7 @@ def test_each_file_is_added_or_refused_with_its_reason(client: TestClient) -> No
     root, revision = _draft(client)
     response = client.post(
         f"{root}/documents/batch",
-        data={"language": "en", "expected_revision": str(revision)},
+        data={"expected_revision": str(revision)},
         files=[
             ("files", ("billing.md", b"# Billing\nBRM rates usage.", "text/markdown")),
             ("files", ("legacy.doc", b"\xd0\xcf\x11\xe0legacy", "application/msword")),
@@ -50,14 +50,14 @@ def test_a_stale_draft_or_too_many_files_refuses_the_whole_upload(client: TestCl
     one = [("files", ("a.txt", b"Alpha system.", "text/plain"))]
     stale = client.post(
         f"{root}/documents/batch",
-        data={"language": "en", "expected_revision": str(revision - 1)},
+        data={"expected_revision": str(revision - 1)},
         files=one,
     )
     assert stale.status_code == 409
     many = [("files", (f"{n}.txt", f"System {n}.".encode(), "text/plain")) for n in range(21)]
     too_many = client.post(
         f"{root}/documents/batch",
-        data={"language": "en", "expected_revision": str(revision)},
+        data={"expected_revision": str(revision)},
         files=many,
     )
     assert too_many.status_code == 422

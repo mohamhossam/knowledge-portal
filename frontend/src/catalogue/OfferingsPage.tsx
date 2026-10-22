@@ -23,6 +23,7 @@ import { LifecycleSection } from "./LifecycleNotes";
 import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
 import { conceptIndex, SOURCE_TONE, SOURCE_WORD } from "./ontology";
 import { NfrSection, RealisationKey, RealisedAs } from "./Realisation";
+import { Retired } from "./Retired";
 import { TrackingSection } from "./Tracking";
 import { useCatalogueContext } from "./useCatalogue";
 
@@ -158,6 +159,7 @@ function AllOfferings({ release }: { release: Release }) {
       cell: (offering) => (
         <>
           <Link to={`${base}/offerings/${encodeURIComponent(offering.id)}`}>{offering.name}</Link>
+          {offering.deprecated && <span className="cat-detail">Retired</span>}
           {offering.proposition && <span className="cat-detail cat-clamp">{offering.proposition}</span>}
         </>
       ),
@@ -237,6 +239,8 @@ function OfferingRecord({ offering }: { offering: Offering }) {
   const channelName = (channelId: string) => channelNames.get(channelId) ?? channelId;
   const conflicts = conflictsFor(book.release.conflicts ?? [], offering.id);
   const system = (systemId: string) => <Link to={`${base}/systems/${encodeURIComponent(systemId)}`} dir="auto">{systemName(book, systemId)}</Link>;
+  // ADR-0121, review recommendation 7: a retired offering says what replaced it.
+  const replacement = offering.replaced_by ? (book.release.products ?? []).find((item) => item.id === offering.replaced_by) : undefined;
 
   return (
     <RecordView
@@ -245,6 +249,7 @@ function OfferingRecord({ offering }: { offering: Offering }) {
       lead={offering.proposition || undefined}
       meta={
         <>
+          {offering.deprecated && <Retired successor={replacement && { name: replacement.name, href: `${base}/offerings/${encodeURIComponent(replacement.id)}` }} />}
           {offering.confidence && <Status tone={SOURCE_TONE[offering.confidence]}>{SOURCE_WORD[offering.confidence]}</Status>}
           <AcceptedFrom accepted={acceptances(offering)} summary />
           <span>

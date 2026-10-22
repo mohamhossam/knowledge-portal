@@ -447,6 +447,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/architecture-knowledge/releases/{release_id}/coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Catalogue Coverage
+         * @description What the version holds that nothing links to; publishing is not held for it.
+         */
+        get: operations["catalogue_coverage_architecture_knowledge_releases__release_id__coverage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/architecture-knowledge/releases/{release_id}/derived-dependencies": {
         parameters: {
             query?: never;
@@ -2280,13 +2300,43 @@ export interface components {
             remaining: number;
         };
         /**
+         * AcceptSuggestionsRequest
+         * @description Accept what needs no decision; given ids, only those (the set the person was shown).
+         */
+        AcceptSuggestionsRequest: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Suggestion Ids */
+            suggestion_ids?: string[] | null;
+        };
+        /**
+         * AcceptedCitationSchema
+         * @description Where an accepted suggestion was read: the place and its words, and the document
+         *     version and title when it came from one of the draft's documents.
+         */
+        AcceptedCitationSchema: {
+            /** Document */
+            document?: string | null;
+            /** Document Version Id */
+            document_version_id?: string | null;
+            /** Location */
+            location: string;
+            /** Quote */
+            quote: string;
+        };
+        /**
          * AcceptedFromSchema
          * @description An accepted suggestion recorded on what it produced: the model and prompt that
-         *     suggested it, and who accepted it when (ADR-0120).
+         *     suggested it, who accepted it when (ADR-0120), and where it was read.
          */
         AcceptedFromSchema: {
             /** Candidate Id */
             candidate_id: string;
+            /**
+             * Citations
+             * @default []
+             */
+            citations: components["schemas"]["AcceptedCitationSchema"][];
             /**
              * Decided At
              * Format: date-time
@@ -2317,6 +2367,8 @@ export interface components {
             interaction?: string | null;
             /** Interface */
             interface?: string | null;
+            /** Interface Id */
+            interface_id?: string | null;
             /**
              * Open Api Ids
              * @default []
@@ -2375,6 +2427,8 @@ export interface components {
             main_track: boolean;
             /** Mode */
             mode?: string | null;
+            /** Mode Id */
+            mode_id?: string | null;
             /** Name */
             name: string;
             /** Number */
@@ -2387,6 +2441,8 @@ export interface components {
             performing_system_id?: string | null;
             /** Phase */
             phase?: string | null;
+            /** Phase Id */
+            phase_id?: string | null;
             /** Point Of No Return */
             point_of_no_return?: string | null;
             /** Role */
@@ -2586,8 +2642,6 @@ export interface components {
             expected_revision: number;
             /** File */
             file: string;
-            /** Language */
-            language: string;
             /** Title */
             title: string;
         };
@@ -2597,8 +2651,6 @@ export interface components {
             expected_revision: number;
             /** Files */
             files: string[];
-            /** Language */
-            language: string;
         };
         /**
          * BrdStage
@@ -2670,6 +2722,11 @@ export interface components {
             alt_labels: string[];
             /** Broader Id */
             broader_id?: string | null;
+            /**
+             * Close Match
+             * @default []
+             */
+            close_match: string[];
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Definition */
             definition?: string | null;
@@ -2698,6 +2755,8 @@ export interface components {
             id: string;
             /** Kind */
             kind?: string | null;
+            /** Kind Id */
+            kind_id?: string | null;
             /** Source */
             source?: string | null;
             /** Statement */
@@ -2760,8 +2819,6 @@ export interface components {
              * @default
              */
             name: string;
-            /** Name Ar */
-            name_ar?: string | null;
             /** Parent Domain Id */
             parent_domain_id?: string | null;
             portfolio_node?: components["schemas"]["PortfolioNodeSchema"] | null;
@@ -2821,8 +2878,6 @@ export interface components {
             id: string;
             /** Name */
             name: string;
-            /** Name Ar */
-            name_ar?: string | null;
             /** Parent Id */
             parent_id?: string | null;
         };
@@ -3138,7 +3193,7 @@ export interface components {
          * ChangedItem
          * @enum {string}
          */
-        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request" | "concept" | "vocabulary_term" | "interface" | "realisation" | "portfolio_node";
+        ChangedItem: "system" | "capability" | "relationship" | "document" | "domain" | "component" | "landscape_domain" | "product" | "journey" | "channel" | "source" | "conflict" | "change_request" | "concept" | "vocabulary_term" | "vocabulary" | "interface" | "realisation" | "portfolio_node";
         /**
          * ChannelSchema
          * @description Where orders are placed, and the system each is entered through (ADR-0101, step 3).
@@ -3300,6 +3355,24 @@ export interface components {
             /** Overridden */
             overridden: number;
         };
+        /**
+         * ConceptSchemeSchema
+         * @description A vocabulary a curator defines beside the built-in ones, and the free-text fields
+         *     its terms are linked to (review recommendation 9).
+         */
+        ConceptSchemeSchema: {
+            /** Definition */
+            definition?: string | null;
+            /**
+             * Fields
+             * @default []
+             */
+            fields: components["schemas"]["VocabularyField"][];
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** ConflictScopeSchema */
         ConflictScopeSchema: {
             /**
@@ -3418,6 +3491,20 @@ export interface components {
          * @enum {string}
          */
         CorpusState: "active" | "retired";
+        /**
+         * CoverageResponse
+         * @description What the version holds that nothing links to (review recommendation 17).
+         */
+        CoverageResponse: {
+            /** Unconsumed Interfaces */
+            unconsumed_interfaces: components["schemas"]["OrphanResponse"][];
+            /** Unlinked Capabilities */
+            unlinked_capabilities: components["schemas"]["OrphanResponse"][];
+            /** Unplaced Systems */
+            unplaced_systems: components["schemas"]["OrphanResponse"][];
+            /** Unused Terms */
+            unused_terms: components["schemas"]["OrphanResponse"][];
+        };
         /** CreateVersionRequest */
         CreateVersionRequest: {
             /** Name */
@@ -3621,6 +3708,8 @@ export interface components {
             realisations?: components["schemas"]["RealisationRecordSchema"][] | null;
             /** Relationships */
             relationships: components["schemas"]["SystemRelationshipSchema"][];
+            /** Schemes */
+            schemes?: components["schemas"]["ConceptSchemeSchema"][] | null;
             /** Sources */
             sources?: components["schemas"]["KnowledgeSourceSchema"][] | null;
             /** Systems */
@@ -3662,6 +3751,8 @@ export interface components {
          *     Architecture document (step 7).
          */
         ExplorerReleaseResponse: {
+            /** Capability Domains */
+            capability_domains?: components["schemas"]["CapabilityDomainSchema"][];
             /** Change History */
             change_history?: components["schemas"]["ChangeRequestRecordSchema"][];
             /** Channels */
@@ -3670,6 +3761,8 @@ export interface components {
             conflicts?: components["schemas"]["SourceConflictSchema"][];
             /** Id */
             id: string;
+            /** Interfaces */
+            interfaces?: components["schemas"]["SystemInterfaceSchema"][];
             /** Journeys */
             journeys?: components["schemas"]["JourneySchema"][];
             /** Landscape Domains */
@@ -3684,10 +3777,16 @@ export interface components {
             published_at?: string | null;
             /** Relationships */
             relationships: components["schemas"]["SystemRelationshipSchema"][];
+            /** Schemes */
+            schemes?: components["schemas"]["ConceptSchemeSchema"][];
+            /** Source References */
+            source_references?: components["schemas"]["SourceReferenceSchema"][];
             /** Sources */
             sources?: components["schemas"]["KnowledgeSourceSchema"][];
             /** Systems */
             systems: components["schemas"]["SystemDefinitionSchema"][];
+            /** Vocabulary */
+            vocabulary?: components["schemas"]["VocabularyTermSchema"][];
         };
         /** ExtractionRevision */
         ExtractionRevision: {
@@ -3807,6 +3906,27 @@ export interface components {
             source?: string | null;
             /** To Activity */
             to_activity: string;
+        };
+        /**
+         * ForwardedResponse
+         * @description An id still held that the version in service names otherwise now: the same thing
+         *     renamed, or retired with another in its place (review recommendation 7). A squad seat's
+         *     concept says which system the seat is scoped to.
+         */
+        ForwardedResponse: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "offering" | "portfolio_node" | "concept";
+            /** New Id */
+            new_id: string;
+            /** Old Id */
+            old_id: string;
+            /** Renamed */
+            renamed: boolean;
+            /** System Id */
+            system_id?: string | null;
         };
         /**
          * GoldenMapper
@@ -4346,12 +4466,15 @@ export interface components {
             component_id?: string | null;
             /** Concept Id */
             concept_id?: string | null;
+            confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Domain Id */
             domain_id?: string | null;
             /** Id */
             id: string;
             /** Name */
             name: string;
+            /** Source */
+            source?: string | null;
             /** Triggers */
             triggers: string[];
             /** Unlinked Reason */
@@ -4365,8 +4488,6 @@ export interface components {
             filename: string;
             /** Id */
             id: string;
-            /** Language */
-            language: string;
             /** Mime Type */
             mime_type: string;
             /** Storage Key */
@@ -4434,6 +4555,10 @@ export interface components {
             relationships: components["schemas"]["SystemRelationshipSchema"][];
             /** Revision */
             revision: number;
+            /** Schemes */
+            schemes?: components["schemas"]["ConceptSchemeSchema"][];
+            /** Source References */
+            source_references?: components["schemas"]["SourceReferenceSchema"][];
             /** Sources */
             sources?: components["schemas"]["KnowledgeSourceSchema"][];
             /** @default draft */
@@ -4506,13 +4631,18 @@ export interface components {
             description?: string | null;
             /** Id */
             id: string;
+            layout?: components["schemas"]["LandscapeLayout"] | null;
             /** Name */
             name: string;
-            /** Name Ar */
-            name_ar?: string | null;
             /** Parent Id */
             parent_id?: string | null;
         };
+        /**
+         * LandscapeLayout
+         * @description Where the landscape map draws a top domain apart from the order of layers.
+         * @enum {string}
+         */
+        LandscapeLayout: "bus" | "above_bus" | "side";
         /**
          * LibraryAdminAction
          * @enum {string}
@@ -4544,6 +4674,7 @@ export interface components {
         };
         /** LibraryApprovalRequest */
         LibraryApprovalRequest: {
+            coverage?: components["schemas"]["ReviewCoverageRequest"] | null;
             /** Expected Version */
             expected_version: number;
             /** Fingerprint */
@@ -5004,6 +5135,8 @@ export interface components {
             coverage: components["schemas"]["NfrCoverage"];
             /** Quality */
             quality: string;
+            /** Quality Id */
+            quality_id?: string | null;
             /** Source */
             source?: string | null;
             /** Statement */
@@ -5170,6 +5303,20 @@ export interface components {
             /** Location */
             location: string;
         };
+        /**
+         * OrphanResponse
+         * @description An item nothing links to, with the system or vocabulary it belongs to.
+         */
+        OrphanResponse: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Owner */
+            owner: string | null;
+            /** Owner Id */
+            owner_id: string | null;
+        };
         /** OwnedSeatResponse */
         OwnedSeatResponse: {
             resource: components["schemas"]["SquadResourceSchema"];
@@ -5290,16 +5437,25 @@ export interface components {
              */
             accepted: components["schemas"]["AcceptedFromSchema"][];
             confidence?: components["schemas"]["SourceConfidence"] | null;
+            /**
+             * Deprecated
+             * @default false
+             */
+            deprecated: boolean;
             /** Description */
             description?: string | null;
             /** Id */
             id: string;
             /** Level */
             level: string;
+            /** Level Id */
+            level_id?: string | null;
             /** Name */
             name: string;
             /** Parent Id */
             parent_id?: string | null;
+            /** Replaced By */
+            replaced_by?: string | null;
             /** Source */
             source?: string | null;
         };
@@ -5385,8 +5541,15 @@ export interface components {
              * @default []
              */
             decisions: components["schemas"]["ArchitectureDecisionSchema"][];
+            /**
+             * Deprecated
+             * @default false
+             */
+            deprecated: boolean;
             /** Family */
             family?: string | null;
+            /** Family Id */
+            family_id?: string | null;
             /**
              * Former Ids
              * @default []
@@ -5396,6 +5559,8 @@ export interface components {
             id: string;
             /** Lifecycle */
             lifecycle?: string | null;
+            /** Lifecycle Id */
+            lifecycle_id?: string | null;
             /**
              * Lifecycle Notes
              * @default []
@@ -5436,6 +5601,8 @@ export interface components {
              * @default []
              */
             questions: components["schemas"]["OpenQuestionSchema"][];
+            /** Replaced By */
+            replaced_by?: string | null;
             /**
              * Rules
              * @default []
@@ -5521,6 +5688,7 @@ export interface components {
             chunk_manifest?: string | null;
             /** Chunking Policy */
             chunking_policy: string;
+            coverage?: components["schemas"]["ReviewCoverage"] | null;
             /** Fingerprint */
             fingerprint: string;
             /** Id */
@@ -5716,8 +5884,6 @@ export interface components {
             heading_path: string[];
             /** Id */
             id: string;
-            /** Language */
-            language: string;
             /** Location */
             location: string;
             /** Original Text */
@@ -5745,6 +5911,11 @@ export interface components {
          *     whose systems differ from what its offerings name, or that is linked to nothing.
          */
         ReferenceFlagResponse: {
+            /**
+             * Forwarded
+             * @default []
+             */
+            forwarded: components["schemas"]["ForwardedResponse"][];
             /**
              * Replaced Systems
              * @default []
@@ -5985,6 +6156,50 @@ export interface components {
              */
             reviewed_at: string;
             reviewer: components["schemas"]["ActorSnapshot"];
+        };
+        /**
+         * ReviewCoverage
+         * @description How much of a version the approver looked at, as their review desk counted it.
+         *
+         *     A passage counts as seen once it held the reviewer's focus for a moment; passing
+         *     through it does not. Flagged passages are those extraction warned about. The counts
+         *     are the reviewer's own record, kept with the approval (PRODUCT.md: reviewed means seen).
+         */
+        ReviewCoverage: {
+            /**
+             * Flagged
+             * @default 0
+             */
+            flagged: number;
+            /**
+             * Flagged Seen
+             * @default 0
+             */
+            flagged_seen: number;
+            /** Passages */
+            passages: number;
+            /** Seen */
+            seen: number;
+        };
+        /**
+         * ReviewCoverageRequest
+         * @description How much of the version the approver looked at, as their review desk counted it.
+         */
+        ReviewCoverageRequest: {
+            /**
+             * Flagged
+             * @default 0
+             */
+            flagged: number;
+            /**
+             * Flagged Seen
+             * @default 0
+             */
+            flagged_seen: number;
+            /** Passages */
+            passages: number;
+            /** Seen */
+            seen: number;
         };
         /**
          * ReviewRequest
@@ -6236,6 +6451,25 @@ export interface components {
              */
             via: string[];
         };
+        /**
+         * SourceReferenceSchema
+         * @description A source line the version's facts write, read once against its register (review
+         *     recommendation 5): the registered source it names, the words that name it, what follows
+         *     them as written, and where in the source. Screens look a fact's line up here rather than
+         *     matching it themselves.
+         */
+        SourceReferenceSchema: {
+            /** Cited */
+            cited?: string | null;
+            /** Rest */
+            rest?: string | null;
+            /** Source Id */
+            source_id?: string | null;
+            /** Text */
+            text: string;
+            /** Where */
+            where?: string | null;
+        };
         /** SquadRequest */
         SquadRequest: {
             /** Expected Revision */
@@ -6320,16 +6554,19 @@ export interface components {
              * @default []
              */
             aliases: string[];
+            confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Description */
             description?: string | null;
             /** Id */
             id: string;
             /** Name */
             name: string;
-            /** Name Ar */
-            name_ar?: string | null;
+            /** Source */
+            source?: string | null;
             /** Technology */
             technology?: string | null;
+            /** Technology Id */
+            technology_id?: string | null;
         };
         /** SystemDefinitionSchema */
         SystemDefinitionSchema: {
@@ -6387,8 +6624,6 @@ export interface components {
             mastery_notes: components["schemas"]["MasteryNoteSchema"][];
             /** Name */
             name: string;
-            /** Name Ar */
-            name_ar?: string | null;
             /** Owner */
             owner?: string | null;
             /** Placement From */
@@ -6580,6 +6815,8 @@ export interface components {
             from_system_id: string;
             /** Interface */
             interface?: string | null;
+            /** Interface Id */
+            interface_id?: string | null;
             /** Label */
             label: string;
             /** Source */
@@ -6686,9 +6923,13 @@ export interface components {
         };
         /**
          * VocabularyField
+         * @description Where the catalogue writes a value a vocabulary covers.
+         *
+         *     The first six are bound to built-in schemes. The rest are free text until a curator
+         *     binds a scheme of their own to them (``ConceptScheme.fields``).
          * @enum {string}
          */
-        VocabularyField: "activity_etom" | "activity_role" | "channel_kind" | "component_kind" | "responsibility_role" | "integration_open_api";
+        VocabularyField: "activity_etom" | "activity_role" | "channel_kind" | "component_kind" | "responsibility_role" | "integration_open_api" | "nfr_quality" | "offering_family" | "offering_lifecycle" | "rule_kind" | "activity_mode" | "activity_phase" | "portfolio_level" | "component_technology";
         /**
          * VocabularyRefSchema
          * @description One place a vocabulary value is written, and the value as it was read there.
@@ -6705,14 +6946,10 @@ export interface components {
             value: string;
         };
         /**
-         * VocabularyScheme
-         * @enum {string}
-         */
-        VocabularyScheme: "etom_process" | "channel_kind" | "component_kind" | "responsibility_role" | "open_api" | "information_entity" | "document_type";
-        /**
          * VocabularyTermSchema
          * @description A term of a controlled vocabulary: an eTOM process, a channel or component kind, a
-         *     role, an Open API or an information entity.
+         *     role, an Open API or an information entity, or a term of a vocabulary a curator
+         *     defined (review recommendation 9).
          */
         VocabularyTermSchema: {
             /**
@@ -6727,6 +6964,11 @@ export interface components {
             alt_labels: string[];
             /** Broader Id */
             broader_id?: string | null;
+            /**
+             * Close Match
+             * @default []
+             */
+            close_match: string[];
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Definition */
             definition?: string | null;
@@ -6743,9 +6985,12 @@ export interface components {
             notation?: string | null;
             /** Pref Label */
             pref_label: string;
+            /** Rank */
+            rank?: number | null;
             /** Replaced By */
             replaced_by?: string | null;
-            scheme: components["schemas"]["VocabularyScheme"];
+            /** Scheme */
+            scheme: string;
             /** Source */
             source?: string | null;
         };
@@ -7751,6 +7996,39 @@ export interface operations {
             };
         };
     };
+    catalogue_coverage_architecture_knowledge_releases__release_id__coverage_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Fake-Actor-Id"?: string | null;
+            };
+            path: {
+                release_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     suggest_derived_dependencies_architecture_knowledge_releases__release_id__derived_dependencies_post: {
         parameters: {
             query?: never;
@@ -8341,7 +8619,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RevisionRequest"];
+                "application/json": components["schemas"]["AcceptSuggestionsRequest"];
             };
         };
         responses: {

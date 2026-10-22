@@ -1,10 +1,12 @@
 """The clean-up: mapping the values a catalogue already writes onto its vocabularies.
 
 Each eTOM process, channel kind, component kind, role and Open API value is read as
-it is written. A value one of a term's labels or codes names is proposed as a link to
-that term. A value no term names is proposed as a new term, which flags it: a
-maintainer decides each new term alone, and may edit it into an existing one. It only
-proposes; nothing is linked until a maintainer accepts.
+it is written, and so is each value of a field a curated vocabulary covers (review
+recommendation 9), such as an offering's NFR quality once "NFR quality" covers it. A
+value one of a term's labels or codes names is proposed as a link to that term. A value
+no term names is proposed as a new term, which flags it: a maintainer decides each new
+term alone, and may edit it into an existing one. It only proposes; nothing is linked
+until a maintainer accepts.
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ from knowledge_portal.domain.architecture.vocabularies import (
     VocabularyTerm,
     api_codes,
     api_name,
+    field_schemes,
     find_term,
     match_value,
     path_segments,
@@ -52,10 +55,9 @@ class _Group:
 
 
 def _matches(
-    found: WrittenValue, terms: tuple[VocabularyTerm, ...]
+    found: WrittenValue, scheme: str, terms: tuple[VocabularyTerm, ...]
 ) -> list[tuple[VocabularyTerm | None, str]]:
     """What each part of a value means: a term, or None with the text a new term takes."""
-    scheme = found.ref.scheme
     value = found.ref.value
     codes = api_codes(value) if scheme is VocabularyScheme.OPEN_API else ()
     if codes:
@@ -76,12 +78,21 @@ def propose_terms(release: ArchitectureKnowledge) -> tuple[TermProposal, ...]:
     """
     terms = release.vocabulary
     taken = {item.id for item in terms}
-    groups: dict[tuple[VocabularyScheme, bool, str], _Group] = {}
-    for found in written_values(release.products, release.journeys, release.channels):
-        scheme = found.ref.scheme
-        if found.term_ids and scheme is not VocabularyScheme.OPEN_API:
+    bound = field_schemes(release.schemes)
+    groups: dict[tuple[str, bool, str], _Group] = {}
+    written = written_values(
+        release.products,
+        release.journeys,
+        release.channels,
+        portfolio=release.portfolio,
+        systems=release.systems,
+    )
+    for found in written:
+        scheme = bound.get(found.ref.field)
+        # A field no vocabulary covers yet stays free text.
+        if scheme is None or (found.term_ids and scheme is not VocabularyScheme.OPEN_API):
             continue
-        for term, text in _matches(found, terms):
+        for term, text in _matches(found, scheme, terms):
             if term is not None:
                 if term.id in found.term_ids:
                     continue
@@ -90,24 +101,25 @@ def propose_terms(release: ArchitectureKnowledge) -> tuple[TermProposal, ...]:
             else:
                 key = (scheme, False, label_key(text))
                 if key not in groups:
-                    groups[key] = _Group(_new_term(found, text, terms, taken), False, [])
+                    groups[key] = _Group(_new_term(found, scheme, text, terms, taken), False, [])
                 group = groups[key]
             if found.ref not in group.refs:
                 group.refs.append(found.ref)
-    order = list(VocabularyScheme)
+    # Built-in schemes in their order, then curated ones in the release's.
+    order = [*VocabularyScheme, *(item.id for item in release.schemes)]
     ranked = sorted(groups.items(), key=lambda pair: order.index(pair[0][0]))
     return tuple(TermProposal(group.term, tuple(group.refs), group.existing) for _, group in ranked)
 
 
 def _new_term(
     found: WrittenValue,
+    scheme: str,
     text: str,
     terms: tuple[VocabularyTerm, ...],
     taken: set[str],
 ) -> VocabularyTerm:
     """A term for a value no term names: its last part as the label, under the term its
     part before names, when there is one; an Open API code keeps its code."""
-    scheme = found.ref.scheme
     notation: str | None
     if scheme is VocabularyScheme.OPEN_API and api_codes(text):
         label, notation = api_name(found.ref.value, text), text

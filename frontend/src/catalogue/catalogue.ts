@@ -8,6 +8,7 @@ import type {
   CatalogueDiff, CatalogueSystem, Journey, JourneyActivity, LandscapeDomain, Offering, Relationship, RelationshipKind, Release,
   ReleaseAuditEvent, SourceConfidence,
 } from "../api/client";
+import { roleCode, roleTerms } from "./model/vocabulary";
 
 /** A connection on a sheet's "Depends on" side, the other system as its subject: "Gets data from CWOM". */
 export function dependsHow(kind: RelationshipKind, sheet: string): string {
@@ -41,6 +42,17 @@ export function sentenceCase(text: string): string {
 /** A responsibility's role code in words: "PRIMARY_ORCHESTRATOR" reads "Primary orchestrator". */
 export function roleLabel(role: string): string {
   return sentenceCase(role.replace(/_/g, " "));
+}
+
+/**
+ * A role's name as the version's vocabulary has it (review recommendation 10): the role term
+ * a responsibility links, else the term whose label reads as its code, else the code as
+ * written ("CUSTOMER_DATA" is "Customer data").
+ */
+export function roleNamer(vocabulary: Release["vocabulary"]): (role: string | null | undefined, roleId?: string | null) => string {
+  const byCode = roleTerms({ vocabulary });
+  const byId = new Map((vocabulary ?? []).filter((term) => term.scheme === "responsibility_role").map((term) => [term.id, term.pref_label]));
+  return (role, roleId) => (roleId ? byId.get(roleId) : undefined) ?? byCode[roleCode(role) ?? ""] ?? roleLabel(role ?? "");
 }
 
 /** The same, inside a sentence: "B2B Web calls the API of B2B BFF". */
@@ -162,8 +174,8 @@ export function systemGroups(book: Catalogue): SystemGroup[] {
 const fold = (text: string) => text.normalize("NFKC").toLocaleLowerCase().trim();
 
 /**
- * Which systems a curator could mean: by name, Arabic name, alias, component,
- * capability or matching phrase. Each match says what matched, unless it was
+ * Which systems a curator could mean: by name, alias, component, capability
+ * or matching phrase. Each match says what matched, unless it was
  * the name itself.
  */
 export function findSystems(book: Catalogue, query: string): Map<string, string | null> {
@@ -172,12 +184,12 @@ export function findSystems(book: Catalogue, query: string): Map<string, string 
   if (!wanted) return found;
   const hit = (text: string | null | undefined) => !!text && fold(text).includes(wanted);
   for (const system of book.release.systems) {
-    if (hit(system.name) || hit(system.name_ar)) {
+    if (hit(system.name)) {
       found.set(system.id, null);
       continue;
     }
     const alias = system.aliases.find(hit);
-    const component = system.components.find((item) => hit(item.name) || hit(item.name_ar) || item.aliases.some(hit));
+    const component = system.components.find((item) => hit(item.name) || item.aliases.some(hit));
     const capability = system.capabilities.find((item) => hit(item.name));
     const phrase = system.capabilities.flatMap((item) => item.triggers).find(hit);
     const reason = alias !== undefined
@@ -318,6 +330,7 @@ const ITEM: Record<CatalogueDiff["changes"][number]["item"], [string, string]> =
   change_request: ["change request", "change requests"],
   concept: ["capability concept", "capability concepts"],
   vocabulary_term: ["vocabulary term", "vocabulary terms"],
+  vocabulary: ["vocabulary", "vocabularies"],
   document: ["document", "documents"],
   interface: ["interface", "interfaces"],
   realisation: ["service or resource record", "service and resource records"],

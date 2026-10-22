@@ -96,6 +96,13 @@
   max-inline-size: 64ch;
 }
 
+/* Straight under a page's head (a page that failed or holds nothing), the head's own rule is
+   the line: a second one, and padding that sets the words in from the title, only add noise. */
+.ds-pagehead + .ds-empty {
+  border-block-start: 0;
+  padding-inline: 0;
+}
+
 .ds-empty__title {
   font-weight: var(--weight-strong);
 }
@@ -112,31 +119,6 @@
 .ds-skeleton__row {
   block-size: var(--density-row);
   background: var(--skeleton-bg);
-}
-
-.ds-toast {
-  position: sticky;
-  inset-block-end: var(--space-4);
-  z-index: var(--z-toast);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--overlay-radius);
-  background: var(--toast-bg);
-  color: var(--toast-fg);
-  box-shadow: var(--overlay-shadow);
-}
-
-.ds-toast__close {
-  display: inline-grid;
-  place-items: center;
-  inline-size: var(--target-min);
-  block-size: var(--target-min);
-  border: 0;
-  background: none;
-  color: inherit;
-  cursor: pointer;
 }
 
 .ds-jobs {

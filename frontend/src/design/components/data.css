@@ -110,7 +110,7 @@
 
 .ds-table thead th {
   position: sticky;
-  inset-block-start: calc(var(--sticky-top) + var(--sticky-state));
+  inset-block-start: var(--sticky-top);
   z-index: 1;
   background: var(--color-surface);
   border-block-end: var(--table-head-rule);
@@ -223,19 +223,9 @@
   min-block-size: var(--target-min);
 }
 
-/* An RTL cell aligns to its own start (§13.4). */
+/* A cell whose own text runs right to left aligns to its own start. */
 .ds-table :is(th, td)[dir="auto"]:dir(rtl) {
   text-align: start;
-}
-
-.ds-decision {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-}
-
-.ds-decision__state {
-  color: var(--color-ink-2);
 }
 
 .ds-bulkbar {
@@ -257,66 +247,6 @@
 
 .ds-bulkbar__count {
   font-weight: var(--weight-strong);
-}
-
-/* Diff: kind in an icon and a word; removed keeps full weight; no brand red. */
-.ds-diff {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.ds-diff__summary {
-  font-weight: var(--weight-strong);
-}
-
-.ds-diff__list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border-block-start: var(--ledger-rule);
-}
-
-.ds-diff__item {
-  display: grid;
-  grid-template-columns: 7rem minmax(0, 1fr) auto;
-  gap: var(--space-1) var(--space-3);
-  padding-block: var(--space-2);
-  border-block-end: var(--hair-rule);
-}
-
-.ds-diff__kind {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-weight: var(--weight-strong);
-}
-
-.ds-diff__item--removed .ds-diff__what {
-  text-decoration: line-through;
-  text-decoration-thickness: 1px;
-}
-
-.ds-diff__fields {
-  grid-column: 2 / -1;
-  display: grid;
-  gap: var(--space-1);
-  margin: 0;
-  font-size: var(--text-meta);
-}
-
-.ds-diff__fields div {
-  display: grid;
-  grid-template-columns: 10rem 1fr;
-  gap: var(--space-2);
-}
-
-.ds-diff__fields dt {
-  color: var(--color-ink-2);
-}
-
-.ds-diff__origin {
-  font-size: var(--text-meta);
-  color: var(--color-ink-2);
 }
 
 /* A grid's keys, said once under it (§2.2) */

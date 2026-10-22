@@ -7,8 +7,9 @@ from fastapi import APIRouter, Depends, Query
 from knowledge_portal.application.use_cases.identity_access import SearchKnownActors
 from knowledge_portal.domain.identity.entities import ActorProfile
 from knowledge_portal.interfaces.api.dependencies import (
-    ContainerDep,
     CurrentActorDep,
+    OfflinePersonasDep,
+    SettingsDep,
     get_search_known_actors,
     require_authenticated_actor,
 )
@@ -34,11 +35,10 @@ def actor_response(actor: ActorProfile) -> ActorResponse:
 
 
 @public_router.get("/config", response_model=IdentityConfigResponse)
-def identity_config(container: ContainerDep) -> IdentityConfigResponse:
-    settings = container.settings
+def identity_config(settings: SettingsDep, personas: OfflinePersonasDep) -> IdentityConfigResponse:
     offline = settings.identity_provider.value == "fake"
     # Every offline persona, admitted or not, so the sign-in picker can show both.
-    fake_actors = [actor_response(item) for item in container.offline_personas]
+    fake_actors = [actor_response(item) for item in personas]
     login_choices: list[LoginChoiceResponse] = []
     if not offline:
         if settings.oidc_company_sso_enabled:

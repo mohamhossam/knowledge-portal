@@ -292,6 +292,7 @@ function Dismissal({ item, onDone }: { item: ChangeRequest; onDone: (dismissed: 
         hint="A dismissal stays: the change request cannot be read afterwards."
         value={reason}
         // Opened by its own button, the field is where the person goes next.
+        // eslint-disable-next-line jsx-a11y-x/no-autofocus
         autoFocus
         maxLength={1000}
         onChange={(event) => setReason(event.target.value)}

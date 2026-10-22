@@ -328,7 +328,7 @@ def _proposer(
     )
     draft = manage.create_draft(MAINTAINER, "Next version")
     version = KnowledgeDocumentVersion(
-        "doc", "Doc", "doc.txt", "text/plain", "en", "sum", "doc", "amina", NOW
+        "doc", "Doc", "doc.txt", "text/plain", "sum", "doc", "amina", NOW
     )
     image = replace(version, id="img", filename="d.png", mime_type="image/png", storage_key="img")
     storage.put(DocumentVersionId("doc"), b"Nothing architectural here.\n")
@@ -412,6 +412,48 @@ def test_decisions_check_revision_ownership_and_undo_on_a_lost_draft() -> None:
     assert (same.revision, still) == (updated.revision, 1)
     with pytest.raises(CandidateDecisionConflictError):
         candidates.save_decision(candidates.get("c1") or _candidate(draft.id, system))
+
+
+def test_an_accepted_fact_keeps_where_it_was_read_after_its_suggestion_is_gone() -> None:
+    from knowledge_portal.domain.architecture.provenance import AcceptedCitation
+
+    _, decide, draft, candidates, _ = _proposer()
+    candidates.replace_proposals(
+        _run(draft.id),
+        (_candidate(draft.id, CandidateContent(CandidateKind.SYSTEM, "hub", name="Hub")),),
+    )
+
+    updated = decide.decide(draft.id, "c1", draft.revision, True, MAINTAINER, NOW)
+    # A later reading of the document replaces the draft's suggestions (ADR-0120).
+    candidates.replace_proposals(_run(draft.id), ())
+
+    hub = next(item for item in updated.systems if item.id == "hub")
+    (entry,) = hub.accepted
+    assert entry.citations == (AcceptedCitation("line 1", "quote", "doc", "Doc"),)
+
+
+def test_accepting_the_ready_ones_takes_only_the_set_the_person_was_shown() -> None:
+    _, decide, draft, candidates, _ = _proposer()
+    shown = CandidateContent(CandidateKind.SYSTEM, "hub", name="Hub")
+    # Arrived after the page listed what it would accept: a reading finishing meanwhile.
+    arrived = CandidateContent(CandidateKind.SYSTEM, "gateway", name="Gateway")
+    candidates.replace_proposals(
+        _run(draft.id), (_candidate(draft.id, shown), _candidate(draft.id, arrived, "c2"))
+    )
+
+    updated, remaining = decide.accept_all(
+        draft.id, draft.revision, MAINTAINER, NOW, candidate_ids=("c1",)
+    )
+
+    assert {item.id for item in updated.systems} >= {"hub"}
+    assert "gateway" not in {item.id for item in updated.systems}
+    # What is left counts every suggestion still waiting, the unlisted one included.
+    assert remaining == 1
+    assert (candidates.get("c2") or _candidate(draft.id, arrived)).status.value == "proposed"
+
+    # Naming nothing accepts nothing, and the draft is unchanged.
+    same, still = decide.accept_all(draft.id, updated.revision, MAINTAINER, NOW, candidate_ids=())
+    assert (same.revision, still) == (updated.revision, 1)
 
 
 def _run(release_id: str) -> Any:
@@ -578,7 +620,6 @@ def test_extraction_adapter_builds_every_kind_and_skips_unusable_items() -> None
             "kind": "system",
             "system": "Hub",
             "name": None,
-            "name_ar": None,
             "aliases": [],
             "triggers": [],
             "target_system": None,
@@ -612,7 +653,7 @@ def test_extraction_adapter_builds_every_kind_and_skips_unusable_items() -> None
         def parse(self, **_: Any) -> ExtractionOutput:
             return ExtractionOutput(
                 changes=[
-                    change(name_ar="المركز", aliases=["Hub", "Order hub", " "]),
+                    change(aliases=["Hub", "Order hub", " "]),
                     change(kind="capability", name="Order taking", triggers=["take order"]),
                     change(kind="constraint", text="Nightly only"),
                     change(kind="capability", name="No phrases", triggers=[]),
@@ -627,7 +668,7 @@ def test_extraction_adapter_builds_every_kind_and_skips_unusable_items() -> None
     proposal = StructuredCatalogueExtractor(client, supports_images=False).propose(request)
 
     system, capability, constraint = (item.content for item in proposal.changes)
-    assert (system.name, system.name_ar, system.aliases) == ("Hub", "المركز", ("Order hub",))
+    assert (system.name, system.aliases) == ("Hub", ("Order hub",))
     assert (capability.system_id, capability.capability_id) == ("hub", "order-taking")
     assert constraint.text == "Nightly only"
     assert proposal.warnings == (
@@ -642,9 +683,7 @@ def test_diff_names_every_changed_system_field() -> None:
 
     base = seed_knowledge()
     first = base.systems[0]
-    changed = replace(
-        first, name_ar="اسم", aliases=(*first.aliases, "New alias"), constraints=("Batch only",)
-    )
+    changed = replace(first, aliases=(*first.aliases, "New alias"), constraints=("Batch only",))
     diff = diff_releases(base, replace(base, systems=(changed, *base.systems[1:])))
 
-    assert diff.changes[0].fields == ("name_ar", "aliases", "constraints")
+    assert diff.changes[0].fields == ("aliases", "constraints")

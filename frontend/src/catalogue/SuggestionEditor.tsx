@@ -168,7 +168,6 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
               onChange={(system_id) => set({ system_id })}
             />
             <TextField label="Name" value={content.name} required onChange={(name) => set({ name })} />
-            <TextField label="Arabic name" value={content.name_ar} dir="rtl" lang="ar" onChange={(name_ar) => set({ name_ar: name_ar || null })} />
             <LinesField label="Also called" value={content.aliases} onChange={(aliases) => set({ aliases })} />
             <AreaField label="What it is" value={content.description} onChange={(description) => set({ description: description || null })} />
           </>
@@ -178,7 +177,6 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
           <>
             <SystemField label="Part of" value={content.system_id} systems={systems} writtenAs={writtenAs} onChange={(system_id) => set({ system_id })} />
             <TextField label="Name" value={content.name} required onChange={(name) => set({ name })} />
-            <TextField label="Arabic name" value={content.name_ar} dir="rtl" lang="ar" onChange={(name_ar) => set({ name_ar: name_ar || null })} />
             <TextField label="Built with" value={content.technology} onChange={(technology) => set({ technology: technology || null })} />
             <LinesField label="Also called" value={content.aliases} onChange={(aliases) => set({ aliases })} />
             <AreaField label="What it does" value={content.description} onChange={(description) => set({ description: description || null })} />
@@ -264,7 +262,6 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
         return (
           <>
             <TextField label="Name" value={content.name} required onChange={(name) => set({ name })} />
-            <TextField label="Arabic name" value={content.name_ar} dir="rtl" lang="ar" onChange={(name_ar) => set({ name_ar: name_ar || null })} />
             <SelectField
               label="Inside"
               value={content.parent_domain_id ?? ""}
@@ -498,6 +495,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
             systems={systems}
             offerings={release.products ?? []}
             channels={release.channels ?? []}
+            interfaces={release.interfaces ?? []}
             names={words}
             onChange={(journey) => set({ journey })}
           />

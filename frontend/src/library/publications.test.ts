@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { LibraryDocument, Publication } from "../api/client";
-import { buildStaleness, canRetryIndexing, pendingBuild, publicationState } from "./publications";
+import { buildStaleness, canRetryIndexing, coverageWords, pendingBuild, publicationState } from "./publications";
 
 const pub = (id: string, extra: Partial<Publication> = {}): Publication => ({
   id, version_id: "v1", revision_id: "r1", requires_activation: false, activated_at: null, built_at: null,
@@ -46,5 +46,17 @@ describe("canRetryIndexing", () => {
     expect(canRetryIndexing(doc([pub("a", { indexing_attempts: 2 })]))).toBe(false);
     expect(canRetryIndexing(doc([pub("a", { indexing_attempts: 3 })]))).toBe(true);
     expect(canRetryIndexing(doc([pub("a", { indexing_attempts: 3, withdrawn_at: "t" })]))).toBe(false);
+  });
+});
+
+describe("coverageWords", () => {
+  it("says what the approver looked at, with the flagged ones when there were any", () => {
+    expect(coverageWords(pub("p", { coverage: { passages: 4, seen: 3, flagged: 2, flagged_seen: 1 } }))).toBe("looked at 3 of 4 passages, 1 of 2 flagged");
+    expect(coverageWords(pub("p", { coverage: { passages: 1, seen: 1, flagged: 0, flagged_seen: 0 } }))).toBe("looked at 1 of 1 passage");
+  });
+
+  it("says nothing for an approval that kept none", () => {
+    expect(coverageWords(pub("p"))).toBeNull();
+    expect(coverageWords(pub("p", { coverage: null }))).toBeNull();
   });
 });

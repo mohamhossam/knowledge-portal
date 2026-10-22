@@ -14,6 +14,17 @@ still uses one is read as the successor; and a successor offered on the page is 
 in service. Concepts and terms retire through a catalogue file until their pages have an
 editor.
 
+Amended 2026-10-22 (review recommendation 7 of the 22 October portal review): offerings and
+portfolio nodes retire the same way (`deprecated`, `replaced_by`), since registers outside a
+version name them. One resolver (`identity.resolve`) follows an id through its former ids and
+then through retirements to what names it now, and the organisation catalogue, precedents
+and assessments read ids through it. A product naming a renamed or replaced offering or
+portfolio node, or a squad seat scoped to a replaced concept, is told where the id went
+rather than that it is gone, and an offering's systems are read under its new id. A precedent
+counts for the system, offering and concepts its old ids name now. Registers used only inside
+a version need no lifecycle: a version is checked whole when it is built. A system's review
+stays its own; a successor is reviewed afresh.
+
 ## Context
 
 Nothing in the knowledge model can be deprecated: retiring a system, concept or vocabulary

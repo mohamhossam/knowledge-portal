@@ -118,7 +118,11 @@ from knowledge_portal.domain.architecture.products import (
     merge_offerings,
     same_offering,
 )
-from knowledge_portal.domain.architecture.provenance import AcceptedFrom
+from knowledge_portal.domain.architecture.provenance import (
+    MAX_ACCEPTED_CITATIONS,
+    AcceptedCitation,
+    AcceptedFrom,
+)
 from knowledge_portal.domain.architecture.realisations import merge_realisations
 from knowledge_portal.domain.document.value_objects import DocumentVersionId, EvidenceBlockKind
 
@@ -987,7 +991,6 @@ def _merged_content(lead: CandidateContent, others: list[CandidateContent]) -> C
         return replace(
             lead,
             aliases=tuple(label for label in names if label.casefold() != name),
-            name_ar=_first([item.name_ar for item in every]),
             description=_first([item.description for item in every]),
             technology=_first([item.technology for item in every]),
         )
@@ -1513,7 +1516,6 @@ class ProposeCatalogueChanges:
             MatchableSystem(
                 system.id,
                 system.name,
-                system.name_ar,
                 (*system.aliases, *forwarded.get(system.id, ())),
                 tuple(capability.name for capability in system.capabilities),
             )
@@ -1578,7 +1580,14 @@ class DecideCatalogueCandidate:
                     "is no longer kept, so it cannot be accepted."
                 )
             merged = accept_from_change_request(release, content, incoming, cited.feature_id, at)
-        entry = AcceptedFrom(candidate.id, candidate.model, candidate.prompt_version, actor_id, at)
+        entry = AcceptedFrom(
+            candidate.id,
+            candidate.model,
+            candidate.prompt_version,
+            actor_id,
+            at,
+            _kept_citations(candidate, release),
+        )
         return with_acceptance(content.kind, release, merged, entry)
 
     def overview(self, release_id: str, actor: Actor) -> CandidateOverview:
@@ -1620,23 +1629,31 @@ class DecideCatalogueCandidate:
         return updated
 
     def accept_all(
-        self, release_id: str, expected_revision: int, actor: Actor, at: datetime
+        self,
+        release_id: str,
+        expected_revision: int,
+        actor: Actor,
+        at: datetime,
+        candidate_ids: tuple[str, ...] | None = None,
     ) -> tuple[ArchitectureKnowledge, int]:
         """Accept every undecided suggestion that can apply; returns how many were left.
 
         Inferred dependencies and suggestions that may name an existing system
-        are left for a one-by-one decision.
+        are left for a one-by-one decision. Given `candidate_ids`, only those are
+        accepted: the set the person was shown, never one a reading added since.
         """
         require_maintainer(actor)
         release = _draft(self._knowledge, release_id)
         if release.revision != expected_revision:
             raise KnowledgeConflictError("The draft changed; reload before deciding.")
+        proposed = [
+            item
+            for item in self._candidates.list(release_id)
+            if item.status is CandidateStatus.PROPOSED
+        ]
+        wanted = None if candidate_ids is None else set(candidate_ids)
         pending = sorted(
-            (
-                item
-                for item in self._candidates.list(release_id)
-                if item.status is CandidateStatus.PROPOSED
-            ),
+            (item for item in proposed if wanted is None or item.id in wanted),
             # A domain before the sub-domains inside it.
             key=lambda item: (_ORDER.index(item.content.kind), _nested(item.content)),
         )
@@ -1662,10 +1679,10 @@ class DecideCatalogueCandidate:
                 accepted.append(candidate.decide(True, actor.id, at))
             waiting = later if len(accepted) > before else []
         if not accepted:
-            return release, len(pending)
+            return release, len(proposed)
         updated = _accepted(release, merged)
         self._save(updated, expected_revision, actor, tuple(accepted))
-        return updated, len(pending) - len(accepted)
+        return updated, len(proposed) - len(accepted)
 
     def reject_many(
         self,
@@ -1861,3 +1878,24 @@ def _settled(
             only = found.pop() if len(found) == 1 else RelationshipKind.UNSPECIFIED
             return replace(content, relationship_kind=only)
     return replace(content, relationship_kind=RelationshipKind.UNSPECIFIED)
+
+
+def _kept_citations(
+    candidate: CatalogueCandidate, release: ArchitectureKnowledge
+) -> tuple[AcceptedCitation, ...]:
+    """The first citations a suggestion rests on, as its acceptance keeps them: with the
+    document version and its title when the suggestion was read from one of the draft's
+    documents (review recommendation 6). A change request's or the catalogue's own
+    suggestion names no document."""
+    document = next(
+        (item for item in release.documents if item.id == candidate.document_version_id), None
+    )
+    return tuple(
+        AcceptedCitation(
+            item.location,
+            item.quote,
+            document.id if document else None,
+            document.title if document else None,
+        )
+        for item in candidate.citations[:MAX_ACCEPTED_CITATIONS]
+    )

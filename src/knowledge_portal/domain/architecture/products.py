@@ -25,6 +25,7 @@ from decimal import Decimal
 from enum import StrEnum
 
 from knowledge_portal.domain.architecture.concepts import check_link
+from knowledge_portal.domain.architecture.deprecation import check_retirement
 from knowledge_portal.domain.architecture.governance import (
     ArchitectureDecision,
     OpenQuestion,
@@ -199,11 +200,15 @@ class OfferingNfr:
     statement: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The term of a curated vocabulary ``quality`` means, beside the text; None while unmapped
+    # (review recommendation 9).
+    quality_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "quality", required(self.quality, "Quality"))
         object.__setattr__(self, "coverage", nfr_coverage(self.coverage))
         object.__setattr__(self, "statement", optional(self.statement, "Statement"))
+        object.__setattr__(self, "quality_id", optional(self.quality_id, "Quality term"))
         check_source(self)
 
 
@@ -401,11 +406,15 @@ class BusinessRule:
     kind: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # The term of a curated vocabulary ``kind`` means, beside the text; None while unmapped
+    # (review recommendation 9).
+    kind_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Rule id"))
         object.__setattr__(self, "statement", required(self.statement, "Rule"))
         object.__setattr__(self, "kind", optional(self.kind, "Rule kind"))
+        object.__setattr__(self, "kind_id", optional(self.kind_id, "Rule kind term"))
         check_source(self)
 
 
@@ -453,9 +462,19 @@ class ProductOffering:
     former_ids: tuple[str, ...] = ()
     # Why a customer buys it, beside the proposition that says what it is.
     purpose: str | None = None
+    # Retired, with the offering that takes its place if any (ADR-0121, review
+    # recommendation 7): it stays readable, selection and matching leave it out, and what
+    # names it from outside the version (a product, a precedent) is forwarded to its successor.
+    deprecated: bool = False
+    replaced_by: str | None = None
+    # The terms of curated vocabularies ``family`` and ``lifecycle`` mean, beside the text;
+    # None while unmapped (review recommendation 9).
+    family_id: str | None = None
+    lifecycle_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Offering id"))
+        check_retirement(self, self.name)
         object.__setattr__(self, "former_ids", former(self.id, self.former_ids))
         object.__setattr__(self, "name", required(self.name, "Offering name"))
         for field, label in (
@@ -466,6 +485,8 @@ class ProductOffering:
             ("proposition", "Proposition"),
             ("purpose", "Purpose"),
             ("portfolio_node_id", "Portfolio node"),
+            ("family_id", "Family term"),
+            ("lifecycle_id", "Lifecycle term"),
         ):
             object.__setattr__(self, field, optional(getattr(self, field), label))
         object.__setattr__(self, "rules", tuple(required(item, "Rule") for item in self.rules))
@@ -549,6 +570,22 @@ def check_offerings(
     ids = [item.id for item in offerings]
     if len(set(ids)) != len(ids):
         raise InvalidKnowledgeError("Product offering ids must be unique.")
+    # Each id, code and name identifies one offering, compared as find_offering and the
+    # suggestion matcher read them; two offerings sharing one would be taken for each other
+    # (review recommendation 17).
+    owners: dict[str, ProductOffering] = {}
+    for offering in offerings:
+        for label in (offering.id, offering.code, offering.name):
+            key = _key(label or "")
+            if not key:
+                continue
+            owner = owners.setdefault(key, offering)
+            if owner.id != offering.id:
+                raise InvalidKnowledgeError(
+                    f"{label!r} already names {owner.name}, so it cannot also name "
+                    f"{offering.name}. Each offering's id, code and name must identify one "
+                    "offering."
+                )
     for offering in offerings:
         codes = [item.code for item in offering.order_types]
         if offering.tracking is not None:

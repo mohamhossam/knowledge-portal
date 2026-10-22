@@ -73,8 +73,8 @@ Paper. Do not copy requirement-portal's tokens, primitives or shell.
   - Charts use a muted palette; red is never a data colour.
 - **Token layering.** e& values live only in the primitive token layer. Components consume
   semantic tokens. `npm run lint:brand` enforces it.
-- **Fonts are self-hosted only** (`@fontsource` or licensed files, CSP-safe), with Arabic
-  coverage.
+- **Fonts are self-hosted only** (`@fontsource` or licensed files, CSP-safe). The portal is
+  English only (PRODUCT.md), so Latin coverage is enough.
 - **Gates.** `npm run lint:brand`, `npm run lint:legacy-css` (`src/styles/` stays empty: styles
   live in the design system or beside an area's components), `npm run budget` (after a build)
   and `npm run e2e` (route axe checks and keyboard journeys) must stay green. Screenshot baselines are not kept in git.

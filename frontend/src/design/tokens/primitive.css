@@ -137,9 +137,8 @@
   --white-45: rgb(255 255 255 / 0.45);
   --black-32: rgb(0 0 0 / 0.32);
 
-  /* Type families: self-hosted @fontsource (OFL), Arabic coverage via Noto. */
-  --family-sans: "Archivo Variable", "Noto Sans Arabic Variable", system-ui, sans-serif;
-  --family-arabic: "Noto Sans Arabic Variable", "Archivo Variable", system-ui, sans-serif;
+  /* Type families: self-hosted @fontsource (OFL). */
+  --family-sans: "Archivo Variable", system-ui, sans-serif;
   --family-mono: ui-monospace, "Cascadia Mono", "Consolas", monospace;
 
   /* Type scale (14px floor) */
@@ -165,7 +164,6 @@
   --leading-125: 1.25;
   --leading-145: 1.45;
   --leading-165: 1.65;
-  --leading-175: 1.75;
 
   /* Space: 4px base */
   --space-0: 0;
@@ -202,6 +200,5 @@
   --layer-masthead: 20;
   --layer-drawer: 40;
   --layer-dialog: 50;
-  --layer-toast: 60;
   --layer-skip: 70;
 }

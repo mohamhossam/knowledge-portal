@@ -25,7 +25,6 @@ class ReferenceChunk:
     original_text: str
     search_text: str
     content_hash: str
-    language: str
     token_count: int
     chunking_policy: str
     start_offset: int

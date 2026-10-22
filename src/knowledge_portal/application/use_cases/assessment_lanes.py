@@ -7,7 +7,7 @@ checked before it reaches here; what leaves here carries release ids alone.
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 
 from knowledge_portal.application.ports.architecture_rag import (
@@ -40,9 +40,9 @@ from knowledge_portal.domain.architecture.assessment import (
     SystemRole,
     speeds_in,
 )
-from knowledge_portal.domain.architecture.concepts import label_key, labels_in
+from knowledge_portal.domain.architecture.concepts import BusinessCapability, label_key, labels_in
 from knowledge_portal.domain.architecture.deprecation import in_service, successor
-from knowledge_portal.domain.architecture.identity import current_id
+from knowledge_portal.domain.architecture.identity import resolved_id
 from knowledge_portal.domain.architecture.impact_graph import (
     composes,
     delivering_systems,
@@ -105,7 +105,7 @@ def catalogue_terms(release: ArchitectureKnowledge) -> CatalogueTerms:
     return CatalogueTerms(
         offerings=tuple(
             CatalogueTerm(item.id, tuple(label for label in (item.name, item.code) if label))
-            for item in release.products
+            for item in in_service(release.products)
         ),
         segments=tuple(
             CatalogueTerm(item.id, (item.name,))
@@ -120,7 +120,7 @@ def catalogue_terms(release: ArchitectureKnowledge) -> CatalogueTerms:
         channels=tuple(CatalogueTerm(item.id, (item.name,)) for item in release.channels),
         order_types=tuple(
             CatalogueTerm(order_type_id(offering, order.code), (order.name, order.code))
-            for offering in release.products
+            for offering in in_service(release.products)
             for order in offering.order_types
         ),
         entities=tuple(
@@ -141,7 +141,7 @@ def named_components(
     corpus = normalise(text)
     return tuple(
         (offering, part)
-        for offering in release.products
+        for offering in in_service(release.products)
         for part in offering.components
         if any(contains(corpus, label) for label in component_labels(part))
     )
@@ -286,7 +286,7 @@ def offering_fit(
     # An order type is its offering's own, so naming one names the offering.
     named.update(
         offering.id
-        for offering in release.products
+        for offering in in_service(release.products)
         for item in facets
         if item.kind is FacetKind.ORDER_TYPE
         and item.ref_id
@@ -294,7 +294,7 @@ def offering_fit(
     )
     fits = [
         _fit(release, offering, offering.id in named, needed, facets)
-        for offering in release.products
+        for offering in in_service(release.products)
     ]
     ranked = sorted(
         (item for item in fits if item.named or item.covered),
@@ -416,11 +416,7 @@ def graph_lane(
                 system
                 for system in release.systems
                 if key
-                and key
-                in {
-                    value.casefold()
-                    for value in (system.id, system.name, system.name_ar or "", *system.aliases)
-                }
+                and key in {value.casefold() for value in (system.id, system.name, *system.aliases)}
             ),
             None,
         )
@@ -543,6 +539,14 @@ def passage_lane(
     return tuple(chunks.values())
 
 
+def _concepts_now(concepts: Sequence[BusinessCapability], ids: Iterable[str]) -> tuple[str, ...]:
+    """Concept ids as the version names them now (review recommendation 7); with no concepts
+    to read them against, as they were written."""
+    if not concepts:
+        return tuple(ids)
+    return tuple(dict.fromkeys(resolved_id(concepts, item) or item for item in ids))
+
+
 def _overlap(left: Iterable[str], right: Iterable[str]) -> float:
     first, second = set(left), set(right)
     return len(first & second) / len(first | second) if first | second else 0.0
@@ -554,6 +558,7 @@ def precedent_lane(
     text: str,
     needed: frozenset[str],
     requirement_id: str | None,
+    concepts: Sequence[BusinessCapability] = (),
 ) -> tuple[tuple[PrecedentMatch, float], ...]:
     """The nearest decided requirements, by text similarity and the concepts both need.
 
@@ -568,7 +573,13 @@ def precedent_lane(
         index.embedding_model, vector, PRECEDENT_POOL, exclude_requirement=requirement_id
     )
     scored = [
-        (match, match.similarity + CONCEPT_WEIGHT * _overlap(needed, match.precedent.concept_ids))
+        (
+            match,
+            match.similarity
+            # A precedent decided before a concept was renamed or replaced still names the old id.
+            + CONCEPT_WEIGHT
+            * _overlap(needed, _concepts_now(concepts, match.precedent.concept_ids)),
+        )
         for match in pool
     ]
     scored = [item for item in scored if item[1] >= MIN_PRECEDENT_SCORE]
@@ -598,21 +609,23 @@ def precedent_candidates(
     paths: dict[str, list[tuple[PathStep, ...]]] = {}
     for match in precedents:
         precedent = match.precedent
-        # A precedent decided before its offering was renamed still names the old id.
-        if current_id(release.products, precedent.offering_id) != offering_id or not needed & set(
-            precedent.concept_ids
+        # A precedent decided before its offering, a concept or a system was renamed or
+        # replaced still names the old id: it counts for what the id names now.
+        if resolved_id(release.products, precedent.offering_id) != offering_id or not needed & set(
+            _concepts_now(release.business_capabilities, precedent.concept_ids)
         ):
             continue
         for system in precedent.systems:
-            if system.system_id in names and system.system_id not in reached:
-                paths.setdefault(system.system_id, []).append(
+            now = resolved_id(release.systems, system.system_id)
+            if now is not None and now in names and now not in reached:
+                paths.setdefault(now, []).append(
                     (
                         PathStep(
                             PathKind.PRECEDENT,
                             precedent.id,
                             f"Decided requirement {precedent.requirement_id}",
                         ),
-                        PathStep(PathKind.SYSTEM, system.system_id, names[system.system_id]),
+                        PathStep(PathKind.SYSTEM, now, names[now]),
                     )
                 )
     return tuple(

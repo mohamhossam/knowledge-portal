@@ -1,11 +1,11 @@
-import { act, fireEvent, render, renderHook, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { type RefObject, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { useDelayedCommit, useDisclosure } from "../hooks";
+import { useDisclosure } from "../hooks";
 import { Button } from "./actions";
-import { Badge, EmptyState, GapBadge, JobTray, Skeleton, Status, Suggested, UndoToast } from "./feedback";
+import { Badge, EmptyState, GapBadge, JobTray, Skeleton, Status, Suggested } from "./feedback";
 import { Checkbox, Combobox, RadioGroup, TextField, Upload } from "./forms";
 import { checkAxeAfterEach } from "../../test/axe";
 
@@ -81,14 +81,6 @@ describe("feedback", () => {
     expect(screen.getByRole("status", { name: "Reading the library" })).toHaveAttribute("aria-busy", "true");
   });
 
-  it("offers undo in a polite status and calls back", async () => {
-    const onUndo = vi.fn();
-    render(<UndoToast message="Rejected: Adds the system Dynamics CRM." onUndo={onUndo} />);
-    expect(screen.getByRole("status")).toHaveTextContent("Rejected");
-    await userEvent.click(screen.getByRole("button", { name: "Undo (z)" }));
-    expect(onUndo).toHaveBeenCalledOnce();
-  });
-
   it("orders jobs by need: attention first; retry is named for its job", async () => {
     const onRetry = vi.fn();
     render(
@@ -162,13 +154,13 @@ describe("forms", () => {
     expect(input).toHaveValue("Care squad");
   });
 
-  it("lets the caller do the matching (e.g. by Arabic name or capability)", async () => {
-    const search = vi.fn((query: string) => (query.includes("فوترة") ? [{ id: "bscs", label: "BSCS", hint: "Arabic name" }] : []));
+  it("lets the caller do the matching (e.g. by alias or capability)", async () => {
+    const search = vi.fn((query: string) => (query.includes("rating") ? [{ id: "bscs", label: "BSCS", hint: "Does: Usage rating" }] : []));
     render(<Combobox label="Find a system" options={[]} search={search} onSelect={() => {}} />);
     const input = screen.getByRole("combobox", { name: "Find a system" });
-    await userEvent.type(input, "فوترة");
-    expect(search).toHaveBeenLastCalledWith("فوترة");
-    expect(screen.getByRole("option")).toHaveTextContent("BSCS · Arabic name");
+    await userEvent.type(input, "rating");
+    expect(search).toHaveBeenLastCalledWith("rating");
+    expect(screen.getByRole("option")).toHaveTextContent("BSCS · Does: Usage rating");
   });
 
   it("lists uploaded files with their scan state in words", () => {
@@ -186,30 +178,6 @@ describe("forms", () => {
 });
 
 describe("hooks", () => {
-  it("useDelayedCommit sends after the window and undo cancels it (§4)", () => {
-    vi.useFakeTimers();
-    const commit = vi.fn();
-    const { result } = renderHook(() => useDelayedCommit<string>(commit, 6000));
-    act(() => result.current.schedule("a", "Accept A", "accepted"));
-    act(() => result.current.schedule("b", "Reject B", "rejected"));
-    expect(result.current.pending).toHaveLength(2);
-    let undone;
-    act(() => { undone = result.current.undo(); });
-    expect(undone).toMatchObject({ id: "b" });
-    act(() => vi.advanceTimersByTime(6000));
-    expect(commit).toHaveBeenCalledExactlyOnceWith("accepted");
-    expect(result.current.pending).toHaveLength(0);
-  });
-
-  it("useDelayedCommit flushes pending decisions on demand", () => {
-    const commit = vi.fn();
-    const { result } = renderHook(() => useDelayedCommit<string>(commit, 6000));
-    act(() => result.current.schedule("a", "Accept A", "accepted"));
-    act(() => result.current.flush());
-    expect(commit).toHaveBeenCalledWith("accepted");
-    expect(result.current.pending).toHaveLength(0);
-  });
-
   it("useDisclosure moves focus into the panel and back to its opener (§1)", async () => {
     function Panel() {
       const { open, show, close, panel } = useDisclosure();

@@ -229,7 +229,7 @@ def test_suggestions_read_from_tables_say_so_through_the_api(client: TestClient)
     ).json()
     uploaded = client.post(
         f"/architecture-knowledge/releases/{draft['id']}/documents",
-        data={"title": "Landscape", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Landscape", "expected_revision": draft["revision"]},
         files={"file": ("landscape.md", FIXTURE.read_bytes(), "text/markdown")},
         headers=OWNER,
     ).json()

@@ -1,21 +1,75 @@
-"""Stable identity for offerings and journeys across releases.
+"""Stable identity across releases: renamed and retired entities, followed one way.
 
-An offering or journey keeps the ids it had before a rename (`former_ids`), so anything
-that still names an old id — a precedent, a change request, a delivery, requirement
+An offering or journey keeps the ids it had before a rename (`former_ids`, ADR-0124), so
+anything that still names an old id — a precedent, a change request, a delivery, requirement
 work's saved assessment — finds the entity it meant. A rename moves every reference in
 the release to the new id and records the old one. Renaming back to an earlier id takes it
 out of the former ids, so a rename can be undone.
+
+A system, offering, portfolio node, concept or term can instead be retired with the one
+that replaces it (`deprecated`, `replaced_by`, ADR-0121). ``resolve`` follows both, so every
+register outside a version that holds one of these ids — the organisation catalogue,
+precedents, an assessment — reaches what the id names now (review recommendation 7).
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import replace
+from typing import Protocol
 
 from knowledge_portal.domain.architecture.governance import SourceConflict
 from knowledge_portal.domain.architecture.invariants import InvalidKnowledgeError, required
 from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.products import ProductOffering
+
+
+class Identified(Protocol):
+    @property
+    def id(self) -> str: ...
+
+
+def resolve[T: Identified](items: Iterable[T], any_id: str | None) -> T | None:
+    """What an id names now: the entity holding it as its id or a former id, then, while that
+    one is retired, the one that replaced it; None when nothing holds it or it was retired
+    with nothing in its place."""
+    if not any_id:
+        return None
+    pool = tuple(items)
+    by_id = {item.id: item for item in pool}
+    found = by_id.get(any_id) or next(
+        (item for item in pool if any_id in getattr(item, "former_ids", ())), None
+    )
+    seen: set[str] = set()
+    while found is not None and getattr(found, "deprecated", False):
+        if found.id in seen:
+            return None
+        seen.add(found.id)
+        successor_id = getattr(found, "replaced_by", None)
+        found = by_id.get(successor_id) if successor_id else None
+    return found
+
+
+def resolved_id[T: Identified](items: Iterable[T], any_id: str | None) -> str | None:
+    """The id of what ``any_id`` names now; see ``resolve``."""
+    found = resolve(items, any_id)
+    return found.id if found is not None else None
+
+
+def forwards[T: Identified](items: Iterable[T]) -> dict[str, tuple[str, bool]]:
+    """Every id that no longer names an entity in service but leads to one: the id it leads
+    to, and whether it is the same entity renamed (True) or another that replaced it."""
+    pool = tuple(items)
+    held = {item.id for item in pool} | {
+        old for item in pool for old in getattr(item, "former_ids", ())
+    }
+    found: dict[str, tuple[str, bool]] = {}
+    for any_id in sorted(held):
+        target = resolve(pool, any_id)
+        if target is None or target.id == any_id:
+            continue
+        found[any_id] = (target.id, any_id in getattr(target, "former_ids", ()))
+    return found
 
 
 def check_former_ids(kind: str, items: Iterable[ProductOffering | Journey]) -> None:

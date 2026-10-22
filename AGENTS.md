@@ -46,6 +46,10 @@ Before changing code, read these files in this order:
 - `/internal/*` routes serve the requirement portal.
 - Change them only additively, or with a versioned path and a coordinated requirement-portal
   release.
+- Raise the contract's version (`INTERNAL_CONTRACT_VERSION` in `interfaces/api/routes/internal.py`)
+  with every shape change: MAJOR for a breaking change, MINOR for an additive one. CI regenerates
+  the contract and checks the version against the base branch's
+  (`scripts/check_internal_contract.py`); run it before you push.
 - Publish the OpenAPI snapshot with every release.
 
 The original `smb-ai-requirement-agent` stays maintained in parallel. Port its fixes to the
@@ -178,7 +182,10 @@ refresh, operational entry points — ADR-0071).
   the container during the FastAPI lifespan so a misconfiguration fails the
   boot, not the first request that happens to need it.
 - Route handlers receive use cases through `interfaces/api/dependencies.py`
-  and never name a concrete adapter.
+  and never name a concrete adapter, nor the container itself: add a provider for what a
+  route uses (`tests/unit/test_route_surface_and_errors.py` checks every handler).
+- Every refusal answers `{code, message, correlation_id}`: raise the catalogue's own error
+  (`application/public_errors.py`), never `HTTPException` with a bare `detail`.
 - A new adapter is reached by extending `build_container`, never by importing
   it into the layer that uses it.
 
@@ -372,6 +379,9 @@ Introduce production persistence only when the roadmap requires durable state/ve
   data so it satisfies invariants; they do not re-implement or re-decide them.
 - Do not swallow exceptions.
 - Map infrastructure exceptions into explicit application/domain errors at boundaries.
+- Read untyped JSON (another system's answer, a stored payload, a file's values) through
+  `infrastructure/json_reading.py`, not a private `_text` helper, so a value means the same
+  thing in every adapter. The adapter turns its `UnreadableValue` into the error it reports.
 - Do not use broad `except Exception` unless translating at a top-level boundary and preserving context.
 - No dead code or speculative abstractions.
 - No TODOs that hide required behavior for the active slice.

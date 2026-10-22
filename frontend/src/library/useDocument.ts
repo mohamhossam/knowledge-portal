@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api, type LibraryDocument } from "../api/client";
+import { api, type LibraryDocument, type ReviewCoverage } from "../api/client";
 import { settling } from "./model";
 
 export const documentKey = (documentId: string) => ["library", "document", documentId] as const;
@@ -46,12 +46,14 @@ export function useDocument(documentId: string) {
     review: useChange(documentId, current, (document, input: { versionId: string; body: Parameters<typeof api.review>[2] }) =>
       api.review(document.id, input.versionId, input.body)),
     // `saved` is the document a review save just answered with, when publishing follows it at once.
-    approve: useChange(documentId, current, (document, input: { versionId: string; revisionId: string; saved?: LibraryDocument }) => {
+    // `coverage`: how much of the version the approver looked at, from the review desk; kept with the approval.
+    approve: useChange(documentId, current, (document, input: { versionId: string; revisionId: string; saved?: LibraryDocument; coverage?: ReviewCoverage }) => {
       const against = input.saved ?? document;
       return api.approve(against.id, input.versionId, {
         expected_version: against.version,
         revision_id: input.revisionId,
         fingerprint: against.review_fingerprint ?? "",
+        ...(input.coverage ? { coverage: input.coverage } : {}),
       });
     }),
     withdraw: useChange(documentId, current, (document, reason: string) =>

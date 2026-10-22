@@ -1,7 +1,9 @@
 """FastAPI dependency providers.
 
 Each provider pulls a use case out of the container held on the application
-state, which is built once during startup by `interfaces.api.main`.
+state, which is built once during startup by `interfaces.api.main`. Routes take
+these providers, never the container itself (review recommendation 12), so a
+route's surface is the use cases it names and a test can see which those are.
 """
 
 from __future__ import annotations
@@ -9,7 +11,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Annotated
 
-from fastapi import Depends, Header, HTTPException, Request
+from fastapi import Depends, Header, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from smb_kernel.http.service_auth import CALLER_SCOPE_KEY
@@ -17,7 +19,10 @@ from smb_kernel.identity.ports import IdentityCredential
 from smb_kernel.time.clock import ClockPort
 
 from knowledge_portal.application.errors import AuthenticationRequiredError
+from knowledge_portal.application.ports.architecture_knowledge import ArchitectureKnowledgePort
 from knowledge_portal.application.ports.identity import Actor
+from knowledge_portal.application.ports.knowledge_events import KnowledgeEventOutboxPort
+from knowledge_portal.application.ports.requirement_assessment import RequirementAssessmentPort
 from knowledge_portal.application.use_cases.architecture_comparison import (
     CompareArchitectureImpact,
     ManageSampleRequirements,
@@ -38,11 +43,24 @@ from knowledge_portal.application.use_cases.architecture_mapping_impact import (
 from knowledge_portal.application.use_cases.architecture_preview import (
     PreviewArchitectureImpact,
 )
+from knowledge_portal.application.use_cases.capability_concepts import (
+    ProposeCapabilityConcepts,
+    SuggestComponentCapabilities,
+)
 from knowledge_portal.application.use_cases.catalog_plans import ReadCatalogPlans
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
 )
-from knowledge_portal.application.use_cases.change_requests import ReadDeliverySummaries
+from knowledge_portal.application.use_cases.change_requests import (
+    DismissChangeRequest,
+    ListChangeRequests,
+    ReadChangeRequestIntoDraft,
+    ReadDeliverySummaries,
+    ReceiveChangeRequest,
+    ReceiveDelivery,
+)
+from knowledge_portal.application.use_cases.cited_passages import CitedPassages
+from knowledge_portal.application.use_cases.derived_dependencies import SuggestDerivedDependencies
 from knowledge_portal.application.use_cases.document_library import DocumentLibrary
 from knowledge_portal.application.use_cases.golden_runs import GoldenSetRuns
 from knowledge_portal.application.use_cases.historic_requirements import HistoricImports
@@ -61,7 +79,10 @@ from knowledge_portal.application.use_cases.library_governance import LibraryGov
 from knowledge_portal.application.use_cases.organisation_catalogue import (
     ManageOrganisationCatalogue,
 )
-from knowledge_portal.application.use_cases.precedents import ReadPrecedentSummaries
+from knowledge_portal.application.use_cases.precedents import (
+    ReadPrecedentSummaries,
+    RecordPrecedent,
+)
 from knowledge_portal.application.use_cases.provider_call_rate import ProviderCallRateLimit
 from knowledge_portal.application.use_cases.reference_knowledge import ReferenceKnowledge
 from knowledge_portal.application.use_cases.requirement_corpus import (
@@ -70,8 +91,10 @@ from knowledge_portal.application.use_cases.requirement_corpus import (
     ReadRequirementCorpus,
 )
 from knowledge_portal.application.use_cases.source_impact import DocumentSourceImpact
+from knowledge_portal.application.use_cases.vocabulary_cleanup import CleanUpVocabulary
 from knowledge_portal.domain.identity.entities import ActorProfile
 from knowledge_portal.infrastructure.config.options import IdentityProvider
+from knowledge_portal.infrastructure.config.settings import Settings
 from knowledge_portal.interfaces.api.container import Container
 from knowledge_portal.interfaces.api.error_handlers import status_code_for
 
@@ -125,7 +148,8 @@ def require_service_caller(request: Request) -> str:
     """
     caller = request.scope.get(CALLER_SCOPE_KEY)
     if not isinstance(caller, str) or not caller:
-        raise HTTPException(status_code=401, detail="An internal request needs a service token.")
+        # The catalogue's own error, so the refusal carries a correlation id like any other.
+        raise AuthenticationRequiredError("An internal request needs a service token.")
     return caller
 
 
@@ -304,3 +328,103 @@ def get_nudge_finding_owners(container: ContainerDep) -> NudgeFindingOwners:
 
 def get_act_on_requirement_corpus(container: ContainerDep) -> ActOnRequirementCorpus:
     return container.act_on_requirement_corpus
+
+
+# What the internal routes, the change-request routes, the draft's readings and the sign-in
+# configuration need (review recommendation 12): each a use case or port, never the container.
+
+
+def get_architecture_match(container: ContainerDep) -> ArchitectureKnowledgePort:
+    return container.architecture_knowledge
+
+
+def get_requirement_assessment(container: ContainerDep) -> RequirementAssessmentPort:
+    return container.requirement_assessment
+
+
+def get_record_precedent(container: ContainerDep) -> RecordPrecedent:
+    return container.record_precedent
+
+
+def get_cited_passages(container: ContainerDep) -> CitedPassages:
+    return container.cited_passages
+
+
+def get_receive_change_request(container: ContainerDep) -> ReceiveChangeRequest:
+    return container.receive_change_request
+
+
+def get_receive_delivery(container: ContainerDep) -> ReceiveDelivery:
+    return container.receive_delivery
+
+
+def get_knowledge_events(container: ContainerDep) -> KnowledgeEventOutboxPort:
+    return container.knowledge_events
+
+
+def get_list_change_requests(container: ContainerDep) -> ListChangeRequests:
+    return container.list_change_requests
+
+
+def get_read_change_request(container: ContainerDep) -> ReadChangeRequestIntoDraft:
+    return container.read_change_request
+
+
+def get_dismiss_change_request(container: ContainerDep) -> DismissChangeRequest:
+    return container.dismiss_change_request
+
+
+def get_propose_capability_concepts(container: ContainerDep) -> ProposeCapabilityConcepts:
+    return container.propose_capability_concepts
+
+
+def get_clean_up_vocabulary(container: ContainerDep) -> CleanUpVocabulary:
+    return container.clean_up_vocabulary
+
+
+def get_suggest_derived_dependencies(container: ContainerDep) -> SuggestDerivedDependencies:
+    return container.suggest_derived_dependencies
+
+
+def get_suggest_component_capabilities(
+    container: ContainerDep,
+) -> SuggestComponentCapabilities:
+    return container.suggest_component_capabilities
+
+
+def get_settings(container: ContainerDep) -> Settings:
+    return container.settings
+
+
+def get_offline_personas(container: ContainerDep) -> tuple[ActorProfile, ...]:
+    return container.offline_personas
+
+
+ArchitectureMatchDep = Annotated[ArchitectureKnowledgePort, Depends(get_architecture_match)]
+RequirementAssessmentDep = Annotated[RequirementAssessmentPort, Depends(get_requirement_assessment)]
+RecordPrecedentDep = Annotated[RecordPrecedent, Depends(get_record_precedent)]
+ReferenceKnowledgeDep = Annotated[ReferenceKnowledge, Depends(get_reference_knowledge)]
+CitedPassagesDep = Annotated[CitedPassages, Depends(get_cited_passages)]
+ReceiveChangeRequestDep = Annotated[ReceiveChangeRequest, Depends(get_receive_change_request)]
+ReceiveDeliveryDep = Annotated[ReceiveDelivery, Depends(get_receive_delivery)]
+ManageArchitectureKnowledgeDep = Annotated[
+    ManageArchitectureKnowledge, Depends(get_manage_architecture_knowledge)
+]
+SystemReviewsDep = Annotated[SystemReviews, Depends(get_system_reviews)]
+KnowledgeEventsDep = Annotated[KnowledgeEventOutboxPort, Depends(get_knowledge_events)]
+HistoricImportsDep = Annotated[HistoricImports, Depends(get_historic_imports)]
+ListChangeRequestsDep = Annotated[ListChangeRequests, Depends(get_list_change_requests)]
+ReadChangeRequestDep = Annotated[ReadChangeRequestIntoDraft, Depends(get_read_change_request)]
+DismissChangeRequestDep = Annotated[DismissChangeRequest, Depends(get_dismiss_change_request)]
+ProposeCapabilityConceptsDep = Annotated[
+    ProposeCapabilityConcepts, Depends(get_propose_capability_concepts)
+]
+CleanUpVocabularyDep = Annotated[CleanUpVocabulary, Depends(get_clean_up_vocabulary)]
+SuggestDerivedDependenciesDep = Annotated[
+    SuggestDerivedDependencies, Depends(get_suggest_derived_dependencies)
+]
+SuggestComponentCapabilitiesDep = Annotated[
+    SuggestComponentCapabilities, Depends(get_suggest_component_capabilities)
+]
+SettingsDep = Annotated[Settings, Depends(get_settings)]
+OfflinePersonasDep = Annotated[tuple[ActorProfile, ...], Depends(get_offline_personas)]

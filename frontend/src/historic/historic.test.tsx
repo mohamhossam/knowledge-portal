@@ -8,6 +8,9 @@ import { api, type HistoricDetail, type HistoricSummary, type RequirementCorpus 
 import { requirementOverview } from "../home/derive";
 import { HistoricPage } from "./HistoricPage";
 import { nextStep, parseIds, standing } from "./historic";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 afterEach(() => vi.restoreAllMocks());
 

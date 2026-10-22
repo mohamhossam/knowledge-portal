@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
@@ -8,6 +8,9 @@ import { EXPLORED } from "../explorer/fixtures";
 import { blankSystem } from "./drafting";
 import { Retired } from "./Retired";
 import { SystemEditor } from "./SystemEditor";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 const RELEASE = { ...EXPLORED, revision: 3, status: "draft", documents: [] } as unknown as Release;
 
@@ -54,5 +57,38 @@ describe("retiring a system by hand", () => {
 
     fireEvent.click(screen.getByLabelText("Retired: still readable, never matched again"));
     expect(screen.getByTestId("value")).toHaveTextContent(JSON.stringify({ deprecated: false, replaced_by: null }));
+  });
+});
+
+describe("saying where a capability and a component come from (review recommendation 4)", () => {
+  function Editing({ start }: { start: CatalogueSystem }) {
+    const [value, setValue] = useState(start);
+    return (
+      <>
+        <SystemEditor value={value} onChange={setValue} release={RELEASE} />
+        <output data-testid="value">{JSON.stringify({
+          capability: [value.capabilities[0]?.confidence ?? null, value.capabilities[0]?.source ?? null],
+          component: [value.components[0]?.confidence ?? null, value.components[0]?.source ?? null],
+        })}</output>
+      </>
+    );
+  }
+
+  it("takes how sure its source is and the source, row by row, and leaves the rest of the row alone", () => {
+    const start = {
+      ...blankSystem(), ...RELEASE.systems[0]!,
+      capabilities: [{ id: "tracking", name: "Tracking", triggers: ["track orders"], accepted: [] }],
+      components: [{ id: "milestones", name: "Milestones", aliases: [], accepted: [] }],
+    } as CatalogueSystem;
+    render(<Editing start={start} />);
+
+    const capability = screen.getByRole("group", { name: "capability Tracking" });
+    fireEvent.change(within(capability).getByLabelText("How sure its source is"), { target: { value: "confirmed" } });
+    fireEvent.change(within(capability).getByLabelText("Source"), { target: { value: "SDD v2.3 · §4.1" } });
+    const component = screen.getByRole("group", { name: "component Milestones" });
+    fireEvent.change(within(component).getByLabelText("How sure its source is"), { target: { value: "gap" } });
+
+    expect(screen.getByTestId("value")).toHaveTextContent(JSON.stringify({ capability: ["confirmed", "SDD v2.3 · §4.1"], component: ["gap", null] }));
+    expect(within(capability).getByLabelText(/Matched by/)).toHaveValue("track orders");
   });
 });

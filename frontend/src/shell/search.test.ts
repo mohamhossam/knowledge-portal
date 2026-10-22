@@ -14,9 +14,14 @@ describe("global search matching", () => {
     expect(rank(names, "billing", (name) => [name], 5).items).toEqual(["Billing gateway", "Order billing", "Rebilling engine"]);
   });
 
-  it("matches aliases and codes, and Arabic without its diacritics", () => {
+  it("matches aliases and codes, and names without their accents", () => {
     expect(score(["Customer portal", "CRM-X"], "crm")).toBeGreaterThan(0);
-    expect(score(["سِياسة التحقق"], "سياسة")).toBeGreaterThan(0);
+    expect(score(["Société Générale gateway"], "societe generale")).toBeGreaterThan(0);
+  });
+
+  it("folds accents only, so letters of other scripts still have to match", () => {
+    expect(score(["Москва hub"], "москва")).toBeGreaterThan(0);
+    expect(score(["Москва hub"], "лондон")).toBe(0);
   });
 
   it("says how many matched beyond the limit", () => {

@@ -225,7 +225,7 @@ export function ConnectionRemove({ connection, onDone }: { connection: Relations
 }
 
 /** A domain as edited; a landscape domain keeps whether it is cross-cutting, which the panel doesn't change. */
-type Domain = { id: string; name: string; name_ar?: string | null; parent_id?: string | null; description?: string | null; cross_cutting?: boolean };
+type Domain = { id: string; name: string; parent_id?: string | null; description?: string | null; cross_cutting?: boolean };
 
 /** One domain tree edited whole: the landscape, or the business areas. */
 export function DomainsEdit({ tree, onDone }: { tree: "landscape" | "areas"; onDone: () => void }) {
@@ -284,7 +284,6 @@ export function DomainsEdit({ tree, onDone }: { tree: "landscape" | "areas"; onD
         render={(item, update, index) => (
           <>
             <TextField label="Name" value={item.name} required onChange={(name) => update({ name })} />
-            <TextField label="Arabic name" value={item.name_ar} dir="rtl" lang="ar" onChange={(name_ar) => update({ name_ar: name_ar || null })} />
             <SelectField
               label="Inside"
               value={item.parent_id ?? ""}
@@ -372,6 +371,7 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
     () => ({
       id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [],
       sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], accepted: [], former_ids: [],
+      deprecated: false,
     }),
   );
   const products = release.products ?? [];
@@ -392,7 +392,7 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
     >
       <p className="cat-edit__lead">Say what it is; its order types, parts and the rest are added on its sheet, one section at a time.</p>
       <div className="cat-form">
-        <OfferingFacts value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} />
+        <OfferingFacts value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} offerings={release.products ?? []} />
       </div>
     </EditPanel>
   );
@@ -467,6 +467,7 @@ export function JourneyEdit({ journey, onDone }: { journey?: Journey; onDone: (s
         systems={release.systems}
         offerings={release.products ?? []}
         channels={release.channels ?? []}
+        interfaces={release.interfaces ?? []}
       />
     </EditPanel>
   );

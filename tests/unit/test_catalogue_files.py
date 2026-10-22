@@ -3,19 +3,23 @@
 from __future__ import annotations
 
 import io
+import json
 from dataclasses import replace
 from pathlib import Path
 
 import pytest
+import yaml
 from fastapi.testclient import TestClient
 from openpyxl import Workbook, load_workbook
 
 from knowledge_portal.application.ports.catalogue_file import CatalogueFileFormat
 from knowledge_portal.domain.architecture.diff import ChangedItem, ChangeKind, diff_releases
 from knowledge_portal.domain.architecture.knowledge import (
+    CapabilityDomain,
     InvalidKnowledgeError,
     KnowledgeCapability,
     LandscapeDomain,
+    SystemComponent,
     SystemDefinition,
     SystemRelationship,
 )
@@ -82,6 +86,8 @@ def test_excel_reads_separated_lists_and_ignores_blank_rows() -> None:
     content = ADAPTER.read(
         CatalogueFileFormat.XLSX,
         _workbook(
+            # A workbook from the template before the catalogue was English only still has a
+            # name_ar column: it imports, and the column is read past.
             Systems=[
                 ("system_id", "name", "name_ar", "aliases"),
                 ("crm", "CRM", None, "customer records; accounts"),
@@ -92,6 +98,12 @@ def test_excel_reads_separated_lists_and_ignores_blank_rows() -> None:
                 ("system_id", "capability_id", "name", "triggers"),
                 ("crm", "lookup", "Customer lookup", "find customer;search account"),
             ],
+            Components=[
+                ("system_id", "component_id", "name", "name_ar"),
+                ("billing", "rating", "Rating", "التسعير"),
+            ],
+            Domains=[("domain_id", "name", "name_ar"), ("orders", "Orders", "الطلبات")],
+            LandscapeDomains=[("domain_id", "name", "name_ar"), ("bss", "BSS", "دعم الأعمال")],
             Relationships=[
                 ("source_system_id", "target_system_id", "description"),
                 ("crm", "billing", "Sends invoices"),
@@ -110,9 +122,42 @@ def test_excel_reads_separated_lists_and_ignores_blank_rows() -> None:
                 ),
             ),
         ),
-        SystemDefinition("billing", "Billing", name_ar="الفوترة"),
+        SystemDefinition("billing", "Billing", components=(SystemComponent("rating", "Rating"),)),
     )
     assert content.relationships == (SystemRelationship("crm", "billing", "Sends invoices"),)
+    assert content.capability_domains == (CapabilityDomain("orders", "Orders"),)
+    assert content.landscape_domains == (LandscapeDomain("bss", "BSS"),)
+
+
+@pytest.mark.parametrize("file_format", [CatalogueFileFormat.YAML, CatalogueFileFormat.JSON])
+def test_a_text_file_with_arabic_names_still_imports(file_format: CatalogueFileFormat) -> None:
+    # Files exported before the catalogue was English only carry name_ar on systems,
+    # components and domains; the key is read past.
+    mapping = {
+        "systems": [
+            {
+                "id": "billing",
+                "name": "Billing",
+                "name_ar": "الفوترة",
+                "components": [{"id": "rating", "name": "Rating", "name_ar": "التسعير"}],
+            }
+        ],
+        "capability_domains": [{"id": "orders", "name": "Orders", "name_ar": "الطلبات"}],
+        "landscape_domains": [{"id": "bss", "name": "BSS", "name_ar": "دعم الأعمال"}],
+    }
+    raw = (
+        json.dumps(mapping, ensure_ascii=False)
+        if file_format is CatalogueFileFormat.JSON
+        else yaml.safe_dump(mapping, allow_unicode=True)
+    )
+
+    content = ADAPTER.read(file_format, raw.encode())
+
+    assert content.systems == (
+        SystemDefinition("billing", "Billing", components=(SystemComponent("rating", "Rating"),)),
+    )
+    assert content.capability_domains == (CapabilityDomain("orders", "Orders"),)
+    assert content.landscape_domains == (LandscapeDomain("bss", "BSS"),)
 
 
 @pytest.mark.parametrize(
@@ -242,6 +287,7 @@ def test_template_has_instructions_and_every_sheet() -> None:
         "PlanCharacteristics",
         "BusinessRules",
         "Concepts",
+        "Schemes",
         "Vocabulary",
         "Interfaces",
         "RealisationRecords",
@@ -249,6 +295,29 @@ def test_template_has_instructions_and_every_sheet() -> None:
         "Acceptances",
     ]
     assert ADAPTER.read(CatalogueFileFormat.XLSX, ADAPTER.template()).systems == ()
+
+    def headers(sheet: str) -> list[object]:
+        return [cell.value for cell in workbook[sheet][1]]
+
+    # English only: no sheet has a column for an Arabic name.
+    assert headers("Systems")[:4] == ["system_id", "name", "aliases", "description"]
+    assert headers("Components")[:5] == [
+        "system_id",
+        "component_id",
+        "name",
+        "aliases",
+        "technology",
+    ]
+    assert headers("Domains") == ["domain_id", "name", "parent_id", "description"]
+    assert headers("LandscapeDomains") == [
+        "domain_id",
+        "name",
+        "parent_id",
+        "description",
+        "cross_cutting",
+        "layout",
+    ]
+    assert not any("name_ar" in headers(sheet) for sheet in workbook.sheetnames[1:])
 
 
 def test_diff_lists_added_changed_and_removed_items() -> None:

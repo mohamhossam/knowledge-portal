@@ -8,6 +8,9 @@ import { api, type LibraryDocument } from "../api/client";
 import type { DocumentContext } from "./documentContext";
 import { SearchPage } from "./SearchPage";
 import { VersionsPage } from "./VersionsPage";
+import { checkAxeAfterEach } from "../test/axe";
+
+checkAxeAfterEach();
 
 class NoResize {
   observe() {}

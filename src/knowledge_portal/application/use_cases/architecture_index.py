@@ -461,7 +461,6 @@ class BuildArchitectureIndex:
                 line
                 for line in (
                     system.name,
-                    system.name_ar or "",
                     *system.aliases,
                     # Lines only when present, so chunks of older systems keep their text.
                     system.description or "",

@@ -25,7 +25,7 @@ import { ReviewDesk } from "./ReviewDesk";
 import { returnBlocker } from "./citing";
 import { StandingPanel } from "./StandingPanel";
 import { useDocument } from "./useDocument";
-import { contentLang, humanWhere, plural } from "./where";
+import { humanWhere, plural } from "./where";
 
 const reviewKey = (version: LibraryVersion | undefined) => (version ? `${version.id}:${latestRevision(version)?.id ?? "none"}` : "none");
 const freshReview = (version: LibraryVersion | undefined): ReviewState => ({ key: reviewKey(version), drafts: version ? initialDrafts(version) : {}, summary: latestRevision(version)?.explanation ?? "" });
@@ -173,7 +173,7 @@ function Record({ document, hook }: { document: LibraryDocument; hook: Hook }) {
       <ActingBanner document={document} onDone={announce} />
       <PageHeader
         breadcrumbs={<LibraryCrumbs document={document.title} base={base} page={TAB_NAMES[tab]} />}
-        title={<span lang={contentLang(document.title)}>{document.title}</span>}
+        title={<span>{document.title}</span>}
         documentTitle={`${document.title} · Library`}
         meta={
           <>
@@ -478,7 +478,7 @@ function InService({ caption }: { caption: string }) {
   }
   const columns: Column<Passage>[] = [
     { id: "where", header: "Where", rowHeader: true, width: "12rem", cell: (item) => <span id={`passage-${item.id}`} tabIndex={-1} className="lib-anchor">{item.where}</span> },
-    { id: "text", header: "Passage", bidi: true, cell: (item) => <span lang={contentLang(item.text)} className="lib-passage-cell">{item.text}</span> },
+    { id: "text", header: "Passage", bidi: true, cell: (item) => <span className="lib-passage-cell">{item.text}</span> },
   ];
   return (
     <section className="ds-section lib-inservice" aria-labelledby="in-service-title">

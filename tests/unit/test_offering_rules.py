@@ -104,7 +104,7 @@ def _read(client: TestClient, body: bytes) -> tuple[str, list[dict[str, Any]]]:
     ).json()
     uploaded = client.post(
         f"/architecture-knowledge/releases/{draft['id']}/documents",
-        data={"title": "B.Pro+", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "B.Pro+", "expected_revision": draft["revision"]},
         files={"file": ("design.txt", body, "text/plain")},
         headers=OWNER,
     ).json()

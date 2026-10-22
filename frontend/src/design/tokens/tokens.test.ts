@@ -74,7 +74,7 @@ const TEXT: [string, string][] = [
   ["--color-warning", "--color-warning-bg"], ["--color-warning", "--color-surface"],
   ["--color-success", "--color-success-bg"], ["--color-success", "--color-surface"],
   ["--color-info", "--color-info-bg"], ["--color-info", "--color-surface"],
-  ["--color-ink", "--color-highlight"], ["--color-ink", "--color-proof"],
+  ["--color-ink", "--color-highlight"],
 ];
 
 const NON_TEXT: [string, string][] = [
