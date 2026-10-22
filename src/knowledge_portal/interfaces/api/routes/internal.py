@@ -26,7 +26,20 @@ from knowledge_portal.application.ports.reference_grounding import ReferenceEvid
 from knowledge_portal.application.ports.requirement_assessment import ArchitectureAssessment
 from knowledge_portal.application.use_cases.cited_passages import CitedPassage, PassageCitation
 from knowledge_portal.domain.historic.historic_requirement import CONTENT_PAGE_MAX, ContentPart
-from knowledge_portal.interfaces.api.dependencies import ContainerDep, require_service_caller
+from knowledge_portal.interfaces.api.dependencies import (
+    ArchitectureMatchDep,
+    CitedPassagesDep,
+    HistoricImportsDep,
+    KnowledgeEventsDep,
+    ManageArchitectureKnowledgeDep,
+    ReceiveChangeRequestDep,
+    ReceiveDeliveryDep,
+    RecordPrecedentDep,
+    ReferenceKnowledgeDep,
+    RequirementAssessmentDep,
+    SystemReviewsDep,
+    require_service_caller,
+)
 from knowledge_portal.interfaces.api.schemas.change_requests import (
     ApprovedBacklogRequest,
     ChangeRequestReceipt,
@@ -58,17 +71,19 @@ class PublishedResponse(BaseModel):
 
 
 @router.post("/architecture/match")
-def match(query: ArchitectureQuery, container: ContainerDep) -> ArchitectureKnowledgeMatch:
-    return container.architecture_knowledge.match(query.to_query())
+def match(
+    query: ArchitectureQuery, architecture: ArchitectureMatchDep
+) -> ArchitectureKnowledgeMatch:
+    return architecture.match(query.to_query())
 
 
 @router.post("/architecture/assess")
-def assess(query: AssessmentQuery, container: ContainerDep) -> ArchitectureAssessment:
+def assess(query: AssessmentQuery, assessment: RequirementAssessmentDep) -> ArchitectureAssessment:
     """A whole requirement's product verdict, systems, gaps and owners (ontology plan Phase 3).
 
     With no verdict yet, the answer carries the questions to ask instead.
     """
-    return container.requirement_assessment.assess(query.to_query())
+    return assessment.assess(query.to_query())
 
 
 @router.post(
@@ -77,7 +92,7 @@ def assess(query: AssessmentQuery, container: ContainerDep) -> ArchitectureAsses
     responses={200: {"description": "The same decision, or a later one, is already kept."}},
 )
 def record_precedent(
-    body: PrecedentBody, response: Response, container: ContainerDep
+    body: PrecedentBody, response: Response, precedents: RecordPrecedentDep
 ) -> PrecedentReceipt:
     """A Requirement Owner's decision on the suggested verdict (ontology plan Phase 5).
 
@@ -86,25 +101,25 @@ def record_precedent(
     published (404 otherwise); systems and concepts it does not hold are left out, and the
     systems are named in the receipt.
     """
-    receipt = container.record_precedent.execute(body.to_request())
+    receipt = precedents.execute(body.to_request())
     if not receipt.recorded:
         response.status_code = 200
     return receipt
 
 
 @router.get("/library/published")
-def published(container: ContainerDep) -> PublishedResponse:
-    return PublishedResponse(has_published=container.reference_knowledge.has_published())
+def published(library: ReferenceKnowledgeDep) -> PublishedResponse:
+    return PublishedResponse(has_published=library.has_published())
 
 
 @router.post("/library/search")
-def search(body: SearchRequest, container: ContainerDep) -> list[ReferenceEvidence]:
-    return list(container.reference_knowledge.search_evidence(body.query))
+def search(body: SearchRequest, library: ReferenceKnowledgeDep) -> list[ReferenceEvidence]:
+    return list(library.search_evidence(body.query))
 
 
 @router.post("/library/retrieve")
-def retrieve(body: SearchRequest, container: ContainerDep) -> list[ReferenceEvidence]:
-    return list(container.reference_knowledge.retrieve(body.query))
+def retrieve(body: SearchRequest, library: ReferenceKnowledgeDep) -> list[ReferenceEvidence]:
+    return list(library.retrieve(body.query))
 
 
 Identifier = Annotated[str, Query(min_length=1, max_length=200)]
@@ -112,7 +127,7 @@ Identifier = Annotated[str, Query(min_length=1, max_length=200)]
 
 @router.get("/library/passages")
 def passage(
-    container: ContainerDep,
+    passages: CitedPassagesDep,
     document_id: Identifier,
     publication_id: Identifier,
     version_id: Identifier,
@@ -120,7 +135,7 @@ def passage(
     block_id: Identifier,
 ) -> CitedPassage:
     """A cited passage, only while its publication is live (409 otherwise)."""
-    return container.cited_passages.read(
+    return passages.read(
         PassageCitation(document_id, publication_id, version_id, revision_id, block_id)
     )
 
@@ -131,12 +146,12 @@ def passage(
     responses={200: {"description": "The same approval was delivered before."}},
 )
 def receive_change_request(
-    body: ApprovedBacklogRequest, response: Response, container: ContainerDep
+    body: ApprovedBacklogRequest, response: Response, receive: ReceiveChangeRequestDep
 ) -> ChangeRequestReceipt:
     """An approved backlog, kept once per final approval for a knowledge admin to read into a
     draft (requirement-portal ADR-0101, step 7). Delivering the same approval again answers
     200 with the first change request; the same approval for another subject is a 409."""
-    item, created = container.receive_change_request.execute(body.to_backlog())
+    item, created = receive.execute(body.to_backlog())
     if not created:
         response.status_code = 200
     return ChangeRequestReceipt(
@@ -152,7 +167,7 @@ def receive_change_request(
     },
 )
 def receive_delivery(
-    body: DeliveryRequest, response: Response, container: ContainerDep
+    body: DeliveryRequest, response: Response, deliveries: ReceiveDeliveryDep
 ) -> DeliveryReceipt:
     """A published Epic closed or removed in the work-item tracker (ontology plan Phase 7).
 
@@ -161,30 +176,35 @@ def receive_delivery(
     the Epic's catalogue changes still waiting and answers 200 with their ids. The same
     delivery id for another body is a 409."""
     if body.state is DeliveryState.REMOVED:
-        withdrawn = container.receive_delivery.removed(body.requirement_id, body.epic.external_id)
+        withdrawn = deliveries.removed(body.requirement_id, body.epic.external_id)
         response.status_code = 200
         return DeliveryReceipt(change_request_id=None, created=False, withdrawn=list(withdrawn))
-    item, created = container.receive_delivery.closed(body.to_delivery())
+    item, created = deliveries.closed(body.to_delivery())
     if not created:
         response.status_code = 200
     return DeliveryReceipt(change_request_id=item.id, created=created, withdrawn=[])
 
 
 @router.get("/architecture/releases/{release_id}/evidence/{chunk_id}")
-def evidence(release_id: str, chunk_id: str, container: ContainerDep) -> EvidenceChunk:
+def evidence(
+    release_id: str,
+    chunk_id: str,
+    knowledge: ManageArchitectureKnowledgeDep,
+    reviews: SystemReviewsDep,
+) -> EvidenceChunk:
     """Evidence of a published release; a draft answers 404. A system's own record says when
     that system falls due for review (Knowledge Center D)."""
-    chunk = container.manage_architecture_knowledge.published_evidence(release_id, chunk_id)
-    return container.system_reviews.with_review(chunk)
+    chunk = knowledge.published_evidence(release_id, chunk_id)
+    return reviews.with_review(chunk)
 
 
 @router.get("/events")
 def events(
-    container: ContainerDep,
+    outbox: KnowledgeEventsDep,
     after: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
 ) -> list[dict[str, Any]]:
-    return [_event(e) for e in container.knowledge_events.after(after, limit)]
+    return [_event(e) for e in outbox.after(after, limit)]
 
 
 HistoricId = Annotated[str, Path(min_length=1, max_length=200)]
@@ -199,14 +219,14 @@ PageLimit = Annotated[int, Query(ge=1, le=CONTENT_PAGE_MAX)]
 )
 def historic_passages(
     historic_requirement_id: HistoricId,
-    container: ContainerDep,
+    historic: HistoricImportsDep,
     publication: Publication,
     offset: Offset = 0,
     limit: PageLimit = CONTENT_PAGE_MAX,
 ) -> HistoricPassagesPage:
     """A published historic requirement's BRD passages, a page at a time. An older
     publication answers 409; a withdrawn or unknown record 404 (ADR-0102, amendment 1)."""
-    page = container.historic_imports.content(
+    page = historic.content(
         historic_requirement_id, publication, ContentPart.PASSAGES, offset, limit
     )
     return HistoricPassagesPage(
@@ -224,15 +244,13 @@ def historic_passages(
 )
 def historic_items(
     historic_requirement_id: HistoricId,
-    container: ContainerDep,
+    historic: HistoricImportsDep,
     publication: Publication,
     offset: Offset = 0,
     limit: PageLimit = CONTENT_PAGE_MAX,
 ) -> HistoricItemsPage:
     """A published historic requirement's Epics, Features and User Stories, a page at a time."""
-    page = container.historic_imports.content(
-        historic_requirement_id, publication, ContentPart.ITEMS, offset, limit
-    )
+    page = historic.content(historic_requirement_id, publication, ContentPart.ITEMS, offset, limit)
     return HistoricItemsPage(
         historic_requirement_id=historic_requirement_id,
         publication=page.publication,

@@ -10,6 +10,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from smb_kernel.http.body_limit import RequestBodyTooLargeError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from knowledge_portal.application.errors import (
     DocumentExtractionBusyError,
@@ -21,6 +22,7 @@ from knowledge_portal.application.public_errors import (
     FailureCategory,
     describe_public_error,
 )
+from knowledge_portal.interfaces.api.error_envelope import error_content
 
 logger = logging.getLogger("knowledge_portal.api.errors")
 
@@ -148,6 +150,19 @@ def register_error_handlers(app: FastAPI) -> None:
             },
         )
 
+    async def http_error(request: Request, exc: Exception) -> JSONResponse:
+        """FastAPI's own refusals (an unknown path, a method a route does not take) in the
+        one error shape (review recommendation 12)."""
+        if not isinstance(exc, StarletteHTTPException):  # registered for that type only
+            return await unhandled(request, exc)
+        correlation_id = getattr(request.state, "correlation_id", str(uuid.uuid4()))
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=error_content(exc.status_code, exc.detail, correlation_id),
+            headers=exc.headers,
+        )
+
+    app.add_exception_handler(StarletteHTTPException, http_error)
     app.add_exception_handler(RequestValidationError, validation_error)
     app.add_exception_handler(RequestBodyTooLargeError, body_too_large)
     app.add_exception_handler(Exception, unhandled)

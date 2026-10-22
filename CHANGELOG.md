@@ -7,6 +7,17 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Route handlers take the use cases they need, never the container (review recommendation
+  12). The 21 handlers that read the container directly (the internal API, the change-request
+  routes, the draft's readings and the sign-in configuration) take providers from
+  `dependencies.py`, and a test fails any handler that takes the container again. Every
+  refusal now answers `{code, message, correlation_id}`: the 404 of an internal API that is
+  not served, the kernel guard's 401 and 503 for a missing or unreadable service token (its
+  body rewritten on the way out; the kernel is unchanged), the route's own second check, and
+  FastAPI's unknown path (404) and method (405). They answered `{"detail": ...}` with no
+  correlation id; now a refused internal call carries the id its log line has, and
+  `X-Request-ID` matches it. Status codes and headers are unchanged. requirement-portal
+  should read `message` where it read `detail`.
 - The internal contract has a version that means something. `INTERNAL_CONTRACT_VERSION` in
   the package sets it (1.0.0; the file carried FastAPI's default, 0.1.0), and every shape change
   raises it: MAJOR for a breaking change, MINOR for an additive one. A new CI step regenerates

@@ -182,7 +182,10 @@ refresh, operational entry points — ADR-0071).
   the container during the FastAPI lifespan so a misconfiguration fails the
   boot, not the first request that happens to need it.
 - Route handlers receive use cases through `interfaces/api/dependencies.py`
-  and never name a concrete adapter.
+  and never name a concrete adapter, nor the container itself: add a provider for what a
+  route uses (`tests/unit/test_route_surface_and_errors.py` checks every handler).
+- Every refusal answers `{code, message, correlation_id}`: raise the catalogue's own error
+  (`application/public_errors.py`), never `HTTPException` with a bare `detail`.
 - A new adapter is reached by extending `build_container`, never by importing
   it into the layer that uses it.
 

@@ -48,6 +48,17 @@ released.
 - **A step's point of no return.** A bare "yes" reads as "Past this step, the order can no
   longer be cancelled."; a "no", "N/A" or "-" reads as not a point of no return.
 
+## Contract version and refusals (review recommendations 11 and 12)
+
+- **Version.** The contract's `info.version` is 1.0.0 and now rises with every shape change:
+  MAJOR for a breaking change, MINOR for an additive one. Pin your adapters to the major
+  version.
+- **Refusals.** A refused internal call answers `{code, message, correlation_id}` instead of
+  `{"detail": ...}`, with the same status and headers: 401 `authentication_required` for a
+  missing or invalid service token, 503 `service_unavailable` when the token cannot be checked,
+  404 `not_found` when the internal API is not served. Read `message` where you read `detail`,
+  and log `correlation_id`: it is the `X-Request-ID` this service logged the refusal under.
+
 ## Contact
 
 The catalogue maintainers (AGENTS.md §19 lists open debt).
