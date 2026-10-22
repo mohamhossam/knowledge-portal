@@ -379,6 +379,9 @@ Introduce production persistence only when the roadmap requires durable state/ve
   data so it satisfies invariants; they do not re-implement or re-decide them.
 - Do not swallow exceptions.
 - Map infrastructure exceptions into explicit application/domain errors at boundaries.
+- Read untyped JSON (another system's answer, a stored payload, a file's values) through
+  `infrastructure/json_reading.py`, not a private `_text` helper, so a value means the same
+  thing in every adapter. The adapter turns its `UnreadableValue` into the error it reports.
 - Do not use broad `except Exception` unless translating at a top-level boundary and preserving context.
 - No dead code or speculative abstractions.
 - No TODOs that hide required behavior for the active slice.

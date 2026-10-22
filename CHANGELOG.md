@@ -175,6 +175,24 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Changed
 
+- The five largest modules are split by concern (review recommendation 16); behaviour, the
+  API and both contracts are unchanged.
+  - `catalogue_files.py` (4,357 lines) is a package by format: field readers, YAML/JSON
+    reading and writing, offerings, workbook sheets, workbook reading and writing. The
+    workbook's 321-, 302- and 249-line functions read or write one sheet per function.
+  - `candidates.classify` (257 lines) and `apply_candidate` (164) pick one handler per
+    suggestion kind from a table, checked at import to cover every kind.
+  - `Settings.from_env` (293 lines) reads one section per function, and `validate_settings`
+    (270) runs one check per concern in the same order. When values in two sections are
+    malformed at once, the first one reported can differ; each message is unchanged.
+  - The review desk (840 lines) is composed from its parts in `library/review/`: the desk's
+    state hook, the seen hook, the pane, the save bar, the panels and the grid.
+  - `suggestions.ts` (1,120 lines) is a folder by concern: state, keys, lexicon, sentences,
+    waits, dependencies, groups, readings and files.
+  - One reader for untyped JSON, `infrastructure/json_reading.py`, replaces the private
+    `_text` helpers of the requirement client, the product catalogue, the catalogue
+    extraction, the library golden set, the PostgreSQL values and the catalogue files.
+    `_integer` for stored integers now refuses true and false, which those columns never hold.
 - Dependabot no longer proposes TypeScript 6 or later (`.github/dependabot.yml`):
   openapi-typescript and typescript-eslint, even at their latest, require TypeScript below 6.1,
   so such a bump cannot install. Lift the rule once both accept a newer major.
