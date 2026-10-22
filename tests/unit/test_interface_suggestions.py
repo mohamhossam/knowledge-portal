@@ -133,7 +133,6 @@ def _change(**values: Any) -> ChangeOutput:
         "kind": "interface",
         "system": "Order Hub",
         "name": "Order API",
-        "name_ar": None,
         "aliases": [],
         "triggers": [],
         "target_system": "Billing",
@@ -212,7 +211,7 @@ def test_accepting_a_documents_interface_records_it_and_where_it_came_from(
     ).json()
     uploaded = client.post(
         f"/architecture-knowledge/releases/{draft['id']}/documents",
-        data={"title": "Integration", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Integration", "expected_revision": draft["revision"]},
         files={"file": ("integration.md", DOCUMENT, "text/markdown")},
         headers=OWNER,
     ).json()

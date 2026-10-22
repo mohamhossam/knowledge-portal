@@ -98,7 +98,6 @@ class CapabilityDomain:
 
     id: str
     name: str
-    name_ar: str | None = None
     parent_id: str | None = None
     description: str | None = None
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
@@ -130,7 +129,6 @@ class LandscapeDomain:
 
     id: str
     name: str
-    name_ar: str | None = None
     parent_id: str | None = None
     description: str | None = None
     # It serves every other domain (TAM's enterprise domain, the integration layer), so the
@@ -181,9 +179,6 @@ class _Node(Protocol):
     def name(self) -> str: ...
 
     @property
-    def name_ar(self) -> str | None: ...
-
-    @property
     def parent_id(self) -> str | None: ...
 
     @property
@@ -194,7 +189,6 @@ def _check_node(node: _Node, noun: str) -> None:
     _required(node.id, f"{noun} id")
     _required(node.name, f"{noun} name")
     for value, label in (
-        (node.name_ar, f"Arabic {noun.casefold()} name"),
         (node.parent_id, f"Parent {noun.casefold()}"),
         (node.description, f"{noun} description"),
     ):
@@ -290,7 +284,6 @@ class SystemComponent:
 
     id: str
     name: str
-    name_ar: str | None = None
     description: str | None = None
     aliases: tuple[str, ...] = ()
     # What it is built as, in the maintainer's words: "Microservice", "Batch job".
@@ -309,7 +302,6 @@ class SystemComponent:
         _required(self.id, "Component id")
         _required(self.name, "Component name")
         for value, label in (
-            (self.name_ar, "Arabic component name"),
             (self.description, "Component description"),
             (self.technology, "Component technology"),
             (self.technology_id, "Component technology term"),
@@ -321,7 +313,7 @@ class SystemComponent:
 
     @property
     def labels(self) -> tuple[str, ...]:
-        return (self.name, *((self.name_ar,) if self.name_ar else ()), *self.aliases)
+        return (self.name, *self.aliases)
 
 
 @dataclass(frozen=True)
@@ -344,7 +336,6 @@ class SystemDefinition:
     aliases: tuple[str, ...] = ()
     capabilities: tuple[KnowledgeCapability, ...] = ()
     constraints: tuple[str, ...] = ()
-    name_ar: str | None = None
     components: tuple[SystemComponent, ...] = ()
     # What the system is for, in a sentence or two; None while nobody has said.
     description: str | None = None
@@ -380,7 +371,6 @@ class SystemDefinition:
         _required(self.id, "System id")
         _required(self.name, "System name")
         for value, label in (
-            (self.name_ar, "Arabic system name"),
             (self.description, "System description"),
             (self.landscape_domain_id, "System landscape domain"),
             (self.owner, "System owner"),
@@ -398,7 +388,7 @@ class SystemDefinition:
         check_retirement(self, self.name)
         if any(not value.strip() for value in (*self.aliases, *self.constraints)):
             raise InvalidKnowledgeError("System aliases and constraints must not be blank.")
-        labels = (self.name, *((self.name_ar,) if self.name_ar else ()), *self.aliases)
+        labels = (self.name, *self.aliases)
         if len({_compared(value) for value in labels}) != len(labels):
             raise InvalidKnowledgeError("System names and aliases must be unique.")
         noted = [item.entity_id for item in self.mastery_notes]
@@ -531,7 +521,6 @@ class KnowledgeDocumentVersion:
     title: str
     filename: str
     mime_type: str
-    language: str
     checksum: str
     storage_key: str
     uploaded_by: str
@@ -546,8 +535,6 @@ class KnowledgeDocumentVersion:
             ("Actor", self.uploaded_by),
         ):
             _required(value, label)
-        if self.language not in {"en", "ar", "mixed"}:
-            raise InvalidKnowledgeError("Document language must be en, ar, or mixed.")
         if self.uploaded_at.tzinfo is None:
             raise InvalidKnowledgeError("Document timestamp must have a timezone.")
 
@@ -635,7 +622,7 @@ class ArchitectureKnowledge:
             raise InvalidKnowledgeError("System ids must be unique.")
         owners: dict[str, SystemDefinition] = {}
         for system in self.systems:
-            for alias in (system.id, system.name, system.name_ar or "", *system.aliases):
+            for alias in (system.id, system.name, *system.aliases):
                 if not alias:
                     continue
                 owner = owners.setdefault(label_key(alias) or _compared(alias), system)

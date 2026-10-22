@@ -487,8 +487,6 @@ async def upload_document(
     file: Annotated[UploadFile, File()],
     title: Annotated[str, Form(max_length=MAX_NAME_CHARACTERS)],
     expected_revision: Annotated[int, Form()],
-    # English only (PRODUCT.md): no longer sent; read, when an older client sends it, as before.
-    language: Annotated[str, Form(max_length=20)] = "en",
 ) -> KnowledgeReleaseResponse:
     # One byte past the limit is enough for validation to reject an oversized
     # file without buffering the rest of an arbitrarily large body.
@@ -501,7 +499,6 @@ async def upload_document(
         title,
         file.filename or "",
         file.content_type or "",
-        language,
         content,
         actor,
         clock.now(),
@@ -519,8 +516,6 @@ async def upload_documents(
     use_case: Annotated[UploadArchitectureDocuments, Depends(get_upload_architecture_documents)],
     files: Annotated[list[UploadFile], File(max_length=MAX_BATCH_FILES)],
     expected_revision: Annotated[int, Form()],
-    # English only (PRODUCT.md): no longer sent; read, when an older client sends it, as before.
-    language: Annotated[str, Form(max_length=20)] = "en",
 ) -> BatchUploadResponse:
     """Up to twenty files into a draft at once; each is added or refused with its reason."""
     if len(files) > MAX_BATCH_FILES:
@@ -535,7 +530,6 @@ async def upload_documents(
         release_id,
         expected_revision,
         tuple(incoming),
-        language,
         actor,
         clock.now(),
     )

@@ -11,7 +11,7 @@ def test_any_two_versions_compare_either_way(client: TestClient) -> None:
     root = f"/architecture-knowledge/releases/{draft['id']}"
     client.post(
         f"{root}/documents",
-        data={"title": "Notes", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Notes", "expected_revision": draft["revision"]},
         files={"file": ("notes.txt", b"BRM rates usage.", "text/plain")},
     )
     default = client.get(f"{root}/changes").json()

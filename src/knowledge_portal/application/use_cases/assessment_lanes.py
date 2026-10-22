@@ -416,11 +416,7 @@ def graph_lane(
                 system
                 for system in release.systems
                 if key
-                and key
-                in {
-                    value.casefold()
-                    for value in (system.id, system.name, system.name_ar or "", *system.aliases)
-                }
+                and key in {value.casefold() for value in (system.id, system.name, *system.aliases)}
             ),
             None,
         )

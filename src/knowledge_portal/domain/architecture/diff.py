@@ -391,8 +391,6 @@ def _system_fields(before: SystemDefinition, after: SystemDefinition) -> tuple[s
     fields = []
     if before.name != after.name:
         fields.append("name")
-    if before.name_ar != after.name_ar:
-        fields.append("name_ar")
     if sorted(before.aliases) != sorted(after.aliases):
         fields.append("aliases")
     if sorted(before.constraints) != sorted(after.constraints):
@@ -563,13 +561,12 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
 
     def components(
         release: ArchitectureKnowledge,
-    ) -> dict[str, tuple[str, tuple[str, str, tuple[str, ...], str, str, str, str, str]]]:
+    ) -> dict[str, tuple[str, tuple[str, tuple[str, ...], str, str, str, str, str]]]:
         return {
             f"{system.id}/{component.id}": (
                 f"{system.name}: {component.name}",
                 (
                     component.name,
-                    component.name_ar or "",
                     tuple(sorted(component.aliases)),
                     component.description or "",
                     component.technology or "",
@@ -599,7 +596,6 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                     for field, before, after in zip(
                         (
                             "name",
-                            "name_ar",
                             "aliases",
                             "description",
                             "technology",
@@ -665,7 +661,7 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
 
     def domains(
         release: ArchitectureKnowledge, landscape: bool
-    ) -> dict[str, tuple[str, tuple[str, str, str, str, str, str]]]:
+    ) -> dict[str, tuple[str, tuple[str, str, str, str, str]]]:
         tree = release.landscape_domains if landscape else release.capability_domains
         path = release.landscape_path if landscape else release.domain_path
         return {
@@ -673,7 +669,6 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                 " › ".join(part.name for part in path(item.id)),
                 (
                     item.name,
-                    item.name_ar or "",
                     item.parent_id or "",
                     item.description or "",
                     "yes" if isinstance(item, LandscapeDomain) and item.cross_cutting else "",
@@ -701,7 +696,6 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                         for field, before, after in zip(
                             (
                                 "name",
-                                "name_ar",
                                 "parent",
                                 "description",
                                 "cross_cutting",

@@ -554,7 +554,6 @@ def _write_system(sheets: dict[str, Any], system: SystemDefinition) -> None:
         (
             system.id,
             system.name,
-            system.name_ar,
             f"{_LIST_SEPARATOR} ".join(system.aliases),
             system.description,
             system.landscape_domain_id,
@@ -594,7 +593,6 @@ def _write_system(sheets: dict[str, Any], system: SystemDefinition) -> None:
                 system.id,
                 component.id,
                 component.name,
-                component.name_ar,
                 f"{_LIST_SEPARATOR} ".join(component.aliases),
                 component.technology,
                 component.description,
@@ -641,7 +639,6 @@ def _write_domains(sheet: Any, tree: Sequence[CapabilityDomain | LandscapeDomain
             (
                 domain.id,
                 domain.name,
-                domain.name_ar,
                 domain.parent_id,
                 domain.description,
                 *crossing,

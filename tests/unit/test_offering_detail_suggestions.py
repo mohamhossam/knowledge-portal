@@ -318,7 +318,6 @@ def _change(offering: DetailedOfferingOutput) -> DetailedChangeOutput:
         kind="product_offering",
         system="",
         name="Office Connect",
-        name_ar=None,
         aliases=[],
         triggers=[],
         target_system=None,
@@ -528,7 +527,7 @@ def test_accepting_a_details_document_lands_the_offering_with_ids_resolved(
     ).json()
     uploaded = client.post(
         f"/architecture-knowledge/releases/{draft['id']}/documents",
-        data={"title": "Details", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Details", "expected_revision": draft["revision"]},
         files={"file": ("details.md", FIXTURE.read_bytes(), "text/markdown")},
         headers=OWNER,
     ).json()

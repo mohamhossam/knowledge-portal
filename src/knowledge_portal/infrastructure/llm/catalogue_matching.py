@@ -94,9 +94,7 @@ def name_likeness(written: str, label: str) -> float:
 
 
 def _labels(system: MatchableSystem) -> tuple[str, ...]:
-    return tuple(
-        label for label in (system.id, system.name, system.name_ar or "", *system.aliases) if label
-    )
+    return tuple(label for label in (system.id, system.name, *system.aliases) if label)
 
 
 def _profile(system: MatchableSystem) -> str:

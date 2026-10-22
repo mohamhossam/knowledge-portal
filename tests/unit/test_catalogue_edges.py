@@ -328,7 +328,7 @@ def _proposer(
     )
     draft = manage.create_draft(MAINTAINER, "Next version")
     version = KnowledgeDocumentVersion(
-        "doc", "Doc", "doc.txt", "text/plain", "en", "sum", "doc", "amina", NOW
+        "doc", "Doc", "doc.txt", "text/plain", "sum", "doc", "amina", NOW
     )
     image = replace(version, id="img", filename="d.png", mime_type="image/png", storage_key="img")
     storage.put(DocumentVersionId("doc"), b"Nothing architectural here.\n")
@@ -620,7 +620,6 @@ def test_extraction_adapter_builds_every_kind_and_skips_unusable_items() -> None
             "kind": "system",
             "system": "Hub",
             "name": None,
-            "name_ar": None,
             "aliases": [],
             "triggers": [],
             "target_system": None,
@@ -654,7 +653,7 @@ def test_extraction_adapter_builds_every_kind_and_skips_unusable_items() -> None
         def parse(self, **_: Any) -> ExtractionOutput:
             return ExtractionOutput(
                 changes=[
-                    change(name_ar="المركز", aliases=["Hub", "Order hub", " "]),
+                    change(aliases=["Hub", "Order hub", " "]),
                     change(kind="capability", name="Order taking", triggers=["take order"]),
                     change(kind="constraint", text="Nightly only"),
                     change(kind="capability", name="No phrases", triggers=[]),
@@ -669,7 +668,7 @@ def test_extraction_adapter_builds_every_kind_and_skips_unusable_items() -> None
     proposal = StructuredCatalogueExtractor(client, supports_images=False).propose(request)
 
     system, capability, constraint = (item.content for item in proposal.changes)
-    assert (system.name, system.name_ar, system.aliases) == ("Hub", "المركز", ("Order hub",))
+    assert (system.name, system.aliases) == ("Hub", ("Order hub",))
     assert (capability.system_id, capability.capability_id) == ("hub", "order-taking")
     assert constraint.text == "Nightly only"
     assert proposal.warnings == (
@@ -684,9 +683,7 @@ def test_diff_names_every_changed_system_field() -> None:
 
     base = seed_knowledge()
     first = base.systems[0]
-    changed = replace(
-        first, name_ar="اسم", aliases=(*first.aliases, "New alias"), constraints=("Batch only",)
-    )
+    changed = replace(first, aliases=(*first.aliases, "New alias"), constraints=("Batch only",))
     diff = diff_releases(base, replace(base, systems=(changed, *base.systems[1:])))
 
-    assert diff.changes[0].fields == ("name_ar", "aliases", "constraints")
+    assert diff.changes[0].fields == ("aliases", "constraints")

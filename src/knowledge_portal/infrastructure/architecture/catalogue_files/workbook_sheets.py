@@ -58,12 +58,11 @@ ACCEPTANCES = "Acceptances"
 MASTERY_NOTES = "MasteryNotes"
 _CELLS = tuple(f"cell_{number}" for number in range(1, MAX_TABLE_COLUMNS + 1))
 INSTRUCTIONS = "Instructions"
-_DOMAIN_HEADERS = ("domain_id", "name", "name_ar", "parent_id", "description")
+_DOMAIN_HEADERS = ("domain_id", "name", "parent_id", "description")
 _HEADERS: dict[str, tuple[str, ...]] = {
     SYSTEMS: (
         "system_id",
         "name",
-        "name_ar",
         "aliases",
         "description",
         "landscape_domain_id",
@@ -83,7 +82,6 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "system_id",
         "component_id",
         "name",
-        "name_ar",
         "aliases",
         "technology",
         "description",

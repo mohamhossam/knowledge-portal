@@ -130,7 +130,6 @@ def _change(**values: Any) -> ChangeOutput:
         "kind": "realisation_record",
         "system": "CWOM",
         "name": "CFSS_ONPREM_FIREWALL_HE",
-        "name_ar": None,
         "aliases": [],
         "triggers": [],
         "target_system": None,
@@ -207,7 +206,7 @@ def test_accepting_a_documents_records_adds_them_lowest_first_with_provenance(
     ).json()
     uploaded = client.post(
         f"/architecture-knowledge/releases/{draft['id']}/documents",
-        data={"title": "Firewall", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Firewall", "expected_revision": draft["revision"]},
         files={"file": ("firewall.md", DOCUMENT, "text/markdown")},
         headers=OWNER,
     ).json()

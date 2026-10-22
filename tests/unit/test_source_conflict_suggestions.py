@@ -149,7 +149,6 @@ def _change(**values: Any) -> ChangeOutput:
         "kind": "source",
         "system": "",
         "name": "Business Pro Plus SDD",
-        "name_ar": None,
         "aliases": ["BPP SDD"],
         "triggers": [],
         "target_system": None,
@@ -246,7 +245,7 @@ def test_a_conflict_is_decided_alone_once_its_sources_are_registered(
     ).json()
     uploaded = client.post(
         f"/architecture-knowledge/releases/{draft['id']}/documents",
-        data={"title": "Speeds", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Speeds", "expected_revision": draft["revision"]},
         files={"file": ("speeds.md", DOCUMENT, "text/markdown")},
         headers=OWNER,
     ).json()

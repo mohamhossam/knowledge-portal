@@ -65,7 +65,6 @@ def _change(**values: Any) -> ChangeOutput:
         "kind": "system",
         "system": "Order Hub",
         "name": "Order Hub",
-        "name_ar": None,
         "aliases": [],
         "triggers": [],
         "target_system": None,
@@ -530,7 +529,7 @@ def test_reading_status_is_listed_per_document_and_retry_runs(client: TestClient
     ).json()
     uploaded = client.post(
         f"/architecture-knowledge/releases/{draft['id']}/documents",
-        data={"title": "Design", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Design", "expected_revision": draft["revision"]},
         files={"file": ("design.txt", b"System: Order Hub\n", "text/plain")},
         headers=OWNER,
     ).json()

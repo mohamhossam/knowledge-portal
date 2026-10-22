@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from pydantic import TypeAdapter
 from smb_kernel.time.fixed import FixedClock
 
 from knowledge_portal.application.ports.reference_index import ReferenceChunk
@@ -76,8 +77,16 @@ def _chunk(
 ) -> ReferenceChunk:
     return ReferenceChunk(
         "c1", document_id, "Policy", "v1", 1, "r1", "p1", "f", "parent", block_id, (), "Any label",
-        "text", "search", "hash", "en", 10, "policy", start, end,
+        "text", "search", "hash", 10, "policy", start, end,
     )  # fmt: skip
+
+
+def test_a_chunk_indexed_with_a_language_still_loads() -> None:
+    # Chunks indexed before the library was English only carry a language; it is read past.
+    codec = TypeAdapter(ReferenceChunk)
+    stored = codec.dump_python(_chunk(), mode="json") | {"language": "en"}
+
+    assert codec.validate_python(stored) == _chunk()
 
 
 def test_the_golden_set_is_a_fixture_across_products_and_formats() -> None:

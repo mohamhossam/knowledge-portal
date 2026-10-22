@@ -991,7 +991,6 @@ def _merged_content(lead: CandidateContent, others: list[CandidateContent]) -> C
         return replace(
             lead,
             aliases=tuple(label for label in names if label.casefold() != name),
-            name_ar=_first([item.name_ar for item in every]),
             description=_first([item.description for item in every]),
             technology=_first([item.technology for item in every]),
         )
@@ -1517,7 +1516,6 @@ class ProposeCatalogueChanges:
             MatchableSystem(
                 system.id,
                 system.name,
-                system.name_ar,
                 (*system.aliases, *forwarded.get(system.id, ())),
                 tuple(capability.name for capability in system.capabilities),
             )

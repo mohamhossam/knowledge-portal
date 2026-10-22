@@ -1177,12 +1177,6 @@
             "title": "File",
             "type": "string"
           },
-          "language": {
-            "default": "en",
-            "maxLength": 20,
-            "title": "Language",
-            "type": "string"
-          },
           "title": {
             "maxLength": 300,
             "title": "Title",
@@ -1211,12 +1205,6 @@
             "maxItems": 20,
             "title": "Files",
             "type": "array"
-          },
-          "language": {
-            "default": "en",
-            "maxLength": 20,
-            "title": "Language",
-            "type": "string"
           }
         },
         "required": [
@@ -1768,18 +1756,6 @@
             "title": "Name",
             "type": "string"
           },
-          "name_ar": {
-            "anyOf": [
-              {
-                "maxLength": 300,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name Ar"
-          },
           "parent_domain_id": {
             "anyOf": [
               {
@@ -2002,18 +1978,6 @@
             "maxLength": 300,
             "title": "Name",
             "type": "string"
-          },
-          "name_ar": {
-            "anyOf": [
-              {
-                "maxLength": 300,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name Ar"
           },
           "parent_id": {
             "anyOf": [
@@ -7076,10 +7040,6 @@
             "title": "Id",
             "type": "string"
           },
-          "language": {
-            "title": "Language",
-            "type": "string"
-          },
           "mime_type": {
             "title": "Mime Type",
             "type": "string"
@@ -7107,7 +7067,6 @@
           "title",
           "filename",
           "mime_type",
-          "language",
           "checksum",
           "storage_key",
           "uploaded_by",
@@ -7567,18 +7526,6 @@
             "maxLength": 300,
             "title": "Name",
             "type": "string"
-          },
-          "name_ar": {
-            "anyOf": [
-              {
-                "maxLength": 300,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name Ar"
           },
           "parent_id": {
             "anyOf": [
@@ -11232,10 +11179,6 @@
             "title": "Id",
             "type": "string"
           },
-          "language": {
-            "title": "Language",
-            "type": "string"
-          },
           "location": {
             "title": "Location",
             "type": "string"
@@ -11293,7 +11236,6 @@
           "original_text",
           "search_text",
           "content_hash",
-          "language",
           "token_count",
           "chunking_policy",
           "start_offset",
@@ -13075,18 +13017,6 @@
             "title": "Name",
             "type": "string"
           },
-          "name_ar": {
-            "anyOf": [
-              {
-                "maxLength": 300,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name Ar"
-          },
           "source": {
             "anyOf": [
               {
@@ -13252,18 +13182,6 @@
             "maxLength": 300,
             "title": "Name",
             "type": "string"
-          },
-          "name_ar": {
-            "anyOf": [
-              {
-                "maxLength": 300,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name Ar"
           },
           "owner": {
             "anyOf": [

@@ -235,7 +235,6 @@ def _change(**values: Any) -> ChangeOutput:
         "kind": "landscape_domain",
         "system": "",
         "name": "Assisted",
-        "name_ar": None,
         "aliases": [],
         "triggers": [],
         "target_system": None,
@@ -289,7 +288,7 @@ def test_the_model_suggests_domains_and_placements_from_prose() -> None:
         "cim",
         "customer-assisted",
     )
-    assert PROMPT_VERSION == "catalogue-extraction-v20"
+    assert PROMPT_VERSION == "catalogue-extraction-v21"
     assert "landscape_domain: an area of the architecture landscape" in SYSTEM_PROMPT
     assert "placement: one system sitting in one landscape domain" in SYSTEM_PROMPT
 
@@ -305,7 +304,7 @@ def test_accepting_a_landscape_document_places_and_describes_its_systems(
     ).json()
     uploaded = client.post(
         f"/architecture-knowledge/releases/{draft['id']}/documents",
-        data={"title": "Landscape", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Landscape", "expected_revision": draft["revision"]},
         files={"file": ("landscape.md", FIXTURE.read_bytes(), "text/markdown")},
         headers=OWNER,
     ).json()

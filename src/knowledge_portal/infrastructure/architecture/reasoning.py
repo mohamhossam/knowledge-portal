@@ -54,7 +54,7 @@ class FakeArchitectureReasoner:
             for system in in_service(release.systems)
             if any(
                 alias.casefold() in corpus
-                for alias in (system.name, system.name_ar or "", *system.aliases)
+                for alias in (system.name, *system.aliases)
                 if len(alias.strip()) > 2
             )
         )
@@ -222,11 +222,10 @@ def _catalogue(
 
     ordered = sorted(
         in_service(release.systems),
-        key=lambda item: not mentioned((item.id, item.name, item.name_ar or "", *item.aliases)),
+        key=lambda item: not mentioned((item.id, item.name, *item.aliases)),
     )
     rows: list[dict[str, object]] = [
-        {"id": item.id, "name": item.name, "name_ar": item.name_ar, "aliases": item.aliases}
-        for item in ordered
+        {"id": item.id, "name": item.name, "aliases": item.aliases} for item in ordered
     ]
     if limit is None:
         return rows, 0

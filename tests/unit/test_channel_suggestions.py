@@ -197,7 +197,6 @@ def _change(**values: Any) -> ChangeOutput:
         "kind": "channel",
         "system": "",
         "name": "Business Web",
-        "name_ar": None,
         "aliases": [],
         "triggers": [],
         "target_system": "Order Portal",
@@ -304,7 +303,7 @@ def test_accepting_a_channels_document_fills_channels_order_types_and_steps(
     ).json()
     uploaded = client.post(
         f"/architecture-knowledge/releases/{draft['id']}/documents",
-        data={"title": "Channels", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Channels", "expected_revision": draft["revision"]},
         files={"file": ("channels.md", FIXTURE.read_bytes(), "text/markdown")},
         headers=OWNER,
     ).json()

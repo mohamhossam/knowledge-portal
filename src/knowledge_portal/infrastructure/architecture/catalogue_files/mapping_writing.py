@@ -546,7 +546,6 @@ def _domain_mapping(item: CapabilityDomain | LandscapeDomain) -> dict[str, Any]:
     return {
         "id": item.id,
         "name": item.name,
-        **({"name_ar": item.name_ar} if item.name_ar else {}),
         **({"parent_id": item.parent_id} if item.parent_id else {}),
         **({"description": item.description} if item.description else {}),
         **(
@@ -566,7 +565,6 @@ def _component_mapping(component: SystemComponent) -> dict[str, Any]:
     return {
         "id": component.id,
         "name": component.name,
-        **({"name_ar": component.name_ar} if component.name_ar else {}),
         **({"aliases": list(component.aliases)} if component.aliases else {}),
         **({"technology": component.technology} if component.technology else {}),
         **_present(technology_term=component.technology_id),
@@ -639,7 +637,6 @@ def _system_mapping(item: SystemDefinition) -> dict[str, Any]:
     return {
         "id": item.id,
         "name": item.name,
-        **({"name_ar": item.name_ar} if item.name_ar else {}),
         "aliases": list(item.aliases),
         **({"description": item.description} if item.description else {}),
         **({"landscape_domain": item.landscape_domain_id} if item.landscape_domain_id else {}),

@@ -59,12 +59,8 @@ MAINTAINER = Actor("amina", frozenset({"knowledge_maintainer"}))
 OWNER = {"X-Fake-Actor-Id": "fake-owner"}
 
 
-def _system(
-    system_id: str, name: str, *aliases: str, name_ar: str | None = None
-) -> CandidateContent:
-    return CandidateContent(
-        CandidateKind.SYSTEM, system_id, name=name, aliases=aliases, name_ar=name_ar
-    )
+def _system(system_id: str, name: str, *aliases: str) -> CandidateContent:
+    return CandidateContent(CandidateKind.SYSTEM, system_id, name=name, aliases=aliases)
 
 
 def _draft() -> ArchitectureKnowledge:
@@ -91,11 +87,9 @@ def test_a_new_system_is_added_without_an_alias_another_system_owns() -> None:
     assert _bcc(merged).id == "oracle-atg-bcc"
 
 
-def test_an_update_adds_only_free_aliases_and_skips_a_taken_arabic_name() -> None:
+def test_an_update_adds_only_free_aliases() -> None:
     release = _draft()
-    arabic = "نظام الكتالوج"
-    release = apply_candidate(_system("catalogue", "Catalogue", name_ar=arabic), release)
-    suggestion = _system("bcrm", "BCRM", "BCC", "Dynamics CRM", name_ar=arabic)
+    suggestion = _system("bcrm", "BCRM", "BCC", "Dynamics CRM")
 
     assert classify(suggestion, release) is CandidateMatch.UPDATES_EXISTING
     merged = apply_candidate(suggestion, release)
@@ -103,7 +97,6 @@ def test_an_update_adds_only_free_aliases_and_skips_a_taken_arabic_name() -> Non
     bcrm = next(item for item in merged.systems if item.id == "bcrm")
     assert "Dynamics CRM" in bcrm.aliases
     assert "BCC" not in bcrm.aliases
-    assert bcrm.name_ar is None
     assert _bcc(merged).id == "oracle-atg-bcc"
 
 

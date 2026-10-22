@@ -158,7 +158,6 @@ def test_deselected_document_registry_survives_restart() -> None:
         "Retained source",
         "source.txt",
         "text/plain",
-        "en",
         "checksum",
         version_id,
         actor.id,

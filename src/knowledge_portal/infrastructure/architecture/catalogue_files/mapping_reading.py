@@ -201,7 +201,6 @@ def _system(item: dict[str, Any], where: str) -> SystemDefinition:
             aliases=_text_list(item.get("aliases"), where, "aliases"),
             capabilities=tuple(capabilities),
             constraints=_text_list(item.get("constraints"), where, "constraints"),
-            name_ar=_optional_text(item.get("name_ar"), where, "name_ar"),
             components=tuple(components),
             description=_optional_text(item.get("description"), where, "description"),
             landscape_domain_id=_optional_text(
@@ -267,7 +266,6 @@ def _system_components(item: dict[str, Any], where: str) -> list[SystemComponent
                 SystemComponent(
                     id=_text(component.get("id"), place, "id"),
                     name=_text(component.get("name"), place, "name"),
-                    name_ar=_optional_text(component.get("name_ar"), place, "name_ar"),
                     description=_optional_text(component.get("description"), place, "description"),
                     aliases=_text_list(component.get("aliases"), place, "aliases"),
                     technology=_optional_text(component.get("technology"), place, "technology"),
@@ -589,11 +587,10 @@ def _mapped_domains[DomainT: (CapabilityDomain, LandscapeDomain)](
         where = f"{key} entry {number}"
         try:
             domain = kind(
-                _text(item.get("id"), where, "id"),
-                _text(item.get("name"), where, "name"),
-                _optional_text(item.get("name_ar"), where, "name_ar"),
-                _optional_text(item.get("parent_id"), where, "parent_id"),
-                _optional_text(item.get("description"), where, "description"),
+                id=_text(item.get("id"), where, "id"),
+                name=_text(item.get("name"), where, "name"),
+                parent_id=_optional_text(item.get("parent_id"), where, "parent_id"),
+                description=_optional_text(item.get("description"), where, "description"),
             )
             domains.append(domain)
         except InvalidKnowledgeError as exc:

@@ -23,10 +23,6 @@
   {"query":"EIDA national ID verification", "system":"eida", "kind":"identifier"},
   {"query":"ADFS single sign-on", "system":"adfs", "kind":"identifier"},
   {"query":"ServiceNow service ticketing", "system":"service-now", "kind":"english"},
-  {"query":"نظام إدارة علاقات العملاء", "system":"bcrm", "kind":"arabic_cross_language"},
-  {"query":"تنسيق الطلبات الثابتة", "system":"cwom", "kind":"arabic_cross_language"},
-  {"query":"التحقق من تغطية الشبكة", "system":"gis", "kind":"arabic_cross_language"},
-  {"query":"تذاكر إدارة الخدمة", "system":"service-now", "kind":"arabic_cross_language"},
   {"query":"GIS coverage availability conflicting architecture guidance", "system":"gis", "kind":"conflict"},
   {"query":"asteroid imagery mission control", "system":null, "kind":"no_answer"}
 ]

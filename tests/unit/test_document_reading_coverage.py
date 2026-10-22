@@ -194,9 +194,7 @@ def _setup(content: bytes, extractor: _Recording) -> tuple[ProposeCatalogueChang
     located = LocatedDocumentExtractor(documents)
     draft = manage.create_draft(MAINTAINER, "Next version")
     storage.put(DocumentVersionId("doc"), content)
-    version = KnowledgeDocumentVersion(
-        "doc", "Spec", "spec.docx", DOCX, "en", "sum", "doc", "amina", NOW
-    )
+    version = KnowledgeDocumentVersion("doc", "Spec", "spec.docx", DOCX, "sum", "doc", "amina", NOW)
     drafted = draft.updated(documents=(version,))
     repository.save(drafted, draft.revision, "amina", "upload_document")
     proposer = ProposeCatalogueChanges(

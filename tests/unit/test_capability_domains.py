@@ -63,7 +63,7 @@ def _release(
     )
 
 
-ORDERS = CapabilityDomain("orders", "Order capture", name_ar="استلام الطلبات")
+ORDERS = CapabilityDomain("orders", "Order capture")
 QUOTES = CapabilityDomain("quotes", "Quoting", parent_id="orders")
 
 
@@ -153,7 +153,9 @@ def test_every_file_format_keeps_domains_and_placements(file_format: CatalogueFi
         seed_knowledge(),
         capability_domains=(
             *seed_knowledge().capability_domains,
-            CapabilityDomain("quotes", "Quoting", "التسعير", "order-capture", "Price quotes"),
+            CapabilityDomain(
+                "quotes", "Quoting", parent_id="order-capture", description="Price quotes"
+            ),
         ),
     )
 
@@ -238,7 +240,6 @@ def test_suggestions_come_from_catalogue_words_one_per_branch() -> None:
         ("billing", ("Billing",)),
     ]
     assert narrow[0].system_ids == ("crm",)
-    assert suggest_domains(release, "استلام الطلبات للعملاء")[0].domain_id == "orders"
     assert suggest_domains(release, "Nothing that matches") == ()
     assert suggest_domains(release, "Improve order capture") == suggest_domains(
         release, "Improve order capture"

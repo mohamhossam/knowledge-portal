@@ -42,7 +42,6 @@ def build_user_prompt(
                         {
                             "id": system.id,
                             "name": system.name,
-                            **({"name_ar": system.name_ar} if system.name_ar else {}),
                             "aliases": list(system.aliases),
                             "capabilities": list(system.capabilities),
                         }

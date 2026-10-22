@@ -150,7 +150,7 @@ def test_deselected_upload_remains_available_without_becoming_reader_visible(
     root = f"/architecture-knowledge/releases/{draft['id']}"
     uploaded = client.post(
         f"{root}/documents",
-        data={"title": "Preserved", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Preserved", "expected_revision": draft["revision"]},
         files={"file": ("notes.txt", b"Preserve this document version", "text/plain")},
     ).json()
     version = uploaded["documents"][0]
@@ -236,7 +236,6 @@ def test_upload_build_preview_and_publish(client: TestClient, container: Contain
         f"/architecture-knowledge/releases/{draft['id']}/documents",
         data={
             "title": "SMB architecture",
-            "language": "mixed",
             "expected_revision": draft["revision"],
         },
         files={"file": ("knowledge.txt", content.encode(), "text/plain")},
@@ -313,7 +312,7 @@ def test_architecture_upload_rejects_mismatched_extension(client: TestClient) ->
     draft = client.post("/architecture-knowledge/releases", json={"name": "Next version"}).json()
     response = client.post(
         f"/architecture-knowledge/releases/{draft['id']}/documents",
-        data={"title": "Bad upload", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Bad upload", "expected_revision": draft["revision"]},
         files={"file": ("not-pdf.txt", b"hello", "application/pdf")},
     )
     assert response.status_code == 422
@@ -334,7 +333,7 @@ def test_architecture_upload_accepts_markdown_however_the_browser_types_it(
     draft = client.post("/architecture-knowledge/releases", json={"name": "Next version"}).json()
     response = client.post(
         f"/architecture-knowledge/releases/{draft['id']}/documents",
-        data={"title": "Landscape", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Landscape", "expected_revision": draft["revision"]},
         files={"file": (filename, b"# Systems\n\n- Order Hub", declared)},
     )
     assert response.status_code == 201, response.text
@@ -348,7 +347,7 @@ def test_architecture_upload_rejects_markdown_declared_as_another_type(
     draft = client.post("/architecture-knowledge/releases", json={"name": "Next version"}).json()
     response = client.post(
         f"/architecture-knowledge/releases/{draft['id']}/documents",
-        data={"title": "Bad upload", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Bad upload", "expected_revision": draft["revision"]},
         files={"file": ("landscape.md", b"# Systems", "application/pdf")},
     )
     assert response.status_code == 422
@@ -361,7 +360,7 @@ def test_architecture_upload_reads_at_most_one_byte_past_the_limit(container: Co
         max_bytes = 8
 
         def execute(self, *args: object) -> object:
-            content = args[6]
+            content = args[5]
             assert isinstance(content, bytes)
             received.append(len(content))
             raise InvalidKnowledgeError("Oversized upload rejected by the use case.")
@@ -375,7 +374,7 @@ def test_architecture_upload_reads_at_most_one_byte_past_the_limit(container: Co
         ).json()
         response = client.post(
             f"/architecture-knowledge/releases/{draft['id']}/documents",
-            data={"title": "Huge", "language": "en", "expected_revision": draft["revision"]},
+            data={"title": "Huge", "expected_revision": draft["revision"]},
             files={"file": ("huge.txt", b"x" * 1_000_000, "text/plain")},
         )
 
@@ -385,7 +384,7 @@ def test_architecture_upload_reads_at_most_one_byte_past_the_limit(container: Co
 
 def test_architecture_upload_rejects_duplicate_bytes(client: TestClient) -> None:
     draft = client.post("/architecture-knowledge/releases", json={"name": "Next version"}).json()
-    data = {"title": "Knowledge", "language": "en", "expected_revision": draft["revision"]}
+    data = {"title": "Knowledge", "expected_revision": draft["revision"]}
     first = client.post(
         f"/architecture-knowledge/releases/{draft['id']}/documents",
         data=data,
@@ -520,13 +519,7 @@ def test_reviewed_retrieval_fixture_reaches_top_eight_and_resolves_citations() -
             encoding="utf-8"
         )
     )
-    assert len(cases) >= 30
-    arabic = {
-        "bcrm": "نظام إدارة علاقات العملاء",
-        "cwom": "تنسيق الطلبات الثابتة",
-        "gis": "التحقق من تغطية الشبكة",
-        "service-now": "تذاكر إدارة الخدمة",
-    }
+    assert len(cases) >= 26
     seed = seed_knowledge()
     documents = (
         ("conflict-one", "GIS coverage availability is always authoritative."),
@@ -536,7 +529,7 @@ def test_reviewed_retrieval_fixture_reaches_top_eight_and_resolves_citations() -
     release = ArchitectureKnowledge(
         "retrieval-evaluation-v1",
         1,
-        tuple(replace(item, name_ar=arabic.get(item.id)) for item in seed.systems),
+        seed.systems,
         seed.relationships,
         tuple(
             KnowledgeDocumentVersion(
@@ -544,7 +537,6 @@ def test_reviewed_retrieval_fixture_reaches_top_eight_and_resolves_citations() -
                 doc_id,
                 f"{doc_id}.txt",
                 "text/plain",
-                "en",
                 "checksum",
                 doc_id,
                 "reviewer",

@@ -176,7 +176,6 @@ def _sheet_systems(workbook: Any) -> dict[str, dict[str, Any]]:
         systems[system_id] = {
             "where": where,
             "name": _text(cells.get("name"), where, "name"),
-            "name_ar": _optional_text(cells.get("name_ar"), where, "name_ar"),
             "aliases": _split(cells.get("aliases"), where, "aliases"),
             "description": _optional_text(cells.get("description"), where, "description"),
             "landscape_domain_id": _optional_text(
@@ -242,7 +241,6 @@ def _sheet_components(workbook: Any, systems: dict[str, dict[str, Any]]) -> None
                 SystemComponent(
                     id=_text(cells.get("component_id"), where, "component_id"),
                     name=_text(cells.get("name"), where, "name"),
-                    name_ar=_optional_text(cells.get("name_ar"), where, "name_ar"),
                     description=_optional_text(cells.get("description"), where, "description"),
                     aliases=_split(cells.get("aliases"), where, "aliases"),
                     technology=_optional_text(cells.get("technology"), where, "technology"),
@@ -290,7 +288,6 @@ def _system_definitions(systems: dict[str, dict[str, Any]]) -> list[SystemDefini
                     aliases=data["aliases"],
                     capabilities=tuple(data["capabilities"]),
                     constraints=tuple(data["constraints"]),
-                    name_ar=data["name_ar"],
                     components=tuple(data["components"]),
                     description=data["description"],
                     landscape_domain_id=data["landscape_domain_id"],
@@ -575,11 +572,10 @@ def _sheet_domains[DomainT: (CapabilityDomain, LandscapeDomain)](
         where = f"{sheet} row {number}"
         try:
             domain = kind(
-                _text(cells.get("domain_id"), where, "domain_id"),
-                _text(cells.get("name"), where, "name"),
-                _optional_text(cells.get("name_ar"), where, "name_ar"),
-                _optional_text(cells.get("parent_id"), where, "parent_id"),
-                _optional_text(cells.get("description"), where, "description"),
+                id=_text(cells.get("domain_id"), where, "domain_id"),
+                name=_text(cells.get("name"), where, "name"),
+                parent_id=_optional_text(cells.get("parent_id"), where, "parent_id"),
+                description=_optional_text(cells.get("description"), where, "description"),
             )
             domains.append(domain)
         except InvalidKnowledgeError as exc:

@@ -32,10 +32,7 @@ def suggest_domains(release: ArchitectureKnowledge, text: str) -> tuple[DomainSu
     corpus = normalise(text)
     if not corpus or not release.capability_domains:
         return ()
-    terms: dict[str, list[str]] = {
-        item.id: [item.name, *((item.name_ar,) if item.name_ar else ())]
-        for item in release.capability_domains
-    }
+    terms: dict[str, list[str]] = {item.id: [item.name] for item in release.capability_domains}
     systems: dict[str, set[str]] = {item.id: set() for item in release.capability_domains}
     names = {system.id: system.name for system in release.systems}
     # A retired system suggests nothing (ADR-0121).

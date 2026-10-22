@@ -25,6 +25,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     KnowledgeAuditEvent,
     KnowledgeDocumentVersion,
     KnowledgeReleaseStatus,
+    SystemComponent,
     SystemDefinition,
 )
 from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
@@ -42,7 +43,7 @@ AT = datetime(2026, 9, 24, 9, 30, tzinfo=UTC)
 
 def _published_release_with_document() -> ArchitectureKnowledge:
     document = KnowledgeDocumentVersion(
-        "version-1", "Runbook", "runbook.txt", "text/plain", "ar", "abc", "version-1", "amina", AT
+        "version-1", "Runbook", "runbook.txt", "text/plain", "abc", "version-1", "amina", AT
     )
     return replace(
         seed_knowledge(),
@@ -68,6 +69,32 @@ def test_release_response_matches_the_previous_domain_serialisation() -> None:
         assert [item["text"] for item in references] == [
             item.text for item in source_references(release)
         ]
+
+
+def test_a_release_stored_with_arabic_names_and_document_languages_still_loads() -> None:
+    # Stored before the catalogue was English only: an Arabic name on systems, components
+    # and domains, and a language on each document. Both are read past.
+    published = _published_release_with_document()
+    first, *rest = published.systems
+    release = replace(
+        published, systems=(replace(first, components=(SystemComponent("core", "Core"),)), *rest)
+    )
+    adapter = TypeAdapter(ArchitectureKnowledge)
+    stored = adapter.dump_python(release, mode="json")
+    systems = stored["systems"]
+    components = [item for system in systems for item in system["components"]]
+    domains = [*stored["capability_domains"], *stored["landscape_domains"]]
+    assert systems and components and domains and stored["documents"]
+    for item in (*systems, *components, *domains):
+        item["name_ar"] = "اسم"
+    for document in stored["documents"]:
+        document["language"] = "mixed"
+
+    assert adapter.validate_python(stored) == release
+    assert (
+        TypeAdapter(KnowledgeDocumentVersion).validate_python(stored["documents"][0])
+        == release.documents[0]
+    )
 
 
 def test_job_and_audit_responses_match_the_previous_domain_serialisation() -> None:

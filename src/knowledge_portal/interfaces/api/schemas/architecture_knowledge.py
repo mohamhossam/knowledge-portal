@@ -472,7 +472,6 @@ class VocabularyRefSchema(BaseModel):
 class SystemComponentSchema(BaseModel):
     id: Identifier
     name: Name
-    name_ar: Name | None = None
     description: Text | None = None
     aliases: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     technology: Name | None = None
@@ -491,7 +490,6 @@ class SystemComponentSchema(BaseModel):
         return cls.model_construct(
             id=component.id,
             name=component.name,
-            name_ar=component.name_ar,
             description=component.description,
             aliases=list(component.aliases),
             technology=component.technology,
@@ -503,12 +501,11 @@ class SystemComponentSchema(BaseModel):
 
     def to_domain(self) -> SystemComponent:
         return SystemComponent(
-            self.id,
-            self.name,
-            self.name_ar,
-            self.description,
-            tuple(self.aliases),
-            self.technology,
+            id=self.id,
+            name=self.name,
+            description=self.description,
+            aliases=tuple(self.aliases),
+            technology=self.technology,
             confidence=self.confidence,
             source=self.source,
             technology_id=self.technology_id,
@@ -518,7 +515,6 @@ class SystemComponentSchema(BaseModel):
 class CapabilityDomainSchema(BaseModel):
     id: Identifier
     name: Name
-    name_ar: Name | None = None
     parent_id: Identifier | None = None
     description: Text | None = None
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
@@ -529,14 +525,15 @@ class CapabilityDomainSchema(BaseModel):
         return cls.model_construct(
             id=domain.id,
             name=domain.name,
-            name_ar=domain.name_ar,
             parent_id=domain.parent_id,
             description=domain.description,
             accepted=[AcceptedFromSchema.from_domain(item) for item in domain.accepted],
         )
 
     def to_domain(self) -> CapabilityDomain:
-        return CapabilityDomain(self.id, self.name, self.name_ar, self.parent_id, self.description)
+        return CapabilityDomain(
+            id=self.id, name=self.name, parent_id=self.parent_id, description=self.description
+        )
 
 
 class LandscapeDomainSchema(BaseModel):
@@ -544,7 +541,6 @@ class LandscapeDomainSchema(BaseModel):
 
     id: Identifier
     name: Name
-    name_ar: Name | None = None
     parent_id: Identifier | None = None
     description: Text | None = None
     # It serves every other domain (the enterprise domain, the integration layer).
@@ -560,7 +556,6 @@ class LandscapeDomainSchema(BaseModel):
         return cls.model_construct(
             id=domain.id,
             name=domain.name,
-            name_ar=domain.name_ar,
             parent_id=domain.parent_id,
             description=domain.description,
             cross_cutting=domain.cross_cutting,
@@ -570,11 +565,10 @@ class LandscapeDomainSchema(BaseModel):
 
     def to_domain(self) -> LandscapeDomain:
         return LandscapeDomain(
-            self.id,
-            self.name,
-            self.name_ar,
-            self.parent_id,
-            self.description,
+            id=self.id,
+            name=self.name,
+            parent_id=self.parent_id,
+            description=self.description,
             cross_cutting=self.cross_cutting,
             layout=self.layout,
         )
@@ -2065,7 +2059,6 @@ class SystemDefinitionSchema(BaseModel):
         default=[], max_length=MAX_CATALOGUE_ITEMS
     )
     constraints: list[Text] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
-    name_ar: Name | None = None
     components: list[SystemComponentSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     description: Text | None = None
     landscape_domain_id: Identifier | None = None
@@ -2097,7 +2090,6 @@ class SystemDefinitionSchema(BaseModel):
             aliases=list(system.aliases),
             capabilities=[KnowledgeCapabilitySchema.from_domain(c) for c in system.capabilities],
             constraints=list(system.constraints),
-            name_ar=system.name_ar,
             components=[SystemComponentSchema.from_domain(c) for c in system.components],
             description=system.description,
             landscape_domain_id=system.landscape_domain_id,
@@ -2123,7 +2115,6 @@ class SystemDefinitionSchema(BaseModel):
             aliases=tuple(self.aliases),
             capabilities=tuple(item.to_domain() for item in self.capabilities),
             constraints=tuple(self.constraints),
-            name_ar=self.name_ar,
             components=tuple(item.to_domain() for item in self.components),
             description=self.description,
             landscape_domain_id=self.landscape_domain_id,
@@ -2181,7 +2172,6 @@ class KnowledgeDocumentVersionResponse(BaseModel):
     title: str
     filename: str
     mime_type: str
-    language: str
     checksum: str
     storage_key: str
     uploaded_by: str
@@ -2194,7 +2184,6 @@ class KnowledgeDocumentVersionResponse(BaseModel):
             title=version.title,
             filename=version.filename,
             mime_type=version.mime_type,
-            language=version.language,
             checksum=version.checksum,
             storage_key=version.storage_key,
             uploaded_by=version.uploaded_by,
@@ -2665,7 +2654,6 @@ class CandidateContentSchema(BaseModel):
     kind: CandidateKind
     system_id: Identifier
     name: Name = ""
-    name_ar: Name | None = None
     aliases: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     capability_id: Identifier | None = None
     triggers: list[Sentence] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
@@ -2710,7 +2698,6 @@ class CandidateContentSchema(BaseModel):
             kind=content.kind,
             system_id=content.system_id,
             name=content.name,
-            name_ar=content.name_ar,
             aliases=list(content.aliases),
             capability_id=content.capability_id,
             triggers=list(content.triggers),
@@ -2772,38 +2759,39 @@ class CandidateContentSchema(BaseModel):
 
     def to_domain(self) -> CandidateContent:
         return CandidateContent(
-            self.kind,
-            self.system_id,
-            self.name,
-            self.name_ar,
-            tuple(self.aliases),
-            self.capability_id,
-            tuple(self.triggers),
-            self.target_system_id,
-            self.text,
-            self.relationship_kind,
-            self.component_id,
-            self.description,
-            self.technology,
-            self.landscape_domain_id,
-            self.parent_domain_id,
-            self.product.to_domain() if self.product else None,
-            self.journey.to_domain() if self.journey else None,
-            self.channel.to_domain() if self.channel else None,
-            self.question.to_domain() if self.question else None,
-            self.concept.to_domain() if self.concept else None,
-            tuple(
+            kind=self.kind,
+            system_id=self.system_id,
+            name=self.name,
+            aliases=tuple(self.aliases),
+            capability_id=self.capability_id,
+            triggers=tuple(self.triggers),
+            target_system_id=self.target_system_id,
+            text=self.text,
+            relationship_kind=self.relationship_kind,
+            component_id=self.component_id,
+            description=self.description,
+            technology=self.technology,
+            landscape_domain_id=self.landscape_domain_id,
+            parent_domain_id=self.parent_domain_id,
+            product=self.product.to_domain() if self.product else None,
+            journey=self.journey.to_domain() if self.journey else None,
+            channel=self.channel.to_domain() if self.channel else None,
+            question=self.question.to_domain() if self.question else None,
+            concept=self.concept.to_domain() if self.concept else None,
+            capability_refs=tuple(
                 CapabilityRef(item.system_id, item.capability_id) for item in self.capability_refs
             ),
-            tuple(self.concept_ids),
-            self.term.to_domain() if self.term else None,
-            tuple(item.to_domain() for item in self.value_refs),
-            self.interface.to_domain() if self.interface else None,
-            self.capability_domain.to_domain() if self.capability_domain else None,
-            self.portfolio_node.to_domain() if self.portfolio_node else None,
-            self.realisation.to_domain() if self.realisation else None,
-            self.knowledge_source.to_domain() if self.knowledge_source else None,
-            self.conflict.to_domain() if self.conflict else None,
+            concept_ids=tuple(self.concept_ids),
+            term=self.term.to_domain() if self.term else None,
+            value_refs=tuple(item.to_domain() for item in self.value_refs),
+            interface=self.interface.to_domain() if self.interface else None,
+            capability_domain=(
+                self.capability_domain.to_domain() if self.capability_domain else None
+            ),
+            portfolio_node=self.portfolio_node.to_domain() if self.portfolio_node else None,
+            realisation=self.realisation.to_domain() if self.realisation else None,
+            knowledge_source=(self.knowledge_source.to_domain() if self.knowledge_source else None),
+            conflict=self.conflict.to_domain() if self.conflict else None,
         )
 
 

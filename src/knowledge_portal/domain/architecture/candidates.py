@@ -217,10 +217,10 @@ _INFERABLE = frozenset({CandidateKind.RELATIONSHIP, CandidateKind.COMPONENT_LINK
 class CandidateContent:
     """The proposed change. Which fields matter depends on the candidate kind.
 
-    - system: ``system_id``, ``name``, optional ``name_ar``, ``aliases`` and
-      ``description`` (what the system is for)
-    - component: ``system_id``, ``component_id``, ``name``, optional ``name_ar``,
-      ``aliases``, ``description`` and ``technology``
+    - system: ``system_id``, ``name``, ``aliases`` and ``description`` (what the
+      system is for)
+    - component: ``system_id``, ``component_id``, ``name``, ``aliases``,
+      ``description`` and ``technology``
     - capability: ``system_id``, ``capability_id``, ``name``, ``triggers``,
       ``component_id`` when the source says which component delivers it, and one of
       ``concept_ids`` when it is known to realise that concept (a delivered change)
@@ -230,8 +230,8 @@ class CandidateContent:
     - relationship: ``system_id`` (source), ``target_system_id``, ``text``, and
       ``relationship_kind`` when the source says how the systems interact
     - landscape_domain: ``landscape_domain_id`` (also its ``system_id``, the
-      suggestion's subject), ``name``, optional ``parent_domain_id``, ``name_ar``
-      and ``description``
+      suggestion's subject), ``name``, optional ``parent_domain_id`` and
+      ``description``
     - placement: ``system_id`` and the ``landscape_domain_id`` it sits in
     - product: the whole ``product`` offering; its id is also the ``system_id``,
       the suggestion's subject
@@ -263,7 +263,6 @@ class CandidateContent:
     kind: CandidateKind
     system_id: str
     name: str = ""
-    name_ar: str | None = None
     aliases: tuple[str, ...] = ()
     capability_id: str | None = None
     triggers: tuple[str, ...] = ()
@@ -520,9 +519,7 @@ class CatalogueCandidate:
 
 
 def _labels(system: SystemDefinition) -> tuple[str, ...]:
-    return tuple(
-        label for label in (system.id, system.name, system.name_ar or "", *system.aliases) if label
-    )
+    return tuple(label for label in (system.id, system.name, *system.aliases) if label)
 
 
 def _words(value: str) -> str:
@@ -548,7 +545,7 @@ def retired_names(release: ArchitectureKnowledge) -> dict[str, tuple[str, ...]]:
 
 
 def system_named(release: ArchitectureKnowledge, reference: str) -> SystemDefinition | None:
-    """A draft system named by id, name, Arabic name or alias, ignoring case, retired or not:
+    """A draft system named by id, name or alias, ignoring case, retired or not:
     whether a label is taken.
 
     Failing an exact label, the words alone are compared, so ``dynamics-crm``
@@ -899,7 +896,7 @@ def _suggested_domain(
 
 
 def find_component(system: SystemDefinition, reference: str) -> SystemComponent | None:
-    """A component of this system named by id, name, Arabic name or alias, ignoring case.
+    """A component of this system named by id, name or alias, ignoring case.
 
     As with systems, the words alone are compared when no label matches exactly,
     and that fallback answers only when one component fits.
@@ -935,13 +932,12 @@ class _ComponentAdditions:
     """What a suggestion adds to a component: labels no other component has, and empty fields."""
 
     aliases: tuple[str, ...]
-    name_ar: str | None
     description: str | None
     technology: str | None
 
     @property
     def empty(self) -> bool:
-        return not (self.aliases or self.name_ar or self.description or self.technology)
+        return not (self.aliases or self.description or self.technology)
 
 
 def _component_additions(
@@ -954,20 +950,15 @@ def _component_additions(
         for label in item.labels
     }
     own = {label.casefold() for label in component.labels}
-    name_ar = None
-    if component.name_ar is None and content.name_ar:
-        if content.name_ar.casefold() not in taken | own:
-            name_ar = content.name_ar.strip()
     aliases = tuple(
         label
         for label in _merged((), (content.name.strip(), *content.aliases))
-        if label.casefold() not in own | taken | {(name_ar or "").casefold()}
+        if label.casefold() not in own | taken
     )
     return _ComponentAdditions(
-        aliases,
-        name_ar,
-        content.description if component.description is None else None,
-        content.technology if component.technology is None else None,
+        aliases=aliases,
+        description=content.description if component.description is None else None,
+        technology=content.technology if component.technology is None else None,
     )
 
 
@@ -1558,9 +1549,7 @@ def _classify_landscape_domain(
         if parent and find_landscape_domain(release, parent) is None:
             return CandidateMatch.NEEDS_DOMAIN
         return CandidateMatch.NEW
-    fills = (content.description and not domain.description) or (
-        content.name_ar and not domain.name_ar
-    )
+    fills = content.description and not domain.description
     return CandidateMatch.UPDATES_EXISTING if fills else CandidateMatch.ALREADY_PRESENT
 
 
@@ -2007,7 +1996,6 @@ def _with_component(content: CandidateContent, system: SystemDefinition) -> Syst
     merged = replace(
         current,
         aliases=_merged(current.aliases, additions.aliases),
-        name_ar=current.name_ar or additions.name_ar,
         description=current.description or additions.description,
         technology=current.technology or additions.technology,
     )
@@ -2023,11 +2011,7 @@ def _with_domain(
     """The draft with a suggested landscape domain added, or its gaps filled."""
     current = _suggested_domain(content, release)
     if current is not None:
-        filled = replace(
-            current,
-            name_ar=current.name_ar or content.name_ar,
-            description=current.description or content.description,
-        )
+        filled = replace(current, description=current.description or content.description)
         return release.updated(
             landscape_domains=tuple(
                 filled if item.id == current.id else item for item in release.landscape_domains
@@ -2042,11 +2026,10 @@ def _with_domain(
                 "domains inside it."
             )
     domain = LandscapeDomain(
-        content.landscape_domain_id or "",
-        content.name.strip(),
-        content.name_ar,
-        parent.id if parent else None,
-        content.description,
+        id=content.landscape_domain_id or "",
+        name=content.name.strip(),
+        parent_id=parent.id if parent else None,
+        description=content.description,
     )
     return release.updated(landscape_domains=(*release.landscape_domains, domain))
 
@@ -2688,10 +2671,8 @@ def _apply_system(
     content: CandidateContent, release: ArchitectureKnowledge
 ) -> ArchitectureKnowledge:
     existing = find_system(release, content.system_id) or find_system(release, content.name)
-    arabic = (content.name_ar,) if content.name_ar else ()
     if existing is None:
         name = content.name.strip()
-        name_ar = next(iter(_free(release, arabic, content.system_id)), None)
         return _with_system(
             release,
             SystemDefinition(
@@ -2700,37 +2681,23 @@ def _apply_system(
                 aliases=tuple(
                     label
                     for label in _merged((), _free(release, content.aliases, content.system_id))
-                    if label.casefold() not in {name.casefold(), (name_ar or "").casefold()}
+                    if label.casefold() != name.casefold()
                 ),
-                name_ar=name_ar,
                 description=content.description,
             ),
         )
-    taken = {
-        existing.name.casefold(),
-        existing.id.casefold(),
-        (existing.name_ar or "").casefold(),
-    }
+    taken = {existing.name.casefold(), existing.id.casefold()}
     extra = tuple(
         label
         for label in _free(release, (content.name.strip(), *content.aliases), existing.id)
         if label.casefold() not in taken
     )
     aliases = _merged(existing.aliases, extra)
-    name_ar = existing.name_ar or next(
-        (
-            label
-            for label in _free(release, arabic, existing.id)
-            if label.casefold() not in {alias.casefold() for alias in aliases}
-        ),
-        None,
-    )
     return _with_system(
         release,
         replace(
             existing,
             aliases=aliases,
-            name_ar=name_ar,
             # A suggestion fills a missing description; it never replaces one.
             description=existing.description or content.description,
         ),

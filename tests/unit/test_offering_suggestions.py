@@ -297,7 +297,6 @@ def _offering_change(offering: PlannedOfferingOutput) -> ChangeOutput:
         kind="product_offering",
         system="",
         name="Office Connect",
-        name_ar=None,
         aliases=[],
         triggers=[],
         target_system=None,
@@ -438,7 +437,7 @@ def test_parts_of_one_offering_read_apart_are_one_suggestion() -> None:
     documents = SafeDocumentTextExtractor()
     draft = manage.create_draft(MAINTAINER, "Next version")
     version = KnowledgeDocumentVersion(
-        "doc", "Products", "products.md", "text/markdown", "en", "sum", "doc", "amina", NOW
+        "doc", "Products", "products.md", "text/markdown", "sum", "doc", "amina", NOW
     )
     storage.put(DocumentVersionId("doc"), b"# Products\n\nOffice Connect.\n")
     drafted = draft.updated(documents=(version,))
@@ -481,7 +480,7 @@ def test_accepting_a_landscape_document_adds_its_offering_after_its_systems(
     ).json()
     uploaded = client.post(
         f"/architecture-knowledge/releases/{draft['id']}/documents",
-        data={"title": "Landscape", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Landscape", "expected_revision": draft["revision"]},
         files={"file": ("landscape.md", FIXTURE.read_bytes(), "text/markdown")},
         headers=OWNER,
     ).json()

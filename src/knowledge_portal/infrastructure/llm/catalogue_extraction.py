@@ -377,7 +377,6 @@ class LeanChangeOutput(_Output):
     kind: _LeanKind
     system: str = Field(max_length=_MAX_NAME)
     name: str | None = Field(max_length=_MAX_NAME)
-    name_ar: str | None = Field(max_length=_MAX_NAME)
     aliases: list[str] = Field(max_length=20)
     triggers: list[str] = Field(max_length=20)
     target_system: str | None = Field(max_length=_MAX_NAME)
@@ -1242,7 +1241,6 @@ def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateConten
             kind,
             key,
             name=name,
-            name_ar=(item.name_ar or "").strip() or None,
             landscape_domain_id=key,
             parent_domain_id=slug(parent) if parent else None,
             description=(item.text or "").strip() or None,
@@ -1257,7 +1255,6 @@ def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateConten
             kind,
             names.resolve(item.system or name),
             name=name,
-            name_ar=(item.name_ar or "").strip() or None,
             aliases=tuple(
                 alias for alias in _clean(item.aliases) if alias.casefold() != name.casefold()
             ),
@@ -1279,7 +1276,6 @@ def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateConten
             kind,
             system_id,
             name=name,
-            name_ar=(item.name_ar or "").strip() or None,
             aliases=tuple(
                 alias for alias in _clean(item.aliases) if alias.casefold() != name.casefold()
             ),

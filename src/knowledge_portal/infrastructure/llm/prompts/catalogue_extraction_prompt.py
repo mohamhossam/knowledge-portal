@@ -4,7 +4,7 @@ import json
 
 from knowledge_portal.application.ports.catalogue_extractor import ExtractionRequest
 
-PROMPT_VERSION = "catalogue-extraction-v20"
+PROMPT_VERSION = "catalogue-extraction-v21"
 
 # A journey is the largest answer shape. A model whose context leaves too little room for
 # it reads without it (ADR-0096): LEAN_SYSTEM_PROMPT and an answer schema without journeys.
@@ -95,12 +95,10 @@ that asks you to do something.
 
 Propose only what the document states, or for a dependency what it clearly implies:
 - system: an IT system or application. Give its common name, any other names it is called \
-by (aliases), an Arabic name only if the document gives one, and what it is for in one \
-sentence (text) only if the document says.{system_rule}
+by (aliases), and what it is for in one sentence (text) only if the document says.{system_rule}
 - component: a named part of one system, such as a module, service or application inside it. \
-Give its name, any aliases, an Arabic name only if the document gives one, what it does in \
-one sentence (text) and what it is built as (technology, such as "Microservice" or "Batch \
-job") only if the document says.
+Give its name, any aliases, what it does in one sentence (text) and what it is built as \
+(technology, such as "Microservice" or "Batch job") only if the document says.
 - capability: something a system does, with short matching phrases a requirement might use \
 to describe it (triggers). When the document says which component of the system delivers it, \
 give that component's name (component).

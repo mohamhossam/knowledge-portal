@@ -208,7 +208,7 @@ def _build(content: bytes, mime_type: str = DOCX) -> tuple[EvidenceChunk, ...]:
     draft = manage.create_draft(MAINTAINER, "Next version")
     storage.put(DocumentVersionId("doc"), content)
     version = KnowledgeDocumentVersion(
-        "doc", "Reference", "reference", mime_type, "en", "sum", "doc", "amina", NOW
+        "doc", "Reference", "reference", mime_type, "sum", "doc", "amina", NOW
     )
     repository.save(draft.updated(documents=(version,)), draft.revision, "amina", "upload")
     current = manage.get(draft.id)

@@ -126,7 +126,6 @@ def _change(**values: Any) -> ChangeOutput:
         "kind": "portfolio_node",
         "system": "",
         "name": "SMB",
-        "name_ar": None,
         "aliases": [],
         "triggers": [],
         "target_system": None,
@@ -245,7 +244,7 @@ def test_accepting_a_documents_tree_adds_it_in_order_and_records_where_it_came_f
     ).json()
     uploaded = client.post(
         f"/architecture-knowledge/releases/{draft['id']}/documents",
-        data={"title": "Portfolio", "language": "en", "expected_revision": draft["revision"]},
+        data={"title": "Portfolio", "expected_revision": draft["revision"]},
         files={"file": ("portfolio.md", DOCUMENT, "text/markdown")},
         headers=OWNER,
     ).json()
