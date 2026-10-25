@@ -63,6 +63,7 @@ from knowledge_portal.domain.architecture.knowledge import (
 )
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import (
+    ComponentResponsibility,
     OfferingComponent,
     ProductOffering,
     RealisationLayer,
@@ -1031,6 +1032,28 @@ def _kept_links(offering: ProductOffering, current: ProductOffering) -> ProductO
     return kept_offering_terms(whole, current)
 
 
+def _one_per_role(
+    duties: tuple[ComponentResponsibility, ...],
+) -> tuple[ComponentResponsibility, ...]:
+    """A component's responsibilities with each system once per role. Two names a document
+    wrote can turn out to be one system ("B2B Sales Channel" another name for BCRM): its two
+    mentions in one role are then one, for every order type when either is, else for both."""
+    kept: dict[tuple[str, str], ComponentResponsibility] = {}
+    for duty in duties:
+        key = (duty.system_id, duty.role)
+        held = kept.get(key)
+        if held is None:
+            kept[key] = duty
+            continue
+        orders = (
+            ()
+            if not held.order_types or not duty.order_types
+            else tuple(dict.fromkeys((*held.order_types, *duty.order_types)))
+        )
+        kept[key] = replace(held, order_types=orders)
+    return tuple(kept.values())
+
+
 def _resolved_offering(
     offering: ProductOffering, release: ArchitectureKnowledge
 ) -> tuple[ProductOffering, tuple[str, ...]]:
@@ -1051,8 +1074,11 @@ def _resolved_offering(
     components = tuple(
         replace(
             part,
-            responsibilities=tuple(
-                replace(duty, system_id=resolved(duty.system_id)) for duty in part.responsibilities
+            responsibilities=_one_per_role(
+                tuple(
+                    replace(duty, system_id=resolved(duty.system_id))
+                    for duty in part.responsibilities
+                )
             ),
         )
         for part in offering.components

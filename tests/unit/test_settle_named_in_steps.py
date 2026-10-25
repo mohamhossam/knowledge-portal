@@ -18,10 +18,20 @@ from knowledge_portal.domain.architecture.candidates import (
     CandidateCitation,
     CandidateContent,
     CandidateKind,
+    CandidateMatch,
     CandidateStatus,
     CatalogueCandidate,
+    apply_candidate,
+    classify,
 )
 from knowledge_portal.domain.architecture.journeys import Activity, Journey
+from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge, SystemDefinition
+from knowledge_portal.domain.architecture.products import (
+    ComponentResponsibility,
+    OfferingComponent,
+    OrderType,
+    ProductOffering,
+)
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
@@ -132,3 +142,47 @@ def test_a_name_differing_only_in_case_becomes_one_other_name() -> None:
     assert settled == SettledSubject(1, 0)
     bcrm = next(item for item in manage.get(draft.id).systems if item.id == "bcrm")
     assert [alias for alias in bcrm.aliases if alias.casefold() == "eseso"] == ["Eseso"]
+
+
+def test_two_names_for_one_system_in_one_role_become_one_responsibility() -> None:
+    offering = ProductOffering(
+        "saas",
+        "SAAS subscription",
+        order_types=(OrderType("NEW", "New"), OrderType("MODIFY", "Modify")),
+        components=(
+            OfferingComponent(
+                "o365",
+                "SAAS subscription (O365, domains, etc.)",
+                responsibilities=(
+                    ComponentResponsibility("bcrm", "CAPTURE", "Takes the order", ("NEW",)),
+                    ComponentResponsibility(
+                        "B2B Sales Channel", "CAPTURE", "Sells it", ("MODIFY",)
+                    ),
+                    ComponentResponsibility("bscs", "BILLS", "Bills it"),
+                ),
+            ),
+        ),
+    )
+    content = CandidateContent(
+        CandidateKind.PRODUCT, offering.id, name=offering.name, product=offering
+    )
+    aliased = ArchitectureKnowledge(
+        "draft",
+        1,
+        (
+            SystemDefinition("bcrm", "BCRM", aliases=("B2B Sales Channel",)),
+            SystemDefinition("bscs", "BSCS"),
+        ),
+        (),
+    )
+
+    # Classifying no longer fails, and accepting holds BCRM once in the role, for both orders.
+    assert classify(content, aliased) is CandidateMatch.NEW
+    accepted = apply_candidate(content, aliased)
+    (component,) = next(item for item in accepted.products if item.id == "saas").components
+    assert [
+        (item.system_id, item.role, item.order_types) for item in component.responsibilities
+    ] == [
+        ("bcrm", "CAPTURE", ("NEW", "MODIFY")),
+        ("bscs", "BILLS", ()),
+    ]
