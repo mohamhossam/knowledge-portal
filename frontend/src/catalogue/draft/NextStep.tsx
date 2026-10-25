@@ -5,6 +5,7 @@ import { count } from "../../home/format";
 import { ButtonLink } from "../../shell/links";
 import type { Blocker } from "../suggestions";
 import { type Answer, type DraftChoices, MissingThings } from "./MissingThings";
+import { Said } from "./parts";
 
 /**
  * The decide desk's first word: the one thing to do next, always. Questions only a
@@ -14,7 +15,7 @@ import { type Answer, type DraftChoices, MissingThings } from "./MissingThings";
  * one list, opened on request (MissingThings), where each is settled on the spot.
  */
 export function NextStep({
-  questions, bulk, bulkLabel, waiting, accepted, blockers, choices, focusTo, changesTo, busy, settling, onAcceptReady, onAnswer, onShow, onReject,
+  questions, bulk, bulkLabel, waiting, accepted, blockers, choices, settled, focusTo, changesTo, busy, settling, onAcceptReady, onAnswer, onShow, onReject,
 }: {
   questions: number;
   bulk: number;
@@ -24,6 +25,8 @@ export function NextStep({
   blockers: Blocker[];
   /** What the draft already holds, for saying a missing name is one of them. */
   choices: DraftChoices;
+  /** What settling a missing thing last did, or why the service refused it: said here, beside it. */
+  settled?: { text: string; failed?: boolean } | null;
   focusTo: string;
   changesTo: string;
   busy: boolean;
@@ -79,6 +82,7 @@ export function NextStep({
       <p className="draft-next-step__lead">{lead}</p>
       {detail && <p className="draft-next-step__detail">{detail}</p>}
       {(action || toggle) && <ActionGroup label="Next step">{action}{toggle}</ActionGroup>}
+      {(blockers.length > 0 || settled) && <Said text={settled?.text} failed={settled?.failed} />}
       {open && (
         <MissingThings blockers={blockers} choices={choices} busy={busy} settling={settling} onAnswer={onAnswer} onShow={onShow} onReject={onReject} />
       )}

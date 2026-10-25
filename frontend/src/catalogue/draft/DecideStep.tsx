@@ -149,6 +149,8 @@ function Decide() {
   const cellOf = (id: string) => desk.current?.querySelector<HTMLElement>(`tr[data-row-id="${CSS.escape(id)}"] [data-cell-focus]`) ?? null;
   const focusRow = (id: string) => focusLater(() => cellOf(id));
   const say = (text: string, failed = false) => setSaid({ text, failed });
+  // What settling a missing thing did, said beside the missing things themselves.
+  const [settled, setSettled] = useState<{ text: string; failed?: boolean } | null>(null);
 
   const move = (id: string) => {
     if (id === currentId) return;
@@ -271,8 +273,8 @@ function Decide() {
       return;
     }
     draft.settleSubject.mutate(settleRequest(blocker, chosen), {
-      onSuccess: (result) => say(settledWords(blocker, chosen, result)),
-      onError: (error) => say(errorMessage(error), true),
+      onSuccess: (result) => setSettled({ text: settledWords(blocker, chosen, result) }),
+      onError: (error) => setSettled({ text: inWords(errorMessage(error), words), failed: true }),
     });
   };
   /** The pane's own answer for the suggestion in hand: its name is a system, or an offering. */
@@ -287,10 +289,13 @@ function Decide() {
       const kept = record.realised_by.filter((reference) => !realisedByKey(record.layer, reference).includes(key));
       return [{ item, content: { ...item.content, realisation: { ...record, realised_by: kept } } }];
     });
-    say(`Accepting ${count(edited.length, "suggestion")} without ${blocker.name} as what realises them.`);
+    setSettled({ text: `Accepting ${count(edited.length, "suggestion")} without ${blocker.name} as what realises them.` });
     void Promise.all(edited.map(({ item, content }) => draft.decide({ suggestionId: item.id, accept: true, content }))).then((done) => {
       const accepted = done.filter(Boolean).length;
-      say(`Accepted ${count(accepted, "suggestion")} without ${blocker.name}${accepted < edited.length ? `; ${edited.length - accepted} couldn't apply and wait for you` : ""}.`);
+      setSettled({
+        text: `Accepted ${count(accepted, "suggestion")} without ${blocker.name}${accepted < edited.length ? `; ${edited.length - accepted} couldn't apply and wait for you` : ""}.`,
+        failed: accepted < edited.length,
+      });
     });
   };
   const showWaiting = (blocker: Blocker) => {
@@ -473,6 +478,7 @@ function Decide() {
         onAcceptReady={askToAcceptReady}
         onAnswer={answer}
         choices={choices}
+        settled={settled}
         onShow={showWaiting}
         onReject={rejectWaiting}
       />

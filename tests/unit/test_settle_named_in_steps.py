@@ -88,3 +88,47 @@ def test_a_system_named_only_in_a_journeys_steps_can_be_suggested() -> None:
     )
     assert (added.content.system_id, added.content.name) == ("e2eso-fortiguard", "E2ESO Fortiguard")
     assert added.citations == (quote,)
+
+
+def test_a_name_differing_only_in_case_becomes_one_other_name() -> None:
+    repository = seeded_repository()
+    manage = ManageArchitectureKnowledge(
+        repository,
+        CatalogueFileAdapter(),
+        InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
+        10_000,
+        OfflineDocumentScanner(),
+    )
+    candidates = InMemoryCatalogueCandidates()
+    decide = DecideCatalogueCandidate(
+        manage, repository, candidates, InMemoryTransactionManager(RLock())
+    )
+    draft = manage.create_draft(MAINTAINER, "Next version")
+    journey = Journey(
+        "wf-9",
+        "Cessation",
+        activities=(Activity("10", "Close the order", performing_system_id="eseso"),),
+    )
+    candidates.revise(
+        (
+            CatalogueCandidate(
+                "c1",
+                draft.id,
+                "doc",
+                CandidateContent(
+                    CandidateKind.JOURNEY, journey.id, name=journey.name, journey=journey
+                ),
+                (CandidateCitation("row 3", "ESESO closes the order"),),
+                "fake",
+                "v1",
+                NOW,
+            ),
+        )
+    )
+
+    # The documents write it "eseso"; the page names it "Eseso": one name, not two.
+    settled = decide.settle_as_existing(draft.id, "eseso", "Eseso", "bcrm", MAINTAINER, NOW)
+
+    assert settled == SettledSubject(1, 0)
+    bcrm = next(item for item in manage.get(draft.id).systems if item.id == "bcrm")
+    assert [alias for alias in bcrm.aliases if alias.casefold() == "eseso"] == ["Eseso"]

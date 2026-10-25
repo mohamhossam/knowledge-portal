@@ -258,6 +258,17 @@ describe("NextStep", () => {
     expect(onAnswer).toHaveBeenLastCalledWith(found[0], { kind: "without_link" });
   });
 
+  it("says beside the missing things what settling one did, or why the service refused it", () => {
+    const suggestions = [constraint("a", "Fortinet only")];
+    const found = blockers(draft, suggestions, lexicon(draft, suggestions));
+    render(
+      <MemoryRouter>
+        <NextStep {...props} waiting={1} blockers={found} onAnswer={vi.fn()} settled={{ text: "The draft already has the system Eseso.", failed: true }} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("The draft already has the system Eseso.");
+  });
+
   it("says the questions come first, and the changes once nothing is left", () => {
     const { rerender } = render(<MemoryRouter><NextStep {...props} questions={3} bulk={2} blockers={[]} onAnswer={vi.fn()} /></MemoryRouter>);
     expect(screen.getByText(/only you can decide/)).toHaveTextContent("Answer the 3 questions only you can decide, then accept the ready ones.");

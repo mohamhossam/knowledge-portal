@@ -2172,10 +2172,13 @@ class DecideCatalogueCandidate:
         target = find_system(release, system_id)
         if target is None:
             raise KnowledgeNotFoundError(f"The draft has no system {system_id!r}.")
-        taken = {label.casefold() for label in (target.id, target.name, *target.aliases)}
-        added = tuple(
-            dict.fromkeys(item for item in (name, reference) if item.casefold() not in taken)
-        )
+        # Each other name once, however it is cased or spaced: "Eseso" and "eseso" are one.
+        taken = {_label(label) for label in (target.id, target.name, *target.aliases)}
+        added: list[str] = []
+        for written in (name, reference):
+            if _label(written) not in taken:
+                taken.add(_label(written))
+                added.append(written)
         aliased = replace(target, aliases=(*target.aliases, *added))
         updated = replace(
             release,
@@ -2217,6 +2220,11 @@ class DecideCatalogueCandidate:
 
 # Resources first, then the RFSs they realise, then CFSs.
 _LAYER_RANK = {RealisationLayer.RESOURCE: 0, RealisationLayer.RFS: 1, RealisationLayer.CFS: 2}
+
+
+def _label(value: str) -> str:
+    """A name as the draft compares names: without case, spaces or punctuation."""
+    return "".join(character for character in value.casefold() if character.isalnum())
 
 
 def _freed(
