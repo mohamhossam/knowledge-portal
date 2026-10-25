@@ -637,11 +637,16 @@ def settle_suggestion_subject(
     clock: ClockDep,
     actor: KnowledgeActorDep,
 ) -> SettleSubjectResponse:
-    """Say what a name waiting suggestions name is: a system to suggest, or a product
-    offering, so its constraints become the offering's rules."""
-    settled = suggestions.settle_subject(
-        release_id, body.system_id, body.name, body.kind, actor, clock.now()
-    )
+    """Say what a name waiting suggestions name is: a system to suggest, a product
+    offering, so its constraints become the offering's rules, or a system the draft has."""
+    if body.existing_system_id is not None:
+        settled = suggestions.settle_as_existing(
+            release_id, body.system_id, body.name, body.existing_system_id, actor, clock.now()
+        )
+    else:
+        settled = suggestions.settle_subject(
+            release_id, body.system_id, body.name, body.kind, actor, clock.now()
+        )
     return SettleSubjectResponse(retyped=settled.retyped, added=settled.added)
 
 

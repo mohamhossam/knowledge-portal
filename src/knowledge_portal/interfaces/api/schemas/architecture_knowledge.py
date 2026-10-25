@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import BaseModel, BeforeValidator, Field, model_validator
 
 from knowledge_portal.application.ports.architecture_jobs import (
     ArchitectureJob,
@@ -3060,12 +3060,20 @@ class RejectSuggestionsResponse(BaseModel):
 
 
 class SettleSubjectRequest(BaseModel):
-    """What a name waiting suggestions name really is: a system or a product offering."""
+    """What a name waiting suggestions name really is: a system, a product offering, or a
+    system the draft already has (``existing_system_id``, required for that kind only)."""
 
     system_id: Identifier = Field(min_length=1)
     # The name the documents give it, for the suggestion of it.
     name: Name = ""
     kind: SubjectKind
+    existing_system_id: Identifier | None = None
+
+    @model_validator(mode="after")
+    def _existing_names_its_system(self) -> SettleSubjectRequest:
+        if (self.kind is SubjectKind.EXISTING) != (self.existing_system_id is not None):
+            raise ValueError("existing_system_id names the system for the kind existing only.")
+        return self
 
 
 class SettleSubjectResponse(BaseModel):

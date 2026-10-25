@@ -359,6 +359,17 @@
   flex-wrap: wrap;
 }
 
+/* Naming a missing system as one the draft has: the choice opens under its row. */
+.draft-existing__body {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+
+.draft-existing .ds-field {
+  inline-size: min(100%, 28rem);
+}
+
 /* A long change reads in the pane; the row keeps two lines, so the list stays scannable. */
 .draft-change {
   display: -webkit-box;

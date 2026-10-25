@@ -798,8 +798,8 @@ export interface paths {
         put?: never;
         /**
          * Settle Suggestion Subject
-         * @description Say what a name waiting suggestions name is: a system to suggest, or a product
-         *     offering, so its constraints become the offering's rules.
+         * @description Say what a name waiting suggestions name is: a system to suggest, a product
+         *     offering, so its constraints become the offering's rules, or a system the draft has.
          */
         post: operations["settle_suggestion_subject_architecture_knowledge_releases__release_id__suggestions_subject_post"];
         delete?: never;
@@ -6365,9 +6365,12 @@ export interface components {
         };
         /**
          * SettleSubjectRequest
-         * @description What a name waiting suggestions name really is: a system or a product offering.
+         * @description What a name waiting suggestions name really is: a system, a product offering, or a
+         *     system the draft already has (``existing_system_id``, required for that kind only).
          */
         SettleSubjectRequest: {
+            /** Existing System Id */
+            existing_system_id?: string | null;
             kind: components["schemas"]["SubjectKind"];
             /**
              * Name
@@ -6525,7 +6528,7 @@ export interface components {
          * @description What a name suggestions wait for really is, as a person says it on Decide.
          * @enum {string}
          */
-        SubjectKind: "system" | "offering";
+        SubjectKind: "system" | "offering" | "existing";
         /** SuggestionDecisionRequest */
         SuggestionDecisionRequest: {
             /** Accept */

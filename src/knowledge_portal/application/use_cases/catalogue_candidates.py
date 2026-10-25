@@ -409,6 +409,8 @@ class SubjectKind(StrEnum):
 
     SYSTEM = "system"
     OFFERING = "offering"
+    # A system the draft already has, under another name (``settle_as_existing``).
+    EXISTING = "existing"
 
 
 @dataclass(frozen=True)
@@ -1732,6 +1734,8 @@ class DecideCatalogueCandidate:
         when nothing has it yet.
         """
         require_maintainer(actor)
+        if kind is SubjectKind.EXISTING:
+            raise InvalidKnowledgeError("Name the system the draft has: see settle_as_existing.")
         release = _draft(self._knowledge, release_id)
         name = name.strip() or reference
         # A retired system still holds its name, so it is no subject to settle either.
@@ -1822,6 +1826,65 @@ class DecideCatalogueCandidate:
         for item in rejected:
             self._candidates.save_decision(item)
         return SettledSubject(len(revised) - added + len(rejected), added)
+
+    def settle_as_existing(
+        self,
+        release_id: str,
+        reference: str,
+        name: str,
+        system_id: str,
+        actor: Actor,
+        at: datetime,
+    ) -> SettledSubject:
+        """Say that a name suggestions wait for is a system the draft already has.
+
+        The name becomes one of that system's aliases, so every suggestion that names it,
+        wherever it names it (a capability, a journey's step, a connection), now finds the
+        system, and so does a later reading. A suggestion to add the name as a new system
+        is rejected. ``retyped`` counts the waiting suggestions this frees.
+        """
+        require_maintainer(actor)
+        release = _draft(self._knowledge, release_id)
+        name = name.strip() or reference
+        if system_named(release, reference) is not None:
+            raise InvalidKnowledgeError(f"The draft already has the system {name}.")
+        target = find_system(release, system_id)
+        if target is None:
+            raise KnowledgeNotFoundError(f"The draft has no system {system_id!r}.")
+        taken = {label.casefold() for label in (target.id, target.name, *target.aliases)}
+        added = tuple(
+            dict.fromkeys(item for item in (name, reference) if item.casefold() not in taken)
+        )
+        aliased = replace(target, aliases=(*target.aliases, *added))
+        updated = replace(
+            release,
+            systems=tuple(aliased if item.id == target.id else item for item in release.systems),
+        )
+        wanted = reference.casefold().strip()
+        pending = [
+            item
+            for item in self._candidates.list(release_id)
+            if item.status is CandidateStatus.PROPOSED
+        ]
+        # The draft as it will be decides what is freed; the suggestion to add it is rejected.
+        duplicate = [
+            item
+            for item in pending
+            if item.content.kind is CandidateKind.SYSTEM
+            and item.content.system_id.casefold() == wanted
+        ]
+        freed = sum(
+            1
+            for item in pending
+            if item not in duplicate
+            and classify(item.content, release).value.startswith("needs_")
+            and not classify(item.content, updated).value.startswith("needs_")
+        )
+        with self._transactions.transaction():
+            self._knowledge.update(release.id, release.revision, actor, systems=updated.systems)
+            for item in duplicate:
+                self._candidates.save_decision(item.decide(False, actor.id, at))
+        return SettledSubject(freed, 0)
 
     def _save(
         self,

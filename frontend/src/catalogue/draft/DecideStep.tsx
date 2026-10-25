@@ -107,6 +107,10 @@ function Decide() {
   const bulkCount = bulk.ready.length + bulk.lifted.length;
   const readyIds = useMemo(() => new Set([...bulk.ready, ...bulk.lifted].map((item) => item.id)), [bulk]);
   const stuck = useMemo(() => deadEnds(release, all, words), [release, all, words]);
+  const draftSystems = useMemo(
+    () => release.systems.filter((system) => !system.deprecated).map((system) => ({ id: system.id, name: system.name, aliases: system.aliases })),
+    [release.systems],
+  );
   // Each waiting suggestion that waits on a dead end, with what it waits for in words.
   const deadEndOf = useMemo(() => new Map(stuck.flatMap((blocker) => blocker.waiting.map((item) => [item.id, blocker.label] as const))), [stuck]);
   // "What waits for what" earns its place only when a suggestion waits on another one.
@@ -254,6 +258,13 @@ function Decide() {
       },
     });
   };
+  /** Says a name suggestions wait for is a system the draft has: it becomes one of its names. */
+  const settleExisting = (blocker: Blocker, system: { id: string; name: string }) =>
+    draft.settleSubject.mutate({ system_id: blocker.reference, name: blocker.name, kind: "existing", existing_system_id: system.id }, {
+      onSuccess: (result) =>
+        say(`${blocker.name} is now another name for ${system.name}${result.retyped ? `: ${count(result.retyped, "suggestion")} can be decided` : ""}.`),
+      onError: (error) => say(errorMessage(error), true),
+    });
   /** Says what a name suggestions wait for is: a system to suggest, or a product offering. */
   const settle = (reference: string, name: string, kind: "system" | "offering") =>
     draft.settleSubject.mutate({ system_id: reference, name, kind }, {
@@ -443,6 +454,8 @@ function Decide() {
         settling={draft.settleSubject.isPending}
         onAcceptReady={askToAcceptReady}
         onSettle={(blocker, kind) => settle(blocker.reference, blocker.name, kind)}
+        onSettleExisting={settleExisting}
+        systems={draftSystems}
         onShow={showWaiting}
         onReject={rejectWaiting}
       />

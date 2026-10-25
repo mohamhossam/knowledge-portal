@@ -12485,8 +12485,20 @@
         "type": "object"
       },
       "SettleSubjectRequest": {
-        "description": "What a name waiting suggestions name really is: a system or a product offering.",
+        "description": "What a name waiting suggestions name really is: a system, a product offering, or a\nsystem the draft already has (``existing_system_id``, required for that kind only).",
         "properties": {
+          "existing_system_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Existing System Id"
+          },
           "kind": {
             "$ref": "#/components/schemas/SubjectKind"
           },
@@ -12917,7 +12929,8 @@
         "description": "What a name suggestions wait for really is, as a person says it on Decide.",
         "enum": [
           "system",
-          "offering"
+          "offering",
+          "existing"
         ],
         "title": "SubjectKind",
         "type": "string"
@@ -17743,7 +17756,7 @@
     },
     "/architecture-knowledge/releases/{release_id}/suggestions/subject": {
       "post": {
-        "description": "Say what a name waiting suggestions name is: a system to suggest, or a product\noffering, so its constraints become the offering's rules.",
+        "description": "Say what a name waiting suggestions name is: a system to suggest, a product\noffering, so its constraints become the offering's rules, or a system the draft has.",
         "operationId": "settle_suggestion_subject_architecture_knowledge_releases__release_id__suggestions_subject_post",
         "parameters": [
           {

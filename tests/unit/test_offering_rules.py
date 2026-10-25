@@ -184,3 +184,45 @@ def test_a_name_nothing_suggests_can_be_suggested_as_either(client: TestClient) 
         headers=OWNER,
     )
     assert unknown.status_code == 404
+
+
+def test_a_name_can_be_a_system_the_draft_has(client: TestClient) -> None:
+    base, suggestions = _read(client, SOURCE)
+    assert {item["content"]["kind"] for item in suggestions} == {"system", "constraint"}
+    subject = {"system_id": "business-pro-plus", "name": "Business Pro Plus", "kind": "existing"}
+
+    unnamed = client.post(f"{base}/suggestions/subject", json=subject, headers=OWNER)
+    assert unnamed.status_code == 422
+    missing = client.post(
+        f"{base}/suggestions/subject", json=subject | {"existing_system_id": "nope"}, headers=OWNER
+    )
+    assert missing.status_code == 404
+
+    settled = client.post(
+        f"{base}/suggestions/subject", json=subject | {"existing_system_id": "bcrm"}, headers=OWNER
+    )
+
+    assert settled.status_code == 200, settled.text
+    assert settled.json() == {"retyped": 1, "added": 0}
+    listing = client.get(f"{base}/suggestions", headers=OWNER).json()
+    by_kind = {item["content"]["kind"]: item for item in listing["suggestions"]}
+    # The suggestion to add it as a new system is rejected; its constraint now finds BCRM.
+    assert by_kind["system"]["status"] == "rejected"
+    assert by_kind["constraint"]["status"] == "proposed"
+    assert not by_kind["constraint"]["match"].startswith("needs_")
+    release = client.get(base, headers=OWNER).json()
+    bcrm = next(item for item in release["systems"] if item["id"] == "bcrm")
+    assert "Business Pro Plus" in bcrm["aliases"]
+    accepted = client.post(
+        f"{base}/suggestions/acceptance",
+        json={"expected_revision": listing["release_revision"]},
+        headers=OWNER,
+    ).json()
+    bcrm = next(item for item in accepted["release"]["systems"] if item["id"] == "bcrm")
+    assert RULE in bcrm["constraints"]
+
+    again = client.post(
+        f"{base}/suggestions/subject", json=subject | {"existing_system_id": "bcrm"}, headers=OWNER
+    )
+    assert again.status_code == 422
+    assert "already has the system" in again.json()["message"]

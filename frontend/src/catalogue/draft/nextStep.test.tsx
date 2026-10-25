@@ -126,7 +126,8 @@ describe("blockers", () => {
 describe("NextStep", () => {
   const props = {
     questions: 0, bulk: 0, bulkLabel: "Accept the ready ones", waiting: 12, accepted: 0, focusTo: "/focus", changesTo: "/changes", busy: false, settling: false,
-    onAcceptReady: vi.fn(), onShow: vi.fn(), onReject: vi.fn(),
+    systems: [{ id: "bpp-gw", name: "Business Pro Plus Gateway", aliases: [] }, { id: "bcrm", name: "BCRM", aliases: ["Sales CRM"] }],
+    onAcceptReady: vi.fn(), onShow: vi.fn(), onReject: vi.fn(), onSettleExisting: vi.fn(),
   };
 
   it("says the way on when only dead ends are left, and settles one on the spot", async () => {
@@ -144,10 +145,30 @@ describe("NextStep", () => {
     const row = screen.getByRole("row", { name: /Business Pro Plus/ });
     expect(row).toHaveTextContent("System");
     expect(row).toHaveTextContent("2");
-    await userEvent.click(screen.getByRole("button", { name: "It is an offering" }));
+    await userEvent.click(screen.getByRole("button", { name: "An offering" }));
     expect(onSettle).toHaveBeenCalledWith(found[0], "offering");
     await userEvent.click(screen.getByRole("button", { name: "Reject what waits on Business Pro Plus…" }));
     expect(props.onReject).toHaveBeenCalledWith(found[0]);
+  });
+
+  it("says a missing name is a system the draft has, offering the likely one first", async () => {
+    const suggestions = [constraint("a", "Fortinet only"), constraint("b", "No amendment")];
+    const found = blockers(draft, suggestions, lexicon(draft, suggestions));
+    const onSettleExisting = vi.fn();
+    render(<MemoryRouter><NextStep {...props} waiting={2} blockers={found} onSettle={vi.fn()} onSettleExisting={onSettleExisting} /></MemoryRouter>);
+    await userEvent.click(screen.getByRole("button", { name: "See the 1 missing thing" }));
+
+    await userEvent.click(screen.getByRole("button", { name: "A system the draft has…" }));
+    const use = screen.getByRole("button", { name: "Use the system" });
+    expect(use).toHaveAttribute("aria-disabled", "true");
+    await userEvent.click(screen.getByRole("combobox", { name: /Which system of the draft is Business Pro Plus/ }));
+    const [first] = screen.getAllByRole("option");
+    expect(first).toHaveTextContent("Business Pro Plus Gateway");
+    await userEvent.click(first!);
+    await userEvent.click(screen.getByRole("button", { name: "Make Business Pro Plus a name for Business Pro Plus Gateway" }));
+
+    expect(onSettleExisting).toHaveBeenCalledWith(found[0], props.systems[0]);
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
   });
 
   it("says the questions come first, and the changes once nothing is left", () => {

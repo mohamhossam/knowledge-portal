@@ -20,6 +20,13 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   matcher that answered for the seed is removed. The reference YAML is test data now
   (`tests/fixtures/smb_architecture.yaml`); `scripts/seed_demo.py` publishes it through the API
   first. An existing database keeps its releases: starting fresh means resetting it.
+- Decide, when only dead ends are left (common in a first version), says so plainly: what is
+  accepted, that publishing leaves the rest out, and "Go on to the changes". Every missing thing
+  is one table, opened on request. A missing system can be named as one the draft already has:
+  `POST /architecture-knowledge/releases/{id}/suggestions/subject` takes the kind `existing` with
+  `existing_system_id`, adds the name to that system's aliases, so every suggestion that names it
+  (and later readings) finds the system, and rejects the suggestion to add it as a new system.
+  Public contract, additive.
 
 ### Added
 
