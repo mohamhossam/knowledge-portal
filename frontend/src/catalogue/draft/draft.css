@@ -431,3 +431,32 @@
 .draft-parts::-moz-progress-bar {
   background: var(--color-info);
 }
+
+/* The ontology's steps, in the order they run: a numbered list, each step its own action. */
+.draft-ontology {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding-inline-start: var(--space-6);
+  max-inline-size: 72ch;
+  list-style: decimal outside;
+}
+
+/* A list item, so the step keeps its number; its parts stack with the same rhythm. */
+.draft-ontology__step {
+  display: list-item;
+}
+
+.draft-ontology__step > * + * {
+  margin-block-start: var(--space-2);
+}
+
+.draft-ontology__step::marker {
+  font-weight: 600;
+}
+
+.draft-ontology__title {
+  margin: 0;
+  font-size: var(--text-body);
+  font-weight: 600;
+}

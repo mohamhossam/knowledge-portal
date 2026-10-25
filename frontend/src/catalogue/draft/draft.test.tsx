@@ -370,10 +370,37 @@ describe("Sources", () => {
       id: "r1", release_id: "d", document_version_id: "derived_dependencies", model: "dependency-derivation",
       prompt_version: "dependency-derivation-v1", candidate_count: 52, warnings: [], created_at: "", reading: "derived_dependencies",
     } as never);
-    const section = (await screen.findByRole("heading", { name: "Dependencies from interfaces and journeys" })).closest("section")!;
+    const section = (await screen.findByRole("heading", { name: "Dependencies from interfaces and journeys" })).closest("li")!;
     fireEvent.click(within(section).getByRole("button", { name: "Suggest dependencies" }));
     expect(await within(section).findByText("52 dependencies suggested; decide them on Decide.")).toBeInTheDocument();
     expect(suggest).toHaveBeenCalledWith("d");
+  });
+
+  it("builds the ontology in order: concepts, component links, vocabularies, then dependencies", async () => {
+    renderStep("sources");
+    const steps = within((await screen.findByRole("heading", { name: "Build the ontology" })).closest("section")!).getAllByRole("listitem");
+    expect(steps.map((step) => within(step).getByRole("heading").textContent)).toEqual([
+      "Capability concepts",
+      "What each offering component delivers",
+      "Controlled vocabularies",
+      "Dependencies from interfaces and journeys",
+    ]);
+    // Component links need concepts in the draft first.
+    expect(within(steps[1]!).getByRole("button", { name: "Suggest component links" })).toHaveAttribute("aria-disabled", "true");
+    const propose = vi.spyOn(api, "proposeConcepts").mockResolvedValue({
+      id: "r2", release_id: "d", document_version_id: "concept_backfill", model: "concept-backfill",
+      prompt_version: "concept-backfill-v1", candidate_count: 120, warnings: [], created_at: "", reading: "concept_backfill",
+    } as never);
+    fireEvent.click(within(steps[0]!).getByRole("button", { name: "Propose concepts" }));
+    expect(await within(steps[0]!).findByText("120 concepts suggested; decide them on Decide.")).toBeInTheDocument();
+    expect(propose).toHaveBeenCalledWith("d");
+    const clean = vi.spyOn(api, "cleanUpVocabulary").mockResolvedValue({
+      id: "r3", release_id: "d", document_version_id: "vocabulary_cleanup", model: "vocabulary-cleanup",
+      prompt_version: "vocabulary-cleanup-v1", candidate_count: 1, warnings: [], created_at: "", reading: "vocabulary_cleanup",
+    } as never);
+    fireEvent.click(within(steps[2]!).getByRole("button", { name: "Clean up the vocabulary" }));
+    expect(await within(steps[2]!).findByText("1 term suggested; decide it on Decide.")).toBeInTheDocument();
+    expect(clean).toHaveBeenCalledWith("d");
   });
 
   it("says which part a document's reading is on, when it started and what comes next", async () => {
