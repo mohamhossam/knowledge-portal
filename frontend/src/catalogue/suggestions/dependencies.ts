@@ -3,7 +3,7 @@
  * ready ones lifts, the dead ends nothing lifts, and the order accepting them works.
  */
 import type { Release, Suggestion } from "../../api/client";
-import { BELOW_WORDS, channelKeys, interfaceKeys, nodeKeys, offeringKey, realisationKeys, realisedByKey, specificationKeys } from "./keys";
+import { BELOW_WORDS, channelKeys, interfaceKeys, nodeKeys, offeringKey, orderTypeKey, realisationKeys, realisedByKey, specificationKeys } from "./keys";
 import type { Lexicon } from "./lexicon";
 import { KIND_ORDER, needsOneByOne } from "./state";
 
@@ -39,6 +39,11 @@ export function bulkAcceptable(release: Release, suggestions: Suggestion[], give
   return { ready, lifted };
 }
 
+/** Every order type of an offering under every name of both. */
+function orderTypeKeys(offering: string[], orderTypes: { code: string; name: string }[]): string[] {
+  return offering.flatMap((name) => orderTypes.flatMap((item) => [item.code, item.name].filter(Boolean).map((type) => orderTypeKey(name, type))));
+}
+
 /** What the draft already has, as the keys suggestions provide and require. */
 function knownKeys(release: Release): Set<string> {
   const known = new Set<string>();
@@ -47,7 +52,11 @@ function knownKeys(release: Release): Set<string> {
     for (const component of system.components) known.add(`component:${system.id}/${component.id}`);
   }
   for (const domain of release.landscape_domains ?? []) known.add(`domain:${domain.id}`);
-  for (const offering of release.products ?? []) [offering.id, offering.code ?? "", offering.name].forEach((reference) => reference && known.add(offeringKey(reference)));
+  for (const offering of release.products ?? []) {
+    const names = [offering.id, offering.code ?? "", offering.name].filter(Boolean);
+    names.forEach((reference) => known.add(offeringKey(reference)));
+    orderTypeKeys(names, offering.order_types).forEach((key) => known.add(key));
+  }
   for (const channel of release.channels ?? []) channelKeys(channel.id, channel.name).forEach((key) => known.add(key));
   for (const item of release.interfaces ?? []) interfaceKeys(item.id, item.name).forEach((key) => known.add(key));
   for (const item of release.capability_domains ?? []) nodeKeys("area", item.id, item.name).forEach((key) => known.add(key));
@@ -108,6 +117,11 @@ function describeNeed(key: string, item: Suggestion, words: Lexicon): Blocker {
     const named = content.kind === "journey" ? content.journey?.product_id ?? reference : content.system_id;
     const name = words.offering(named);
     return { key, kind: "offering", reference: named, name, label: `the offering ${name}`, waiting: [] };
+  }
+  if (prefix === "ordertype" && content.journey?.product_id) {
+    const offering = words.offering(content.journey.product_id);
+    const order = content.journey.order_type_code ?? reference;
+    return { key, kind: "other", reference: content.journey.product_id, name: `${offering} › ${order}`, label: `the order type ${order} of ${offering}`, waiting: [] };
   }
   if (prefix === "specification") {
     const name = words.realisation(content.system_id);
@@ -184,8 +198,10 @@ function provides(suggestion: Suggestion): string[] {
       return [`component:${content.system_id}/${content.component_id ?? ""}`];
     case "landscape_domain":
       return [`domain:${content.system_id}`];
-    case "product":
-      return [offeringKey(content.system_id), ...(content.product ? [offeringKey(content.product.name)] : [])];
+    case "product": {
+      const names = [content.system_id, ...(content.product ? [content.product.id, content.product.name, content.product.code ?? ""] : [])].filter(Boolean);
+      return [...names.map(offeringKey), ...orderTypeKeys(names, content.product?.order_types ?? [])];
+    }
     case "channel":
       return channelKeys(content.system_id, content.channel?.name ?? content.name);
     case "interface":
@@ -273,6 +289,10 @@ function requiredKeys(suggestion: Suggestion): string[] {
       return [`domain:${(content.kind === "landscape_domain" ? content.parent_domain_id : content.landscape_domain_id) ?? ""}`];
     case "needs_offering":
       if (content.kind === "conflict") return (content.conflict?.scope ?? []).map((item) => offeringKey(item.product_id));
+      if (content.kind === "journey" && content.journey?.product_id && content.journey.order_type_code) {
+        // The service waits for the offering, and for the order type it is a journey of.
+        return [offeringKey(content.journey.product_id), orderTypeKey(content.journey.product_id, content.journey.order_type_code)];
+      }
       return [offeringKey(content.kind === "question" || content.kind === "offering_rule" ? content.system_id : content.journey?.product_id ?? "")];
     case "needs_source":
       return content.conflict ? [content.conflict.a.source_id, content.conflict.b.source_id].flatMap((reference) => nodeKeys("source", reference)) : [];

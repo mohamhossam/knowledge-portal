@@ -57,6 +57,9 @@ export function waitsFor(suggestion: Suggestion, words: Lexicon): string {
         const affected = (content.conflict?.scope ?? []).map((item) => words.offering(item.product_id));
         return `Waits for the ${affected.length === 1 ? "offering" : "offerings"} ${listed(affected)} it affects`;
       }
+      if (content.journey?.product_id && content.journey.order_type_code && words.hasOffering(content.journey.product_id)) {
+        return `Waits for ${words.offering(content.journey.product_id)}’s order type ${content.journey.order_type_code}`;
+      }
       return `Waits for the offering ${words.offering(content.journey?.product_id ?? "")}`;
     case "needs_channel": {
       const named = [...new Set(channelsNamed(suggestion).map(words.channel))];

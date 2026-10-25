@@ -1806,12 +1806,18 @@ class DecideCatalogueCandidate:
             if item.status is CandidateStatus.PROPOSED
         ]
         about = [item for item in pending if item.content.system_id.casefold() == wanted]
+        # Waiting on it: naming it as their system or target, or anywhere else the draft
+        # lacks it, such as a journey's step or an interface's consumer.
         waiting = [
             item
             for item in pending
             if item.content.kind is not CandidateKind.SYSTEM
             and wanted
-            in {item.content.system_id.casefold(), (item.content.target_system_id or "").casefold()}
+            in {
+                item.content.system_id.casefold(),
+                (item.content.target_system_id or "").casefold(),
+                *(name.casefold() for name in missing_systems(item.content, release)),
+            }
         ]
         if not about and not waiting:
             raise CandidateNotFoundError(f"No suggestion waiting in the draft names {name}.")

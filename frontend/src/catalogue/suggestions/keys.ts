@@ -3,8 +3,13 @@
  * normalised as the service finds what they name.
  */
 
+const squeezed = (reference: string) => reference.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+
 /** An offering's key: by id, code or name alike, without case, spaces or punctuation, as the service finds it. */
-export const offeringKey = (reference: string) => `offering:${reference.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, "")}`;
+export const offeringKey = (reference: string) => `offering:${squeezed(reference)}`;
+
+/** One order type of an offering, both by any of their names: what a journey for it waits for. */
+export const orderTypeKey = (offering: string, orderType: string) => `ordertype:${squeezed(offering)}/${squeezed(orderType)}`;
 
 type Layer = "cfs" | "rfs" | "resource";
 

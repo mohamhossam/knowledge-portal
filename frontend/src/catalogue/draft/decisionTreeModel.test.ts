@@ -94,3 +94,25 @@ describe("what realises a record", () => {
     expect(bulkAcceptable(withResource, [rfs]).lifted.map((item) => item.id)).toEqual(["rfs-ddos"]);
   });
 });
+
+describe("a journey for an order type", () => {
+  const journey = suggestion("j", {
+    kind: "journey", system_id: "wf-1", name: "Modify the password",
+    journey: { id: "wf-1", name: "Modify the password", product_id: "Business Pro Plus", order_type_code: "Modify Password", activities: [], flow_rules: [], integrations: [] },
+  }, { match: "needs_offering" });
+  const offering = (orderTypes: { code: string; name: string }[]) =>
+    ({ ...draft, products: [{ id: "business-pro-plus", name: "Business Pro Plus", code: null, order_types: orderTypes }] }) as unknown as Release;
+
+  it("waits for the offering's order type, as the service does, not only for the offering", () => {
+    const without = offering([{ code: "CESSATION", name: "Cessation" }]);
+    const words = lexicon(without, [journey]);
+    expect(bulkAcceptable(without, [journey]).lifted).toEqual([]);
+    expect(blockers(without, [journey], words)).toMatchObject([
+      { kind: "other", name: "Business Pro Plus › Modify Password", label: "the order type Modify Password of Business Pro Plus" },
+    ]);
+
+    const withIt = offering([{ code: "MODIFY_PASSWORD", name: "Modify Password" }]);
+    expect(bulkAcceptable(withIt, [journey]).lifted.map((item) => item.id)).toEqual(["j"]);
+    expect(blockers(withIt, [journey], lexicon(withIt, [journey]))).toEqual([]);
+  });
+});
