@@ -6372,14 +6372,21 @@ export interface components {
         };
         /**
          * SettleSubjectRequest
-         * @description What a name waiting suggestions name really is: a system, a product offering, a
-         *     system the draft already has (``existing_system_id``), or a CFSS or RFSS the draft has
-         *     (``specification_id``); each id is required for its kind only.
+         * @description What a name waiting suggestions name really is, said once for all of them:
+         *     a system or a product offering to suggest; a system the draft has
+         *     (``existing_system_id``); a CFSS or RFSS the draft has (``specification_id``) or one to
+         *     suggest (``layer``); an order type to add to the offering ``system_id`` names, or one it
+         *     has (``existing_id``, its code); a channel to suggest, or one the draft has
+         *     (``existing_id``). For an order type, ``name`` is the order type and ``system_id`` the
+         *     offering. Each extra field is required for its kind only.
          */
         SettleSubjectRequest: {
+            /** Existing Id */
+            existing_id?: string | null;
             /** Existing System Id */
             existing_system_id?: string | null;
             kind: components["schemas"]["SubjectKind"];
+            layer?: components["schemas"]["RealisationLayer"] | null;
             /**
              * Name
              * @default
@@ -6538,7 +6545,7 @@ export interface components {
          * @description What a name suggestions wait for really is, as a person says it on Decide.
          * @enum {string}
          */
-        SubjectKind: "system" | "offering" | "existing" | "specification";
+        SubjectKind: "system" | "offering" | "existing" | "specification" | "new_specification" | "order_type" | "existing_order_type" | "channel" | "existing_channel";
         /** SuggestionDecisionRequest */
         SuggestionDecisionRequest: {
             /** Accept */

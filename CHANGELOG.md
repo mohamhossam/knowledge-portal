@@ -35,6 +35,15 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   "Suggest the offering" for such a name. Rules travel in the API, the YAML file, the workbook
   (a `rules` column) and the version diff. The interface says CFSS and RFSS; the stored layer
   values stay `cfs` and `rfs`. Public contract, additive.
+- Every missing thing on Decide has an answer, and says why it is missing in plain words. An
+  order type a journey needs is added to its offering or said to be one it has; a channel is
+  suggested or said to be one the draft has; a CFSS or RFSS rules wait for is suggested or said
+  to be one the draft has; a record named upside down (a CFSS as what realises an RFSS) is
+  accepted without that link. The subject endpoint takes the kinds `order_type`,
+  `existing_order_type`, `channel`, `existing_channel` and `new_specification` (with
+  `existing_id` and `layer`). Journeys now wait for their offering's order type on the page as
+  they do in the service, and "A new system" counts suggestions that name the system only in
+  journey steps. Public contract, additive.
 
 ### Added
 

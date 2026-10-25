@@ -12496,8 +12496,20 @@
         "type": "object"
       },
       "SettleSubjectRequest": {
-        "description": "What a name waiting suggestions name really is: a system, a product offering, a\nsystem the draft already has (``existing_system_id``), or a CFSS or RFSS the draft has\n(``specification_id``); each id is required for its kind only.",
+        "description": "What a name waiting suggestions name really is, said once for all of them:\na system or a product offering to suggest; a system the draft has\n(``existing_system_id``); a CFSS or RFSS the draft has (``specification_id``) or one to\nsuggest (``layer``); an order type to add to the offering ``system_id`` names, or one it\nhas (``existing_id``, its code); a channel to suggest, or one the draft has\n(``existing_id``). For an order type, ``name`` is the order type and ``system_id`` the\noffering. Each extra field is required for its kind only.",
         "properties": {
+          "existing_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Existing Id"
+          },
           "existing_system_id": {
             "anyOf": [
               {
@@ -12512,6 +12524,16 @@
           },
           "kind": {
             "$ref": "#/components/schemas/SubjectKind"
+          },
+          "layer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RealisationLayer"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "name": {
             "default": "",
@@ -12954,7 +12976,12 @@
           "system",
           "offering",
           "existing",
-          "specification"
+          "specification",
+          "new_specification",
+          "order_type",
+          "existing_order_type",
+          "channel",
+          "existing_channel"
         ],
         "title": "SubjectKind",
         "type": "string"

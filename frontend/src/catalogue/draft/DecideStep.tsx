@@ -14,13 +14,14 @@ import { densityFor, usePreferences } from "../../shell/preferences";
 import { ButtonLink } from "../../shell/links";
 import { openShortcuts } from "../../shell/shortcuts";
 import {
-  type Blocker, type Filter, type SuggestionGroup, blockers as deadEnds, bulkAcceptable, changeSentence, decideWhy, dependencyEdges, draftedForRequirement, featureWarnings, fromCatalogue, inWords, lexicon,
+  type Blocker, type Filter, type SuggestionGroup, blockers as deadEnds, realisedByKey, bulkAcceptable, changeSentence, decideWhy, dependencyEdges, draftedForRequirement, featureWarnings, fromCatalogue, inWords, lexicon,
   matchesFind, shown as inFilter, suggestionGroups, suggestionState, tally, waitsFor,
 } from "../suggestions";
 import { useCatalogueContext } from "../useCatalogue";
 import { useDraft } from "../useDraft";
 import { STATE_TONE, citedPart, stateWords } from "./decide";
 import { DecisionTree } from "./DecisionTree";
+import { type Answer, type DraftChoices, settleRequest } from "./MissingThings";
 import { NextStep } from "./NextStep";
 import { Said } from "./parts";
 import { SuggestionPane } from "./SuggestionPane";
@@ -107,17 +108,15 @@ function Decide() {
   const bulkCount = bulk.ready.length + bulk.lifted.length;
   const readyIds = useMemo(() => new Set([...bulk.ready, ...bulk.lifted].map((item) => item.id)), [bulk]);
   const stuck = useMemo(() => deadEnds(release, all, words), [release, all, words]);
-  const draftSpecifications = useMemo(
-    () =>
-      (release.realisations ?? []).flatMap((item) =>
-        item.layer === "resource" ? [] : [{ id: item.id, name: item.name, aliases: item.aliases ?? [], layer: item.layer }],
-      ),
-    [release.realisations],
-  );
-  const draftSystems = useMemo(
-    () => release.systems.filter((system) => !system.deprecated).map((system) => ({ id: system.id, name: system.name, aliases: system.aliases })),
-    [release.systems],
-  );
+  // What the draft already holds, for saying a missing name is one of them.
+  const choices = useMemo<DraftChoices>(() => ({
+    systems: release.systems.filter((system) => !system.deprecated).map((system) => ({ id: system.id, name: system.name, aliases: system.aliases })),
+    specifications: (release.realisations ?? []).flatMap((item) =>
+      item.layer === "resource" ? [] : [{ id: item.id, name: item.name, aliases: item.aliases ?? [], layer: item.layer }],
+    ),
+    channels: (release.channels ?? []).map((item) => ({ id: item.id, name: item.name })),
+    offerings: (release.products ?? []).map((item) => ({ id: item.id, name: item.name, code: item.code, order_types: item.order_types })),
+  }), [release]);
   // Each waiting suggestion that waits on a dead end, with what it waits for in words.
   const deadEndOf = useMemo(() => new Map(stuck.flatMap((blocker) => blocker.waiting.map((item) => [item.id, blocker.label] as const))), [stuck]);
   // "What waits for what" earns its place only when a suggestion waits on another one.
@@ -265,32 +264,35 @@ function Decide() {
       },
     });
   };
-  /** Says a name read as an offering is a CFSS or RFSS the draft has: its rules become the specification's. */
-  const settleSpecification = (blocker: Blocker, specification: { id: string; name: string; layer: "cfs" | "rfs" }) =>
-    draft.settleSubject.mutate({ system_id: blocker.reference, name: blocker.name, kind: "specification", specification_id: specification.id }, {
-      onSuccess: (result) => {
-        const word = specification.layer === "cfs" ? "CFSS" : "RFSS";
-        say(`${blocker.name} is the ${word} ${specification.name}${result.retyped ? `: ${count(result.retyped, "rule")} of it can be accepted` : ""}.`);
-      },
+  /** Settles a missing thing as the person answered it, and says what that did. */
+  const answer = (blocker: Blocker, chosen: Answer) => {
+    if (chosen.kind === "without_link") {
+      dropLink(blocker);
+      return;
+    }
+    draft.settleSubject.mutate(settleRequest(blocker, chosen), {
+      onSuccess: (result) => say(settledWords(blocker, chosen, result)),
       onError: (error) => say(errorMessage(error), true),
     });
-  /** Says a name suggestions wait for is a system the draft has: it becomes one of its names. */
-  const settleExisting = (blocker: Blocker, system: { id: string; name: string }) =>
-    draft.settleSubject.mutate({ system_id: blocker.reference, name: blocker.name, kind: "existing", existing_system_id: system.id }, {
-      onSuccess: (result) =>
-        say(`${blocker.name} is now another name for ${system.name}${result.retyped ? `: ${count(result.retyped, "suggestion")} can be decided` : ""}.`),
-      onError: (error) => say(errorMessage(error), true),
-    });
-  /** Says what a name suggestions wait for is: a system to suggest, or a product offering. */
+  };
+  /** The pane's own answer for the suggestion in hand: its name is a system, or an offering. */
   const settle = (reference: string, name: string, kind: "system" | "offering") =>
-    draft.settleSubject.mutate({ system_id: reference, name, kind }, {
-      onSuccess: (result) => {
-        if (kind === "system") say(result.added ? `Suggested the system ${name}. Accept it to free what waits for it.` : `The system ${name} is already suggested.`);
-        else if (result.added) say(`Suggested the offering ${name}${result.retyped ? `; ${count(result.retyped, "rule")} of it ${result.retyped === 1 ? "waits" : "wait"} for it` : ""}. Accept it to free what waits for it.`);
-        else say(`${name} is now a product offering${result.retyped ? `: ${count(result.retyped, "suggestion")} changed with it` : ""}.`);
-      },
-      onError: (error) => say(errorMessage(error), true),
+    answer({ key: `${kind}:${reference}`, kind, reference, name, label: name, waiting: [] }, { kind });
+  /** Accepts what waits on a record named in the wrong layer, without naming it as what realises them. */
+  const dropLink = (blocker: Blocker) => {
+    const { key } = blocker;
+    const edited = blocker.waiting.flatMap((item) => {
+      const record = item.content.realisation;
+      if (!record) return [];
+      const kept = record.realised_by.filter((reference) => !realisedByKey(record.layer, reference).includes(key));
+      return [{ item, content: { ...item.content, realisation: { ...record, realised_by: kept } } }];
     });
+    say(`Accepting ${count(edited.length, "suggestion")} without ${blocker.name} as what realises them.`);
+    void Promise.all(edited.map(({ item, content }) => draft.decide({ suggestionId: item.id, accept: true, content }))).then((done) => {
+      const accepted = done.filter(Boolean).length;
+      say(`Accepted ${count(accepted, "suggestion")} without ${blocker.name}${accepted < edited.length ? `; ${edited.length - accepted} couldn't apply and wait for you` : ""}.`);
+    });
+  };
   const showWaiting = (blocker: Blocker) => {
     setView("waits", blocker.name);
     const first = blocker.waiting[0];
@@ -469,11 +471,8 @@ function Decide() {
         busy={busy}
         settling={draft.settleSubject.isPending}
         onAcceptReady={askToAcceptReady}
-        onSettle={(blocker, kind) => settle(blocker.reference, blocker.name, kind)}
-        onSettleExisting={settleExisting}
-        onSettleSpecification={settleSpecification}
-        systems={draftSystems}
-        specifications={draftSpecifications}
+        onAnswer={answer}
+        choices={choices}
         onShow={showWaiting}
         onReject={rejectWaiting}
       />
@@ -573,6 +572,36 @@ function sourcesInWords(suggestions: Suggestion[]): string {
     catalogue ? "the draft's catalogue" : "",
   ].filter(Boolean);
   return parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}` : parts[0]!;
+}
+
+/** What settling a missing thing did, in a sentence for the Said line. */
+function settledWords(blocker: Blocker, chosen: Answer, result: { retyped: number; added: number }): string {
+  const { name } = blocker;
+  const freed = (noun: string) => (result.retyped ? `: ${count(result.retyped, noun)} can be decided` : "");
+  const orderType = name.split(" › ").slice(1).join(" › ");
+  switch (chosen.kind) {
+    case "system":
+      return result.added ? `Suggested the system ${name}. Accept it to free what waits for it.` : `The system ${name} is already suggested.`;
+    case "offering":
+      if (result.added) return `Suggested the offering ${name}. Accept it to free what waits for it.`;
+      return `${name} is now a product offering${result.retyped ? `: ${count(result.retyped, "suggestion")} changed with it` : ""}.`;
+    case "existing":
+      return `${name} is now another name for ${chosen.name}${freed("suggestion")}.`;
+    case "specification":
+      return `${name} is the ${chosen.layer === "cfs" ? "CFSS" : "RFSS"} ${chosen.name}${freed("rule")}.`;
+    case "new_specification":
+      return result.added ? `Suggested ${name} as ${chosen.layer === "cfs" ? "a CFSS" : "an RFSS"}. Accept it to free its rules.` : `${name} is already suggested.`;
+    case "order_type":
+      return `Added the order type ${orderType} to the offering${freed("journey")}.`;
+    case "existing_order_type":
+      return `The journeys for ${orderType} are now for ${chosen.name}${freed("journey")}.`;
+    case "channel":
+      return result.added ? `Suggested the channel ${name}. Accept it to free what waits for it.` : `The channel ${name} is already suggested.`;
+    case "existing_channel":
+      return `${name} now names the channel ${chosen.name}${freed("suggestion")}.`;
+    default:
+      return "";
+  }
 }
 
 /** "Accept the 4 ready and the 11 that wait on them", for the bulk action. */

@@ -3064,9 +3064,13 @@ class RejectSuggestionsResponse(BaseModel):
 
 
 class SettleSubjectRequest(BaseModel):
-    """What a name waiting suggestions name really is: a system, a product offering, a
-    system the draft already has (``existing_system_id``), or a CFSS or RFSS the draft has
-    (``specification_id``); each id is required for its kind only."""
+    """What a name waiting suggestions name really is, said once for all of them:
+    a system or a product offering to suggest; a system the draft has
+    (``existing_system_id``); a CFSS or RFSS the draft has (``specification_id``) or one to
+    suggest (``layer``); an order type to add to the offering ``system_id`` names, or one it
+    has (``existing_id``, its code); a channel to suggest, or one the draft has
+    (``existing_id``). For an order type, ``name`` is the order type and ``system_id`` the
+    offering. Each extra field is required for its kind only."""
 
     system_id: Identifier = Field(min_length=1)
     # The name the documents give it, for the suggestion of it.
@@ -3074,6 +3078,8 @@ class SettleSubjectRequest(BaseModel):
     kind: SubjectKind
     existing_system_id: Identifier | None = None
     specification_id: Identifier | None = None
+    existing_id: Identifier | None = None
+    layer: RealisationLayer | None = None
 
     @model_validator(mode="after")
     def _each_kind_names_its_own(self) -> SettleSubjectRequest:
@@ -3083,6 +3089,13 @@ class SettleSubjectRequest(BaseModel):
             raise ValueError(
                 "specification_id names the CFSS or RFSS for the kind specification only."
             )
+        chosen = {SubjectKind.EXISTING_ORDER_TYPE, SubjectKind.EXISTING_CHANNEL}
+        if (self.kind in chosen) != (self.existing_id is not None):
+            raise ValueError("existing_id names the order type or channel for those kinds only.")
+        if (self.kind is SubjectKind.NEW_SPECIFICATION) != (self.layer is not None):
+            raise ValueError("layer says CFSS or RFSS for the kind new_specification only.")
+        if self.kind is SubjectKind.ORDER_TYPE and not self.name.strip():
+            raise ValueError("name is the order type to add.")
         return self
 
 

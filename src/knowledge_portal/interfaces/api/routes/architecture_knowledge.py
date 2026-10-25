@@ -38,6 +38,7 @@ from knowledge_portal.application.use_cases.architecture_preview import (
 )
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
+    SubjectKind,
 )
 from knowledge_portal.application.use_cases.change_requests import ReadDeliverySummaries
 from knowledge_portal.application.use_cases.precedents import ReadPrecedentSummaries
@@ -640,18 +641,33 @@ def settle_suggestion_subject(
     """Say what a name waiting suggestions name is: a system to suggest, a product
     offering, so its constraints become the offering's rules, a system the draft has, or a
     CFSS or RFSS the draft has, so the rules read as an offering's become its own."""
-    if body.existing_system_id is not None:
+    at = clock.now()
+    reference, name = body.system_id, body.name
+    # The request's validator holds each kind's own field present.
+    if body.kind is SubjectKind.EXISTING and body.existing_system_id is not None:
         settled = suggestions.settle_as_existing(
-            release_id, body.system_id, body.name, body.existing_system_id, actor, clock.now()
+            release_id, reference, name, body.existing_system_id, actor, at
         )
-    elif body.specification_id is not None:
+    elif body.kind is SubjectKind.SPECIFICATION and body.specification_id is not None:
         settled = suggestions.settle_as_specification(
-            release_id, body.system_id, body.name, body.specification_id, actor, clock.now()
+            release_id, reference, name, body.specification_id, actor, at
         )
+    elif body.kind is SubjectKind.NEW_SPECIFICATION and body.layer is not None:
+        settled = suggestions.suggest_specification(
+            release_id, reference, name, body.layer, actor, at
+        )
+    elif body.kind is SubjectKind.ORDER_TYPE:
+        settled = suggestions.add_order_type(release_id, reference, name, actor, at)
+    elif body.kind is SubjectKind.EXISTING_ORDER_TYPE and body.existing_id is not None:
+        settled = suggestions.settle_order_type(
+            release_id, reference, name, body.existing_id, actor, at
+        )
+    elif body.kind is SubjectKind.CHANNEL:
+        settled = suggestions.suggest_channel(release_id, reference, name, actor, at)
+    elif body.kind is SubjectKind.EXISTING_CHANNEL and body.existing_id is not None:
+        settled = suggestions.settle_channel(release_id, reference, body.existing_id, actor, at)
     else:
-        settled = suggestions.settle_subject(
-            release_id, body.system_id, body.name, body.kind, actor, clock.now()
-        )
+        settled = suggestions.settle_subject(release_id, reference, name, body.kind, actor, at)
     return SettleSubjectResponse(retyped=settled.retyped, added=settled.added)
 
 

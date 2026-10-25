@@ -110,6 +110,7 @@ from knowledge_portal.domain.architecture.knowledge import (
 )
 from knowledge_portal.domain.architecture.offering_drafts import slug
 from knowledge_portal.domain.architecture.products import (
+    OrderType,
     ProductOffering,
     RealisationLayer,
     find_offering,
@@ -126,7 +127,15 @@ from knowledge_portal.domain.architecture.provenance import (
 from knowledge_portal.domain.architecture.realisations import (
     RealisationRecord,
     merge_realisations,
+    record_id,
     specification_named,
+)
+from knowledge_portal.domain.architecture.settling import (
+    names_channel,
+    names_order_type,
+    order_type_code,
+    with_channel,
+    with_order_type,
 )
 from knowledge_portal.domain.document.value_objects import DocumentVersionId, EvidenceBlockKind
 
@@ -419,6 +428,15 @@ class SubjectKind(StrEnum):
     # A CFSS or RFSS the draft has: what was read as an offering's rules is its rules
     # (``settle_as_specification``, ADR-0127).
     SPECIFICATION = "specification"
+    # A CFSS or RFSS to suggest, for rules said of one the draft lacks (``suggest_specification``).
+    NEW_SPECIFICATION = "new_specification"
+    # An order type of the offering: one to add to it, or one it has (``add_order_type``,
+    # ``settle_order_type``).
+    ORDER_TYPE = "order_type"
+    EXISTING_ORDER_TYPE = "existing_order_type"
+    # A channel: one to suggest, or one the draft has (``suggest_channel``, ``settle_channel``).
+    CHANNEL = "channel"
+    EXISTING_CHANNEL = "existing_channel"
 
 
 @dataclass(frozen=True)
@@ -1792,8 +1810,8 @@ class DecideCatalogueCandidate:
         when nothing has it yet.
         """
         require_maintainer(actor)
-        if kind in {SubjectKind.EXISTING, SubjectKind.SPECIFICATION}:
-            raise InvalidKnowledgeError("Name the system or specification the draft has.")
+        if kind not in {SubjectKind.SYSTEM, SubjectKind.OFFERING}:
+            raise InvalidKnowledgeError("Say a waited-for name is a system or an offering here.")
         release = _draft(self._knowledge, release_id)
         name = name.strip() or reference
         # A retired system still holds its name, so it is no subject to settle either.
@@ -1929,7 +1947,12 @@ class DecideCatalogueCandidate:
                 possible_matches=(),
             )
             for item in pending
-            if item.content.kind in {CandidateKind.OFFERING_RULE, CandidateKind.CONSTRAINT}
+            if item.content.kind
+            in {
+                CandidateKind.OFFERING_RULE,
+                CandidateKind.CONSTRAINT,
+                CandidateKind.SPECIFICATION_RULE,
+            }
         ]
         mistaken = [
             item.decide(False, actor.id, at)
@@ -1943,6 +1966,187 @@ class DecideCatalogueCandidate:
             for item in mistaken:
                 self._candidates.save_decision(item)
         return SettledSubject(len(rules), 0)
+
+    def _pending(self, release_id: str) -> list[CatalogueCandidate]:
+        return [
+            item
+            for item in self._candidates.list(release_id)
+            if item.status is CandidateStatus.PROPOSED
+        ]
+
+    def _cited(
+        self, release: ArchitectureKnowledge, waiting: list[CatalogueCandidate], at: datetime
+    ) -> Callable[[CandidateContent], CatalogueCandidate]:
+        """A new suggestion citing the passages of what waits for it."""
+        first = waiting[0]
+
+        def suggested(content: CandidateContent) -> CatalogueCandidate:
+            return CatalogueCandidate(
+                uuid4().hex,
+                release.id,
+                first.document_version_id,
+                content,
+                tuple(dict.fromkeys(c for item in waiting for c in item.citations))[:10],
+                first.model,
+                first.prompt_version,
+                at,
+            )
+
+        return suggested
+
+    def suggest_specification(
+        self,
+        release_id: str,
+        reference: str,
+        name: str,
+        layer: RealisationLayer,
+        actor: Actor,
+        at: datetime,
+    ) -> SettledSubject:
+        """Suggest the CFSS or RFSS rules waiting in the draft are said of, citing them
+        (ADR-0127). Accepted, it frees them."""
+        require_maintainer(actor)
+        release = _draft(self._knowledge, release_id)
+        name = name.strip() or reference
+        if layer is RealisationLayer.RESOURCE:
+            raise InvalidKnowledgeError("Rules belong to a CFSS or an RFSS, not a resource.")
+        if specification_named(release.realisations, reference) is not None:
+            raise InvalidKnowledgeError(f"The draft already has the CFSS or RFSS {name}.")
+        wanted = reference.casefold().strip()
+        pending = self._pending(release_id)
+        waiting = [
+            item
+            for item in pending
+            if item.content.kind is CandidateKind.SPECIFICATION_RULE
+            and item.content.system_id.casefold() == wanted
+        ]
+        if not waiting:
+            raise CandidateNotFoundError(f"No rule waiting in the draft names {name}.")
+        record = RealisationRecord(record_id(layer, slug(name) or slug(reference)), layer, name)
+        if any(
+            item.content.realisation is not None
+            and specification_named((item.content.realisation,), reference) is not None
+            for item in pending
+        ):
+            return SettledSubject(0, 0)
+        content = CandidateContent(
+            CandidateKind.REALISATION_RECORD, record.id, name=record.name, realisation=record
+        )
+        self._candidates.revise((self._cited(release, waiting, at)(content),))
+        return SettledSubject(0, 1)
+
+    def add_order_type(
+        self,
+        release_id: str,
+        offering_reference: str,
+        name: str,
+        actor: Actor,
+        at: datetime,
+    ) -> SettledSubject:
+        """Add the order type journeys waiting in the draft are for to their offering.
+
+        The draft gains it at once, as a person adds one; ``retyped`` counts the waiting
+        suggestions it frees."""
+        require_maintainer(actor)
+        release = _draft(self._knowledge, release_id)
+        offering = find_offering(release.products, offering_reference)
+        if offering is None:
+            raise KnowledgeNotFoundError(f"The draft has no offering {offering_reference!r}.")
+        name = name.strip()
+        if not name:
+            raise InvalidKnowledgeError("Name the order type to add.")
+        if find_order_type(offering, name) is not None:
+            raise InvalidKnowledgeError(f"{offering.name} already has the order type {name}.")
+        code = order_type_code(name, tuple(item.code for item in offering.order_types))
+        added = replace(offering, order_types=(*offering.order_types, OrderType(code, name)))
+        products = tuple(added if item.id == offering.id else item for item in release.products)
+        freed = _freed(self._pending(release_id), release, replace(release, products=products))
+        self._knowledge.update(release.id, release.revision, actor, products=products)
+        return SettledSubject(freed, 1)
+
+    def settle_order_type(
+        self,
+        release_id: str,
+        offering_reference: str,
+        reference: str,
+        code: str,
+        actor: Actor,
+        at: datetime,
+    ) -> SettledSubject:
+        """Say the order type journeys waiting in the draft are for is one their offering has:
+        each is then for that one. ``retyped`` counts the journeys."""
+        require_maintainer(actor)
+        release = _draft(self._knowledge, release_id)
+        offering = find_offering(release.products, offering_reference)
+        if offering is None:
+            raise KnowledgeNotFoundError(f"The draft has no offering {offering_reference!r}.")
+        target = find_order_type(offering, code)
+        if target is None:
+            raise KnowledgeNotFoundError(f"{offering.name} has no order type {code!r}.")
+        revised = [
+            replace(item, content=with_order_type(item.content, target.code))
+            for item in self._pending(release_id)
+            if names_order_type(item.content, offering, reference)
+        ]
+        if not revised:
+            raise CandidateNotFoundError(f"No journey waiting in the draft is for {reference}.")
+        self._candidates.revise(tuple(revised))
+        return SettledSubject(len(revised), 0)
+
+    def suggest_channel(
+        self,
+        release_id: str,
+        reference: str,
+        name: str,
+        actor: Actor,
+        at: datetime,
+    ) -> SettledSubject:
+        """Suggest the channel suggestions waiting in the draft name, citing them."""
+        require_maintainer(actor)
+        release = _draft(self._knowledge, release_id)
+        name = name.strip() or reference
+        if find_channel_among(release.channels, reference) is not None:
+            raise InvalidKnowledgeError(f"The draft already has the channel {name}.")
+        pending = self._pending(release_id)
+        waiting = [item for item in pending if names_channel(item.content, reference)]
+        if not waiting:
+            raise CandidateNotFoundError(f"No suggestion waiting in the draft names {name}.")
+        suggested_channels = tuple(
+            item.content.channel for item in pending if item.content.channel is not None
+        )
+        if find_channel_among(suggested_channels, reference) is not None:
+            return SettledSubject(0, 0)
+        channel = Channel(slug(reference) or slug(name), name)
+        content = CandidateContent(
+            CandidateKind.CHANNEL, channel.id, name=channel.name, channel=channel
+        )
+        self._candidates.revise((self._cited(release, waiting, at)(content),))
+        return SettledSubject(0, 1)
+
+    def settle_channel(
+        self,
+        release_id: str,
+        reference: str,
+        channel_id: str,
+        actor: Actor,
+        at: datetime,
+    ) -> SettledSubject:
+        """Say a channel suggestions waiting in the draft name is one the draft has: each
+        names that one instead. ``retyped`` counts them."""
+        require_maintainer(actor)
+        release = _draft(self._knowledge, release_id)
+        target = find_channel_among(release.channels, channel_id)
+        if target is None:
+            raise KnowledgeNotFoundError(f"The draft has no channel {channel_id!r}.")
+        revised = [
+            replace(item, content=with_channel(item.content, reference, target.id))
+            for item in self._pending(release_id)
+            if names_channel(item.content, reference)
+        ]
+        if not revised:
+            raise CandidateNotFoundError(f"No suggestion waiting in the draft names {reference}.")
+        self._candidates.revise(tuple(revised))
+        return SettledSubject(len(revised), 0)
 
     def settle_as_existing(
         self,
@@ -1990,13 +2194,7 @@ class DecideCatalogueCandidate:
             if item.content.kind is CandidateKind.SYSTEM
             and item.content.system_id.casefold() == wanted
         ]
-        freed = sum(
-            1
-            for item in pending
-            if item not in duplicate
-            and classify(item.content, release).value.startswith("needs_")
-            and not classify(item.content, updated).value.startswith("needs_")
-        )
+        freed = _freed([item for item in pending if item not in duplicate], release, updated)
         with self._transactions.transaction():
             self._knowledge.update(release.id, release.revision, actor, systems=updated.systems)
             for item in duplicate:
@@ -2019,6 +2217,20 @@ class DecideCatalogueCandidate:
 
 # Resources first, then the RFSs they realise, then CFSs.
 _LAYER_RANK = {RealisationLayer.RESOURCE: 0, RealisationLayer.RFS: 1, RealisationLayer.CFS: 2}
+
+
+def _freed(
+    pending: list[CatalogueCandidate],
+    release: ArchitectureKnowledge,
+    updated: ArchitectureKnowledge,
+) -> int:
+    """How many waiting suggestions the draft as ``updated`` no longer keeps waiting."""
+    return sum(
+        1
+        for item in pending
+        if classify(item.content, release).value.startswith("needs_")
+        and not classify(item.content, updated).value.startswith("needs_")
+    )
 
 
 def _nested(content: CandidateContent) -> int:
