@@ -125,21 +125,28 @@ describe("blockers", () => {
 
 describe("NextStep", () => {
   const props = {
-    questions: 0, bulk: 0, bulkLabel: "Accept the ready ones", waiting: 12, focusTo: "/focus", changesTo: "/changes", busy: false, settling: false,
+    questions: 0, bulk: 0, bulkLabel: "Accept the ready ones", waiting: 12, accepted: 0, focusTo: "/focus", changesTo: "/changes", busy: false, settling: false,
     onAcceptReady: vi.fn(), onShow: vi.fn(), onReject: vi.fn(),
   };
 
-  it("turns a dead end into a decision on the spot", async () => {
+  it("says the way on when only dead ends are left, and settles one on the spot", async () => {
     const suggestions = [constraint("a", "Fortinet only"), constraint("b", "No amendment")];
     const found = blockers(draft, suggestions, lexicon(draft, suggestions));
     const onSettle = vi.fn();
-    render(<MemoryRouter><NextStep {...props} blockers={found} onSettle={onSettle} /></MemoryRouter>);
+    render(<MemoryRouter><NextStep {...props} waiting={2} accepted={646} blockers={found} onSettle={onSettle} /></MemoryRouter>);
 
-    expect(screen.getByText(/Nothing can move until you say what/)).toHaveTextContent("Nothing can move until you say what Business Pro Plus is.");
-    expect(screen.getByText(/which neither the draft nor any suggestion adds/)).toHaveTextContent("2 suggestions wait for the system Business Pro Plus");
-    await userEvent.click(screen.getByRole("button", { name: "It is a product offering" }));
+    expect(screen.getByText(/no document describes/)).toHaveTextContent("646 accepted. The 2 suggestions left wait on 1 thing no document describes.");
+    expect(screen.getByText(/publishing leaves them out/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Go on to the changes" })).toHaveAttribute("href", "/changes");
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "See the 1 missing thing" }));
+    const row = screen.getByRole("row", { name: /Business Pro Plus/ });
+    expect(row).toHaveTextContent("System");
+    expect(row).toHaveTextContent("2");
+    await userEvent.click(screen.getByRole("button", { name: "It is an offering" }));
     expect(onSettle).toHaveBeenCalledWith(found[0], "offering");
-    await userEvent.click(screen.getByRole("button", { name: "Reject the 2…" }));
+    await userEvent.click(screen.getByRole("button", { name: "Reject what waits on Business Pro Plus…" }));
     expect(props.onReject).toHaveBeenCalledWith(found[0]);
   });
 

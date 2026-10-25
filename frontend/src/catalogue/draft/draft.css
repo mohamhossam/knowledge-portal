@@ -331,6 +331,43 @@
   font-weight: 600;
 }
 
+.draft-next-step__detail {
+  margin: 0;
+  max-inline-size: 72ch;
+  color: var(--color-ink-2);
+}
+
+/* Every dead end in one compact list, opened from What to do next. */
+.draft-missing {
+  inline-size: 100%;
+  max-block-size: 24rem;
+  overflow: auto;
+}
+
+.draft-missing caption {
+  padding-block-end: var(--space-2);
+  text-align: start;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.draft-missing th[scope="row"] .draft-detail {
+  display: block;
+}
+
+.draft-missing .ds-actions {
+  flex-wrap: wrap;
+}
+
+/* A long change reads in the pane; the row keeps two lines, so the list stays scannable. */
+.draft-change {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
 .draft-blockers {
   display: grid;
   gap: var(--space-3);
@@ -355,6 +392,7 @@
   margin: 0;
   color: var(--color-ink-2);
   font-size: var(--text-meta);
+}
 
 /* How many parts of a document the model has read, under its reading status. */
 .draft-parts {

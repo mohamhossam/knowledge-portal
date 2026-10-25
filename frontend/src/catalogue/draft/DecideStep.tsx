@@ -14,7 +14,7 @@ import { densityFor, usePreferences } from "../../shell/preferences";
 import { ButtonLink } from "../../shell/links";
 import { openShortcuts } from "../../shell/shortcuts";
 import {
-  type Blocker, type Filter, type SuggestionGroup, blockers as deadEnds, bulkAcceptable, changeSentence, decideWhy, draftedForRequirement, featureWarnings, fromCatalogue, inWords, lexicon,
+  type Blocker, type Filter, type SuggestionGroup, blockers as deadEnds, bulkAcceptable, changeSentence, decideWhy, dependencyEdges, draftedForRequirement, featureWarnings, fromCatalogue, inWords, lexicon,
   matchesFind, shown as inFilter, suggestionGroups, suggestionState, tally, waitsFor,
 } from "../suggestions";
 import { useCatalogueContext } from "../useCatalogue";
@@ -30,7 +30,7 @@ const FILTER_LABEL: Record<Filter, string> = {
   waiting: "Waiting",
   ready: "Ready to accept",
   decide: "Needs your decision",
-  waits: "Waits for another",
+  waits: "Can't be accepted yet",
   decided: "Decided",
   all: "All",
 };
@@ -107,6 +107,12 @@ function Decide() {
   const bulkCount = bulk.ready.length + bulk.lifted.length;
   const readyIds = useMemo(() => new Set([...bulk.ready, ...bulk.lifted].map((item) => item.id)), [bulk]);
   const stuck = useMemo(() => deadEnds(release, all, words), [release, all, words]);
+  // Each waiting suggestion that waits on a dead end, with what it waits for in words.
+  const deadEndOf = useMemo(() => new Map(stuck.flatMap((blocker) => blocker.waiting.map((item) => [item.id, blocker.label] as const))), [stuck]);
+  // "What waits for what" earns its place only when a suggestion waits on another one.
+  const chained = useMemo(() => dependencyEdges(all).length > 0, [all]);
+  // With nothing to accept or decide, only the keys that still act are shown.
+  const acting = counts.decide > 0 || bulkCount > 0;
   const notes = useMemo(() => featureWarnings(draft.suggestions.data?.runs ?? []), [draft.suggestions.data]);
   const documents = useMemo(() => new Map(release.documents.map((item) => [item.id, item])), [release.documents]);
 
@@ -371,6 +377,7 @@ function Decide() {
       actorName={actorName}
       busy={busy}
       kept={edits[current.suggestion.id]}
+      deadEnd={deadEndOf.get(current.suggestion.id)}
       notes={
         current.suggestion.change_request && !draftedForRequirement(current.suggestion)
           ? notes.get(`${current.suggestion.change_request.change_request_id}/${current.suggestion.change_request.feature_id}`)
@@ -413,7 +420,9 @@ function Decide() {
       <section className="draft-progress" aria-label="Decisions so far">
         <p>
           <strong className="ds-num">{counts.waiting.toLocaleString("en")}</strong> waiting
-          {" · "}<strong className="ds-num">{counts.decide.toLocaleString("en")}</strong> need your decision
+          {counts.decide > 0 || deadEndOf.size === 0
+            ? <>{" · "}<strong className="ds-num">{counts.decide.toLocaleString("en")}</strong> need your decision</>
+            : <>{" · "}<strong className="ds-num">{deadEndOf.size.toLocaleString("en")}</strong> on things no document describes</>}
           {" · "}{counts.accepted.toLocaleString("en")} accepted
           {" · "}{counts.rejected.toLocaleString("en")} rejected
           {counts.present > 0 && ` · ${counts.present.toLocaleString("en")} already in the draft`}
@@ -426,6 +435,7 @@ function Decide() {
         bulk={bulkCount}
         bulkLabel={draft.acceptReady.isPending ? "Accepting…" : bulkLabel(bulk.ready.length, bulk.lifted.length)}
         waiting={counts.waiting}
+        accepted={counts.accepted}
         blockers={stuck}
         focusTo={`${base}/decide/focus`}
         changesTo={`${base}/changes`}
@@ -436,7 +446,7 @@ function Decide() {
         onShow={showWaiting}
         onReject={rejectWaiting}
       />
-      <section className="draft-chains" aria-label="What waits for what">
+      {chained && <section className="draft-chains" aria-label="What waits for what">
         <Button variant="quiet" icon={<Network size={16} />} aria-expanded={chains} onClick={() => setChains((on) => !on)}>
           {chains ? "Hide what waits for what" : "Show what waits for what"}
         </Button>
@@ -452,12 +462,13 @@ function Decide() {
             }}
           />
         )}
-      </section>
+      </section>}
 
       <div className="draft-toolbar">
         <FilterStrip
           label="Show suggestions"
-          filters={FILTERS.map((id) => ({ id, label: FILTER_LABEL[id], count: all.filter((item) => inFilter(item, id, readyIds)).length }))}
+          // A filter that would show nothing is left out, unless it is the one in use.
+          filters={FILTERS.map((id) => ({ id, label: FILTER_LABEL[id], count: all.filter((item) => inFilter(item, id, readyIds)).length })).filter((item) => item.count > 0 || item.id === filter)}
           active={filter}
           onChange={(id) => setView(id as Filter, find)}
           find={{ label: "Find in the suggestions", value: find, onChange: (value) => setView(filter, value), placeholder: "A system, a word or a document…" }}
@@ -469,9 +480,9 @@ function Decide() {
         keys={[
           { keys: ["↑", "↓", "j", "k"], does: "move" },
           { keys: ["Enter"], does: "decide in the pane" },
-          { keys: ["a", "r"], does: "accept, reject" },
+          ...(acting ? [{ keys: ["a", "r"], does: "accept, reject" }] : [{ keys: ["r"], does: "reject" }]),
           { keys: ["e"], does: "edit, then accept" },
-          { keys: ["n"], does: "next that needs you" },
+          ...(acting ? [{ keys: ["n"], does: "next that needs you" }] : []),
           { keys: ["Space"], does: "select" },
         ]}
       />
@@ -485,6 +496,7 @@ function Decide() {
         list={
           <SuggestionGrid
             rows={shown}
+            deadEndOf={deadEndOf}
             selected={selected}
             onSelectedChange={setSelected}
             currentId={current?.suggestion.id}
@@ -544,8 +556,10 @@ const rowId = (row: Row) => row.suggestion.id;
 const rowLabel = (row: Row) => row.sentence;
 
 /** The suggestions as a keyboard grid; typing in the pane re-renders the desk, not every row. */
-function SuggestionGrid({ rows, selected, onSelectedChange, currentId, onCurrentChange, onActivate, onRowKey, edits, words }: {
+function SuggestionGrid({ rows, deadEndOf, selected, onSelectedChange, currentId, onCurrentChange, onActivate, onRowKey, edits, words }: {
   rows: Row[];
+  /** Waiting suggestions that wait on something nothing adds, with what that is. */
+  deadEndOf: ReadonlyMap<string, string>;
   selected: Set<string>;
   onSelectedChange: (selected: Set<string>) => void;
   currentId: string | undefined;
@@ -563,7 +577,7 @@ function SuggestionGrid({ rows, selected, onSelectedChange, currentId, onCurrent
       bidi: true,
       cell: ({ suggestion, sentence }) => (
         <>
-          {sentence}
+          <span className="draft-change">{sentence}</span>
           <span className="draft-detail" dir="ltr">
             {suggestion.change_request ? (
               <><bdi>{suggestion.change_request.change_request_id}</bdi> · {citedPart(suggestion)} · from Requirement AI</>
@@ -576,10 +590,13 @@ function SuggestionGrid({ rows, selected, onSelectedChange, currentId, onCurrent
     },
     {
       id: "system",
-      header: "Changes",
+      header: "Group",
       width: "11rem",
       bidi: true,
-      cell: ({ group }) => (group.isNew ? <>{group.label}<span className="draft-detail">New system</span></> : group.label),
+      cell: ({ group, suggestion }) =>
+        group.isNew
+          ? <>{group.label}<span className="draft-detail">{deadEndOf.has(suggestion.id) ? "Not in the catalogue" : "New system"}</span></>
+          : group.label,
     },
     {
       id: "state",
@@ -589,7 +606,9 @@ function SuggestionGrid({ rows, selected, onSelectedChange, currentId, onCurrent
         const state = suggestionState(suggestion);
         return (
           <>
-            <Status tone={STATE_TONE[state]}>{stateWords(suggestion)}</Status>
+            {state === "waits" && deadEndOf.has(suggestion.id)
+              ? <Status tone="held">Nothing adds what it needs</Status>
+              : <Status tone={STATE_TONE[state]}>{stateWords(suggestion)}</Status>}
             {state === "decide" && <span className="draft-detail">{decideWhy(suggestion)}</span>}
             {state === "waits" && <span className="draft-detail">{waitsFor(suggestion, words)}</span>}
             {edits[suggestion.id] && suggestion.status === "proposed" && <span className="draft-detail">Edited, not accepted yet</span>}
@@ -597,7 +616,7 @@ function SuggestionGrid({ rows, selected, onSelectedChange, currentId, onCurrent
         );
       },
     },
-  ], [edits, words]);
+  ], [deadEndOf, edits, words]);
   return (
     <DataTable
       caption="Suggestions, grouped by what they would change"

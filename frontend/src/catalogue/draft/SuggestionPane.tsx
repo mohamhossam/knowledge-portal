@@ -19,9 +19,11 @@ const TABLE_READER = "catalogue-table-reader";
  * the decision: accept, edit then accept, or reject.
  */
 export function SuggestionPane({
-  suggestion, release, words, document, actorName, busy, kept, notes, editing, headingRef, onEdit, onKeep, onDecide, settling = false, onSettle,
+  suggestion, release, words, document, actorName, busy, kept, notes, editing, headingRef, onEdit, onKeep, onDecide, settling = false, onSettle, deadEnd,
 }: {
   suggestion: Suggestion;
+  /** What it waits for when nothing adds that ("the system IT"): its Accept says so. */
+  deadEnd?: string;
   release: Release;
   words: Lexicon;
   document: CatalogueDocument | undefined;
@@ -56,7 +58,9 @@ export function SuggestionPane({
       <h2 ref={headingRef} tabIndex={-1} className="draft-pane__title" dir="auto">{changeSentence(suggestion, words)}</h2>
       <p className="draft-pane__marks">
         <Suggested basis={suggestion.basis === "inferred" ? "inferred" : "stated"} detail={suggestion.model === TABLE_READER ? "read from a table" : undefined} />
-        <Status tone={STATE_TONE[state]}>{stateWords(suggestion)}</Status>
+        {deadEnd && state === "waits"
+          ? <Status tone="held">Nothing adds what it needs</Status>
+          : <Status tone={STATE_TONE[state]}>{stateWords(suggestion)}</Status>}
       </p>
       {reason && <p className="draft-quiet">{reason}.</p>}
       {suggestion.content.kind === "relationship" && suggestion.content.text && <p dir="auto">For: {suggestion.content.text}</p>}
@@ -105,7 +109,7 @@ export function SuggestionPane({
           />
         ) : (
           <>
-            <Decision key={suggestion.id} suggestion={suggestion} words={words} busy={busy} kept={kept !== undefined} onEdit={() => onEdit(true)} onDrop={() => onKeep(null)} onDecide={onDecide} />
+            <Decision key={suggestion.id} suggestion={suggestion} words={words} deadEnd={deadEnd} busy={busy} kept={kept !== undefined} onEdit={() => onEdit(true)} onDrop={() => onKeep(null)} onDecide={onDecide} />
             {onSettle && <Retype suggestion={suggestion} words={words} busy={settling} onSettle={onSettle} />}
           </>
         )}
@@ -115,9 +119,10 @@ export function SuggestionPane({
 }
 
 /** The plain decision: possible matches first, then accept, edit or reject. */
-function Decision({ suggestion, words, busy, kept, onEdit, onDrop, onDecide }: {
+function Decision({ suggestion, words, deadEnd, busy, kept, onEdit, onDrop, onDecide }: {
   suggestion: Suggestion;
   words: Lexicon;
+  deadEnd?: string;
   busy: boolean;
   kept: boolean;
   onEdit: () => void;
@@ -130,7 +135,9 @@ function Decision({ suggestion, words, busy, kept, onEdit, onDrop, onDecide }: {
   const waits = suggestionState(suggestion) === "waits";
   const why = unchosen.length
     ? "Say first whether the name means a system the draft has."
-    : waits
+    : waits && deadEnd
+      ? `Neither the draft nor any suggestion adds ${deadEnd}. Settle it under What to do next, ${kept ? "go back to your edits if they name" : "edit this to name"} what the draft has, or leave it: publishing leaves it out.`
+      : waits
       ? `${waitsFor(suggestion, words)}. Accept ${waitsForMany(suggestion, words) ? "those" : "that"} first, or ${kept ? "go back to your edits if they name" : "edit this to name"} what the draft has.`
       : null;
   return (
