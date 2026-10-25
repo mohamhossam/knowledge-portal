@@ -63,7 +63,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
   useEffect(() => title.current?.focus(), []);
   const [content, setContent] = useState<SuggestionContent>(() => kept ?? ({
     ...original,
-    system_id: original.kind === "landscape_domain" || original.kind === "product" || original.kind === "journey" || original.kind === "channel" || original.kind === "interface" || original.kind === "capability_domain" || original.kind === "portfolio_node" || original.kind === "realisation_record" || original.kind === "source" || original.kind === "conflict" || original.kind === "offering_rule"
+    system_id: original.kind === "landscape_domain" || original.kind === "product" || original.kind === "journey" || original.kind === "channel" || original.kind === "interface" || original.kind === "capability_domain" || original.kind === "portfolio_node" || original.kind === "realisation_record" || original.kind === "source" || original.kind === "conflict" || original.kind === "offering_rule" || original.kind === "specification_rule"
       ? original.system_id
       : startingSystem(release, suggestion.system_name, original.system_id),
     target_system_id: original.target_system_id
@@ -115,6 +115,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
       case "constraint":
         return content.text.trim() ? null : "Say what the constraint is.";
       case "offering_rule":
+      case "specification_rule":
         return content.text.trim() ? null : "Say what the rule is.";
       case "relationship":
         if (!content.target_system_id) return "Choose the system it depends on.";
@@ -231,6 +232,27 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
                   ? [{ value: original.system_id, label: `${words.offering(original.system_id)} (not in the draft yet)` }]
                   : []),
                 ...offerings.map((item) => ({ value: item.id, label: item.name })),
+              ]}
+              onChange={(system_id) => set({ system_id })}
+            />
+            <AreaField label="Rule" value={content.text} required onChange={(text) => set({ text })} />
+          </>
+        );
+      }
+      case "specification_rule": {
+        const specifications = (release.realisations ?? []).filter((item) => item.layer !== "resource");
+        const chosen = specifications.find((item) => item.id === content.system_id);
+        return (
+          <>
+            <SelectField
+              label="Of the CFSS or RFSS"
+              value={content.system_id}
+              wide
+              options={[
+                ...(!chosen && original.system_id
+                  ? [{ value: original.system_id, label: `${words.realisation(original.system_id)} (not in the draft yet)` }]
+                  : []),
+                ...specifications.map((item) => ({ value: item.id, label: `${item.layer === "cfs" ? "CFSS" : "RFSS"} ${item.name}` })),
               ]}
               onChange={(system_id) => set({ system_id })}
             />
@@ -413,8 +435,8 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
               label="Layer"
               value={record.layer}
               options={[
-                { value: "cfs", label: "Customer-facing service (CFS)" },
-                { value: "rfs", label: "Resource-facing service (RFS)" },
+                { value: "cfs", label: "Customer facing service specification (CFSS)" },
+                { value: "rfs", label: "Resource facing service specification (RFSS)" },
                 { value: "resource", label: "Resource" },
               ]}
               onChange={(layer) => change({ layer: layer as Realised["layer"], realised_by: layer === "resource" ? [] : below })}

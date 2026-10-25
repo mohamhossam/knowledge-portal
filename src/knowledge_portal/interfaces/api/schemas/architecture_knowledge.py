@@ -1018,7 +1018,8 @@ class RealisationSchema(BaseModel):
 
 
 class RealisationRecordSchema(BaseModel):
-    """A CFS, RFS or resource, the systems that deliver it, and what realises it below."""
+    """A CFSS, RFSS or resource, the systems that deliver it, what realises it below, and a
+    specification's rules (ADR-0127). ``layer`` keeps its values: cfs, rfs, resource."""
 
     id: Identifier
     layer: RealisationLayer
@@ -1032,6 +1033,7 @@ class RealisationRecordSchema(BaseModel):
     source: Text | None = None
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    rules: list[Text] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, record: RealisationRecord) -> RealisationRecordSchema:
@@ -1046,6 +1048,7 @@ class RealisationRecordSchema(BaseModel):
             confidence=record.confidence,
             source=record.source,
             accepted=[AcceptedFromSchema.from_domain(item) for item in record.accepted],
+            rules=list(record.rules),
         )
 
     def to_domain(self) -> RealisationRecord:
@@ -1059,6 +1062,7 @@ class RealisationRecordSchema(BaseModel):
             self.description,
             self.confidence,
             self.source,
+            rules=tuple(self.rules),
         )
 
 
@@ -3060,19 +3064,25 @@ class RejectSuggestionsResponse(BaseModel):
 
 
 class SettleSubjectRequest(BaseModel):
-    """What a name waiting suggestions name really is: a system, a product offering, or a
-    system the draft already has (``existing_system_id``, required for that kind only)."""
+    """What a name waiting suggestions name really is: a system, a product offering, a
+    system the draft already has (``existing_system_id``), or a CFSS or RFSS the draft has
+    (``specification_id``); each id is required for its kind only."""
 
     system_id: Identifier = Field(min_length=1)
     # The name the documents give it, for the suggestion of it.
     name: Name = ""
     kind: SubjectKind
     existing_system_id: Identifier | None = None
+    specification_id: Identifier | None = None
 
     @model_validator(mode="after")
-    def _existing_names_its_system(self) -> SettleSubjectRequest:
+    def _each_kind_names_its_own(self) -> SettleSubjectRequest:
         if (self.kind is SubjectKind.EXISTING) != (self.existing_system_id is not None):
             raise ValueError("existing_system_id names the system for the kind existing only.")
+        if (self.kind is SubjectKind.SPECIFICATION) != (self.specification_id is not None):
+            raise ValueError(
+                "specification_id names the CFSS or RFSS for the kind specification only."
+            )
         return self
 
 

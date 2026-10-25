@@ -31,6 +31,8 @@ function named(suggestion: Suggestion, words: Lexicon): { label: string; detail:
       return { label: content.text, detail: `Question for ${words.offering(content.system_id)}` };
     case "offering_rule":
       return { label: content.text, detail: `Rule of ${words.offering(content.system_id)}` };
+    case "specification_rule":
+      return { label: content.text, detail: `Rule of ${words.realisation(content.system_id)}` };
     default:
       return { label: content.name || content.text, detail: "Suggestion" };
   }

@@ -10,6 +10,20 @@ const KIND_WORD: Record<Blocker["kind"], string> = { system: "System", offering:
 /** A system of the draft, as the existing-system answer offers it. */
 export type DraftSystem = { id: string; name: string; aliases: string[] };
 
+/** A CFSS or RFSS of the draft: what a name read as an offering may really be (ADR-0127). */
+export type DraftSpecification = { id: string; name: string; aliases: string[]; layer: "cfs" | "rfs" };
+
+const SPEC_WORD: Record<DraftSpecification["layer"], string> = { cfs: "CFSS", rfs: "RFSS" };
+
+const squeezed = (value: string) => value.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+
+/** The draft's CFSS or RFSS an offering nothing adds is named for, as the service finds a record by name. */
+export function specificationFor(blocker: Blocker, specifications: DraftSpecification[]): DraftSpecification | undefined {
+  if (blocker.kind !== "offering") return undefined;
+  const wanted = new Set([blocker.reference, blocker.name].map(squeezed).filter(Boolean));
+  return specifications.find((item) => [item.id, item.name, ...item.aliases].some((label) => wanted.has(squeezed(label))));
+}
+
 /** The draft's system most likely meant by a name nothing adds: one whose name or alias holds it, or the other way round. */
 export function likelySystem(name: string, systems: DraftSystem[]): DraftSystem | undefined {
   const wanted = name.trim().toLocaleLowerCase();
@@ -31,7 +45,8 @@ export function likelySystem(name: string, systems: DraftSystem[]): DraftSystem 
  * suggested as a new system or said to be a product offering, or what waits is rejected.
  */
 export function NextStep({
-  questions, bulk, bulkLabel, waiting, accepted, blockers, systems, focusTo, changesTo, busy, settling, onAcceptReady, onSettle, onSettleExisting, onShow, onReject,
+  questions, bulk, bulkLabel, waiting, accepted, blockers, systems, specifications, focusTo, changesTo, busy, settling, onAcceptReady, onSettle, onSettleExisting,
+  onSettleSpecification, onShow, onReject,
 }: {
   questions: number;
   bulk: number;
@@ -41,6 +56,8 @@ export function NextStep({
   blockers: Blocker[];
   /** The draft's systems, for saying a name is one of them. */
   systems: DraftSystem[];
+  /** The draft's CFSSs and RFSSs, for saying a name read as an offering is one of them. */
+  specifications: DraftSpecification[];
   focusTo: string;
   changesTo: string;
   busy: boolean;
@@ -48,6 +65,7 @@ export function NextStep({
   onAcceptReady: () => void;
   onSettle: (blocker: Blocker, kind: "system" | "offering") => void;
   onSettleExisting: (blocker: Blocker, system: DraftSystem) => void;
+  onSettleSpecification: (blocker: Blocker, specification: DraftSpecification) => void;
   onShow: (blocker: Blocker) => void;
   onReject: (blocker: Blocker) => void;
 }) {
@@ -120,6 +138,7 @@ export function NextStep({
             <tbody>
               {blockers.map((blocker) => {
                 const likely = blocker.kind === "system" ? likelySystem(blocker.name, systems) : undefined;
+                const specification = specificationFor(blocker, specifications);
                 return (
                   <Fragment key={blocker.key}>
                     <tr>
@@ -127,7 +146,7 @@ export function NextStep({
                         <Button variant="link" onClick={() => onShow(blocker)} aria-label={`Show what waits on ${blocker.name}`}><bdi>{blocker.name}</bdi></Button>
                         {blocker.kind === "other" && <span className="draft-detail">{blocker.label}</span>}
                       </th>
-                      <td>{KIND_WORD[blocker.kind]}</td>
+                      <td>{specification ? <>{SPEC_WORD[specification.layer]}<span className="draft-detail">Read as an offering</span></> : KIND_WORD[blocker.kind]}</td>
                       <td className="ds-num">{blocker.waiting.length}</td>
                       <td>
                         <ActionGroup label={`Settle ${blocker.name}`}>
@@ -144,7 +163,15 @@ export function NextStep({
                               <Button busy={settling} onClick={() => onSettle(blocker, "offering")}>An offering</Button>
                             </>
                           )}
-                          {blocker.kind === "offering" && (
+                          {specification ? (
+                            <Button
+                              busy={settling}
+                              onClick={() => onSettleSpecification(blocker, specification)}
+                              aria-label={`It is the ${SPEC_WORD[specification.layer]} ${specification.name} in the draft: move its rules there`}
+                            >
+                              It is the {SPEC_WORD[specification.layer]} in the draft
+                            </Button>
+                          ) : blocker.kind === "offering" && (
                             <Button busy={settling} onClick={() => onSettle(blocker, "offering")}>Suggest the offering</Button>
                           )}
                           <Button busy={busy} onClick={() => onReject(blocker)} aria-label={`Reject what waits on ${blocker.name}…`}>Reject…</Button>

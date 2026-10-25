@@ -27,3 +27,4 @@ the same platform-wide series.
 | [0124](adr-0124-stable-offering-and-journey-ids.md) | Stable ids for offerings and journeys (proposed) |
 | [0125](adr-0125-vocabularies-as-data.md) | Vocabularies as data, on one SKOS base (proposed) |
 | [0126](adr-0126-the-service-starts-with-no-catalogue.md) | The service starts with no catalogue |
+| [0127](adr-0127-cfss-and-rfss-rules.md) | CFSS and RFSS keep their own rules |

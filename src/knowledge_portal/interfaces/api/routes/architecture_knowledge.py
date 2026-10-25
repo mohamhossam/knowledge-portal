@@ -638,10 +638,15 @@ def settle_suggestion_subject(
     actor: KnowledgeActorDep,
 ) -> SettleSubjectResponse:
     """Say what a name waiting suggestions name is: a system to suggest, a product
-    offering, so its constraints become the offering's rules, or a system the draft has."""
+    offering, so its constraints become the offering's rules, a system the draft has, or a
+    CFSS or RFSS the draft has, so the rules read as an offering's become its own."""
     if body.existing_system_id is not None:
         settled = suggestions.settle_as_existing(
             release_id, body.system_id, body.name, body.existing_system_id, actor, clock.now()
+        )
+    elif body.specification_id is not None:
+        settled = suggestions.settle_as_specification(
+            release_id, body.system_id, body.name, body.specification_id, actor, clock.now()
         )
     else:
         settled = suggestions.settle_subject(

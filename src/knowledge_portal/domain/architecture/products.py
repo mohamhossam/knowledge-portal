@@ -126,20 +126,35 @@ class RealisationLayer(StrEnum):
 
 _LAYER_WORDS = {
     "cfs": RealisationLayer.CFS,
+    "cfss": RealisationLayer.CFS,
     "customerfacingservice": RealisationLayer.CFS,
+    "customerfacingservicespecification": RealisationLayer.CFS,
     "rfs": RealisationLayer.RFS,
+    "rfss": RealisationLayer.RFS,
     "resourcefacingservice": RealisationLayer.RFS,
+    "resourcefacingservicespecification": RealisationLayer.RFS,
     "resource": RealisationLayer.RESOURCE,
     "res": RealisationLayer.RESOURCE,
 }
 
 
 def realisation_layer(value: RealisationLayer | str) -> RealisationLayer:
-    """A layer however it is written: "CFS", "Customer-facing service", "resource"."""
+    """A layer however it is written: "CFSS", "CFS", "Customer facing service
+    specification", "resource"."""
     found = _LAYER_WORDS.get("".join(re.findall(r"[a-z]", str(value).casefold())))
     if found is None:
-        raise InvalidKnowledgeError(f"A realisation layer is CFS, RFS or resource, not {value!r}.")
+        raise InvalidKnowledgeError(
+            f"A realisation layer is CFSS, RFSS or resource, not {value!r}."
+        )
     return found
+
+
+# How a layer is named to people: the TM Forum SID's service specifications (ADR-0127).
+LAYER_LABEL = {
+    RealisationLayer.CFS: "CFSS",
+    RealisationLayer.RFS: "RFSS",
+    RealisationLayer.RESOURCE: "resource",
+}
 
 
 @dataclass(frozen=True)

@@ -2,13 +2,14 @@ import "./offering/offering.css";
 
 import { Fragment, type ReactNode } from "react";
 
-import type { Offering } from "../api/client";
+import type { Offering, Release } from "../api/client";
 import { type Column, DataTable, Section, Status, type StatusTone } from "../design/components";
 import { COVERAGE, LAYERS } from "./catalogue";
 import { ConfidenceMark, Provenance } from "./GovernanceSections";
 
 type Part = Offering["components"][number];
 type Nfr = Offering["nfrs"][number];
+type SpecRecord = NonNullable<Release["realisations"]>[number];
 
 /** "CFSS_INTERNET_CPE_HE" may break after each underscore, never between letters. */
 function breakable(name: string) {
@@ -26,13 +27,14 @@ function breakable(name: string) {
 }
 
 /**
- * How a part is realised, layer by layer, as a list for a table cell: "CFS
- * CFSS_ONPREM_FIREWALL_HE", then its RFSs and resources. A layer its sources
+ * How a part is realised, layer by layer, as a list for a table cell: "CFSS
+ * CFSS_ONPREM_FIREWALL_HE", then its RFSSs and resources. A layer its sources
  * name nothing for is left out. A part with none, and a layer its source marks
  * as a gap, are due (the Weight Is Rank Rule): someone has to fill them; one
- * inferred rather than stated carries the Suggested mark.
+ * inferred rather than stated carries the Suggested mark. Given the version's
+ * `records`, a CFSS or RFSS linked to one shows that specification's rules (ADR-0127).
  */
-export function RealisedAs({ part }: { part: Part }) {
+export function RealisedAs({ part, records }: { part: Part; records?: ReadonlyMap<string, SpecRecord> }) {
   const realisation = part.realisation ?? [];
   if (!realisation.length) return <Status tone="attention">Not stated</Status>;
   return (
@@ -53,9 +55,21 @@ export function RealisedAs({ part }: { part: Part }) {
               {(item.confidence === "inferred" || item.confidence === "gap") && (
                 <span className="offering-by"><ConfidenceMark confidence={item.confidence} /></span>
               )}
+              <SpecificationRules record={item.record_id ? records?.get(item.record_id) : undefined} />
             </li>
           )),
       )}
+    </ul>
+  );
+}
+
+/** What a CFSS or RFSS requires, under its name: nothing when it states no rule. */
+function SpecificationRules({ record }: { record: SpecRecord | undefined }) {
+  const rules = record?.rules ?? [];
+  if (!rules.length) return null;
+  return (
+    <ul className="offering-realised__rules" aria-label={`Rules of ${record!.name}`}>
+      {rules.map((rule) => <li key={rule} dir="auto">{rule}</li>)}
     </ul>
   );
 }
@@ -65,11 +79,11 @@ export function RealisedAs({ part }: { part: Part }) {
  * Realised as column is not shown; only one of the two is ever displayed, so a
  * screen reader meets it once, and never as part of the row's header.
  */
-export function RealisedInline({ part }: { part: Part }) {
+export function RealisedInline({ part, records }: { part: Part; records?: ReadonlyMap<string, SpecRecord> }) {
   return (
     <div className="offering-realised-inline">
       <span className="offering-quiet">Realised as</span>
-      <RealisedAs part={part} />
+      <RealisedAs part={part} records={records} />
     </div>
   );
 }
@@ -79,7 +93,7 @@ export function RealisationKey({ offering }: { offering: Offering }) {
   if (!offering.components.some((part) => (part.realisation ?? []).length)) return null;
   return (
     <p className="offering-key">
-      Realised as: <strong>CFS</strong>, what the customer is sold · <strong>RFS</strong>, what delivers it ·{" "}
+      Realised as: <strong>CFSS</strong>, what the customer is sold · <strong>RFSS</strong>, what delivers it ·{" "}
       <strong>Resource</strong>, what it runs on.
     </p>
   );

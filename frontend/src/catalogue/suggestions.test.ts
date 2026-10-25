@@ -273,7 +273,7 @@ describe("offering detail suggestions", () => {
     expect(waitsFor(waiting, words)).toBe("Waits for the systems Order Store, Order Portal, and the channels Business Web, Shop");
     expect(waitsForMany(waiting, words)).toBe(true);
     expect(offeringHolds(waiting.content.product, words)).toEqual([
-      { label: "Realised as", text: "Fibre (CFS)" },
+      { label: "Realised as", text: "Fibre (CFSS)" },
       { label: "NFRs", text: "Availability (defined); Security (not defined)" },
       { label: "Order tracking", text: "Channels Business Web; 1 flow" },
       { label: "Lifecycle notes", text: "Renewal" },
@@ -472,12 +472,12 @@ describe("business area and portfolio suggestions (ADR-0123)", () => {
 
 describe("realisation record suggestions (ADR-0123)", () => {
   const appliance = suggestion(
-    { kind: "realisation_record", system_id: "resource-quokka-appliance", name: "QUOKKA_APPLIANCE", realisation: { id: "resource-quokka-appliance", layer: "resource", name: "QUOKKA_APPLIANCE", aliases: [], system_ids: [], realised_by: [], accepted: [] } },
+    { kind: "realisation_record", system_id: "resource-quokka-appliance", name: "QUOKKA_APPLIANCE", realisation: { id: "resource-quokka-appliance", layer: "resource", name: "QUOKKA_APPLIANCE", aliases: [], system_ids: [], realised_by: [], accepted: [], rules: [] } },
   );
   const firewall = suggestion(
     {
       kind: "realisation_record", system_id: "cfs-quokka-firewall", name: "CFSS_QUOKKA_FIREWALL",
-      realisation: { id: "cfs-quokka-firewall", layer: "cfs", name: "CFSS_QUOKKA_FIREWALL", aliases: [], system_ids: ["cwom"], realised_by: ["QUOKKA_APPLIANCE"], accepted: [] },
+      realisation: { id: "cfs-quokka-firewall", layer: "cfs", name: "CFSS_QUOKKA_FIREWALL", aliases: [], system_ids: ["cwom"], realised_by: ["QUOKKA_APPLIANCE"], accepted: [], rules: [] },
     },
     { match: "needs_realisation" },
   );
@@ -485,7 +485,7 @@ describe("realisation record suggestions (ADR-0123)", () => {
   const named = lexicon(release, all);
 
   it("says its layer, who delivers it and what realises it", () => {
-    expect(changeSentence(firewall, named)).toBe("Adds the CFS CFSS_QUOKKA_FIREWALL, delivered by CWOM, realised by QUOKKA_APPLIANCE");
+    expect(changeSentence(firewall, named)).toBe("Adds the CFSS CFSS_QUOKKA_FIREWALL, delivered by CWOM, realised by QUOKKA_APPLIANCE");
     expect(changeSentence(appliance, named)).toBe("Adds the resource QUOKKA_APPLIANCE");
   });
 

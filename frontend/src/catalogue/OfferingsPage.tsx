@@ -21,7 +21,7 @@ import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions 
 import { conflictsFor, questionOf } from "./governance";
 import { LifecycleSection } from "./LifecycleNotes";
 import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
-import { conceptIndex, SOURCE_TONE, SOURCE_WORD } from "./ontology";
+import { conceptIndex, realisationRecords, SOURCE_TONE, SOURCE_WORD } from "./ontology";
 import { NfrSection, RealisationKey, RealisedAs } from "./Realisation";
 import { Retired } from "./Retired";
 import { TrackingSection } from "./Tracking";
@@ -411,6 +411,7 @@ function Points({ items }: { items: { name: string; description?: string | null 
 function Components({ offering, action, orderName }: { offering: Offering; action: ReactNode; orderName: (code: string) => string }) {
   const { book, base } = useCatalogueContext();
   const index = useMemo(() => conceptIndex(book.release), [book.release]);
+  const records = useMemo(() => realisationRecords(book.release), [book.release]);
   const columns: Column<Component>[] = [
     {
       id: "name",
@@ -451,7 +452,7 @@ function Components({ offering, action, orderName }: { offering: Offering; actio
     {
       id: "realised",
       header: "Realised as",
-      cell: (part) => <RealisedAs part={part} />,
+      cell: (part) => <RealisedAs part={part} records={records} />,
     },
     {
       id: "delivered",

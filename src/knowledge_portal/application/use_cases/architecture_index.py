@@ -93,8 +93,8 @@ def _landscape(release: ArchitectureKnowledge, domain_id: str | None) -> str:
 
 
 _LAYERS = {
-    RealisationLayer.CFS: "customer-facing service",
-    RealisationLayer.RFS: "resource-facing service",
+    RealisationLayer.CFS: "customer facing service specification (CFSS)",
+    RealisationLayer.RFS: "resource facing service specification (RFSS)",
     RealisationLayer.RESOURCE: "resource",
 }
 

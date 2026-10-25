@@ -488,6 +488,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "description",
         "confidence",
         "source",
+        "rules",
     ),
     MASTERY_NOTES: ("system_id", "entity_id", "note"),
     ACCEPTANCES: (
@@ -613,8 +614,9 @@ _INSTRUCTIONS = (
         "channel); channel_entry yes when the order's channel entry system performs it.",
     ),
     (
-        "Realisation (optional): how a component is realised; layer is CFS (what the customer "
-        "is sold), RFS (what delivers it) or resource (what it runs on). record_id: the "
+        "Realisation (optional): how a component is realised; layer is cfs, a CFSS (what the "
+        "customer is sold), rfs, an RFSS (what delivers it), or resource (what it runs on). "
+        "record_id: the "
         "RealisationRecords row the name means, of the same layer.",
     ),
     (
@@ -723,9 +725,10 @@ _INSTRUCTIONS = (
         "system consumes, as an integration layer does.",
     ),
     (
-        "RealisationRecords (optional): one row per CFS, RFS or resource; systems are the "
-        "system ids that deliver or hold it, and realised_by the record ids one layer down "
-        "that realise it (a CFS by RFSs or resources, an RFS by resources), each by ;.",
+        "RealisationRecords (optional): one row per CFSS, RFSS or resource (layer cfs, rfs or "
+        "resource); systems are the system ids that deliver or hold it, realised_by the "
+        "record ids one layer down that realise it (a CFSS by RFSSs or resources, an RFSS by "
+        "resources), and rules what a CFSS or RFSS requires, each by ;.",
     ),
     (
         "Systems owner, external (yes or no), roadmap, and placement_from with "

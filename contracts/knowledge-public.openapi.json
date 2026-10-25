@@ -1911,6 +1911,7 @@
           "capability_domain",
           "portfolio_node",
           "realisation_record",
+          "specification_rule",
           "source",
           "conflict"
         ],
@@ -10974,7 +10975,7 @@
         "type": "string"
       },
       "RealisationRecordSchema": {
-        "description": "A CFS, RFS or resource, the systems that deliver it, and what realises it below.",
+        "description": "A CFSS, RFSS or resource, the systems that deliver it, what realises it below, and a\nspecification's rules (ADR-0127). ``layer`` keeps its values: cfs, rfs, resource.",
         "properties": {
           "accepted": {
             "default": [],
@@ -11038,6 +11039,16 @@
             },
             "maxItems": 5000,
             "title": "Realised By",
+            "type": "array"
+          },
+          "rules": {
+            "default": [],
+            "items": {
+              "maxLength": 10000,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Rules",
             "type": "array"
           },
           "source": {
@@ -12485,7 +12496,7 @@
         "type": "object"
       },
       "SettleSubjectRequest": {
-        "description": "What a name waiting suggestions name really is: a system, a product offering, or a\nsystem the draft already has (``existing_system_id``, required for that kind only).",
+        "description": "What a name waiting suggestions name really is: a system, a product offering, a\nsystem the draft already has (``existing_system_id``), or a CFSS or RFSS the draft has\n(``specification_id``); each id is required for its kind only.",
         "properties": {
           "existing_system_id": {
             "anyOf": [
@@ -12507,6 +12518,18 @@
             "maxLength": 300,
             "title": "Name",
             "type": "string"
+          },
+          "specification_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specification Id"
           },
           "system_id": {
             "maxLength": 200,
@@ -12930,7 +12953,8 @@
         "enum": [
           "system",
           "offering",
-          "existing"
+          "existing",
+          "specification"
         ],
         "title": "SubjectKind",
         "type": "string"
@@ -17756,7 +17780,7 @@
     },
     "/architecture-knowledge/releases/{release_id}/suggestions/subject": {
       "post": {
-        "description": "Say what a name waiting suggestions name is: a system to suggest, a product\noffering, so its constraints become the offering's rules, or a system the draft has.",
+        "description": "Say what a name waiting suggestions name is: a system to suggest, a product\noffering, so its constraints become the offering's rules, a system the draft has, or a\nCFSS or RFSS the draft has, so the rules read as an offering's become its own.",
         "operationId": "settle_suggestion_subject_architecture_knowledge_releases__release_id__suggestions_subject_post",
         "parameters": [
           {

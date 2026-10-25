@@ -127,7 +127,8 @@ describe("NextStep", () => {
   const props = {
     questions: 0, bulk: 0, bulkLabel: "Accept the ready ones", waiting: 12, accepted: 0, focusTo: "/focus", changesTo: "/changes", busy: false, settling: false,
     systems: [{ id: "bpp-gw", name: "Business Pro Plus Gateway", aliases: [] }, { id: "bcrm", name: "BCRM", aliases: ["Sales CRM"] }],
-    onAcceptReady: vi.fn(), onShow: vi.fn(), onReject: vi.fn(), onSettleExisting: vi.fn(),
+    specifications: [{ id: "cfs-cfss-uplink-ucpe", name: "CFSS_UPLINK_UCPE", aliases: [], layer: "cfs" as const }],
+    onAcceptReady: vi.fn(), onShow: vi.fn(), onReject: vi.fn(), onSettleExisting: vi.fn(), onSettleSpecification: vi.fn(),
   };
 
   it("says the way on when only dead ends are left, and settles one on the spot", async () => {
@@ -169,6 +170,21 @@ describe("NextStep", () => {
 
     expect(onSettleExisting).toHaveBeenCalledWith(found[0], props.systems[0]);
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+  });
+
+  it("says a name read as an offering is the CFSS in the draft, never offering to add it as an offering", async () => {
+    const rule = (id: string, text: string) =>
+      suggestion(id, { kind: "offering_rule", system_id: "cfss-uplink-ucpe", text }, { match: "needs_offering" });
+    const suggestions = [rule("a", "One Service Order holds one to two Uplink uCPE Services."), rule("b", "It refers to a Place.")];
+    const found = blockers(draft, suggestions, lexicon(draft, suggestions));
+    const onSettleSpecification = vi.fn();
+    render(<MemoryRouter><NextStep {...props} waiting={2} blockers={found} onSettle={vi.fn()} onSettleSpecification={onSettleSpecification} /></MemoryRouter>);
+    await userEvent.click(screen.getByRole("button", { name: "See the 1 missing thing" }));
+
+    expect(screen.getByRole("row", { name: /Cfss Uplink Ucpe/i })).toHaveTextContent("CFSSRead as an offering");
+    expect(screen.queryByRole("button", { name: "Suggest the offering" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "It is the CFSS CFSS_UPLINK_UCPE in the draft: move its rules there" }));
+    expect(onSettleSpecification).toHaveBeenCalledWith(found[0], props.specifications[0]);
   });
 
   it("says the questions come first, and the changes once nothing is left", () => {

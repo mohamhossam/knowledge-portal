@@ -3,7 +3,7 @@
  * ready ones lifts, the dead ends nothing lifts, and the order accepting them works.
  */
 import type { Release, Suggestion } from "../../api/client";
-import { BELOW_WORDS, channelKeys, interfaceKeys, nodeKeys, offeringKey, realisationKeys, realisedByKey } from "./keys";
+import { BELOW_WORDS, channelKeys, interfaceKeys, nodeKeys, offeringKey, realisationKeys, realisedByKey, specificationKeys } from "./keys";
 import type { Lexicon } from "./lexicon";
 import { KIND_ORDER, needsOneByOne } from "./state";
 
@@ -53,7 +53,10 @@ function knownKeys(release: Release): Set<string> {
   for (const item of release.capability_domains ?? []) nodeKeys("area", item.id, item.name).forEach((key) => known.add(key));
   for (const item of release.portfolio ?? []) nodeKeys("portfolio", item.id, item.name).forEach((key) => known.add(key));
   for (const item of release.sources ?? []) nodeKeys("source", item.id, item.title, item.short ?? "").forEach((key) => known.add(key));
-  for (const item of release.realisations ?? []) realisationKeys(item.layer, item.id, item.name, ...(item.aliases ?? [])).forEach((key) => known.add(key));
+  for (const item of release.realisations ?? []) {
+    realisationKeys(item.layer, item.id, item.name, ...(item.aliases ?? [])).forEach((key) => known.add(key));
+    if (item.layer !== "resource") specificationKeys(item.id, item.name, ...(item.aliases ?? [])).forEach((key) => known.add(key));
+  }
   return known;
 }
 
@@ -105,6 +108,10 @@ function describeNeed(key: string, item: Suggestion, words: Lexicon): Blocker {
     const named = content.kind === "journey" ? content.journey?.product_id ?? reference : content.system_id;
     const name = words.offering(named);
     return { key, kind: "offering", reference: named, name, label: `the offering ${name}`, waiting: [] };
+  }
+  if (prefix === "specification") {
+    const name = words.realisation(content.system_id);
+    return { key, kind: "other", reference: content.system_id, name, label: `the CFSS or RFSS ${name}`, waiting: [] };
   }
   if (prefix === "realisation" && content.realisation) {
     // What realises a record must sit in a layer below it: a CFS of that name does not realise an RFS.
@@ -190,9 +197,13 @@ function provides(suggestion: Suggestion): string[] {
     case "source":
       return nodeKeys("source", content.system_id, content.knowledge_source?.title ?? content.name, content.knowledge_source?.short ?? "");
     case "realisation_record":
-      return content.realisation
-        ? realisationKeys(content.realisation.layer, content.system_id, content.realisation.name || content.name, ...(content.realisation.aliases ?? []))
-        : [];
+      if (!content.realisation) return [];
+      return [
+        ...realisationKeys(content.realisation.layer, content.system_id, content.realisation.name || content.name, ...(content.realisation.aliases ?? [])),
+        ...(content.realisation.layer === "resource"
+          ? []
+          : specificationKeys(content.system_id, content.realisation.name || content.name, ...(content.realisation.aliases ?? []))),
+      ];
     default:
       return [];
   }
@@ -270,6 +281,7 @@ function requiredKeys(suggestion: Suggestion): string[] {
     case "needs_portfolio_node":
       return nodeKeys("portfolio", content.portfolio_node?.parent_id ?? "");
     case "needs_realisation":
+      if (content.kind === "specification_rule") return specificationKeys(content.system_id);
       return content.realisation ? content.realisation.realised_by.flatMap((reference) => realisedByKey(content.realisation!.layer, reference)) : [];
     case "needs_system":
       if (content.kind === "channel") return [`system:${content.channel?.entry_system_id ?? ""}`];

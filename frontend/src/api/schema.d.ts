@@ -799,7 +799,8 @@ export interface paths {
         /**
          * Settle Suggestion Subject
          * @description Say what a name waiting suggestions name is: a system to suggest, a product
-         *     offering, so its constraints become the offering's rules, or a system the draft has.
+         *     offering, so its constraints become the offering's rules, a system the draft has, or a
+         *     CFSS or RFSS the draft has, so the rules read as an offering's become its own.
          */
         post: operations["settle_suggestion_subject_architecture_knowledge_releases__release_id__suggestions_subject_post"];
         delete?: never;
@@ -2856,7 +2857,7 @@ export interface components {
          * CandidateKind
          * @enum {string}
          */
-        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term" | "offering_rule" | "interface" | "capability_domain" | "portfolio_node" | "realisation_record" | "source" | "conflict";
+        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term" | "offering_rule" | "interface" | "capability_domain" | "portfolio_node" | "realisation_record" | "specification_rule" | "source" | "conflict";
         /**
          * CandidateMatch
          * @description How a candidate relates to the draft as it stands now.
@@ -5794,7 +5795,8 @@ export interface components {
         RealisationLayer: "cfs" | "rfs" | "resource";
         /**
          * RealisationRecordSchema
-         * @description A CFS, RFS or resource, the systems that deliver it, and what realises it below.
+         * @description A CFSS, RFSS or resource, the systems that deliver it, what realises it below, and a
+         *     specification's rules (ADR-0127). ``layer`` keeps its values: cfs, rfs, resource.
          */
         RealisationRecordSchema: {
             /**
@@ -5820,6 +5822,11 @@ export interface components {
              * @default []
              */
             realised_by: string[];
+            /**
+             * Rules
+             * @default []
+             */
+            rules: string[];
             /** Source */
             source?: string | null;
             /**
@@ -6365,8 +6372,9 @@ export interface components {
         };
         /**
          * SettleSubjectRequest
-         * @description What a name waiting suggestions name really is: a system, a product offering, or a
-         *     system the draft already has (``existing_system_id``, required for that kind only).
+         * @description What a name waiting suggestions name really is: a system, a product offering, a
+         *     system the draft already has (``existing_system_id``), or a CFSS or RFSS the draft has
+         *     (``specification_id``); each id is required for its kind only.
          */
         SettleSubjectRequest: {
             /** Existing System Id */
@@ -6377,6 +6385,8 @@ export interface components {
              * @default
              */
             name: string;
+            /** Specification Id */
+            specification_id?: string | null;
             /** System Id */
             system_id: string;
         };
@@ -6528,7 +6538,7 @@ export interface components {
          * @description What a name suggestions wait for really is, as a person says it on Decide.
          * @enum {string}
          */
-        SubjectKind: "system" | "offering" | "existing";
+        SubjectKind: "system" | "offering" | "existing" | "specification";
         /** SuggestionDecisionRequest */
         SuggestionDecisionRequest: {
             /** Accept */

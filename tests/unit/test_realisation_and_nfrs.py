@@ -75,7 +75,7 @@ def test_layers_and_coverage_are_read_however_a_source_writes_them() -> None:
 @pytest.mark.parametrize(
     ("build", "message"),
     [
-        (lambda: Realisation("service", "x"), "CFS, RFS or resource"),  # type: ignore[arg-type]
+        (lambda: Realisation("service", "x"), "CFSS, RFSS or resource"),  # type: ignore[arg-type]
         (lambda: OfferingNfr("Audit", "maybe"), "defined, partial or missing"),  # type: ignore[arg-type]
         (lambda: Realisation(RealisationLayer.CFS, " "), "Realisation"),
         (

@@ -45,7 +45,7 @@ export function suggestionGroups(release: Release, suggestions: Suggestion[], wo
     } else if (content.kind === "conflict") {
       key = "section:conflicts";
       group = { key, isNew: false, label: SECTION.conflicts };
-    } else if (content.kind === "realisation_record") {
+    } else if (content.kind === "realisation_record" || content.kind === "specification_rule") {
       key = "section:realisations";
       group = { key, isNew: false, label: SECTION.realisations };
     } else if (content.kind === "portfolio_node") {

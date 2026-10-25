@@ -96,7 +96,7 @@ def test_a_record_keeps_its_own_rules() -> None:
             (*RECORDS, RealisationRecord("rfs-b", RFS, "B", realised_by=("cfs-firewall",))),
             "realised by a layer below it",
         ),
-        (RECORDS[1:], "is not a CFS in the catalogue"),
+        (RECORDS[1:], "is not a CFSS in the catalogue"),
     ],
 )
 def test_a_release_checks_its_records(records: tuple[RealisationRecord, ...], message: str) -> None:
@@ -151,8 +151,9 @@ def test_the_evidence_names_the_systems_and_layers_below() -> None:
     text = _offering_text(release.products[0], names, {item.id: item for item in RECORDS})
 
     assert (
-        "Firewall is realised by the customer-facing service CFSS_ONPREM_FIREWALL_HE (CWOM), "
-        "on the resource-facing service RFS firewall policy" in text
+        "Firewall is realised by the customer facing service specification (CFSS) "
+        "CFSS_ONPREM_FIREWALL_HE (CWOM), "
+        "on the resource facing service specification (RFSS) RFS firewall policy" in text
     )
 
 
@@ -245,7 +246,7 @@ def test_the_draft_api_stores_and_returns_records(client: TestClient) -> None:
     body["realisations"][0]["layer"] = "resource"
     refused = client.put(f"{BASE}/{draft['id']}", json=body, headers=OWNER)
     assert refused.status_code == 422
-    assert "is not a CFS in the catalogue" in refused.text
+    assert "is not a CFSS in the catalogue" in refused.text
 
 
 def test_the_committed_catalogue_links_each_named_spec_to_a_record() -> None:

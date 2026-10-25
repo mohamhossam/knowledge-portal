@@ -128,6 +128,7 @@ _SUBJECT: dict[CandidateKind, str] = {
     CandidateKind.CAPABILITY_DOMAIN: "capability_domain",
     CandidateKind.PORTFOLIO_NODE: "portfolio_node",
     CandidateKind.REALISATION_RECORD: "realisation",
+    CandidateKind.SPECIFICATION_RULE: "realisation",
     CandidateKind.SOURCE: "source",
     CandidateKind.CONFLICT: "conflict",
     CandidateKind.CONCEPT: "concept",

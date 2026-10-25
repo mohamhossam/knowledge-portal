@@ -62,13 +62,13 @@ describe("realisation and NFRs read on a sheet", () => {
     const [broadband, firewall] = OFFERING.components;
     const { unmount } = render(<><RealisedAs part={broadband!} /><RealisationKey offering={OFFERING} /></>);
     expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
-      "CFS GPON internet CFSSuggested · inferred, not stated in the source",
+      "CFSS GPON internet CFSSuggested · inferred, not stated in the source",
       "Resource GPON line",
     ]);
     const list = within(screen.getByRole("list"));
-    expect(list.getByText("CFS")).toHaveAttribute("title", "Customer-facing service");
+    expect(list.getByText("CFSS")).toHaveAttribute("title", "Customer facing service specification");
     expect(list.getByText("Resource").tagName).toBe("SPAN");
-    expect(screen.getByText(/what the customer is sold/)).toHaveTextContent("Realised as: CFS, what the customer is sold");
+    expect(screen.getByText(/what the customer is sold/)).toHaveTextContent("Realised as: CFSS, what the customer is sold");
     unmount();
 
     render(<RealisedAs part={firewall!} />);

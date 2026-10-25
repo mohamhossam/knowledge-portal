@@ -185,6 +185,7 @@ _REALISATION_FIELDS = (
     "description",
     "confidence",
     "source",
+    "rules",
 )
 
 

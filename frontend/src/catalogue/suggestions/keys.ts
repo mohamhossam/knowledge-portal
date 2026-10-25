@@ -20,8 +20,13 @@ export function realisationKeys(layer: Layer, ...references: string[]): string[]
   return nodeKeys("realisation", ...references).flatMap((key) => above.map((upper) => `${key}@${upper}`));
 }
 
-/** What realises a record in `layer`, in words: "a resource" for an RFS. */
-export const BELOW_WORDS: Record<Layer, string> = { cfs: "an RFS or a resource", rfs: "a resource", resource: "nothing" };
+/** What realises a record in `layer`, in words: "a resource" for an RFSS. */
+export const BELOW_WORDS: Record<Layer, string> = { cfs: "an RFSS or a resource", rfs: "a resource", resource: "nothing" };
+
+/** A CFSS's or RFSS's keys, by id and names: what a specification's rule waits for (ADR-0127). */
+export function specificationKeys(...references: string[]): string[] {
+  return nodeKeys("realisation", ...references).map((key) => `specification:${key.slice("realisation:".length)}`);
+}
 
 /** The key a record in `layer` needs for what realises it: that reference, in a layer below. */
 export function realisedByKey(layer: Layer, reference: string): string[] {

@@ -107,6 +107,13 @@ function Decide() {
   const bulkCount = bulk.ready.length + bulk.lifted.length;
   const readyIds = useMemo(() => new Set([...bulk.ready, ...bulk.lifted].map((item) => item.id)), [bulk]);
   const stuck = useMemo(() => deadEnds(release, all, words), [release, all, words]);
+  const draftSpecifications = useMemo(
+    () =>
+      (release.realisations ?? []).flatMap((item) =>
+        item.layer === "resource" ? [] : [{ id: item.id, name: item.name, aliases: item.aliases ?? [], layer: item.layer }],
+      ),
+    [release.realisations],
+  );
   const draftSystems = useMemo(
     () => release.systems.filter((system) => !system.deprecated).map((system) => ({ id: system.id, name: system.name, aliases: system.aliases })),
     [release.systems],
@@ -258,6 +265,15 @@ function Decide() {
       },
     });
   };
+  /** Says a name read as an offering is a CFSS or RFSS the draft has: its rules become the specification's. */
+  const settleSpecification = (blocker: Blocker, specification: { id: string; name: string; layer: "cfs" | "rfs" }) =>
+    draft.settleSubject.mutate({ system_id: blocker.reference, name: blocker.name, kind: "specification", specification_id: specification.id }, {
+      onSuccess: (result) => {
+        const word = specification.layer === "cfs" ? "CFSS" : "RFSS";
+        say(`${blocker.name} is the ${word} ${specification.name}${result.retyped ? `: ${count(result.retyped, "rule")} of it can be accepted` : ""}.`);
+      },
+      onError: (error) => say(errorMessage(error), true),
+    });
   /** Says a name suggestions wait for is a system the draft has: it becomes one of its names. */
   const settleExisting = (blocker: Blocker, system: { id: string; name: string }) =>
     draft.settleSubject.mutate({ system_id: blocker.reference, name: blocker.name, kind: "existing", existing_system_id: system.id }, {
@@ -455,7 +471,9 @@ function Decide() {
         onAcceptReady={askToAcceptReady}
         onSettle={(blocker, kind) => settle(blocker.reference, blocker.name, kind)}
         onSettleExisting={settleExisting}
+        onSettleSpecification={settleSpecification}
         systems={draftSystems}
+        specifications={draftSpecifications}
         onShow={showWaiting}
         onReject={rejectWaiting}
       />

@@ -27,6 +27,14 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   `existing_system_id`, adds the name to that system's aliases, so every suggestion that names it
   (and later readings) finds the system, and rejects the suggestion to add it as a new system.
   Public contract, additive.
+- CFSS and RFSS keep their own rules (ADR-0127). A realisation record that is a customer or
+  resource facing service specification holds `rules`; the suggestion kind `specification_rule`
+  adds one, and the reader (catalogue-extraction-v22) files a rule said of a CFSS or RFSS there,
+  never as an offering's. Rules already waiting as an offering's are settled with the subject
+  kind `specification` and `specification_id`: on Decide, "It is the CFSS in the draft" replaces
+  "Suggest the offering" for such a name. Rules travel in the API, the YAML file, the workbook
+  (a `rules` column) and the version diff. The interface says CFSS and RFSS; the stored layer
+  values stay `cfs` and `rfs`. Public contract, additive.
 
 ### Added
 

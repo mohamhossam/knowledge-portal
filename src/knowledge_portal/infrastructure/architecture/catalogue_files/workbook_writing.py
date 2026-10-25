@@ -737,6 +737,7 @@ def _write_realisations(sheets: dict[str, Any], realisations: Sequence[Realisati
                 realised.description,
                 _confidence(realised),
                 realised.source,
+                f"{_LIST_SEPARATOR} ".join(realised.rules),
             ),
         )
 

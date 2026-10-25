@@ -120,6 +120,7 @@ def _realisation_mapping(record: RealisationRecord) -> dict[str, Any]:
             systems=list(record.system_ids),
             realised_by=list(record.realised_by),
             description=record.description,
+            rules=list(record.rules),
         ),
         **_sourced(record),
     }

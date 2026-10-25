@@ -41,6 +41,7 @@ export function waitsFor(suggestion: Suggestion, words: Lexicon): string {
       return `Waits for the sources ${listed([...new Set(cited)])}`;
     }
     case "needs_realisation": {
+      if (content.kind === "specification_rule") return `Waits for the CFSS or RFSS ${words.realisation(content.system_id)}`;
       const below = (content.realisation?.realised_by ?? []).map(words.realisation);
       return `Waits for ${listed(below)}, which ${below.length === 1 ? "realises" : "realise"} it`;
     }
