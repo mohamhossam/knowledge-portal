@@ -444,6 +444,8 @@ function Decide() {
           <DecisionTree
             suggestions={all}
             words={words}
+            missing={stuck}
+            onChooseMissing={showWaiting}
             onChoose={(id) => {
               move(id);
               focusRow(id);
