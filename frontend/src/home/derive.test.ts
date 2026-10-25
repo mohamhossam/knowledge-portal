@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { LibraryDocument, Organisation, Release, ReleaseDeliveries, ReleasePrecedents, RequirementCorpus } from "../api/client";
+import type { Actor, LibraryDocument, Organisation, Release, ReleaseDeliveries, ReleasePrecedents, RequirementCorpus } from "../api/client";
 import {
   architectureOverview,
   deliveryHits,
@@ -168,8 +168,9 @@ describe("architectureOverview", () => {
     expect(unseen.edition.text).toContain("Last change 3 Oct 2026, a reading in ‘October update’.");
   });
 
-  it("names the packaged initial catalogue rather than its actor id", () => {
-    expect(nameDirectory([])("packaged-seed")).toBe("the packaged initial catalogue");
+  it("names an actor it knows, and falls back to the id", () => {
+    expect(nameDirectory([{ id: "ana", display_name: "Ana" } as Actor])("ana")).toBe("Ana");
+    expect(nameDirectory([])("unknown-actor")).toBe("unknown-actor");
   });
 
   const decisions = (overrides: Partial<ReleasePrecedents> = {}): ReleasePrecedents => ({

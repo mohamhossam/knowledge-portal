@@ -182,10 +182,12 @@ class ManageOrganisationCatalogue:
         )
 
 
-def _release_references(release: ArchitectureKnowledge) -> ReleaseReferences:
+def _release_references(release: ArchitectureKnowledge | None) -> ReleaseReferences:
     """What a squad or product may point at: the systems, offerings and portfolio nodes in
     service; a retired one forwards to the one that replaced it (ADR-0121), and a renamed
-    offering to its new id (ADR-0124)."""
+    offering to its new id (ADR-0124). Nothing, before the first version is in service."""
+    if release is None:
+        return ReleaseReferences(systems={}, offering_systems={}, portfolio_node_ids=set())
     successors = {
         system.id: current.id
         for system in release.systems

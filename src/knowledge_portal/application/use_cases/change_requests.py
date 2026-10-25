@@ -606,8 +606,9 @@ class ReadChangeRequestIntoDraft:
                 None,
             ) or self._knowledge.create_draft(actor, incoming.id)
             now = self._clock.now()
+            active = self._repository.active()
             found, warnings = read_change_request(
-                incoming, draft, now, self._repository.active().id
+                incoming, draft, now, active.id if active is not None else None
             )
             run = ExtractionRun(
                 uuid4().hex,

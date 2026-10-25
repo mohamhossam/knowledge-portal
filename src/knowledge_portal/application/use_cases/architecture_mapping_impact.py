@@ -20,7 +20,8 @@ from knowledge_portal.application.ports.identity import Actor, require_maintaine
 
 @dataclass(frozen=True)
 class MappingImpact:
-    active_release_id: str
+    # None before the first version is published: every mapping is then outdated.
+    active_release_id: str | None
     requirements: int
     features: int
     stories: int
@@ -40,7 +41,8 @@ class ReportMappingImpact:
 
     def execute(self, actor: Actor) -> MappingImpact:
         require_maintainer(actor)
-        active = self._repository.active().id
+        release = self._repository.active()
+        active = release.id if release is not None else None
         counts = self._stats.by_release()
         outdated = [item for item in counts if item.release_id != active]
         # A requirement is pinned to one release per mapping, so its counts do not overlap.

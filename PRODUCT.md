@@ -109,8 +109,10 @@ existing architecture mappings.
 
 - The backend, its API contract and its fake data run offline: in-memory storage, a fake model
   and fake personas, with `fake-owner` and `fake-reviewer` as admins.
-- A seeded initial architecture catalogue release (`smb-source-reference-v1`, "Initial
-  catalogue").
+- No catalogue ships with the service: it starts with none in service, and a knowledge
+  maintainer publishes the first version (ADR-0126). The tests and the offline demo seed
+  (`scripts/seed_demo.py`) publish a small SMB reference catalogue
+  (`tests/fixtures/smb_architecture.yaml`, "Initial catalogue").
 - No real customer content, screenshots, testimonials or metrics exist in this repository. Do
   not invent any.
 

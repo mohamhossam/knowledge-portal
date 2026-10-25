@@ -5,6 +5,7 @@ import { Outlet, useLocation, useParams } from "react-router-dom";
 import { ApiError, errorMessage } from "../api/errors";
 import { ActionGroup, Button, EmptyState, PageHeader, Skeleton } from "../design/components";
 import { ButtonLink } from "../shell/links";
+import { FirstVersion } from "./DraftActions";
 import { DraftFrame } from "./draft/DraftFrame";
 import { draftStepOf } from "./draft/progress";
 import { sourceRegister, SourcesContext } from "./governance";
@@ -34,6 +35,8 @@ export function CataloguePage() {
       </div>
     );
   }
+  // Nothing in service yet (ADR-0126): start the first version here, as Versions needs one in service.
+  if (!query.isError && !book && releaseId === undefined) return <FirstVersion />;
   if (query.isError || !book) {
     const missing = query.error instanceof ApiError && query.error.status === 404;
     return (

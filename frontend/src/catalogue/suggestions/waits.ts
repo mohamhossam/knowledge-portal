@@ -41,6 +41,7 @@ export function waitsFor(suggestion: Suggestion, words: Lexicon): string {
       return `Waits for the sources ${listed([...new Set(cited)])}`;
     }
     case "needs_realisation": {
+      if (content.kind === "specification_rule") return `Waits for the CFSS or RFSS ${words.realisation(content.system_id)}`;
       const below = (content.realisation?.realised_by ?? []).map(words.realisation);
       return `Waits for ${listed(below)}, which ${below.length === 1 ? "realises" : "realise"} it`;
     }
@@ -55,6 +56,9 @@ export function waitsFor(suggestion: Suggestion, words: Lexicon): string {
       if (content.kind === "conflict") {
         const affected = (content.conflict?.scope ?? []).map((item) => words.offering(item.product_id));
         return `Waits for the ${affected.length === 1 ? "offering" : "offerings"} ${listed(affected)} it affects`;
+      }
+      if (content.journey?.product_id && content.journey.order_type_code && words.hasOffering(content.journey.product_id)) {
+        return `Waits for ${words.offering(content.journey.product_id)}’s order type ${content.journey.order_type_code}`;
       }
       return `Waits for the offering ${words.offering(content.journey?.product_id ?? "")}`;
     case "needs_channel": {

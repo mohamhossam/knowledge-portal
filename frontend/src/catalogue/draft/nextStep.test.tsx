@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { Release, Suggestion } from "../../api/client";
 import { blockers, bulkAcceptable, changeSentence, lexicon, waitsFor } from "../suggestions";
+import { settleRequest } from "./MissingThings";
 import { NextStep } from "./NextStep";
 import { decideChoices, decideQuestions } from "./questions";
 import { checkAxeAfterEach } from "../../test/axe";
@@ -124,31 +125,178 @@ describe("blockers", () => {
 });
 
 describe("NextStep", () => {
-  const props = {
-    questions: 0, bulk: 0, bulkLabel: "Accept the ready ones", waiting: 12, focusTo: "/focus", changesTo: "/changes", busy: false, settling: false,
-    onAcceptReady: vi.fn(), onShow: vi.fn(), onReject: vi.fn(),
+  const choices = {
+    systems: [{ id: "bpp-gw", name: "Business Pro Plus Gateway", aliases: [] }, { id: "bcrm", name: "BCRM", aliases: ["Sales CRM"] }],
+    specifications: [{ id: "cfs-cfss-uplink-ucpe", name: "CFSS_UPLINK_UCPE", aliases: [], layer: "cfs" as const }],
+    channels: [{ id: "b2b-web", name: "Business Web" }],
+    offerings: [{ id: "business-pro-plus", name: "Business Pro Plus", code: null, order_types: [{ code: "CESSATION", name: "Cessation" }] }],
   };
+  const props = {
+    questions: 0, bulk: 0, bulkLabel: "Accept the ready ones", waiting: 12, accepted: 0, focusTo: "/focus", changesTo: "/changes", busy: false, settling: false,
+    choices, onAcceptReady: vi.fn(), onShow: vi.fn(), onReject: vi.fn(),
+  };
+  const open = async (found: ReturnType<typeof blockers>, onAnswer = vi.fn()) => {
+    render(<MemoryRouter><NextStep {...props} waiting={2} blockers={found} onAnswer={onAnswer} /></MemoryRouter>);
+    await userEvent.click(screen.getByRole("button", { name: /^See the \d+ missing thing/ }));
+    return onAnswer;
+  };
+  const withDraft = { ...draft, products: choices.offerings, channels: choices.channels } as unknown as Release;
 
-  it("turns a dead end into a decision on the spot", async () => {
+  it("says the way on when only dead ends are left, and settles one on the spot", async () => {
     const suggestions = [constraint("a", "Fortinet only"), constraint("b", "No amendment")];
     const found = blockers(draft, suggestions, lexicon(draft, suggestions));
-    const onSettle = vi.fn();
-    render(<MemoryRouter><NextStep {...props} blockers={found} onSettle={onSettle} /></MemoryRouter>);
+    const onAnswer = vi.fn();
+    render(<MemoryRouter><NextStep {...props} waiting={2} accepted={646} blockers={found} onAnswer={onAnswer} /></MemoryRouter>);
 
-    expect(screen.getByText(/Nothing can move until you say what/)).toHaveTextContent("Nothing can move until you say what Business Pro Plus is.");
-    expect(screen.getByText(/which neither the draft nor any suggestion adds/)).toHaveTextContent("2 suggestions wait for the system Business Pro Plus");
-    await userEvent.click(screen.getByRole("button", { name: "It is a product offering" }));
-    expect(onSettle).toHaveBeenCalledWith(found[0], "offering");
-    await userEvent.click(screen.getByRole("button", { name: "Reject the 2…" }));
+    expect(screen.getByText(/no document describes\./)).toHaveTextContent("646 accepted. The 2 suggestions left wait on 1 thing no document describes.");
+    expect(screen.getByText(/publishing leaves them out/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Go on to the changes" })).toHaveAttribute("href", "/changes");
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "See the 1 missing thing" }));
+    const row = screen.getByRole("row", { name: /Business Pro Plus/ });
+    expect(row).toHaveTextContent("Named as a system; no document describes it");
+    expect(row).toHaveTextContent("2");
+    await userEvent.click(screen.getByRole("button", { name: "An offering" }));
+    expect(onAnswer).toHaveBeenCalledWith(found[0], { kind: "offering" });
+    await userEvent.click(screen.getByRole("button", { name: "Reject what waits on Business Pro Plus…" }));
     expect(props.onReject).toHaveBeenCalledWith(found[0]);
   });
 
+  it("says a missing name is a system the draft has, offering the likely one first", async () => {
+    const suggestions = [constraint("a", "Fortinet only"), constraint("b", "No amendment")];
+    const found = blockers(draft, suggestions, lexicon(draft, suggestions));
+    const onAnswer = await open(found);
+
+    await userEvent.click(screen.getByRole("button", { name: "A system the draft has…" }));
+    expect(screen.getByRole("button", { name: "Use it" })).toHaveAttribute("aria-disabled", "true");
+    await userEvent.click(screen.getByRole("combobox", { name: /Which system of the draft is Business Pro Plus/ }));
+    const [first] = screen.getAllByRole("option");
+    expect(first).toHaveTextContent("Business Pro Plus Gateway");
+    await userEvent.click(first!);
+    await userEvent.click(screen.getByRole("button", { name: "Make Business Pro Plus a name for Business Pro Plus Gateway" }));
+
+    expect(onAnswer).toHaveBeenCalledWith(found[0], { kind: "existing", id: "bpp-gw", name: "Business Pro Plus Gateway" });
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+  });
+
+  it("says a name read as an offering is the CFSS in the draft, never offering to add it as an offering", async () => {
+    const rule = (id: string, text: string) =>
+      suggestion(id, { kind: "offering_rule", system_id: "cfss-uplink-ucpe", text }, { match: "needs_offering" });
+    const suggestions = [rule("a", "One Service Order holds one to two Uplink uCPE Services."), rule("b", "It refers to a Place.")];
+    const found = blockers(draft, suggestions, lexicon(draft, suggestions));
+    const onAnswer = await open(found);
+
+    expect(screen.getByRole("row", { name: /Cfss Uplink Ucpe/i })).toHaveTextContent("Read as an offering, but it is the CFSS CFSS_UPLINK_UCPE in your draft.");
+    expect(screen.queryByRole("button", { name: "Suggest the offering" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "It is the CFSS CFSS_UPLINK_UCPE in the draft: move its rules there" }));
+    expect(onAnswer).toHaveBeenCalledWith(found[0], { kind: "specification", id: "cfs-cfss-uplink-ucpe", name: "CFSS_UPLINK_UCPE", layer: "cfs" });
+  });
+
+  it("adds a missing order type to its offering, or says it is one the offering has", async () => {
+    const journey = suggestion("j", {
+      kind: "journey", system_id: "wf-1", name: "Modify the password",
+      journey: { id: "wf-1", name: "Modify the password", product_id: "Business Pro Plus", order_type_code: "Modify Password", activities: [], flow_rules: [], integrations: [] },
+    }, { match: "needs_offering" });
+    const found = blockers(withDraft, [journey], lexicon(withDraft, [journey]));
+    const onAnswer = await open(found);
+
+    expect(screen.getByRole("row", { name: /Modify Password/ })).toHaveTextContent("Its journey is for an order type Business Pro Plus doesn't list.");
+    await userEvent.click(screen.getByRole("button", { name: "Add it to Business Pro Plus" }));
+    expect(onAnswer).toHaveBeenLastCalledWith(found[0], { kind: "order_type" });
+
+    await userEvent.click(screen.getByRole("button", { name: "One Business Pro Plus has…" }));
+    await userEvent.click(screen.getByRole("combobox", { name: /Which order type of Business Pro Plus is Modify Password/ }));
+    await userEvent.click(screen.getByRole("option", { name: /Cessation/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Use Cessation" }));
+    expect(onAnswer).toHaveBeenLastCalledWith(found[0], { kind: "existing_order_type", id: "CESSATION", name: "Cessation" });
+  });
+
+  it("suggests a missing channel, or says it is one the draft has", async () => {
+    const journey = suggestion("j", {
+      kind: "journey", system_id: "wf-2", name: "Order on the portal",
+      journey: { id: "wf-2", name: "Order on the portal", product_id: "Business Pro Plus", order_type_code: "Cessation", activities: [{ number: "10", name: "Order", channels: ["b2b portal"] }], flow_rules: [], integrations: [] },
+    }, { match: "needs_channel" });
+    const found = blockers(withDraft, [journey], lexicon(withDraft, [journey]));
+    const onAnswer = await open(found);
+
+    expect(screen.getByRole("row", { name: /b2b portal/i })).toHaveTextContent("Named as a sales channel the draft doesn't have.");
+    await userEvent.click(screen.getByRole("button", { name: "Suggest the channel" }));
+    expect(onAnswer).toHaveBeenLastCalledWith(found[0], { kind: "channel" });
+    await userEvent.click(screen.getByRole("button", { name: "A channel the draft has…" }));
+    await userEvent.click(screen.getByRole("combobox", { name: /Which channel of the draft is b2b portal/i }));
+    await userEvent.click(screen.getByRole("option", { name: /Business Web/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Use Business Web" }));
+    expect(onAnswer).toHaveBeenLastCalledWith(found[0], { kind: "existing_channel", id: "b2b-web", name: "Business Web" });
+  });
+
+  it("suggests the CFSS or RFSS rules wait for, or moves them to one the draft has", async () => {
+    const rule = suggestion("r", { kind: "specification_rule", system_id: "place", text: "It refers to a Place." }, { match: "needs_realisation" });
+    const found = blockers(draft, [rule], lexicon(draft, [rule]));
+    const onAnswer = await open(found);
+
+    expect(screen.getByRole("row", { name: /place/ })).toHaveTextContent("Rules are said of it, but no CFSS or RFSS by this name is in the draft.");
+    await userEvent.click(screen.getByRole("button", { name: "Suggest as an RFSS" }));
+    expect(onAnswer).toHaveBeenLastCalledWith(found[0], { kind: "new_specification", layer: "rfs" });
+    await userEvent.click(screen.getByRole("button", { name: "One the draft has…" }));
+    await userEvent.click(screen.getByRole("combobox", { name: /Which CFSS or RFSS of the draft is place/ }));
+    await userEvent.click(screen.getByRole("option", { name: /CFSS_UPLINK_UCPE/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Move the rules to CFSS_UPLINK_UCPE" }));
+    expect(onAnswer).toHaveBeenLastCalledWith(found[0], { kind: "specification", id: "cfs-cfss-uplink-ucpe", name: "CFSS_UPLINK_UCPE", layer: "cfs" });
+  });
+
+  it("accepts a record without a link that is upside down", async () => {
+    const withCfs = { ...draft, realisations: [{ id: "cfs-ddos", layer: "cfs", name: "DDoS uCPE CFS", aliases: [] }] } as unknown as Release;
+    const rfs = suggestion("rfs", {
+      kind: "realisation_record", system_id: "rfs-ddos-tp", name: "DDoS uCPE TP",
+      realisation: { id: "rfs-ddos-tp", layer: "rfs", name: "DDoS uCPE TP", aliases: [], system_ids: [], realised_by: ["DDoS uCPE CFS"], accepted: [], rules: [] },
+    }, { match: "needs_realisation" });
+    const found = blockers(withCfs, [rfs], lexicon(withCfs, [rfs]));
+    const onAnswer = await open(found);
+
+    await userEvent.click(screen.getByRole("button", { name: "Accept without that link" }));
+    expect(onAnswer).toHaveBeenLastCalledWith(found[0], { kind: "without_link" });
+  });
+
+  it("says beside the missing things what settling one did, or why the service refused it", () => {
+    const suggestions = [constraint("a", "Fortinet only")];
+    const found = blockers(draft, suggestions, lexicon(draft, suggestions));
+    render(
+      <MemoryRouter>
+        <NextStep {...props} waiting={1} blockers={found} onAnswer={vi.fn()} settled={{ text: "The draft already has the system Eseso.", failed: true }} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("The draft already has the system Eseso.");
+  });
+
   it("says the questions come first, and the changes once nothing is left", () => {
-    const { rerender } = render(<MemoryRouter><NextStep {...props} questions={3} bulk={2} blockers={[]} onSettle={vi.fn()} /></MemoryRouter>);
+    const { rerender } = render(<MemoryRouter><NextStep {...props} questions={3} bulk={2} blockers={[]} onAnswer={vi.fn()} /></MemoryRouter>);
     expect(screen.getByText(/only you can decide/)).toHaveTextContent("Answer the 3 questions only you can decide, then accept the ready ones.");
     expect(screen.getByRole("link", { name: "Answer the 3 questions" })).toHaveAttribute("href", "/focus");
 
-    rerender(<MemoryRouter><NextStep {...props} waiting={0} blockers={[]} onSettle={vi.fn()} /></MemoryRouter>);
+    rerender(<MemoryRouter><NextStep {...props} waiting={0} blockers={[]} onAnswer={vi.fn()} /></MemoryRouter>);
     expect(screen.getByRole("link", { name: "See the changes" })).toHaveAttribute("href", "/changes");
+  });
+});
+
+describe("settleRequest", () => {
+  const blocker = (key: string, reference: string, name: string) =>
+    ({ key, kind: "other" as const, reference, name, label: name, waiting: [] });
+
+  it("names an order type apart from its offering, and each chosen one by its own field", () => {
+    const missing = blocker("ordertype:businessproplus/modifypassword", "Business Pro Plus", "Business Pro Plus › Modify Password");
+    expect(settleRequest(missing, { kind: "order_type" })).toEqual({ system_id: "Business Pro Plus", name: "Modify Password", kind: "order_type" });
+    expect(settleRequest(missing, { kind: "existing_order_type", id: "CESSATION", name: "Cessation" })).toEqual({
+      system_id: "Business Pro Plus", name: "Modify Password", kind: "existing_order_type", existing_id: "CESSATION",
+    });
+    const channel = blocker("channel:b2bportal", "b2b portal", "b2b portal");
+    expect(settleRequest(channel, { kind: "existing_channel", id: "b2b-web", name: "Business Web" })).toEqual({
+      system_id: "b2b portal", name: "b2b portal", kind: "existing_channel", existing_id: "b2b-web",
+    });
+    const place = blocker("specification:place", "place", "place");
+    expect(settleRequest(place, { kind: "new_specification", layer: "rfs" })).toEqual({ system_id: "place", name: "place", kind: "new_specification", layer: "rfs" });
+    expect(settleRequest(place, { kind: "specification", id: "rfs-place", name: "PLACE", layer: "rfs" })).toEqual({
+      system_id: "place", name: "place", kind: "specification", specification_id: "rfs-place",
+    });
   });
 });

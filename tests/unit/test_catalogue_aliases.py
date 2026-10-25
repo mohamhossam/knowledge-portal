@@ -41,18 +41,15 @@ from knowledge_portal.domain.architecture.knowledge import (
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
 from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
-)
 from knowledge_portal.infrastructure.persistence.in_memory_catalogue_candidates import (
     InMemoryCatalogueCandidates,
 )
 from knowledge_portal.infrastructure.persistence.in_memory_transaction import (
     InMemoryTransactionManager,
 )
+from tests.catalogue_seed import seed_knowledge, seeded_repository
 
 NOW = datetime(2026, 9, 29, 9, 0, tzinfo=UTC)
 MAINTAINER = Actor("amina", frozenset({"knowledge_maintainer"}))
@@ -108,7 +105,7 @@ def test_a_suggestion_whose_only_extra_is_a_taken_alias_is_already_present() -> 
 
 
 def test_accept_all_leaves_what_cannot_apply_and_accepts_the_rest() -> None:
-    repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    repository = seeded_repository()
     manage = ManageArchitectureKnowledge(
         repository,
         CatalogueFileAdapter(),

@@ -16,6 +16,7 @@ from knowledge_portal.infrastructure.config.options import LLMProvider
 from knowledge_portal.infrastructure.config.settings import Settings
 from knowledge_portal.interfaces.api.container import Container, build_container
 from knowledge_portal.interfaces.api.main import create_app
+from tests.catalogue_seed import seed_knowledge
 
 # The application resolves settings during startup, which TestClient triggers.
 # Default the suite to the fake provider so no test needs provider credentials.
@@ -29,8 +30,9 @@ FAKE_PROVIDER_SETTINGS = Settings(llm_provider=LLMProvider.FAKE, library_scan_mo
 
 @pytest.fixture
 def container() -> Container:
-    """A fresh object graph backed by the deterministic fake models."""
-    return build_container(FAKE_PROVIDER_SETTINGS)
+    """A fresh object graph backed by the deterministic fake models, with the test
+    catalogue in service (the service itself starts with none)."""
+    return build_container(FAKE_PROVIDER_SETTINGS, in_service=seed_knowledge())
 
 
 @pytest.fixture

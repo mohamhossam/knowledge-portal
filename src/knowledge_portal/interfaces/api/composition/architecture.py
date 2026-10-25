@@ -68,10 +68,6 @@ from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
 )
 from knowledge_portal.infrastructure.architecture.tokenizer import ApproximateTokenizer
-from knowledge_portal.infrastructure.architecture.yaml_knowledge import (
-    YamlArchitectureKnowledge,
-    default_knowledge_path,
-)
 from knowledge_portal.infrastructure.config.options import LLMProvider
 from knowledge_portal.infrastructure.config.settings import Settings
 from knowledge_portal.infrastructure.jobs.architecture_job_worker import ArchitectureJobWorker
@@ -200,7 +196,6 @@ def build_architecture(
             persistence.architecture_repository,
             persistence.architecture_evidence_index,
             reasoner,
-            YamlArchitectureKnowledge(default_knowledge_path()),
             persistence.organisation_repository,
         ),
         assess=AssessRequirement(

@@ -252,7 +252,8 @@ export const api = {
   currentActor: () => apiRequest<Actor>("/identity/me"),
   /** Who is reading the explorer, admin or not (requirement-portal ADR-0101). */
   explorerReader: () => apiRequest<Actor>("/explorer/me"),
-  explorerRelease: () => apiRequest<ExplorerRelease>("/explorer/release"),
+  /** The version in service, or null before a maintainer publishes the first. */
+  explorerRelease: () => apiRequest<ExplorerRelease | null>("/explorer/release"),
   explorerPlans: (offeringId: string) =>
     apiRequest<CatalogPlans>(`/explorer/offerings/${encodeURIComponent(offeringId)}/plans`),
   /** The admins the portal has seen sign in, to name who published or prepared something. */
@@ -267,6 +268,12 @@ export const api = {
   release: (releaseId: string) => apiRequest<Release>(releasePath(releaseId)),
   /** Suggest the dependencies the draft's interfaces and journeys say (ADR-0119). */
   suggestDerivedDependencies: (releaseId: string) => post<ExtractionRun>(`${releasePath(releaseId)}/derived-dependencies`, {}),
+  /** One capability concept per distinct capability name the draft lists (ADR-0114). */
+  proposeConcepts: (releaseId: string) => post<ExtractionRun>(`${releasePath(releaseId)}/concept-proposals`, {}),
+  /** Which concepts each unlinked offering component delivers, as the configured model reads it. */
+  suggestComponentLinks: (releaseId: string) => post<ExtractionRun>(`${releasePath(releaseId)}/component-link-suggestions`, {}),
+  /** The vocabulary term each value the draft writes means, or a new term (ADR-0125). */
+  cleanUpVocabulary: (releaseId: string) => post<ExtractionRun>(`${releasePath(releaseId)}/vocabulary-cleanup`, {}),
   releaseAudit: (releaseId: string) => apiRequest<ReleaseAuditEvent[]>(`${releasePath(releaseId)}/audit`),
   /** What changed from the version in service to this one. */
   /** What changed from `base` to this release; from the version in service when no base is given. */

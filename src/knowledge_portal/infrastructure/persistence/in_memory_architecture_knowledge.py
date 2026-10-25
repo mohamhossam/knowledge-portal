@@ -20,19 +20,15 @@ from knowledge_portal.domain.architecture.knowledge import (
 
 
 class InMemoryArchitectureKnowledgeRepository:
-    def __init__(
-        self,
-        initial: ArchitectureKnowledge,
-        events: KnowledgeEventOutboxPort | None = None,
-    ) -> None:
+    def __init__(self, events: KnowledgeEventOutboxPort | None = None) -> None:
+        # Starts empty, as the PostgreSQL adapter does: nothing is in service until published.
         self._lock = RLock()
         self._outbox = events
-        self._releases = {initial.id: initial}
-        self._documents = {item.id: item for item in initial.documents}
-        self._published_documents = set(self._documents)
-        self._active_id = initial.id
+        self._releases: dict[str, ArchitectureKnowledge] = {}
+        self._documents: dict[str, KnowledgeDocumentVersion] = {}
+        self._published_documents: set[str] = set()
+        self._active_id: str | None = None
         self._events: list[KnowledgeAuditEvent] = []
-        self._activated(initial)
 
     def snapshot_state(self) -> Any:
         return deepcopy(
@@ -75,9 +71,9 @@ class InMemoryArchitectureKnowledgeRepository:
                 if include_drafts or key in self._published_documents
             )
 
-    def active(self) -> ArchitectureKnowledge:
+    def active(self) -> ArchitectureKnowledge | None:
         with self._lock:
-            return self._releases[self._active_id]
+            return self._releases[self._active_id] if self._active_id is not None else None
 
     def save(
         self,

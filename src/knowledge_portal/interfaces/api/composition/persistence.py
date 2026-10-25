@@ -41,7 +41,6 @@ from knowledge_portal.application.ports.sample_requirements import SampleRequire
 from knowledge_portal.application.ports.system_reviews import SystemReviewsPort
 from knowledge_portal.application.ports.transaction_manager import TransactionManagerPort
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.postgres_evidence_index import (
     PostgresEvidenceIndex,
 )
@@ -204,7 +203,7 @@ def _postgres(
     return PersistenceAdapters(
         document_storage=PostgresDocumentStorage(postgres),
         actor_directory=PostgresActorDirectory(postgres),
-        architecture_repository=PostgresArchitectureKnowledgeRepository(postgres, seed_knowledge()),
+        architecture_repository=PostgresArchitectureKnowledgeRepository(postgres),
         organisation_repository=PostgresOrganisationRepository(postgres, clock),
         sample_requirements=PostgresSampleRequirements(postgres),
         catalogue_candidates=PostgresCatalogueCandidates(postgres),
@@ -249,7 +248,7 @@ def _memory(
     library_admin = InMemoryLibraryAdmin(lock)
     system_reviews = InMemorySystemReviews(lock)
     historic = InMemoryHistoricRequirements(lock)
-    architecture = InMemoryArchitectureKnowledgeRepository(seed_knowledge(), events)
+    architecture = InMemoryArchitectureKnowledgeRepository(events)
     organisation = InMemoryOrganisationRepository(clock)
     samples = InMemorySampleRequirements()
     candidates = InMemoryCatalogueCandidates()

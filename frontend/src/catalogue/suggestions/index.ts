@@ -12,4 +12,5 @@ export { changeSentence, decideWhy, inWords, listed, offeringHolds, standaloneSe
 export {
   type Filter, STATE_LABEL, draftedForRequirement, fromCatalogue, matchesFind, needsOneByOne, shown, suggestionState, tally,
 } from "./state";
+export { realisedByKey } from "./keys";
 export { waitsFor, waitsForMany } from "./waits";

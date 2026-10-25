@@ -23,6 +23,7 @@ from knowledge_portal.infrastructure.config.options import LLMProvider
 from knowledge_portal.infrastructure.config.settings import Settings
 from knowledge_portal.interfaces.api.container import Container, build_container
 from knowledge_portal.interfaces.api.main import create_app
+from tests.catalogue_seed import seed_knowledge
 from tests.unit.test_document_library import approve_fixture, owner
 
 # The packaged catalogue was published on 1 Jan 2026; its systems fall due on 30 Jun 2026.
@@ -45,7 +46,9 @@ def clock() -> FixedClock:
 @pytest.fixture
 def container(clock: FixedClock) -> Container:
     return build_container(
-        Settings(llm_provider=LLMProvider.FAKE, library_scan_mode="offline"), clock=clock
+        Settings(llm_provider=LLMProvider.FAKE, library_scan_mode="offline"),
+        clock=clock,
+        in_service=seed_knowledge(),
     )
 
 

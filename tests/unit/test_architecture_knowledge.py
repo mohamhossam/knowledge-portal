@@ -20,6 +20,7 @@ from smb_kernel.llm.local_structured_output import (
 )
 
 from knowledge_portal.application.ports.architecture_knowledge import ArchitectureQuery
+from knowledge_portal.application.ports.architecture_knowledge_repository import release_in_service
 from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceError,
     EvidenceChunk,
@@ -51,7 +52,6 @@ from knowledge_portal.infrastructure.architecture.embeddings import (
     FakeEmbeddings,
 )
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
 )
@@ -74,11 +74,9 @@ from knowledge_portal.infrastructure.documents.library_worker import OfflineDocu
 from knowledge_portal.infrastructure.persistence.document_storage import (
     InMemoryDocumentStorage,
 )
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
-)
 from knowledge_portal.interfaces.api.container import Container
 from knowledge_portal.interfaces.api.main import create_app
+from tests.catalogue_seed import seed_knowledge, seeded_repository
 
 
 def test_catalogue_rejects_duplicate_aliases_and_dangling_relationships() -> None:
@@ -103,7 +101,7 @@ def test_catalogue_rejects_duplicate_aliases_and_dangling_relationships() -> Non
 
 def test_stale_build_cannot_replace_newly_published_evidence() -> None:
     actor = Actor("maintainer", frozenset({"knowledge_maintainer"}))
-    repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    repository = seeded_repository()
     replacement: ArchitectureKnowledge | None = None
 
     class InterleavedEmbeddings(FakeEmbeddings):
@@ -178,7 +176,7 @@ def test_deselected_upload_remains_available_without_becoming_reader_visible(
 
 
 def test_draft_is_version_checked_and_published_release_is_immutable() -> None:
-    repo = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    repo = seeded_repository()
     from knowledge_portal.application.use_cases.architecture_knowledge import (
         ManageArchitectureKnowledge,
     )
@@ -213,7 +211,7 @@ def test_draft_is_version_checked_and_published_release_is_immutable() -> None:
     published = use_case.publish(
         built.id, built.revision, actor, datetime(2026, 1, 1, tzinfo=UTC), "Reviewed"
     )
-    assert repo.active().id == published.id
+    assert release_in_service(repo).id == published.id
     with pytest.raises(KnowledgeConflictError):
         use_case.upsert_system(
             published.id, published.revision, SystemDefinition("another", "Another"), actor
@@ -546,7 +544,7 @@ def test_reviewed_retrieval_fixture_reaches_top_eight_and_resolves_citations() -
         ),
         capability_domains=seed.capability_domains,
     )
-    repository = InMemoryArchitectureKnowledgeRepository(seed)
+    repository = seeded_repository(seed)
     repository.save(release, None, "reviewer", "create_draft")
     index = InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer())
     knowledge = ManageArchitectureKnowledge(

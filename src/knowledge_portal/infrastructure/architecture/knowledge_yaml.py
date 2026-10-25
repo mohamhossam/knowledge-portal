@@ -1,20 +1,14 @@
-"""The immutable packaged seed catalogue, read from the shipped YAML file."""
+"""A catalogue release read from a YAML catalogue file (`catalogues/*.yaml`)."""
 
 from __future__ import annotations
-
-from dataclasses import replace
-from datetime import UTC, datetime
-from pathlib import Path
 
 import yaml
 
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     InvalidKnowledgeError,
-    KnowledgeReleaseStatus,
 )
 from knowledge_portal.infrastructure.architecture.catalogue_files import content_from_mapping
-from knowledge_portal.infrastructure.architecture.yaml_knowledge import default_knowledge_path
 
 
 def knowledge_from_yaml(text: str) -> ArchitectureKnowledge:
@@ -43,17 +37,4 @@ def knowledge_from_yaml(text: str) -> ArchitectureKnowledge:
         schemes=content.schemes,
         interfaces=content.interfaces,
         realisations=content.realisations,
-    )
-
-
-def seed_knowledge() -> ArchitectureKnowledge:
-    path: Path = default_knowledge_path()
-    draft = knowledge_from_yaml(path.read_text(encoding="utf-8"))
-    return replace(
-        draft,
-        status=KnowledgeReleaseStatus.PUBLISHED,
-        built_revision=1,
-        published_at=datetime(2026, 1, 1, tzinfo=UTC),
-        published_by="packaged-seed",
-        name="Initial catalogue",
     )

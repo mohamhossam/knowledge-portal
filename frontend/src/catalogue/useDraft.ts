@@ -92,10 +92,15 @@ export function useDraft(release: Release) {
     mutationFn: (ids: string[]) => api.rejectMany(releaseId, revision.current, ids),
     onSuccess: () => settle(),
   });
-  // Saying what a name suggestions wait for is: it changes suggestions, never the draft.
+  // Saying what a name suggestions wait for is: it changes suggestions, and the draft too
+  // when the name is a system the draft has (it becomes one of its aliases).
   const settleSubject = useMutation({
-    mutationFn: (subject: { system_id: string; name: string; kind: "system" | "offering" }) => api.settleSubject(releaseId, subject),
-    onSettled: () => void queryClient.invalidateQueries({ queryKey: suggestionsKey(releaseId) }),
+    mutationFn: (subject: Parameters<typeof api.settleSubject>[1]) =>
+      api.settleSubject(releaseId, subject),
+    onSettled: (_, __, subject) => {
+      void queryClient.invalidateQueries({ queryKey: suggestionsKey(releaseId) });
+      if (subject.kind === "existing") void queryClient.invalidateQueries({ queryKey: releaseKey(releaseId) });
+    },
   });
 
   const addDocument = useMutation({

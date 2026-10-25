@@ -331,6 +331,54 @@
   font-weight: 600;
 }
 
+.draft-next-step__detail {
+  margin: 0;
+  max-inline-size: 72ch;
+  color: var(--color-ink-2);
+}
+
+/* Every dead end in one compact list, opened from What to do next. */
+.draft-missing {
+  inline-size: 100%;
+  max-block-size: 24rem;
+  overflow: auto;
+}
+
+.draft-missing caption {
+  padding-block-end: var(--space-2);
+  text-align: start;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.draft-missing th[scope="row"] .draft-detail {
+  display: block;
+}
+
+.draft-missing .ds-actions {
+  flex-wrap: wrap;
+}
+
+/* Naming a missing system as one the draft has: the choice opens under its row. */
+.draft-existing__body {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+
+.draft-existing .ds-field {
+  inline-size: min(100%, 28rem);
+}
+
+/* A long change reads in the pane; the row keeps two lines, so the list stays scannable. */
+.draft-change {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
 .draft-blockers {
   display: grid;
   gap: var(--space-3);
@@ -355,6 +403,7 @@
   margin: 0;
   color: var(--color-ink-2);
   font-size: var(--text-meta);
+}
 
 /* How many parts of a document the model has read, under its reading status. */
 .draft-parts {
@@ -381,4 +430,33 @@
 
 .draft-parts::-moz-progress-bar {
   background: var(--color-info);
+}
+
+/* The ontology's steps, in the order they run: a numbered list, each step its own action. */
+.draft-ontology {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding-inline-start: var(--space-6);
+  max-inline-size: 72ch;
+  list-style: decimal outside;
+}
+
+/* A list item, so the step keeps its number; its parts stack with the same rhythm. */
+.draft-ontology__step {
+  display: list-item;
+}
+
+.draft-ontology__step > * + * {
+  margin-block-start: var(--space-2);
+}
+
+.draft-ontology__step::marker {
+  font-weight: 600;
+}
+
+.draft-ontology__title {
+  margin: 0;
+  font-size: var(--text-body);
+  font-weight: 600;
 }

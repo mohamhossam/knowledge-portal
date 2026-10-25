@@ -369,8 +369,8 @@ type Coverage = Offering["nfrs"][number]["coverage"];
 
 /** The realisation layers, in the order a part is realised: what is sold, what delivers it, what it runs on. */
 export const LAYERS: { layer: Layer; short: string; long: string }[] = [
-  { layer: "cfs", short: "CFS", long: "Customer-facing service" },
-  { layer: "rfs", short: "RFS", long: "Resource-facing service" },
+  { layer: "cfs", short: "CFSS", long: "Customer facing service specification" },
+  { layer: "rfs", short: "RFSS", long: "Resource facing service specification" },
   { layer: "resource", short: "Resource", long: "Resource" },
 ];
 

@@ -45,10 +45,8 @@ from knowledge_portal.domain.architecture.products import (
     ProductOffering,
 )
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import (
-    knowledge_from_yaml,
-    seed_knowledge,
-)
+from knowledge_portal.infrastructure.architecture.knowledge_yaml import knowledge_from_yaml
+from tests.catalogue_seed import seed_knowledge
 
 ROOT = Path(__file__).resolve().parents[2]
 CATALOGUE = ROOT / "catalogues" / "smb-architecture.yaml"

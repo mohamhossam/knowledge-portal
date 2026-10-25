@@ -35,7 +35,6 @@ from knowledge_portal.domain.architecture.knowledge import (
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
 )
@@ -47,14 +46,12 @@ from knowledge_portal.infrastructure.documents.library_worker import OfflineDocu
 from knowledge_portal.infrastructure.persistence.document_storage import (
     InMemoryDocumentStorage,
 )
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
-)
 from knowledge_portal.infrastructure.persistence.migration_runner import run_migrations
 from knowledge_portal.infrastructure.persistence.postgres_architecture_knowledge import (
     PostgresArchitectureKnowledgeRepository,
 )
 from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
+from tests.catalogue_seed import seeded_once, seeded_repository
 
 DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not DATABASE_URL, reason="TEST_DATABASE_URL is not configured")
@@ -120,12 +117,14 @@ def test_pgvector_holds_the_same_links_and_answers_concept_queries() -> None:
     index = PostgresEvidenceIndex(
         PostgresStore(DirectPostgresConnector(DATABASE_URL)), FakeEmbeddings(), FakeWordTokenizer()
     )
-    repository = PostgresArchitectureKnowledgeRepository(
-        PostgresStore(DirectPostgresConnector(DATABASE_URL)), seed_knowledge()
+    repository = seeded_once(
+        PostgresArchitectureKnowledgeRepository(
+            PostgresStore(DirectPostgresConnector(DATABASE_URL))
+        )
     )
     knowledge, built = _build(repository, index)
     memory = _Recording()
-    _, expected = _build(InMemoryArchitectureKnowledgeRepository(seed_knowledge()), memory)
+    _, expected = _build(seeded_repository(), memory)
     assert built.index_id is not None and expected.index_id is not None
     chunk_ids = tuple(chunk.id for chunk in memory.chunks)
 
@@ -159,8 +158,10 @@ def test_an_index_stored_before_links_reports_no_coverage() -> None:
     index = PostgresEvidenceIndex(
         PostgresStore(DirectPostgresConnector(DATABASE_URL)), FakeEmbeddings(), FakeWordTokenizer()
     )
-    repository = PostgresArchitectureKnowledgeRepository(
-        PostgresStore(DirectPostgresConnector(DATABASE_URL)), seed_knowledge()
+    repository = seeded_once(
+        PostgresArchitectureKnowledgeRepository(
+            PostgresStore(DirectPostgresConnector(DATABASE_URL))
+        )
     )
     knowledge = ManageArchitectureKnowledge(
         repository, CatalogueFileAdapter(), index, 10_000_000, OfflineDocumentScanner()

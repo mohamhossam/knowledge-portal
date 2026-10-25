@@ -45,9 +45,9 @@ class ReadCatalogPlans:
 
     def for_offering(self, offering_id: str) -> CatalogPlans:
         """The plans of an offering in the catalogue version in service."""
-        offering = next(
-            (item for item in self._repository.active().products if item.id == offering_id), None
-        )
+        release = self._repository.active()
+        products = release.products if release is not None else ()
+        offering = next((item for item in products if item.id == offering_id), None)
         if offering is None:
             raise KnowledgeNotFoundError(
                 f"The catalogue in service has no offering {offering_id!r}."

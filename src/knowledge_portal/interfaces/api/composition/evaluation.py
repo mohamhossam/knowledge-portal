@@ -65,13 +65,8 @@ from knowledge_portal.infrastructure.architecture.golden_set_file import (
     GoldenSetFileError,
     read_golden_set,
 )
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
-)
-from knowledge_portal.infrastructure.architecture.yaml_knowledge import (
-    YamlArchitectureKnowledge,
-    default_knowledge_path,
 )
 from knowledge_portal.infrastructure.config.options import LLMProvider
 from knowledge_portal.infrastructure.config.settings import Settings
@@ -113,7 +108,8 @@ class MappingEvaluation:
 def build_mapping_evaluation(settings: Settings, clock: ClockPort) -> MappingEvaluation:
     llm = build_llm_adapters(settings, Metrics())
     retrieval = build_architecture_retrieval(llm.knowledge_embedding)
-    repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    # Starts empty: the run publishes the golden set's own catalogue file first.
+    repository = InMemoryArchitectureKnowledgeRepository()
     index = InMemoryEvidenceIndex(retrieval.embeddings, retrieval.tokenizer)
     manage = ManageArchitectureKnowledge(
         repository,
@@ -134,7 +130,6 @@ def build_mapping_evaluation(settings: Settings, clock: ClockPort) -> MappingEva
         repository,
         index,
         llm.architecture_reasoner,
-        YamlArchitectureKnowledge(default_knowledge_path()),
         organisation,
     )
     precedents = InMemoryPrecedents()

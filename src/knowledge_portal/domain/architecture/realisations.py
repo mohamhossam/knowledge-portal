@@ -20,6 +20,7 @@ from knowledge_portal.domain.architecture.invariants import (
     required,
 )
 from knowledge_portal.domain.architecture.products import (
+    LAYER_LABEL,
     ProductOffering,
     RealisationLayer,
     realisation_layer,
@@ -41,7 +42,12 @@ def _ids(values: Iterable[str], label: str) -> tuple[str, ...]:
 
 @dataclass(frozen=True)
 class RealisationRecord:
-    """One CFS, RFS or resource, such as the CFS "CFSS_ONPREM_FIREWALL_HE"."""
+    """One CFSS, RFSS or resource, such as the CFSS "CFSS_ONPREM_FIREWALL_HE".
+
+    A service specification (a CFSS or an RFSS) also holds its rules, such as "One
+    Service Order should include from one to two Uplink uCPE Services" (ADR-0127);
+    a resource holds none.
+    """
 
     id: str
     layer: RealisationLayer
@@ -57,6 +63,8 @@ class RealisationRecord:
     source: str | None = None
     # The accepted suggestions that created or extended it, oldest first (ADR-0120).
     accepted: tuple[AcceptedFrom, ...] = ()
+    # What the specification requires, as its sources state it (ADR-0127).
+    rules: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Realisation record id"))
@@ -66,6 +74,7 @@ class RealisationRecord:
         object.__setattr__(self, "system_ids", _ids(self.system_ids, "Delivering system"))
         object.__setattr__(self, "realised_by", _ids(self.realised_by, "Realising record"))
         object.__setattr__(self, "description", optional(self.description, "Description"))
+        object.__setattr__(self, "rules", _ids(self.rules, "Rule"))
         check_source(self)
         keys = [label_key(item) for item in self.labels]
         if len(set(keys)) != len(keys):
@@ -80,6 +89,12 @@ class RealisationRecord:
             raise InvalidKnowledgeError(
                 f"{self.name} is a resource, so nothing below it realises it."
             )
+        if self.layer is RealisationLayer.RESOURCE and self.rules:
+            raise InvalidKnowledgeError(
+                f"{self.name} is a resource; rules belong to a CFSS or an RFSS."
+            )
+        if len({" ".join(rule.casefold().split()) for rule in self.rules}) != len(self.rules):
+            raise InvalidKnowledgeError(f"{self.name} states a rule more than once.")
 
     @property
     def labels(self) -> tuple[str, ...]:
@@ -103,7 +118,7 @@ def check_realisations(
             owner = names.setdefault((record.layer, label_key(label)), record)
             if owner.id != record.id:
                 raise InvalidKnowledgeError(
-                    f"{label!r} already names the {owner.layer.value.upper()} {owner.name}, "
+                    f"{label!r} already names the {LAYER_LABEL[owner.layer]} {owner.name}, "
                     f"so it cannot also name {record.name}."
                 )
         unknown = [item for item in record.system_ids if item not in system_ids]
@@ -119,8 +134,8 @@ def check_realisations(
                 )
             if below.layer not in _BELOW[record.layer]:
                 raise InvalidKnowledgeError(
-                    f"{record.name} is a {record.layer.value.upper()}, so it is realised by a "
-                    f"layer below it, not by the {below.layer.value.upper()} {below.name}."
+                    f"{record.name} is a {LAYER_LABEL[record.layer]}, so it is realised by a "
+                    f"layer below it, not by the {LAYER_LABEL[below.layer]} {below.name}."
                 )
     for product in products:
         for component in product.components:
@@ -132,7 +147,7 @@ def check_realisations(
                     raise InvalidKnowledgeError(
                         f"{product.name} › {component.name} is realised as "
                         f"{item.record_id!r}, which is not a "
-                        f"{item.layer.value.upper()} in the catalogue."
+                        f"{LAYER_LABEL[item.layer]} in the catalogue."
                     )
     return by_id
 
@@ -167,7 +182,7 @@ def find_realisation_among(
 
 def merge_realisations(first: RealisationRecord, second: RealisationRecord) -> RealisationRecord:
     """Two readings of one record as one: the first's layer, name and facts win; the second
-    adds names, systems and what realises it, and fills what the first leaves unset."""
+    adds names, systems, what realises it and rules, and fills what the first leaves unset."""
 
     def joined(one: tuple[str, ...], other: tuple[str, ...]) -> tuple[str, ...]:
         return tuple(dict.fromkeys((*one, *other)))
@@ -188,7 +203,27 @@ def merge_realisations(first: RealisationRecord, second: RealisationRecord) -> R
         description=first.description or second.description,
         confidence=first.confidence or second.confidence,
         source=first.source or second.source,
+        rules=with_rules(first, second.rules).rules,
     )
+
+
+def with_rules(record: RealisationRecord, rules: Iterable[str]) -> RealisationRecord:
+    """The record with ``rules`` added after its own, each once, however it is spaced or cased."""
+    held = {" ".join(rule.casefold().split()) for rule in record.rules}
+    added: list[str] = []
+    for rule in rules:
+        key = " ".join(rule.casefold().split())
+        if key and key not in held:
+            held.add(key)
+            added.append(rule.strip())
+    return replace(record, rules=(*record.rules, *added)) if added else record
+
+
+def specification_named(
+    records: tuple[RealisationRecord, ...], reference: str
+) -> RealisationRecord | None:
+    """The CFSS or RFSS a reference names, by id or by one of its names: what a rule is of."""
+    return find_realisation_among(records, reference, (RealisationLayer.CFS, RealisationLayer.RFS))
 
 
 def realisation_chains(

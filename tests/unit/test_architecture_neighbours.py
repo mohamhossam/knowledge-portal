@@ -22,19 +22,12 @@ from knowledge_portal.domain.organisation.catalogue import (
 )
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.reasoning import FakeArchitectureReasoner
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
-from knowledge_portal.infrastructure.architecture.yaml_knowledge import (
-    YamlArchitectureKnowledge,
-    default_knowledge_path,
-)
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
-)
 from knowledge_portal.infrastructure.persistence.in_memory_organisation import (
     InMemoryOrganisationRepository,
 )
+from tests.catalogue_seed import indexed_repository
 
 NOW = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
 
@@ -85,11 +78,11 @@ def test_adjacent_ignores_relationships_inside_the_selection_and_caps_the_list()
 
 
 def _resolver(organisation: InMemoryOrganisationRepository) -> ResolveArchitectureKnowledge:
+    index = InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer())
     return ResolveArchitectureKnowledge(
-        InMemoryArchitectureKnowledgeRepository(seed_knowledge()),
-        InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
+        indexed_repository(index),
+        index,
         FakeArchitectureReasoner(),
-        YamlArchitectureKnowledge(default_knowledge_path()),
         organisation,
     )
 

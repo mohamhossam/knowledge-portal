@@ -51,7 +51,6 @@ from knowledge_portal.infrastructure.architecture.embeddings import (
     FakeEmbeddings,
 )
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
 )
@@ -69,13 +68,11 @@ from knowledge_portal.infrastructure.documents.library_worker import OfflineDocu
 from knowledge_portal.infrastructure.persistence.document_storage import (
     InMemoryDocumentStorage,
 )
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
-)
 from knowledge_portal.infrastructure.persistence.in_memory_organisation import (
     InMemoryOrganisationRepository,
 )
 from knowledge_portal.interfaces.api.composition.llm import build_llm_adapters
+from tests.catalogue_seed import seed_knowledge, seeded_repository
 from tests.spreadsheet_fixtures import XLSX_MIME
 
 NOW = datetime(2026, 9, 30, 9, 0, tzinfo=UTC)
@@ -140,10 +137,9 @@ def test_mapping_adds_the_named_system_when_the_model_selects_nothing() -> None:
             )
 
     resolver = ResolveArchitectureKnowledge(
-        InMemoryArchitectureKnowledgeRepository(release),
+        seeded_repository(release),
         index,
         Silent(),
-        FakeArchitectureReasoner(),  # type: ignore[arg-type]
         InMemoryOrganisationRepository(FixedClock(NOW)),
     )
 
@@ -199,7 +195,7 @@ class _RecordingIndex(InMemoryEvidenceIndex):
 
 
 def _build(content: bytes, mime_type: str = DOCX) -> tuple[EvidenceChunk, ...]:
-    repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    repository = seeded_repository()
     index = _RecordingIndex()
     manage = ManageArchitectureKnowledge(
         repository, CatalogueFileAdapter(), index, 10_000_000, OfflineDocumentScanner()

@@ -37,7 +37,7 @@ export function SourcesStep() {
       <Documents release={release} draft={draft} actorName={actorName} />
       <AddDocuments key={release.id} draft={draft} />
       <ChangeRequests release={release} draft={draft} />
-      <DerivedDependencies release={release} draft={draft} />
+      <Ontology release={release} draft={draft} />
       <CatalogueFile release={release} />
       <p className="draft-next">
         <ButtonLink to={`${base}/decide`} variant={waiting ? "primary" : "secondary"}>
@@ -373,49 +373,126 @@ function ChangeRequests({ release, draft }: { release: Release; draft: DraftHook
   );
 }
 
-const DERIVED = "derived_dependencies";
+type CatalogueReadingName = "concept_backfill" | "component_links" | "vocabulary_cleanup" | "derived_dependencies";
+
+/** One reading of the draft's own catalogue that builds a layer of its ontology, in the order they run. */
+type OntologyReading = {
+  reading: CatalogueReadingName;
+  title: string;
+  lead: string;
+  action: string;
+  noun: [string, string];
+  run: (releaseId: string) => Promise<{ candidate_count: number }>;
+  /** Why it cannot run yet, when an earlier layer must be in the draft first. */
+  unavailable?: (release: Release) => string | null;
+};
+
+const ONTOLOGY: OntologyReading[] = [
+  {
+    reading: "concept_backfill",
+    title: "Capability concepts",
+    lead:
+      "One business capability concept for each distinct capability name the draft lists, each capability linked to it. On Decide, accept them, " +
+      "merge the ones that mean the same and place each under a broader one. Concepts let a requirement written in business words reach " +
+      "the systems and offerings that do it.",
+    action: "Propose concepts",
+    noun: ["concept", "concepts"],
+    run: (releaseId) => api.proposeConcepts(releaseId),
+  },
+  {
+    reading: "component_links",
+    title: "What each offering component delivers",
+    lead:
+      "The configured model reads each offering component not yet linked to a concept and suggests the concepts it delivers. " +
+      "It needs the concepts first.",
+    action: "Suggest component links",
+    noun: ["component link", "component links"],
+    run: (releaseId) => api.suggestComponentLinks(releaseId),
+    unavailable: (release) => ((release.business_capabilities ?? []).length ? null : "Accept capability concepts on Decide first."),
+  },
+  {
+    reading: "vocabulary_cleanup",
+    title: "Controlled vocabularies",
+    lead:
+      "For each eTOM process, channel kind, component kind, role and Open API value the draft writes, the term it means, or a new term when " +
+      "none does. The written value stays; the term sits beside it.",
+    action: "Clean up the vocabulary",
+    noun: ["term", "terms"],
+    run: (releaseId) => api.cleanUpVocabulary(releaseId),
+  },
+  {
+    reading: "derived_dependencies",
+    title: "Dependencies from interfaces and journeys",
+    lead:
+      "Each system that calls another's interface, and each hand-over a journey makes from one system to another, suggested as a dependency " +
+      "between the two and citing what says it.",
+    action: "Suggest dependencies",
+    noun: ["dependency", "dependencies"],
+    run: (releaseId) => api.suggestDerivedDependencies(releaseId),
+  },
+];
 
 /**
- * The dependencies the draft's interfaces and journeys already say (ADR-0119), suggested
- * for Decide like any other: a reading of the draft's own catalogue, with no model.
+ * Building the draft's ontology on its facts (ADR-0114, ADR-0119, ADR-0125): four readings of the
+ * draft's own catalogue, in the order they run, each suggesting for Decide like any document.
+ * None changes the draft until its suggestions are accepted; running one again replaces its
+ * undecided suggestions, and leaves out what the draft holds or a curator rejected.
  */
-function DerivedDependencies({ release, draft }: { release: Release; draft: DraftHook }) {
+function Ontology({ release, draft }: { release: Release; draft: DraftHook }) {
+  return (
+    <Section title="Build the ontology">
+      <p className="draft-lead">
+        On top of the facts the documents give, in this order. Each step suggests; nothing changes the draft until you accept it on Decide.
+        Running a step again replaces its undecided suggestions.
+      </p>
+      <ol className="draft-ontology">
+        {ONTOLOGY.map((step) => <OntologyStep key={step.reading} step={step} release={release} draft={draft} />)}
+      </ol>
+    </Section>
+  );
+}
+
+function OntologyStep({ step, release, draft }: { step: OntologyReading; release: Release; draft: DraftHook }) {
   const queryClient = useQueryClient();
   const suggest = useMutation({
-    mutationFn: () => api.suggestDerivedDependencies(release.id),
+    mutationFn: () => step.run(release.id),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["architecture"] }),
   });
-  const last = (draft.suggestions.data?.runs ?? []).filter((run) => run.reading === DERIVED).at(-1);
-  const waiting = (draft.suggestions.data?.suggestions ?? []).filter((item) => item.document_version_id === DERIVED && item.status === "proposed").length;
+  const last = (draft.suggestions.data?.runs ?? []).filter((run) => run.reading === step.reading).at(-1);
+  const waiting = (draft.suggestions.data?.suggestions ?? []).filter((item) => item.document_version_id === step.reading && item.status === "proposed").length;
+  const [one, many] = step.noun;
   const said = suggest.isError
     ? errorMessage(suggest.error)
     : suggest.data
-      ? `${count(suggest.data.candidate_count, "dependency", "dependencies")} suggested; decide ${suggest.data.candidate_count === 1 ? "it" : "them"} on Decide.`
+      ? `${count(suggest.data.candidate_count, one, many)} suggested; decide ${suggest.data.candidate_count === 1 ? "it" : "them"} on Decide.`
       : null;
+  const titleId = `ontology-${step.reading}`;
   return (
-    <Section title="Dependencies from interfaces and journeys">
-      <p className="draft-lead">
-        Each system that calls another's interface, and each hand-over a journey makes from one system to another, suggested as a dependency
-        between the two and citing what says it. None becomes a dependency until it is accepted on Decide. Suggesting again replaces the
-        undecided ones, and leaves out what the draft holds or a curator rejected.
-      </p>
+    <li className="draft-ontology__step" aria-labelledby={titleId}>
+      <h3 id={titleId} className="draft-ontology__title">{step.title}</h3>
+      <p className="draft-detail">{step.lead}</p>
       {last && (
         <p className="draft-detail">
-          {count(last.candidate_count, "suggestion")} on its last reading{waiting ? ` · ${waiting.toLocaleString("en")} waiting` : ""}
+          {count(last.candidate_count, "suggestion")} on its last run{waiting ? ` · ${waiting.toLocaleString("en")} waiting` : ""}
         </p>
       )}
       {last && last.warnings.length > 0 && (
-        <Lines label="What the last reading of interfaces and journeys noted">
+        <Lines label={`What the last run of ${step.action.toLocaleLowerCase()} noted`}>
           {last.warnings.map((warning) => <li key={warning} className="draft-detail">{warning}</li>)}
         </Lines>
       )}
       <ActionGroup>
-        <Button icon={last ? <RotateCw size={14} /> : undefined} busy={suggest.isPending} onClick={() => !suggest.isPending && suggest.mutate()}>
-          {suggest.isPending ? "Suggesting…" : last ? "Suggest them again" : "Suggest dependencies"}
+        <Button
+          icon={last ? <RotateCw size={14} /> : undefined}
+          busy={suggest.isPending}
+          unavailableReason={step.unavailable?.(release) ?? null}
+          onClick={() => !suggest.isPending && suggest.mutate()}
+        >
+          {suggest.isPending ? "Suggesting…" : last ? `${step.action} again` : step.action}
         </Button>
       </ActionGroup>
       <Said text={said} failed={suggest.isError} />
-    </Section>
+    </li>
   );
 }
 

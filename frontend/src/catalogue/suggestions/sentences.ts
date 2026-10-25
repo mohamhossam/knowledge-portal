@@ -54,6 +54,8 @@ export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
       return `Adds the constraint “${content.text}”`;
     case "offering_rule":
       return `Adds the rule “${content.text}” to the offering ${words.offering(content.system_id)}`;
+    case "specification_rule":
+      return `Adds the rule “${content.text}” to the specification ${words.realisation(content.system_id)}`;
     case "relationship":
       return `${VERB[content.relationship_kind ?? "unspecified"]} ${targetName(suggestion, words)}`;
     case "placement":
@@ -151,8 +153,8 @@ export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
 
 /** What each realisation layer is called in a sentence. */
 const LAYER: Record<NonNullable<Suggestion["content"]["realisation"]>["layer"], string> = {
-  cfs: "CFS",
-  rfs: "RFS",
+  cfs: "CFSS",
+  rfs: "RFSS",
   resource: "resource",
 };
 

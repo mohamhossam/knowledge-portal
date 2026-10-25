@@ -27,7 +27,6 @@ from knowledge_portal.domain.architecture.interfaces import InterfaceStyle, Syst
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge, SystemDefinition
 from knowledge_portal.domain.architecture.provenance import AcceptedFrom
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.llm.catalogue_extraction import (
     ChangeOutput,
     ExtractionOutput,
@@ -39,6 +38,7 @@ from knowledge_portal.infrastructure.llm.prompts.catalogue_extraction_prompt imp
     LEAN_SYSTEM_PROMPT,
     SYSTEM_PROMPT,
 )
+from tests.catalogue_seed import seed_knowledge
 
 OWNER = {"X-Fake-Actor-Id": "fake-owner"}
 ADAPTER = CatalogueFileAdapter()

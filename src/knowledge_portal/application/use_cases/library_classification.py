@@ -46,6 +46,9 @@ class LibraryClassification:
 
     def options(self) -> ClassificationOptions:
         release = self._catalogue.active()
+        if release is None:
+            # Nothing in service yet: a document is filed without a type or topics.
+            return ClassificationOptions((), ())
         types = [
             ClassificationOption(item.id, item.pref_label)
             for item in in_service(release.vocabulary)

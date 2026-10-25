@@ -38,14 +38,11 @@ from knowledge_portal.domain.architecture.precedents import (
 from knowledge_portal.domain.architecture.verdicts import ProductVerdict
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
-)
 from knowledge_portal.infrastructure.persistence.in_memory_precedents import InMemoryPrecedents
 from knowledge_portal.interfaces.api.container import Container, build_container
 from knowledge_portal.interfaces.api.main import create_app
+from tests.catalogue_seed import seed_knowledge, seeded_repository
 from tests.conftest import FAKE_PROVIDER_SETTINGS
 
 NOW = datetime(2026, 10, 11, 9, tzinfo=UTC)
@@ -183,7 +180,7 @@ def _request(**changes: Any) -> PrecedentRequest:
 def recording() -> tuple[RecordPrecedent, InMemoryPrecedents, InMemoryEvidenceIndex]:
     store = InMemoryPrecedents()
     index = InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer())
-    repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    repository = seeded_repository()
     return RecordPrecedent(repository, index, store, FixedClock(NOW)), store, index
 
 
@@ -263,7 +260,7 @@ def test_the_nearest_precedents_are_decided_and_never_the_requirement_s_own() ->
 def test_summaries_name_their_release_and_need_a_maintainer() -> None:
     store = InMemoryPrecedents()
     store.record(_precedent(release_id=SEED, concept_ids=("wifi",)), "m", (1.0,))
-    repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    repository = seeded_repository()
     read = ReadPrecedentSummaries(repository, store)
 
     (item,) = read.execute(Actor("owner", frozenset({"knowledge_maintainer"})))
@@ -299,7 +296,8 @@ BODY: dict[str, Any] = {
 @pytest.fixture
 def served() -> Any:
     container: Container = build_container(
-        replace(FAKE_PROVIDER_SETTINGS, requirement_service_token=TOKEN)
+        replace(FAKE_PROVIDER_SETTINGS, requirement_service_token=TOKEN),
+        in_service=seed_knowledge(),
     )
     with TestClient(create_app(lambda: container)) as client:
         yield client

@@ -364,6 +364,7 @@ _LeanKind = Literal[
     "capability",
     "constraint",
     "offering_rule",
+    "specification_rule",
     "relationship",
     "landscape_domain",
     "placement",
@@ -1295,8 +1296,8 @@ def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateConten
         )
     if kind is CandidateKind.CONSTRAINT:
         return CandidateContent(kind, system_id, text=(item.text or "").strip())
-    if kind is CandidateKind.OFFERING_RULE:
-        # Its subject is an offering, by name until the draft resolves it.
+    if kind in {CandidateKind.OFFERING_RULE, CandidateKind.SPECIFICATION_RULE}:
+        # Its subject is an offering, or a CFSS or RFSS, by name until the draft resolves it.
         return CandidateContent(kind, slug(item.system), text=(item.text or "").strip())
     target = (item.target_system or "").strip()
     if not target:

@@ -16,10 +16,8 @@ from knowledge_portal.domain.architecture.knowledge import (
     SystemComponent,
     SystemDefinition,
 )
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import (
-    knowledge_from_yaml,
-    seed_knowledge,
-)
+from knowledge_portal.infrastructure.architecture.knowledge_yaml import knowledge_from_yaml
+from tests.catalogue_seed import seed_knowledge
 
 CATALOGUE = Path(__file__).resolve().parents[2] / "catalogues" / "smb-architecture.yaml"
 

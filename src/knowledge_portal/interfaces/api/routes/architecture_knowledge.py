@@ -38,6 +38,7 @@ from knowledge_portal.application.use_cases.architecture_preview import (
 )
 from knowledge_portal.application.use_cases.catalogue_candidates import (
     DecideCatalogueCandidate,
+    SubjectKind,
 )
 from knowledge_portal.application.use_cases.change_requests import ReadDeliverySummaries
 from knowledge_portal.application.use_cases.precedents import ReadPrecedentSummaries
@@ -172,9 +173,13 @@ def list_releases(
     return [KnowledgeReleaseResponse.from_domain(item) for item in knowledge.list_releases(actor)]
 
 
-@router.get("/releases/active", response_model=KnowledgeReleaseResponse)
-def active_release(knowledge: KnowledgeDep, actor: KnowledgeActorDep) -> KnowledgeReleaseResponse:
-    return KnowledgeReleaseResponse.from_domain(knowledge.view_active(actor))
+@router.get("/releases/active", response_model=KnowledgeReleaseResponse | None)
+def active_release(
+    knowledge: KnowledgeDep, actor: KnowledgeActorDep
+) -> KnowledgeReleaseResponse | None:
+    """The version in service; null until a maintainer publishes the first."""
+    release = knowledge.view_active(actor)
+    return KnowledgeReleaseResponse.from_domain(release) if release is not None else None
 
 
 @router.get("/releases/{release_id}", response_model=KnowledgeReleaseResponse)
@@ -633,11 +638,36 @@ def settle_suggestion_subject(
     clock: ClockDep,
     actor: KnowledgeActorDep,
 ) -> SettleSubjectResponse:
-    """Say what a name waiting suggestions name is: a system to suggest, or a product
-    offering, so its constraints become the offering's rules."""
-    settled = suggestions.settle_subject(
-        release_id, body.system_id, body.name, body.kind, actor, clock.now()
-    )
+    """Say what a name waiting suggestions name is: a system to suggest, a product
+    offering, so its constraints become the offering's rules, a system the draft has, or a
+    CFSS or RFSS the draft has, so the rules read as an offering's become its own."""
+    at = clock.now()
+    reference, name = body.system_id, body.name
+    # The request's validator holds each kind's own field present.
+    if body.kind is SubjectKind.EXISTING and body.existing_system_id is not None:
+        settled = suggestions.settle_as_existing(
+            release_id, reference, name, body.existing_system_id, actor, at
+        )
+    elif body.kind is SubjectKind.SPECIFICATION and body.specification_id is not None:
+        settled = suggestions.settle_as_specification(
+            release_id, reference, name, body.specification_id, actor, at
+        )
+    elif body.kind is SubjectKind.NEW_SPECIFICATION and body.layer is not None:
+        settled = suggestions.suggest_specification(
+            release_id, reference, name, body.layer, actor, at
+        )
+    elif body.kind is SubjectKind.ORDER_TYPE:
+        settled = suggestions.add_order_type(release_id, reference, name, actor, at)
+    elif body.kind is SubjectKind.EXISTING_ORDER_TYPE and body.existing_id is not None:
+        settled = suggestions.settle_order_type(
+            release_id, reference, name, body.existing_id, actor, at
+        )
+    elif body.kind is SubjectKind.CHANNEL:
+        settled = suggestions.suggest_channel(release_id, reference, name, actor, at)
+    elif body.kind is SubjectKind.EXISTING_CHANNEL and body.existing_id is not None:
+        settled = suggestions.settle_channel(release_id, reference, body.existing_id, actor, at)
+    else:
+        settled = suggestions.settle_subject(release_id, reference, name, body.kind, actor, at)
     return SettleSubjectResponse(retyped=settled.retyped, added=settled.added)
 
 

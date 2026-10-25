@@ -32,15 +32,11 @@ from knowledge_portal.domain.architecture.plans import (
     PriceKind,
 )
 from knowledge_portal.domain.architecture.products import OrderType, ProductOffering
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.config.options import (
     ConfigurationError,
     ProductCatalogProvider,
 )
 from knowledge_portal.infrastructure.config.settings import Settings
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
-)
 from knowledge_portal.infrastructure.product_catalog import (
     CachedProductCatalog,
     FakeProductCatalog,
@@ -48,6 +44,7 @@ from knowledge_portal.infrastructure.product_catalog import (
 )
 from knowledge_portal.interfaces.api.container import Container, build_container
 from knowledge_portal.interfaces.api.main import create_app
+from tests.catalogue_seed import seed_knowledge, seeded_repository
 from tests.conftest import FAKE_PROVIDER_SETTINGS
 
 NOW = datetime(2026, 10, 5, 9, 30, tzinfo=UTC)
@@ -309,7 +306,7 @@ def test_a_reading_says_when_it_was_read_with_its_zone() -> None:
 
 def _plans(catalog: Any = None) -> ReadCatalogPlans:
     release = replace(seed_knowledge(), products=(PRO, UNCODED, UNKNOWN))
-    return ReadCatalogPlans(InMemoryArchitectureKnowledgeRepository(release), catalog)
+    return ReadCatalogPlans(seeded_repository(release), catalog)
 
 
 def test_plans_are_read_by_the_offering_code_in_the_version_in_service() -> None:

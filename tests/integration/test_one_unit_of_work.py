@@ -44,7 +44,6 @@ from knowledge_portal.domain.architecture.knowledge import KnowledgeReleaseStatu
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
 from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.persistence.document_storage import PostgresDocumentStorage
@@ -59,6 +58,7 @@ from knowledge_portal.infrastructure.persistence.postgres_change_requests import
     PostgresChangeRequests,
 )
 from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
+from tests.catalogue_seed import seeded_once
 
 DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not DATABASE_URL, reason="TEST_DATABASE_URL is not configured")
@@ -87,7 +87,7 @@ def _world() -> tuple[PostgresStore, PostgresArchitectureKnowledgeRepository, An
     assert DATABASE_URL is not None
     run_migrations(DATABASE_URL)
     store = PostgresStore(DirectPostgresConnector(DATABASE_URL))
-    repository = PostgresArchitectureKnowledgeRepository(store, seed_knowledge())
+    repository = seeded_once(PostgresArchitectureKnowledgeRepository(store))
     manage = ManageArchitectureKnowledge(
         repository,
         CatalogueFileAdapter(),

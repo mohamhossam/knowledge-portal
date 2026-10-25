@@ -28,13 +28,13 @@ from knowledge_portal.domain.architecture.knowledge import (
     SystemComponent,
     SystemDefinition,
 )
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     ArchitectureJobResponse,
     KnowledgeAuditEventResponse,
     KnowledgeReleaseResponse,
     SystemDefinitionSchema,
 )
+from tests.catalogue_seed import seed_knowledge
 
 OWNER = {"X-Fake-Actor-Id": "fake-owner"}
 READER = {"X-Fake-Actor-Id": "fake-reviewer"}

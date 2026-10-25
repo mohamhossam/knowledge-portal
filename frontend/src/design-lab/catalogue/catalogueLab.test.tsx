@@ -112,6 +112,7 @@ describe("where the catalogue lab reads its catalogue", { timeout: 30_000 }, () 
     vi.spyOn(api, "activeRelease").mockResolvedValue(null);
     await open("", "api");
     expect(await screen.findByText("No catalogue version is in service yet")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Start the first version" })).toHaveAttribute("href", "/architecture");
   });
 });
 

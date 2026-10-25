@@ -28,17 +28,14 @@ from knowledge_portal.application.use_cases.architecture_knowledge import (
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
 from knowledge_portal.infrastructure.persistence.document_storage import InMemoryDocumentStorage
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
-)
 from knowledge_portal.infrastructure.persistence.in_memory_transaction import (
     InMemoryTransactionManager,
 )
 from knowledge_portal.interfaces.api.container import build_container
 from knowledge_portal.interfaces.api.main import create_app
+from tests.catalogue_seed import seeded_repository
 from tests.conftest import FAKE_PROVIDER_SETTINGS
 
 OWNER = {"X-Fake-Actor-Id": "fake-owner"}
@@ -225,7 +222,7 @@ class _ScannerThatStops:
 
 def test_a_scanner_that_stops_mid_batch_keeps_the_files_already_added() -> None:
     scanner = _ScannerThatStops(answers=1)
-    repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    repository = seeded_repository()
     manage = ManageArchitectureKnowledge(
         repository,
         CatalogueFileAdapter(),

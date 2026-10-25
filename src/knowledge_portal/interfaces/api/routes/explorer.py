@@ -37,10 +37,13 @@ def reader(actor: SignedInActorDep) -> ActorResponse:
     return actor_response(actor)
 
 
-@router.get("/release", response_model=ExplorerReleaseResponse)
-def release_in_service(explore: ExploreDep, actor: SignedInActorDep) -> ExplorerReleaseResponse:
-    """The catalogue version in service, as the explorer reads it."""
-    return ExplorerReleaseResponse.from_domain(explore.in_service())
+@router.get("/release", response_model=ExplorerReleaseResponse | None)
+def release_in_service(
+    explore: ExploreDep, actor: SignedInActorDep
+) -> ExplorerReleaseResponse | None:
+    """The catalogue version in service, as the explorer reads it; null before the first."""
+    release = explore.in_service()
+    return ExplorerReleaseResponse.from_domain(release) if release is not None else None
 
 
 @router.get(

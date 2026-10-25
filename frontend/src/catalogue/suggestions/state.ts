@@ -17,7 +17,7 @@ export const STATE_LABEL: Record<SuggestionState, string> = {
 
 /** The order accepting-all walks, and the order rows sit inside a system. */
 export const KIND_ORDER: SuggestionKind[] = [
-  "source", "capability_domain", "portfolio_node", "landscape_domain", "system", "placement", "component", "capability", "constraint", "relationship", "interface", "realisation_record", "channel", "product", "offering_rule", "question", "journey", "conflict",
+  "source", "capability_domain", "portfolio_node", "landscape_domain", "system", "placement", "component", "capability", "constraint", "relationship", "interface", "realisation_record", "specification_rule", "channel", "product", "offering_rule", "question", "journey", "conflict",
 ];
 
 /**

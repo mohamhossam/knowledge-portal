@@ -185,6 +185,7 @@ _REALISATION_FIELDS = (
     "description",
     "confidence",
     "source",
+    "rules",
 )
 
 
@@ -378,7 +379,8 @@ class CatalogueChange:
 
 @dataclass(frozen=True)
 class CatalogueDiff:
-    base_release_id: str
+    # None for the first version: nothing was in service to compare with.
+    base_release_id: str | None
     draft_release_id: str
     changes: tuple[CatalogueChange, ...]
 
@@ -862,3 +864,9 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
         )
     )
     return CatalogueDiff(base.id, draft.id, tuple(changes))
+
+
+def first_version_diff(draft: ArchitectureKnowledge) -> CatalogueDiff:
+    """What a version adds when nothing is in service: everything it holds."""
+    nothing = ArchitectureKnowledge(draft.id, 1, (), ())
+    return replace(diff_releases(nothing, draft), base_release_id=None)

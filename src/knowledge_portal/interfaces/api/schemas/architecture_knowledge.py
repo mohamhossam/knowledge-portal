@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import BaseModel, BeforeValidator, Field, model_validator
 
 from knowledge_portal.application.ports.architecture_jobs import (
     ArchitectureJob,
@@ -1018,7 +1018,8 @@ class RealisationSchema(BaseModel):
 
 
 class RealisationRecordSchema(BaseModel):
-    """A CFS, RFS or resource, the systems that deliver it, and what realises it below."""
+    """A CFSS, RFSS or resource, the systems that deliver it, what realises it below, and a
+    specification's rules (ADR-0127). ``layer`` keeps its values: cfs, rfs, resource."""
 
     id: Identifier
     layer: RealisationLayer
@@ -1032,6 +1033,7 @@ class RealisationRecordSchema(BaseModel):
     source: Text | None = None
     # Read-only: what accepted suggestions produced it (ADR-0120); ignored on requests.
     accepted: list[AcceptedFromSchema] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
+    rules: list[Text] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, record: RealisationRecord) -> RealisationRecordSchema:
@@ -1046,6 +1048,7 @@ class RealisationRecordSchema(BaseModel):
             confidence=record.confidence,
             source=record.source,
             accepted=[AcceptedFromSchema.from_domain(item) for item in record.accepted],
+            rules=list(record.rules),
         )
 
     def to_domain(self) -> RealisationRecord:
@@ -1059,6 +1062,7 @@ class RealisationRecordSchema(BaseModel):
             self.description,
             self.confidence,
             self.source,
+            rules=tuple(self.rules),
         )
 
 
@@ -2628,7 +2632,8 @@ class CatalogueChangeResponse(BaseModel):
 
 
 class CatalogueDiffResponse(BaseModel):
-    base_release_id: str
+    # None when the draft is the first version: nothing was in service to compare with.
+    base_release_id: str | None
     draft_release_id: str
     changes: list[CatalogueChangeResponse]
 
@@ -3023,7 +3028,7 @@ class ImpactComparisonResponse(BaseModel):
 class MappingImpactResponse(BaseModel):
     """How much of the backlog is mapped, and how much uses an older catalogue version."""
 
-    active_release_id: str
+    active_release_id: str | None
     requirements: int
     features: int
     stories: int
@@ -3059,12 +3064,39 @@ class RejectSuggestionsResponse(BaseModel):
 
 
 class SettleSubjectRequest(BaseModel):
-    """What a name waiting suggestions name really is: a system or a product offering."""
+    """What a name waiting suggestions name really is, said once for all of them:
+    a system or a product offering to suggest; a system the draft has
+    (``existing_system_id``); a CFSS or RFSS the draft has (``specification_id``) or one to
+    suggest (``layer``); an order type to add to the offering ``system_id`` names, or one it
+    has (``existing_id``, its code); a channel to suggest, or one the draft has
+    (``existing_id``). For an order type, ``name`` is the order type and ``system_id`` the
+    offering. Each extra field is required for its kind only."""
 
     system_id: Identifier = Field(min_length=1)
     # The name the documents give it, for the suggestion of it.
     name: Name = ""
     kind: SubjectKind
+    existing_system_id: Identifier | None = None
+    specification_id: Identifier | None = None
+    existing_id: Identifier | None = None
+    layer: RealisationLayer | None = None
+
+    @model_validator(mode="after")
+    def _each_kind_names_its_own(self) -> SettleSubjectRequest:
+        if (self.kind is SubjectKind.EXISTING) != (self.existing_system_id is not None):
+            raise ValueError("existing_system_id names the system for the kind existing only.")
+        if (self.kind is SubjectKind.SPECIFICATION) != (self.specification_id is not None):
+            raise ValueError(
+                "specification_id names the CFSS or RFSS for the kind specification only."
+            )
+        chosen = {SubjectKind.EXISTING_ORDER_TYPE, SubjectKind.EXISTING_CHANNEL}
+        if (self.kind in chosen) != (self.existing_id is not None):
+            raise ValueError("existing_id names the order type or channel for those kinds only.")
+        if (self.kind is SubjectKind.NEW_SPECIFICATION) != (self.layer is not None):
+            raise ValueError("layer says CFSS or RFSS for the kind new_specification only.")
+        if self.kind is SubjectKind.ORDER_TYPE and not self.name.strip():
+            raise ValueError("name is the order type to add.")
+        return self
 
 
 class SettleSubjectResponse(BaseModel):

@@ -44,7 +44,6 @@ from knowledge_portal.domain.document.value_objects import DocumentVersionId
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
 )
@@ -64,12 +63,10 @@ from knowledge_portal.infrastructure.llm.prompts.catalogue_extraction_prompt imp
 from knowledge_portal.infrastructure.persistence.document_storage import (
     InMemoryDocumentStorage,
 )
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
-)
 from knowledge_portal.infrastructure.persistence.in_memory_catalogue_candidates import (
     InMemoryCatalogueCandidates,
 )
+from tests.catalogue_seed import seeded_repository
 
 NOW = datetime(2026, 10, 1, 9, 0, tzinfo=UTC)
 MAINTAINER = Actor("amina", frozenset({"knowledge_maintainer"}))
@@ -185,7 +182,7 @@ def test_a_name_written_apart_finds_the_system_whose_alias_runs_it_together() ->
 
 
 def test_the_prompt_reads_tables_as_records_and_integrations_as_stated() -> None:
-    assert PROMPT_VERSION == "catalogue-extraction-v21"
+    assert PROMPT_VERSION == "catalogue-extraction-v22"
     for rule in (
         "Read each row as one record",
         "the ID value",
@@ -248,7 +245,7 @@ def _link(
 def _propose(
     *changes: ProposedChange,
 ) -> tuple[Any, ArchitectureKnowledge, InMemoryCatalogueCandidates]:
-    repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    repository = seeded_repository()
     manage = ManageArchitectureKnowledge(
         repository,
         CatalogueFileAdapter(),

@@ -25,7 +25,7 @@ from knowledge_portal.domain.architecture.products import (
     merge_offerings,
 )
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
+from tests.catalogue_seed import seed_knowledge
 
 ADAPTER = CatalogueFileAdapter()
 OWNER = {"X-Fake-Actor-Id": "fake-owner"}
@@ -75,7 +75,7 @@ def test_layers_and_coverage_are_read_however_a_source_writes_them() -> None:
 @pytest.mark.parametrize(
     ("build", "message"),
     [
-        (lambda: Realisation("service", "x"), "CFS, RFS or resource"),  # type: ignore[arg-type]
+        (lambda: Realisation("service", "x"), "CFSS, RFSS or resource"),  # type: ignore[arg-type]
         (lambda: OfferingNfr("Audit", "maybe"), "defined, partial or missing"),  # type: ignore[arg-type]
         (lambda: Realisation(RealisationLayer.CFS, " "), "Realisation"),
         (

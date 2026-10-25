@@ -19,6 +19,7 @@ from knowledge_portal.application.errors import DocumentNotFoundError, DocumentV
 from knowledge_portal.application.ports.actor_directory import ActorLookupPort
 from knowledge_portal.application.ports.architecture_knowledge_repository import (
     ArchitectureKnowledgeRepositoryPort,
+    release_in_service,
 )
 from knowledge_portal.application.ports.architecture_rag import EvidenceChunk
 from knowledge_portal.application.ports.document_library import DocumentLibraryPort
@@ -143,7 +144,7 @@ class _InService:
         self._clock, self.cycle = clock, cycle
 
     def release(self) -> ArchitectureKnowledge:
-        return self._releases.active()
+        return release_in_service(self._releases)
 
     def _publisher(self, release: ArchitectureKnowledge) -> ActorSnapshot:
         actor_id = release.published_by or "unknown"
@@ -151,7 +152,9 @@ class _InService:
         return ActorSnapshot(ActorId(actor_id), known.display_name if known else "its publisher")
 
     def standings(self) -> tuple[SystemStanding, ...]:
-        release = self.release()
+        release = self._releases.active()
+        if release is None:
+            return ()
         # A version in service always has a publication date; without one, nothing is reviewed.
         published = release.published_at or NEVER
         publisher = self._publisher(release)

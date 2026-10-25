@@ -368,9 +368,9 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
 
   /* 5 Realisation */
   h1("5. Product → Service → Resource");
-  p("Each component, the customer-facing services (CFS), resource-facing services (RFS) and resources that realise it, and the systems responsible for it in this order. A layer its sources do not name is a gap.");
+  p("Each component, the customer facing service specifications (CFSS), resource facing service specifications (RFSS) and resources that realise it, and the systems responsible for it in this order. A layer its sources do not name is a gap.");
   table(
-    columns(["Component", 18], ["CFS", 19], ["RFS", 21], ["Resource", 16], ["Responsible in this order", 16], ["Confidence", 10]),
+    columns(["Component", 18], ["CFSS", 19], ["RFSS", 21], ["Resource", 16], ["Responsible in this order", 16], ["Confidence", 10]),
     parts.map(({ part, responsibilities }) => {
       const layer = (key: (typeof LAYERS)[number]["layer"]): DocCell => {
         const items = (part.realisation ?? []).filter((item) => item.layer === key);

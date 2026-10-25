@@ -14,13 +14,14 @@ import { densityFor, usePreferences } from "../../shell/preferences";
 import { ButtonLink } from "../../shell/links";
 import { openShortcuts } from "../../shell/shortcuts";
 import {
-  type Blocker, type Filter, type SuggestionGroup, blockers as deadEnds, bulkAcceptable, changeSentence, decideWhy, draftedForRequirement, featureWarnings, fromCatalogue, inWords, lexicon,
+  type Blocker, type Filter, type SuggestionGroup, blockers as deadEnds, realisedByKey, bulkAcceptable, changeSentence, decideWhy, dependencyEdges, draftedForRequirement, featureWarnings, fromCatalogue, inWords, lexicon,
   matchesFind, shown as inFilter, suggestionGroups, suggestionState, tally, waitsFor,
 } from "../suggestions";
 import { useCatalogueContext } from "../useCatalogue";
 import { useDraft } from "../useDraft";
 import { STATE_TONE, citedPart, stateWords } from "./decide";
 import { DecisionTree } from "./DecisionTree";
+import { type Answer, type DraftChoices, settleRequest } from "./MissingThings";
 import { NextStep } from "./NextStep";
 import { Said } from "./parts";
 import { SuggestionPane } from "./SuggestionPane";
@@ -30,7 +31,7 @@ const FILTER_LABEL: Record<Filter, string> = {
   waiting: "Waiting",
   ready: "Ready to accept",
   decide: "Needs your decision",
-  waits: "Waits for another",
+  waits: "Can't be accepted yet",
   decided: "Decided",
   all: "All",
 };
@@ -107,6 +108,21 @@ function Decide() {
   const bulkCount = bulk.ready.length + bulk.lifted.length;
   const readyIds = useMemo(() => new Set([...bulk.ready, ...bulk.lifted].map((item) => item.id)), [bulk]);
   const stuck = useMemo(() => deadEnds(release, all, words), [release, all, words]);
+  // What the draft already holds, for saying a missing name is one of them.
+  const choices = useMemo<DraftChoices>(() => ({
+    systems: release.systems.filter((system) => !system.deprecated).map((system) => ({ id: system.id, name: system.name, aliases: system.aliases })),
+    specifications: (release.realisations ?? []).flatMap((item) =>
+      item.layer === "resource" ? [] : [{ id: item.id, name: item.name, aliases: item.aliases ?? [], layer: item.layer }],
+    ),
+    channels: (release.channels ?? []).map((item) => ({ id: item.id, name: item.name })),
+    offerings: (release.products ?? []).map((item) => ({ id: item.id, name: item.name, code: item.code, order_types: item.order_types })),
+  }), [release]);
+  // Each waiting suggestion that waits on a dead end, with what it waits for in words.
+  const deadEndOf = useMemo(() => new Map(stuck.flatMap((blocker) => blocker.waiting.map((item) => [item.id, blocker.label] as const))), [stuck]);
+  // "What waits for what" earns its place only when a suggestion waits on another one.
+  const chained = useMemo(() => dependencyEdges(all).length > 0, [all]);
+  // With nothing to accept or decide, only the keys that still act are shown.
+  const acting = counts.decide > 0 || bulkCount > 0;
   const notes = useMemo(() => featureWarnings(draft.suggestions.data?.runs ?? []), [draft.suggestions.data]);
   const documents = useMemo(() => new Map(release.documents.map((item) => [item.id, item])), [release.documents]);
 
@@ -133,6 +149,8 @@ function Decide() {
   const cellOf = (id: string) => desk.current?.querySelector<HTMLElement>(`tr[data-row-id="${CSS.escape(id)}"] [data-cell-focus]`) ?? null;
   const focusRow = (id: string) => focusLater(() => cellOf(id));
   const say = (text: string, failed = false) => setSaid({ text, failed });
+  // What settling a missing thing did, said beside the missing things themselves.
+  const [settled, setSettled] = useState<{ text: string; failed?: boolean } | null>(null);
 
   const move = (id: string) => {
     if (id === currentId) return;
@@ -248,16 +266,38 @@ function Decide() {
       },
     });
   };
-  /** Says what a name suggestions wait for is: a system to suggest, or a product offering. */
-  const settle = (reference: string, name: string, kind: "system" | "offering") =>
-    draft.settleSubject.mutate({ system_id: reference, name, kind }, {
-      onSuccess: (result) => {
-        if (kind === "system") say(result.added ? `Suggested the system ${name}. Accept it to free what waits for it.` : `The system ${name} is already suggested.`);
-        else if (result.added) say(`Suggested the offering ${name}${result.retyped ? `; ${count(result.retyped, "rule")} of it ${result.retyped === 1 ? "waits" : "wait"} for it` : ""}. Accept it to free what waits for it.`);
-        else say(`${name} is now a product offering${result.retyped ? `: ${count(result.retyped, "suggestion")} changed with it` : ""}.`);
-      },
-      onError: (error) => say(errorMessage(error), true),
+  /** Settles a missing thing as the person answered it, and says what that did. */
+  const answer = (blocker: Blocker, chosen: Answer) => {
+    if (chosen.kind === "without_link") {
+      dropLink(blocker);
+      return;
+    }
+    draft.settleSubject.mutate(settleRequest(blocker, chosen), {
+      onSuccess: (result) => setSettled({ text: settledWords(blocker, chosen, result) }),
+      onError: (error) => setSettled({ text: inWords(errorMessage(error), words), failed: true }),
     });
+  };
+  /** The pane's own answer for the suggestion in hand: its name is a system, or an offering. */
+  const settle = (reference: string, name: string, kind: "system" | "offering") =>
+    answer({ key: `${kind}:${reference}`, kind, reference, name, label: name, waiting: [] }, { kind });
+  /** Accepts what waits on a record named in the wrong layer, without naming it as what realises them. */
+  const dropLink = (blocker: Blocker) => {
+    const { key } = blocker;
+    const edited = blocker.waiting.flatMap((item) => {
+      const record = item.content.realisation;
+      if (!record) return [];
+      const kept = record.realised_by.filter((reference) => !realisedByKey(record.layer, reference).includes(key));
+      return [{ item, content: { ...item.content, realisation: { ...record, realised_by: kept } } }];
+    });
+    setSettled({ text: `Accepting ${count(edited.length, "suggestion")} without ${blocker.name} as what realises them.` });
+    void Promise.all(edited.map(({ item, content }) => draft.decide({ suggestionId: item.id, accept: true, content }))).then((done) => {
+      const accepted = done.filter(Boolean).length;
+      setSettled({
+        text: `Accepted ${count(accepted, "suggestion")} without ${blocker.name}${accepted < edited.length ? `; ${edited.length - accepted} couldn't apply and wait for you` : ""}.`,
+        failed: accepted < edited.length,
+      });
+    });
+  };
   const showWaiting = (blocker: Blocker) => {
     setView("waits", blocker.name);
     const first = blocker.waiting[0];
@@ -371,6 +411,7 @@ function Decide() {
       actorName={actorName}
       busy={busy}
       kept={edits[current.suggestion.id]}
+      deadEnd={deadEndOf.get(current.suggestion.id)}
       notes={
         current.suggestion.change_request && !draftedForRequirement(current.suggestion)
           ? notes.get(`${current.suggestion.change_request.change_request_id}/${current.suggestion.change_request.feature_id}`)
@@ -413,7 +454,9 @@ function Decide() {
       <section className="draft-progress" aria-label="Decisions so far">
         <p>
           <strong className="ds-num">{counts.waiting.toLocaleString("en")}</strong> waiting
-          {" · "}<strong className="ds-num">{counts.decide.toLocaleString("en")}</strong> need your decision
+          {counts.decide > 0 || deadEndOf.size === 0
+            ? <>{" · "}<strong className="ds-num">{counts.decide.toLocaleString("en")}</strong> need your decision</>
+            : <>{" · "}<strong className="ds-num">{deadEndOf.size.toLocaleString("en")}</strong> on things no document describes</>}
           {" · "}{counts.accepted.toLocaleString("en")} accepted
           {" · "}{counts.rejected.toLocaleString("en")} rejected
           {counts.present > 0 && ` · ${counts.present.toLocaleString("en")} already in the draft`}
@@ -426,17 +469,20 @@ function Decide() {
         bulk={bulkCount}
         bulkLabel={draft.acceptReady.isPending ? "Accepting…" : bulkLabel(bulk.ready.length, bulk.lifted.length)}
         waiting={counts.waiting}
+        accepted={counts.accepted}
         blockers={stuck}
         focusTo={`${base}/decide/focus`}
         changesTo={`${base}/changes`}
         busy={busy}
         settling={draft.settleSubject.isPending}
         onAcceptReady={askToAcceptReady}
-        onSettle={(blocker, kind) => settle(blocker.reference, blocker.name, kind)}
+        onAnswer={answer}
+        choices={choices}
+        settled={settled}
         onShow={showWaiting}
         onReject={rejectWaiting}
       />
-      <section className="draft-chains" aria-label="What waits for what">
+      {chained && <section className="draft-chains" aria-label="What waits for what">
         <Button variant="quiet" icon={<Network size={16} />} aria-expanded={chains} onClick={() => setChains((on) => !on)}>
           {chains ? "Hide what waits for what" : "Show what waits for what"}
         </Button>
@@ -444,18 +490,21 @@ function Decide() {
           <DecisionTree
             suggestions={all}
             words={words}
+            missing={stuck}
+            onChooseMissing={showWaiting}
             onChoose={(id) => {
               move(id);
               focusRow(id);
             }}
           />
         )}
-      </section>
+      </section>}
 
       <div className="draft-toolbar">
         <FilterStrip
           label="Show suggestions"
-          filters={FILTERS.map((id) => ({ id, label: FILTER_LABEL[id], count: all.filter((item) => inFilter(item, id, readyIds)).length }))}
+          // A filter that would show nothing is left out, unless it is the one in use.
+          filters={FILTERS.map((id) => ({ id, label: FILTER_LABEL[id], count: all.filter((item) => inFilter(item, id, readyIds)).length })).filter((item) => item.count > 0 || item.id === filter)}
           active={filter}
           onChange={(id) => setView(id as Filter, find)}
           find={{ label: "Find in the suggestions", value: find, onChange: (value) => setView(filter, value), placeholder: "A system, a word or a document…" }}
@@ -467,9 +516,9 @@ function Decide() {
         keys={[
           { keys: ["↑", "↓", "j", "k"], does: "move" },
           { keys: ["Enter"], does: "decide in the pane" },
-          { keys: ["a", "r"], does: "accept, reject" },
+          ...(acting ? [{ keys: ["a", "r"], does: "accept, reject" }] : [{ keys: ["r"], does: "reject" }]),
           { keys: ["e"], does: "edit, then accept" },
-          { keys: ["n"], does: "next that needs you" },
+          ...(acting ? [{ keys: ["n"], does: "next that needs you" }] : []),
           { keys: ["Space"], does: "select" },
         ]}
       />
@@ -483,6 +532,7 @@ function Decide() {
         list={
           <SuggestionGrid
             rows={shown}
+            deadEndOf={deadEndOf}
             selected={selected}
             onSelectedChange={setSelected}
             currentId={current?.suggestion.id}
@@ -530,6 +580,36 @@ function sourcesInWords(suggestions: Suggestion[]): string {
   return parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}` : parts[0]!;
 }
 
+/** What settling a missing thing did, in a sentence for the Said line. */
+function settledWords(blocker: Blocker, chosen: Answer, result: { retyped: number; added: number }): string {
+  const { name } = blocker;
+  const freed = (noun: string) => (result.retyped ? `: ${count(result.retyped, noun)} can be decided` : "");
+  const orderType = name.split(" › ").slice(1).join(" › ");
+  switch (chosen.kind) {
+    case "system":
+      return result.added ? `Suggested the system ${name}. Accept it to free what waits for it.` : `The system ${name} is already suggested.`;
+    case "offering":
+      if (result.added) return `Suggested the offering ${name}. Accept it to free what waits for it.`;
+      return `${name} is now a product offering${result.retyped ? `: ${count(result.retyped, "suggestion")} changed with it` : ""}.`;
+    case "existing":
+      return `${name} is now another name for ${chosen.name}${freed("suggestion")}.`;
+    case "specification":
+      return `${name} is the ${chosen.layer === "cfs" ? "CFSS" : "RFSS"} ${chosen.name}${freed("rule")}.`;
+    case "new_specification":
+      return result.added ? `Suggested ${name} as ${chosen.layer === "cfs" ? "a CFSS" : "an RFSS"}. Accept it to free its rules.` : `${name} is already suggested.`;
+    case "order_type":
+      return `Added the order type ${orderType} to the offering${freed("journey")}.`;
+    case "existing_order_type":
+      return `The journeys for ${orderType} are now for ${chosen.name}${freed("journey")}.`;
+    case "channel":
+      return result.added ? `Suggested the channel ${name}. Accept it to free what waits for it.` : `The channel ${name} is already suggested.`;
+    case "existing_channel":
+      return `${name} now names the channel ${chosen.name}${freed("suggestion")}.`;
+    default:
+      return "";
+  }
+}
+
 /** "Accept the 4 ready and the 11 that wait on them", for the bulk action. */
 function bulkLabel(ready: number, lifted: number): string {
   if (ready + lifted === 0) return "Accept the ready ones";
@@ -542,8 +622,10 @@ const rowId = (row: Row) => row.suggestion.id;
 const rowLabel = (row: Row) => row.sentence;
 
 /** The suggestions as a keyboard grid; typing in the pane re-renders the desk, not every row. */
-function SuggestionGrid({ rows, selected, onSelectedChange, currentId, onCurrentChange, onActivate, onRowKey, edits, words }: {
+function SuggestionGrid({ rows, deadEndOf, selected, onSelectedChange, currentId, onCurrentChange, onActivate, onRowKey, edits, words }: {
   rows: Row[];
+  /** Waiting suggestions that wait on something nothing adds, with what that is. */
+  deadEndOf: ReadonlyMap<string, string>;
   selected: Set<string>;
   onSelectedChange: (selected: Set<string>) => void;
   currentId: string | undefined;
@@ -561,7 +643,7 @@ function SuggestionGrid({ rows, selected, onSelectedChange, currentId, onCurrent
       bidi: true,
       cell: ({ suggestion, sentence }) => (
         <>
-          {sentence}
+          <span className="draft-change">{sentence}</span>
           <span className="draft-detail" dir="ltr">
             {suggestion.change_request ? (
               <><bdi>{suggestion.change_request.change_request_id}</bdi> · {citedPart(suggestion)} · from Requirement AI</>
@@ -574,10 +656,13 @@ function SuggestionGrid({ rows, selected, onSelectedChange, currentId, onCurrent
     },
     {
       id: "system",
-      header: "Changes",
+      header: "Group",
       width: "11rem",
       bidi: true,
-      cell: ({ group }) => (group.isNew ? <>{group.label}<span className="draft-detail">New system</span></> : group.label),
+      cell: ({ group, suggestion }) =>
+        group.isNew
+          ? <>{group.label}<span className="draft-detail">{deadEndOf.has(suggestion.id) ? "Not in the catalogue" : "New system"}</span></>
+          : group.label,
     },
     {
       id: "state",
@@ -587,7 +672,9 @@ function SuggestionGrid({ rows, selected, onSelectedChange, currentId, onCurrent
         const state = suggestionState(suggestion);
         return (
           <>
-            <Status tone={STATE_TONE[state]}>{stateWords(suggestion)}</Status>
+            {state === "waits" && deadEndOf.has(suggestion.id)
+              ? <Status tone="held">Nothing adds what it needs</Status>
+              : <Status tone={STATE_TONE[state]}>{stateWords(suggestion)}</Status>}
             {state === "decide" && <span className="draft-detail">{decideWhy(suggestion)}</span>}
             {state === "waits" && <span className="draft-detail">{waitsFor(suggestion, words)}</span>}
             {edits[suggestion.id] && suggestion.status === "proposed" && <span className="draft-detail">Edited, not accepted yet</span>}
@@ -595,7 +682,7 @@ function SuggestionGrid({ rows, selected, onSelectedChange, currentId, onCurrent
         );
       },
     },
-  ], [edits, words]);
+  ], [deadEndOf, edits, words]);
   return (
     <DataTable
       caption="Suggestions, grouped by what they would change"

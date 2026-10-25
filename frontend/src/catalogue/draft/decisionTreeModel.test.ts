@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Release, Suggestion } from "../../api/client";
-import { lexicon } from "../suggestions";
+import { blockers, bulkAcceptable, lexicon } from "../suggestions";
 import { decisionTree, touching } from "./decisionTreeModel";
 
 const suggestion = (id: string, content: object, extra: object = {}) =>
@@ -46,6 +46,21 @@ describe("decisionTree", () => {
     expect(nodes.find((node) => node.id === "api")).toMatchObject({ tone: "subject", status: "This question" });
   });
 
+  it("draws what nothing adds at the left of what waits for it, as in a first version", () => {
+    const suggestions = [
+      suggestion("cap", { kind: "capability", system_id: "it", name: "Provisioning" }, { match: "needs_system" }),
+      suggestion("rule", { kind: "constraint", system_id: "it", text: "No rollback" }, { match: "needs_system" }),
+    ];
+    const words = lexicon(draft, suggestions);
+    const missing = blockers(draft, suggestions, words);
+    expect(decisionTree(suggestions, words).nodes).toEqual([]);
+
+    const { nodes, edges } = decisionTree(suggestions, words, { missing });
+    expect(nodes[0]).toMatchObject({ id: "missing:system:it", label: "IT", tone: "gap", status: "Not in the draft, and no suggestion adds it" });
+    expect(edges).toEqual([{ from: "missing:system:it", to: "cap" }, { from: "missing:system:it", to: "rule" }]);
+    expect(nodes.map((node) => node.id)).toEqual(["missing:system:it", "cap", "rule"]);
+  });
+
   it("finds what a set of suggestions waits on and what waits on them", () => {
     const suggestions = [
       suggestion("hub", { kind: "system", system_id: "order-hub", name: "Order Hub" }),
@@ -54,5 +69,50 @@ describe("decisionTree", () => {
     ];
     expect([...touching(suggestions, ["api"])].sort()).toEqual(["api", "hub"]);
     expect([...touching(suggestions, ["alone"])]).toEqual(["alone"]);
+  });
+});
+
+describe("what realises a record", () => {
+  const record = (id: string, layer: string, realisedBy: string[]) =>
+    suggestion(id, {
+      kind: "realisation_record", system_id: id, name: id,
+      realisation: { id, layer, name: id, aliases: [], system_ids: [], realised_by: realisedBy, accepted: [] },
+    }, { match: "needs_realisation" });
+
+  it("is a record in a layer below, as the service finds it, not one of the same name above", () => {
+    const withCfs = { ...draft, realisations: [{ id: "cfs-ddos", layer: "cfs", name: "DDoS uCPE CFS", aliases: [] }] } as unknown as Release;
+    const rfs = record("rfs-ddos", "rfs", ["DDoS uCPE CFS"]);
+    const cfs = record("cfs-firewall", "cfs", ["DDoS uCPE CFS"]);
+    const words = lexicon(withCfs, [rfs]);
+
+    // A CFS does not realise an RFS: accepting it now would be refused.
+    expect(bulkAcceptable(withCfs, [rfs]).lifted).toEqual([]);
+    expect(blockers(withCfs, [rfs], words)).toMatchObject([{ kind: "other", name: "DDoS uCPE CFS", label: "DDoS uCPE CFS as a resource" }]);
+    // Below a CFS, the same record would still be in the wrong layer; a resource of that name would do.
+    expect(bulkAcceptable(withCfs, [cfs]).lifted).toEqual([]);
+    const withResource = { ...draft, realisations: [{ id: "res-ddos", layer: "resource", name: "DDoS uCPE CFS", aliases: [] }] } as unknown as Release;
+    expect(bulkAcceptable(withResource, [rfs]).lifted.map((item) => item.id)).toEqual(["rfs-ddos"]);
+  });
+});
+
+describe("a journey for an order type", () => {
+  const journey = suggestion("j", {
+    kind: "journey", system_id: "wf-1", name: "Modify the password",
+    journey: { id: "wf-1", name: "Modify the password", product_id: "Business Pro Plus", order_type_code: "Modify Password", activities: [], flow_rules: [], integrations: [] },
+  }, { match: "needs_offering" });
+  const offering = (orderTypes: { code: string; name: string }[]) =>
+    ({ ...draft, products: [{ id: "business-pro-plus", name: "Business Pro Plus", code: null, order_types: orderTypes }] }) as unknown as Release;
+
+  it("waits for the offering's order type, as the service does, not only for the offering", () => {
+    const without = offering([{ code: "CESSATION", name: "Cessation" }]);
+    const words = lexicon(without, [journey]);
+    expect(bulkAcceptable(without, [journey]).lifted).toEqual([]);
+    expect(blockers(without, [journey], words)).toMatchObject([
+      { kind: "other", name: "Business Pro Plus › Modify Password", label: "the order type Modify Password of Business Pro Plus" },
+    ]);
+
+    const withIt = offering([{ code: "MODIFY_PASSWORD", name: "Modify Password" }]);
+    expect(bulkAcceptable(withIt, [journey]).lifted.map((item) => item.id)).toEqual(["j"]);
+    expect(blockers(withIt, [journey], lexicon(withIt, [journey]))).toEqual([]);
   });
 });

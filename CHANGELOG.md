@@ -5,6 +5,46 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ## Unreleased
 
+### Changed
+
+- The service starts with no architecture catalogue (ADR-0126). It no longer seeds
+  `smb-source-reference-v1` into an empty database; a knowledge maintainer publishes the first
+  version, and the first draft starts empty, its review listing everything as added. Until a
+  version is in service, `/internal/architecture/match` and `/internal/architecture/assess`
+  answer 409 with the code `architecture_catalogue_not_in_service` (internal contract 1.1.0;
+  requirement-portal should show that state rather than an error).
+  `GET /architecture-knowledge/releases/active` and `GET /explorer/release` answer null, and
+  the explorer says no version is in service yet. A diff's `base_release_id` and the mapping
+  report's `active_release_id` may be null. Public contract, widened. The seed's special cases
+  are gone: activation checks every release's embedding profile, and the deterministic YAML
+  matcher that answered for the seed is removed. The reference YAML is test data now
+  (`tests/fixtures/smb_architecture.yaml`); `scripts/seed_demo.py` publishes it through the API
+  first. An existing database keeps its releases: starting fresh means resetting it.
+- Decide, when only dead ends are left (common in a first version), says so plainly: what is
+  accepted, that publishing leaves the rest out, and "Go on to the changes". Every missing thing
+  is one table, opened on request. A missing system can be named as one the draft already has:
+  `POST /architecture-knowledge/releases/{id}/suggestions/subject` takes the kind `existing` with
+  `existing_system_id`, adds the name to that system's aliases, so every suggestion that names it
+  (and later readings) finds the system, and rejects the suggestion to add it as a new system.
+  Public contract, additive.
+- CFSS and RFSS keep their own rules (ADR-0127). A realisation record that is a customer or
+  resource facing service specification holds `rules`; the suggestion kind `specification_rule`
+  adds one, and the reader (catalogue-extraction-v22) files a rule said of a CFSS or RFSS there,
+  never as an offering's. Rules already waiting as an offering's are settled with the subject
+  kind `specification` and `specification_id`: on Decide, "It is the CFSS in the draft" replaces
+  "Suggest the offering" for such a name. Rules travel in the API, the YAML file, the workbook
+  (a `rules` column) and the version diff. The interface says CFSS and RFSS; the stored layer
+  values stay `cfs` and `rfs`. Public contract, additive.
+- Every missing thing on Decide has an answer, and says why it is missing in plain words. An
+  order type a journey needs is added to its offering or said to be one it has; a channel is
+  suggested or said to be one the draft has; a CFSS or RFSS rules wait for is suggested or said
+  to be one the draft has; a record named upside down (a CFSS as what realises an RFSS) is
+  accepted without that link. The subject endpoint takes the kinds `order_type`,
+  `existing_order_type`, `channel`, `existing_channel` and `new_specification` (with
+  `existing_id` and `layer`). Journeys now wait for their offering's order type on the page as
+  they do in the service, and "A new system" counts suggestions that name the system only in
+  journey steps. Public contract, additive.
+
 ### Added
 
 - The Check step lists what nothing in the draft links to (review recommendation 17):

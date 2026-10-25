@@ -33,6 +33,7 @@ from smb_kernel.time.system import SystemClock
 
 from knowledge_portal.application.ports.actor_directory import ActorDirectoryPort
 from knowledge_portal.application.ports.architecture_knowledge import ArchitectureKnowledgePort
+from knowledge_portal.application.ports.architecture_knowledge_repository import put_in_service
 from knowledge_portal.application.ports.architecture_mapping_stats import (
     ArchitectureMappingStatsPort,
 )
@@ -137,6 +138,7 @@ from knowledge_portal.application.use_cases.requirement_corpus import (
 )
 from knowledge_portal.application.use_cases.source_impact import DocumentSourceImpact
 from knowledge_portal.application.use_cases.vocabulary_cleanup import CleanUpVocabulary
+from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
 from knowledge_portal.domain.identity.entities import ActorProfile
 from knowledge_portal.infrastructure.config.options import (
     DEFAULT_PRODUCT_CATALOG_TIMEOUT_SECONDS,
@@ -292,13 +294,17 @@ def build_container(
     clock: ClockPort | None = None,
     identity_provider: IdentityProviderPort | None = None,
     requirement_work: RequirementWork | None = None,
+    in_service: ArchitectureKnowledge | None = None,
 ) -> Container:
+    """The object graph. `in_service` is for tests: a published catalogue version to start
+    from. The service itself starts with no catalogue until a maintainer publishes one."""
     with ExitStack() as resources:
         container = _build_container(
             settings if settings is not None else Settings.from_env(),
             clock if clock is not None else SystemClock(),
             identity_provider,
             requirement_work,
+            in_service,
             resources,
         )
         owned = resources.pop_all()
@@ -310,6 +316,7 @@ def _build_container(
     clock: ClockPort,
     identity_override: IdentityProviderPort | None,
     requirement_override: RequirementWork | None,
+    in_service: ArchitectureKnowledge | None,
     resources: ExitStack,
 ) -> Container:
     metrics = Metrics()
@@ -319,6 +326,8 @@ def _build_container(
     persistence = build_persistence(
         settings, resources, clock, retrieval.embeddings, retrieval.tokenizer
     )
+    if in_service is not None:
+        put_in_service(persistence.architecture_repository, in_service)
     identity = build_identity(settings, resources, persistence.actor_directory, identity_override)
     requirement_work = requirement_override or _requirement_work(settings, resources, metrics)
     # One scanner, shared by the library, historic imports and architecture uploads.

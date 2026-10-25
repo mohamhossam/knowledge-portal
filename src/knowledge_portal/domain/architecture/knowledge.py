@@ -72,6 +72,18 @@ class KnowledgeConflictError(Exception):
     """A draft changed while an editor was working."""
 
 
+class NoReleaseInServiceError(KnowledgeConflictError):
+    """Nothing is in service yet: the portal starts empty until a maintainer publishes."""
+
+    def __init__(
+        self,
+        message: str = (
+            "No catalogue version is in service yet; a knowledge maintainer publishes the first."
+        ),
+    ) -> None:
+        super().__init__(message)
+
+
 @dataclass(frozen=True)
 class KnowledgeAuditEvent:
     release_id: str

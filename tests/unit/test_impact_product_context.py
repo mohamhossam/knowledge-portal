@@ -40,19 +40,12 @@ from knowledge_portal.domain.architecture.products import (
 )
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.reasoning import FakeArchitectureReasoner
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
-from knowledge_portal.infrastructure.architecture.yaml_knowledge import (
-    YamlArchitectureKnowledge,
-    default_knowledge_path,
-)
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
-)
 from knowledge_portal.infrastructure.persistence.in_memory_organisation import (
     InMemoryOrganisationRepository,
 )
+from tests.catalogue_seed import indexed_repository, seed_knowledge
 
 NOW = datetime(2026, 10, 1, tzinfo=UTC)
 
@@ -256,16 +249,16 @@ def test_mapping_adds_product_context_and_journey_steps_from_the_pinned_release(
         ),
     )
     pinned = replace(release, products=(bcrm_offering,), journeys=(journey,))
+    index = InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer())
     resolver = ResolveArchitectureKnowledge(
-        InMemoryArchitectureKnowledgeRepository(pinned),
-        InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
+        indexed_repository(index, pinned),
+        index,
         FakeArchitectureReasoner(),
-        YamlArchitectureKnowledge(default_knowledge_path()),
         InMemoryOrganisationRepository(FixedClock(NOW)),
     )
 
     match = resolver.match(
-        ArchitectureQuery(text=("Business Pro Plus: the assisted sales journey",))
+        ArchitectureQuery(text=("Business Pro Plus: the assisted sales journey in BCRM",))
     )
 
     assert [item.id for item in match.systems] == ["bcrm"]

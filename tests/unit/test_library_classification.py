@@ -22,6 +22,7 @@ from knowledge_portal.infrastructure.config.options import LLMProvider
 from knowledge_portal.infrastructure.config.settings import Settings
 from knowledge_portal.interfaces.api.container import build_container
 from knowledge_portal.interfaces.api.main import create_app
+from tests.catalogue_seed import seed_knowledge
 
 CATALOGUE = Path(__file__).resolve().parents[2] / "catalogues" / "smb-architecture.yaml"
 REVIEWER = {"X-Fake-Actor-Id": "fake-reviewer"}
@@ -37,7 +38,8 @@ class _InService:
 
 def _classification(release: ArchitectureKnowledge) -> LibraryClassification:
     library = build_container(
-        Settings(llm_provider=LLMProvider.FAKE, library_scan_mode="offline")
+        Settings(llm_provider=LLMProvider.FAKE, library_scan_mode="offline"),
+        in_service=seed_knowledge(),
     ).document_library
     return LibraryClassification(library, _InService(release))  # type: ignore[arg-type]
 
@@ -94,7 +96,8 @@ def _ready(client: TestClient, **form: str) -> dict[str, object]:
 
 def test_an_owner_classifies_a_document_at_upload_and_after() -> None:
     container = build_container(
-        Settings(llm_provider=LLMProvider.FAKE, library_scan_mode="offline")
+        Settings(llm_provider=LLMProvider.FAKE, library_scan_mode="offline"),
+        in_service=seed_knowledge(),
     )
     with TestClient(create_app(lambda: container)) as client:
         options = client.get("/library/classification-options").json()

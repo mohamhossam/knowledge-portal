@@ -44,13 +44,8 @@ from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddin
 from knowledge_portal.infrastructure.architecture.evidence_index import (
     InMemoryEvidenceIndex,
 )
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.reasoning import FakeArchitectureReasoner
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
-from knowledge_portal.infrastructure.architecture.yaml_knowledge import (
-    YamlArchitectureKnowledge,
-    default_knowledge_path,
-)
 from knowledge_portal.infrastructure.llm.catalogue_extraction import (
     ChangeOutput,
     ExtractionOutput,
@@ -60,15 +55,13 @@ from knowledge_portal.infrastructure.llm.catalogue_extraction import (
 from knowledge_portal.infrastructure.llm.prompts.catalogue_extraction_prompt import (
     build_user_prompt,
 )
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
-)
 from knowledge_portal.infrastructure.persistence.in_memory_organisation import (
     InMemoryOrganisationRepository,
 )
 from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     SystemDefinitionSchema,
 )
+from tests.catalogue_seed import indexed_repository, seed_knowledge
 
 NOW = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
 ADAPTER = CatalogueFileAdapter()
@@ -224,11 +217,11 @@ def test_older_files_import_and_unknown_components_are_named() -> None:
 
 
 def _resolver(release: ArchitectureKnowledge) -> ResolveArchitectureKnowledge:
+    index = InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer())
     return ResolveArchitectureKnowledge(
-        InMemoryArchitectureKnowledgeRepository(release),
-        InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
+        indexed_repository(index, release),
+        index,
         FakeArchitectureReasoner(),
-        YamlArchitectureKnowledge(default_knowledge_path()),
         InMemoryOrganisationRepository(FixedClock(NOW)),
     )
 
@@ -245,8 +238,10 @@ def test_mapping_shows_the_component_that_delivers_each_capability() -> None:
         seed, systems=tuple(placed if item.id == "bcrm" else item for item in seed.systems)
     )
 
-    mapped = _resolver(release).match(ArchitectureQuery(text=("The assisted sales journey",)))
-    plain = _resolver(seed).match(ArchitectureQuery(text=("The assisted sales journey",)))
+    mapped = _resolver(release).match(
+        ArchitectureQuery(text=("The assisted sales journey in BCRM",))
+    )
+    plain = _resolver(seed).match(ArchitectureQuery(text=("The assisted sales journey in BCRM",)))
 
     capability = mapped.systems[0].capabilities[0]
     assert (capability.component_id, capability.component_name) == ("quote-engine", "Quote engine")

@@ -1,6 +1,6 @@
 import type { Suggestion } from "../../api/client";
 import type { DiagramEdge, DiagramNode } from "../../design/diagram";
-import { dependencyEdges, type Lexicon, STATE_LABEL, suggestionState, waitsFor } from "../suggestions";
+import { type Blocker, dependencyEdges, type Lexicon, STATE_LABEL, suggestionState, waitsFor } from "../suggestions";
 
 /** A suggestion on a node, short: what it names, then what kind of change it is. */
 function named(suggestion: Suggestion, words: Lexicon): { label: string; detail: string } {
@@ -31,6 +31,8 @@ function named(suggestion: Suggestion, words: Lexicon): { label: string; detail:
       return { label: content.text, detail: `Question for ${words.offering(content.system_id)}` };
     case "offering_rule":
       return { label: content.text, detail: `Rule of ${words.offering(content.system_id)}` };
+    case "specification_rule":
+      return { label: content.text, detail: `Rule of ${words.realisation(content.system_id)}` };
     default:
       return { label: content.name || content.text, detail: "Suggestion" };
   }
@@ -45,17 +47,39 @@ export type NodeMark = Pick<DiagramNode, "status" | "tone">;
  * person, are drawn; deciding one at the left settles what hangs on it.
  * `keep` draws exactly those of the open suggestions instead;
  * `current` marks the one in hand ("This question") and `mark` overrides a
- * node's status and tone, the person's answer so far, say.
+ * node's status and tone, the person's answer so far, say. `missing` are the
+ * dead ends (`blockers`): what suggestions wait for that neither the draft nor
+ * any suggestion adds, each drawn at the left of what waits for it. In a first
+ * version, which starts empty, most waits are these.
  */
 export function decisionTree(
   suggestions: Suggestion[],
   words: Lexicon,
-  options: { keep?: ReadonlySet<string>; current?: string; mark?: (suggestion: Suggestion) => NodeMark | undefined } = {},
+  options: {
+    keep?: ReadonlySet<string>;
+    current?: string;
+    mark?: (suggestion: Suggestion) => NodeMark | undefined;
+    missing?: readonly Blocker[];
+  } = {},
 ) {
-  const { keep, current, mark } = options;
+  const { keep, current, mark, missing = [] } = options;
   const open = suggestions.filter((item) => item.status === "proposed" && (!keep || keep.has(item.id)));
-  const edges: DiagramEdge[] = dependencyEdges(open);
+  const drawn = new Set(open.map((item) => item.id));
+  const gaps = missing
+    .map((blocker) => ({ blocker, waiting: blocker.waiting.filter((item) => drawn.has(item.id)) }))
+    .filter((gap) => gap.waiting.length > 0);
+  const edges: DiagramEdge[] = [
+    ...gaps.flatMap(({ blocker, waiting }) => waiting.map((item) => ({ from: missingId(blocker), to: item.id }))),
+    ...dependencyEdges(open),
+  ];
   const linked = new Set(edges.flatMap((edge) => [edge.from, edge.to]));
+  const missingNodes = gaps.map(({ blocker }): DiagramNode => ({
+    id: missingId(blocker),
+    label: blocker.name,
+    detail: blocker.kind === "system" ? "System" : blocker.kind === "offering" ? "Offering" : blocker.label,
+    status: "Not in the draft, and no suggestion adds it",
+    tone: "gap",
+  }));
   const nodes: DiagramNode[] = open
     .filter((item) => keep || linked.has(item.id) || suggestionState(item) === "decide")
     .map((item): DiagramNode => {
@@ -71,8 +95,11 @@ export function decisionTree(
         ...(item.id === current ? { tone: "subject" as const, status: marked?.status ?? "This question" } : {}),
       };
     });
-  return { nodes, edges };
+  return { nodes: [...missingNodes, ...nodes], edges };
 }
+
+/** A dead end's node: never a suggestion's id. */
+export const missingId = (blocker: Blocker) => `missing:${blocker.key}`;
 
 /**
  * The open suggestions a set of them touches: each one, what it waits on and

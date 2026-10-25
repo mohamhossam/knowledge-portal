@@ -46,19 +46,12 @@ from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddin
 from knowledge_portal.infrastructure.architecture.evidence_index import (
     InMemoryEvidenceIndex,
 )
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.reasoning import FakeArchitectureReasoner
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
-from knowledge_portal.infrastructure.architecture.yaml_knowledge import (
-    YamlArchitectureKnowledge,
-    default_knowledge_path,
-)
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
-)
 from knowledge_portal.infrastructure.persistence.in_memory_organisation import (
     InMemoryOrganisationRepository,
 )
+from tests.catalogue_seed import indexed_repository, seed_knowledge, seeded_repository
 
 MAINTAINER = Actor("amina", frozenset({"knowledge_maintainer"}))
 READER = Actor("ravi", frozenset({"knowledge_reader"}))
@@ -246,7 +239,7 @@ def test_records_are_revision_checked() -> None:
 def _manage() -> ManageOrganisationCatalogue:
     return ManageOrganisationCatalogue(
         InMemoryOrganisationRepository(FixedClock(NOW)),
-        InMemoryArchitectureKnowledgeRepository(seed_knowledge()),
+        seeded_repository(),
     )
 
 
@@ -308,7 +301,7 @@ def test_products_link_offerings_and_portfolio_nodes_in_service_and_are_flagged(
     )
     manage = ManageOrganisationCatalogue(
         InMemoryOrganisationRepository(FixedClock(NOW)),
-        InMemoryArchitectureKnowledgeRepository(release),
+        seeded_repository(release),
     )
     manage.save_value_stream(ValueStream("retail", "Retail"), None, MAINTAINER)
 
@@ -366,7 +359,7 @@ def _billing_release() -> ArchitectureKnowledge:
 def test_seats_on_a_capability_own_it_first_then_the_whole_system() -> None:
     manage = ManageOrganisationCatalogue(
         InMemoryOrganisationRepository(FixedClock(NOW)),
-        InMemoryArchitectureKnowledgeRepository(_billing_release()),
+        seeded_repository(_billing_release()),
     )
     for person in ("bea", "omar", "rana"):
         manage.save_person(Person(person, person.title()), None, MAINTAINER)
@@ -441,14 +434,14 @@ def test_references_flag_seats_on_a_capability_the_release_no_longer_links() -> 
 
 
 def test_mapping_records_squads_value_streams_and_products_from_the_organisation() -> None:
-    releases = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    index = InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer())
+    releases = indexed_repository(index)
     organisation = InMemoryOrganisationRepository(FixedClock(NOW))
     organisation.change(lambda _: _catalogue(), "amina", "seed", "all")
     resolver = ResolveArchitectureKnowledge(
         releases,
-        InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
+        index,
         FakeArchitectureReasoner(),
-        YamlArchitectureKnowledge(default_knowledge_path()),
         organisation,
     )
 

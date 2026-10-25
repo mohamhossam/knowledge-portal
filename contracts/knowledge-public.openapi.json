@@ -1911,6 +1911,7 @@
           "capability_domain",
           "portfolio_node",
           "realisation_record",
+          "specification_rule",
           "source",
           "conflict"
         ],
@@ -2361,8 +2362,15 @@
       "CatalogueDiffResponse": {
         "properties": {
           "base_release_id": {
-            "title": "Base Release Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Release Id"
           },
           "changes": {
             "items": {
@@ -8434,8 +8442,15 @@
         "description": "How much of the backlog is mapped, and how much uses an older catalogue version.",
         "properties": {
           "active_release_id": {
-            "title": "Active Release Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Release Id"
           },
           "features": {
             "title": "Features",
@@ -10960,7 +10975,7 @@
         "type": "string"
       },
       "RealisationRecordSchema": {
-        "description": "A CFS, RFS or resource, the systems that deliver it, and what realises it below.",
+        "description": "A CFSS, RFSS or resource, the systems that deliver it, what realises it below, and a\nspecification's rules (ADR-0127). ``layer`` keeps its values: cfs, rfs, resource.",
         "properties": {
           "accepted": {
             "default": [],
@@ -11024,6 +11039,16 @@
             },
             "maxItems": 5000,
             "title": "Realised By",
+            "type": "array"
+          },
+          "rules": {
+            "default": [],
+            "items": {
+              "maxLength": 10000,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Rules",
             "type": "array"
           },
           "source": {
@@ -12471,16 +12496,62 @@
         "type": "object"
       },
       "SettleSubjectRequest": {
-        "description": "What a name waiting suggestions name really is: a system or a product offering.",
+        "description": "What a name waiting suggestions name really is, said once for all of them:\na system or a product offering to suggest; a system the draft has\n(``existing_system_id``); a CFSS or RFSS the draft has (``specification_id``) or one to\nsuggest (``layer``); an order type to add to the offering ``system_id`` names, or one it\nhas (``existing_id``, its code); a channel to suggest, or one the draft has\n(``existing_id``). For an order type, ``name`` is the order type and ``system_id`` the\noffering. Each extra field is required for its kind only.",
         "properties": {
+          "existing_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Existing Id"
+          },
+          "existing_system_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Existing System Id"
+          },
           "kind": {
             "$ref": "#/components/schemas/SubjectKind"
+          },
+          "layer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RealisationLayer"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "name": {
             "default": "",
             "maxLength": 300,
             "title": "Name",
             "type": "string"
+          },
+          "specification_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specification Id"
           },
           "system_id": {
             "maxLength": 200,
@@ -12903,7 +12974,14 @@
         "description": "What a name suggestions wait for really is, as a person says it on Decide.",
         "enum": [
           "system",
-          "offering"
+          "offering",
+          "existing",
+          "specification",
+          "new_specification",
+          "order_type",
+          "existing_order_type",
+          "channel",
+          "existing_channel"
         ],
         "title": "SubjectKind",
         "type": "string"
@@ -15236,6 +15314,7 @@
     },
     "/architecture-knowledge/releases/active": {
       "get": {
+        "description": "The version in service; null until a maintainer publishes the first.",
         "operationId": "active_release_architecture_knowledge_releases_active_get",
         "parameters": [
           {
@@ -15260,7 +15339,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/KnowledgeReleaseResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/KnowledgeReleaseResponse"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Active Release Architecture Knowledge Releases Active Get"
                 }
               }
             },
@@ -17720,7 +17807,7 @@
     },
     "/architecture-knowledge/releases/{release_id}/suggestions/subject": {
       "post": {
-        "description": "Say what a name waiting suggestions name is: a system to suggest, or a product\noffering, so its constraints become the offering's rules.",
+        "description": "Say what a name waiting suggestions name is: a system to suggest, a product\noffering, so its constraints become the offering's rules, a system the draft has, or a\nCFSS or RFSS the draft has, so the rules read as an offering's become its own.",
         "operationId": "settle_suggestion_subject_architecture_knowledge_releases__release_id__suggestions_subject_post",
         "parameters": [
           {
@@ -18769,7 +18856,7 @@
     },
     "/explorer/release": {
       "get": {
-        "description": "The catalogue version in service, as the explorer reads it.",
+        "description": "The catalogue version in service, as the explorer reads it; null before the first.",
         "operationId": "release_in_service_explorer_release_get",
         "parameters": [
           {
@@ -18794,7 +18881,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ExplorerReleaseResponse"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ExplorerReleaseResponse"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Release In Service Explorer Release Get"
                 }
               }
             },

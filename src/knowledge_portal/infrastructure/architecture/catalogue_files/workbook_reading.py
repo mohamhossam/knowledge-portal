@@ -435,7 +435,7 @@ def _sheet_realisations(workbook: Any) -> list[dict[str, Any]]:
             "id": cells.get("record_id"),
             **{
                 key: list(_split(cells.get(key), f"{REALISATION_RECORDS} row {number}", key))
-                for key in ("aliases", "systems", "realised_by")
+                for key in ("aliases", "systems", "realised_by", "rules")
             },
         }
         for number, cells in _rows(workbook, REALISATION_RECORDS)

@@ -13,6 +13,7 @@ import { Link, Route, Routes } from "react-router-dom";
 
 import { errorMessage } from "../../api/errors";
 import { Button, EmptyState, Skeleton } from "../../design/components";
+import { ButtonLink } from "../../shell/links";
 import { type CatalogueSource, catalogueSource, LabSource, useLabCatalogue } from "./catalogueSource";
 import { ProductsIndex } from "./CatalogueIndexes";
 import { JourneyFlow } from "./JourneyFlow";
@@ -91,7 +92,12 @@ function LabPages({ inShell, source }: { inShell: boolean; source: CatalogueSour
               {errorMessage(catalogue.error)}
             </EmptyState>
           ) : (
-            <EmptyState title="No catalogue version is in service yet">Publish a version from Versions to read it here.</EmptyState>
+            <EmptyState
+              title="No catalogue version is in service yet"
+              action={<ButtonLink to="/architecture" variant="primary">Start the first version</ButtonLink>}
+            >
+              The catalogue starts empty; publish its first version to read it here.
+            </EmptyState>
           )}
         </LabState>
       </InShell.Provider>

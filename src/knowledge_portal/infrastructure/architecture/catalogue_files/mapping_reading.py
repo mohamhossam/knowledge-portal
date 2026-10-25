@@ -420,7 +420,8 @@ def _interfaces(entries: list[dict[str, Any]]) -> list[SystemInterface]:
 
 
 def _realisations(entries: list[dict[str, Any]]) -> list[RealisationRecord]:
-    """The CFSs, RFSs and resources components are realised as."""
+    """The CFSSs, RFSSs and resources components are realised as, with a specification's
+    rules."""
     records = []
     for number, item in enumerate(entries, start=1):
         where = _where(item, f"realisations entry {number}")
@@ -436,6 +437,7 @@ def _realisations(entries: list[dict[str, Any]]) -> list[RealisationRecord]:
                     _optional_text(item.get("description"), where, "description"),
                     _trust(item.get("confidence"), where),
                     _optional_text(item.get("source"), where, "source"),
+                    rules=_text_list(item.get("rules"), where, "rules"),
                 )
             )
         except InvalidKnowledgeError as exc:

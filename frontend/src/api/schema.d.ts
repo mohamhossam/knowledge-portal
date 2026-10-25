@@ -221,7 +221,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Active Release */
+        /**
+         * Active Release
+         * @description The version in service; null until a maintainer publishes the first.
+         */
         get: operations["active_release_architecture_knowledge_releases_active_get"];
         put?: never;
         post?: never;
@@ -795,8 +798,9 @@ export interface paths {
         put?: never;
         /**
          * Settle Suggestion Subject
-         * @description Say what a name waiting suggestions name is: a system to suggest, or a product
-         *     offering, so its constraints become the offering's rules.
+         * @description Say what a name waiting suggestions name is: a system to suggest, a product
+         *     offering, so its constraints become the offering's rules, a system the draft has, or a
+         *     CFSS or RFSS the draft has, so the rules read as an offering's become its own.
          */
         post: operations["settle_suggestion_subject_architecture_knowledge_releases__release_id__suggestions_subject_post"];
         delete?: never;
@@ -1038,7 +1042,7 @@ export interface paths {
         };
         /**
          * Release In Service
-         * @description The catalogue version in service, as the explorer reads it.
+         * @description The catalogue version in service, as the explorer reads it; null before the first.
          */
         get: operations["release_in_service_explorer_release_get"];
         put?: never;
@@ -2853,7 +2857,7 @@ export interface components {
          * CandidateKind
          * @enum {string}
          */
-        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term" | "offering_rule" | "interface" | "capability_domain" | "portfolio_node" | "realisation_record" | "source" | "conflict";
+        CandidateKind: "system" | "component" | "capability" | "constraint" | "relationship" | "landscape_domain" | "placement" | "product" | "journey" | "channel" | "question" | "concept" | "component_link" | "vocabulary_term" | "offering_rule" | "interface" | "capability_domain" | "portfolio_node" | "realisation_record" | "specification_rule" | "source" | "conflict";
         /**
          * CandidateMatch
          * @description How a candidate relates to the draft as it stands now.
@@ -2987,7 +2991,7 @@ export interface components {
         /** CatalogueDiffResponse */
         CatalogueDiffResponse: {
             /** Base Release Id */
-            base_release_id: string;
+            base_release_id: string | null;
             /** Changes */
             changes: components["schemas"]["CatalogueChangeResponse"][];
             /** Draft Release Id */
@@ -4935,7 +4939,7 @@ export interface components {
          */
         MappingImpactResponse: {
             /** Active Release Id */
-            active_release_id: string;
+            active_release_id: string | null;
             /** Features */
             features: number;
             /** Outdated Features */
@@ -5791,7 +5795,8 @@ export interface components {
         RealisationLayer: "cfs" | "rfs" | "resource";
         /**
          * RealisationRecordSchema
-         * @description A CFS, RFS or resource, the systems that deliver it, and what realises it below.
+         * @description A CFSS, RFSS or resource, the systems that deliver it, what realises it below, and a
+         *     specification's rules (ADR-0127). ``layer`` keeps its values: cfs, rfs, resource.
          */
         RealisationRecordSchema: {
             /**
@@ -5817,6 +5822,11 @@ export interface components {
              * @default []
              */
             realised_by: string[];
+            /**
+             * Rules
+             * @default []
+             */
+            rules: string[];
             /** Source */
             source?: string | null;
             /**
@@ -6362,15 +6372,28 @@ export interface components {
         };
         /**
          * SettleSubjectRequest
-         * @description What a name waiting suggestions name really is: a system or a product offering.
+         * @description What a name waiting suggestions name really is, said once for all of them:
+         *     a system or a product offering to suggest; a system the draft has
+         *     (``existing_system_id``); a CFSS or RFSS the draft has (``specification_id``) or one to
+         *     suggest (``layer``); an order type to add to the offering ``system_id`` names, or one it
+         *     has (``existing_id``, its code); a channel to suggest, or one the draft has
+         *     (``existing_id``). For an order type, ``name`` is the order type and ``system_id`` the
+         *     offering. Each extra field is required for its kind only.
          */
         SettleSubjectRequest: {
+            /** Existing Id */
+            existing_id?: string | null;
+            /** Existing System Id */
+            existing_system_id?: string | null;
             kind: components["schemas"]["SubjectKind"];
+            layer?: components["schemas"]["RealisationLayer"] | null;
             /**
              * Name
              * @default
              */
             name: string;
+            /** Specification Id */
+            specification_id?: string | null;
             /** System Id */
             system_id: string;
         };
@@ -6522,7 +6545,7 @@ export interface components {
          * @description What a name suggestions wait for really is, as a person says it on Decide.
          * @enum {string}
          */
-        SubjectKind: "system" | "offering";
+        SubjectKind: "system" | "offering" | "existing" | "specification" | "new_specification" | "order_type" | "existing_order_type" | "channel" | "existing_channel";
         /** SuggestionDecisionRequest */
         SuggestionDecisionRequest: {
             /** Accept */
@@ -7457,7 +7480,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["KnowledgeReleaseResponse"];
+                    "application/json": components["schemas"]["KnowledgeReleaseResponse"] | null;
                 };
             };
             /** @description Validation Error */
@@ -9240,7 +9263,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ExplorerReleaseResponse"];
+                    "application/json": components["schemas"]["ExplorerReleaseResponse"] | null;
                 };
             };
             /** @description Validation Error */

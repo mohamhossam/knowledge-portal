@@ -19,6 +19,6 @@ class ExploreArchitecture:
     def __init__(self, repository: ArchitectureKnowledgeRepositoryPort) -> None:
         self._repository = repository
 
-    def in_service(self) -> ArchitectureKnowledge:
-        """The published version in service; never a draft."""
+    def in_service(self) -> ArchitectureKnowledge | None:
+        """The published version in service, never a draft; None before the first."""
         return self._repository.active()

@@ -266,6 +266,19 @@ describe("ExplorerPage", () => {
     expect(screen.getByRole("link", { name: "The journey in the catalogue" })).toHaveAttribute("href", "/architecture/journeys/bpp-new");
   });
 
+  it("says no version is in service before a maintainer publishes the first", async () => {
+    vi.spyOn(api, "explorerRelease").mockResolvedValue(null);
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={["/explorer"]}>
+          <ExplorerPage linkSystems={false} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText("No catalogue version is in service yet")).toBeInTheDocument();
+    expect(screen.getByText(/A knowledge maintainer publishes the first version/)).toBeInTheDocument();
+  });
+
   it("says so when the version cannot be read, with a way to try again", async () => {
     vi.spyOn(api, "explorerRelease").mockRejectedValue(new Error("The knowledge service is unavailable."));
     render(

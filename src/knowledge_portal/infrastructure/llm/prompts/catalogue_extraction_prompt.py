@@ -4,7 +4,7 @@ import json
 
 from knowledge_portal.application.ports.catalogue_extractor import ExtractionRequest
 
-PROMPT_VERSION = "catalogue-extraction-v21"
+PROMPT_VERSION = "catalogue-extraction-v22"
 
 # A journey is the largest answer shape. A model whose context leaves too little room for
 # it reads without it (ADR-0096): LEAN_SYSTEM_PROMPT and an answer schema without journeys.
@@ -70,10 +70,11 @@ unit, line of business, segment or product family ("Enterprise", "Fixed", "SMB")
 name, its level in the document's own words (portfolio_level, such as "Segment"), the node \
 it sits under (parent_domain) only if stated, and a short description (text) only if given. \
 Leave "system" empty. A product sold is a product_offering, never a portfolio node.
-- realisation_record: a customer-facing service (CFS), resource-facing service (RFS) or \
-resource named as such, such as "CFSS_ONPREM_FIREWALL_HE". Give its name, its layer \
-(realisation_layer: "cfs", "rfs" or "resource"), the system that delivers it or holds the \
-resource (system) only if stated, the names of the RFSs or resources one layer down that \
+- realisation_record: a customer facing service specification (CFSS), resource facing \
+service specification (RFSS) or resource named as such, such as "CFSS_ONPREM_FIREWALL_HE" \
+(the TM Forum SID's service specifications). Give its name, its layer (realisation_layer: \
+"cfs" for a CFSS, "rfs" for an RFSS, or "resource"), the system that delivers it or holds the \
+resource (system) only if stated, the names of the RFSSs or resources one layer down that \
 realise it (realised_by) only if stated, and what it is in one sentence (text) only if given. \
 A resource is realised by nothing below it.
 - source: a document the catalogue's facts come from, such as a solution design or a product \
@@ -104,7 +105,10 @@ to describe it (triggers). When the document says which component of the system 
 give that component's name (component).
 - constraint: a stated limitation or rule for one system.
 - offering_rule: a stated limitation or rule for one product offering, bundle or plan \
-("system": its name).
+("system": its name). A CFSS or RFSS is never a product offering.
+- specification_rule: a stated rule for one CFSS or RFSS, such as how many of it one service \
+order holds, what it must refer to, or a mandatory attribute's value ("system": its name, \
+such as "CFSS_UPLINK_UCPE").
 - relationship: one system depending on or calling another, with a short description, and \
 how it depends (relationship_kind):
   - "calls_api": the source calls the target's API or service.

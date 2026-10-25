@@ -63,6 +63,7 @@ from knowledge_portal.domain.architecture.knowledge import (
 )
 from knowledge_portal.domain.architecture.portfolio import PortfolioNode
 from knowledge_portal.domain.architecture.products import (
+    ComponentResponsibility,
     OfferingComponent,
     ProductOffering,
     RealisationLayer,
@@ -75,6 +76,8 @@ from knowledge_portal.domain.architecture.realisations import (
     RealisationRecord,
     find_realisation_among,
     merge_realisations,
+    specification_named,
+    with_rules,
 )
 from knowledge_portal.domain.architecture.tracking import TrackingChannel
 from knowledge_portal.domain.architecture.vocabularies import (
@@ -125,8 +128,11 @@ class CandidateKind(StrEnum):
     # A business area capabilities belong to, and a place in the product portfolio (ADR-0123).
     CAPABILITY_DOMAIN = "capability_domain"
     PORTFOLIO_NODE = "portfolio_node"
-    # A CFS, RFS or resource, the systems that deliver it and what realises it (ADR-0123).
+    # A CFSS, RFSS or resource, the systems that deliver it and what realises it (ADR-0123).
     REALISATION_RECORD = "realisation_record"
+    # A rule of one CFSS or RFSS, kept on its record: what an offering rule is to an offering
+    # (ADR-0127).
+    SPECIFICATION_RULE = "specification_rule"
     # A source the catalogue is read from, and two sources contradicting each other (ADR-0123).
     SOURCE = "source"
     CONFLICT = "conflict"
@@ -227,6 +233,8 @@ class CandidateContent:
     - constraint: ``system_id``, ``text``
     - offering_rule: ``system_id`` (the offering, by id or name until the draft resolves
       it) and ``text``, the rule it is sold or fulfilled by
+    - specification_rule: ``system_id`` (the CFSS or RFSS, by record id or name until the
+      draft resolves it) and ``text``, what the specification requires
     - relationship: ``system_id`` (source), ``target_system_id``, ``text``, and
       ``relationship_kind`` when the source says how the systems interact
     - landscape_domain: ``landscape_domain_id`` (also its ``system_id``, the
@@ -415,6 +423,8 @@ class CandidateContent:
             _required(self.text, "Constraint")
         elif self.kind is CandidateKind.OFFERING_RULE:
             _required(self.text, "Offering rule")
+        elif self.kind is CandidateKind.SPECIFICATION_RULE:
+            _required(self.text, "Specification rule")
         else:
             _required(self.target_system_id or "", "Relationship target")
             _required(self.text, "Relationship description")
@@ -1022,6 +1032,28 @@ def _kept_links(offering: ProductOffering, current: ProductOffering) -> ProductO
     return kept_offering_terms(whole, current)
 
 
+def _one_per_role(
+    duties: tuple[ComponentResponsibility, ...],
+) -> tuple[ComponentResponsibility, ...]:
+    """A component's responsibilities with each system once per role. Two names a document
+    wrote can turn out to be one system ("B2B Sales Channel" another name for BCRM): its two
+    mentions in one role are then one, for every order type when either is, else for both."""
+    kept: dict[tuple[str, str], ComponentResponsibility] = {}
+    for duty in duties:
+        key = (duty.system_id, duty.role)
+        held = kept.get(key)
+        if held is None:
+            kept[key] = duty
+            continue
+        orders = (
+            ()
+            if not held.order_types or not duty.order_types
+            else tuple(dict.fromkeys((*held.order_types, *duty.order_types)))
+        )
+        kept[key] = replace(held, order_types=orders)
+    return tuple(kept.values())
+
+
 def _resolved_offering(
     offering: ProductOffering, release: ArchitectureKnowledge
 ) -> tuple[ProductOffering, tuple[str, ...]]:
@@ -1042,8 +1074,11 @@ def _resolved_offering(
     components = tuple(
         replace(
             part,
-            responsibilities=tuple(
-                replace(duty, system_id=resolved(duty.system_id)) for duty in part.responsibilities
+            responsibilities=_one_per_role(
+                tuple(
+                    replace(duty, system_id=resolved(duty.system_id))
+                    for duty in part.responsibilities
+                )
             ),
         )
         for part in offering.components
@@ -1530,6 +1565,19 @@ def _classify_realisation_record(
     )
 
 
+def _classify_specification_rule(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> CandidateMatch:
+    record = specification_named(release.realisations, content.system_id)
+    if record is None:
+        return CandidateMatch.NEEDS_REALISATION
+    return (
+        CandidateMatch.ALREADY_PRESENT
+        if with_rules(record, (content.text,)) is record
+        else (CandidateMatch.NEW)
+    )
+
+
 def _classify_offering_rule(
     content: CandidateContent, release: ArchitectureKnowledge
 ) -> CandidateMatch:
@@ -1686,6 +1734,7 @@ _CLASSIFIERS: Mapping[CandidateKind, _Classifier] = {
     CandidateKind.CAPABILITY_DOMAIN: _classify_capability_domain,
     CandidateKind.PORTFOLIO_NODE: _classify_portfolio_node,
     CandidateKind.REALISATION_RECORD: _classify_realisation_record,
+    CandidateKind.SPECIFICATION_RULE: _classify_specification_rule,
     CandidateKind.SOURCE: _classify_source,
     CandidateKind.CONFLICT: _classify_conflict,
 }
@@ -1749,6 +1798,7 @@ def open_matches(
             CandidateKind.CONFLICT,
             CandidateKind.QUESTION,
             CandidateKind.OFFERING_RULE,
+            CandidateKind.SPECIFICATION_RULE,
         }
         or content.kind in _WHOLE
         or content.kind in _CONCEPTUAL
@@ -1904,6 +1954,7 @@ def missing_systems(content: CandidateContent, release: ArchitectureKnowledge) -
         CandidateKind.SOURCE,
         CandidateKind.CONFLICT,
         CandidateKind.OFFERING_RULE,
+        CandidateKind.SPECIFICATION_RULE,
         CandidateKind.QUESTION,
         CandidateKind.COMPONENT_LINK,
         CandidateKind.VOCABULARY_TERM,
@@ -2214,6 +2265,20 @@ def _with_offering_rule(
     ruled = replace(offering, rules=_merged(offering.rules, (content.text.strip(),)))
     return release.updated(
         products=tuple(ruled if item.id == offering.id else item for item in release.products)
+    )
+
+
+def _with_specification_rule(
+    content: CandidateContent, release: ArchitectureKnowledge
+) -> ArchitectureKnowledge:
+    record = specification_named(release.realisations, content.system_id)
+    if record is None:
+        raise CandidateDependencyError(
+            f"Accept or add the CFSS or RFSS {content.system_id!r} before its rules."
+        )
+    ruled = with_rules(record, (content.text,))
+    return release.updated(
+        realisations=tuple(ruled if item.id == record.id else item for item in release.realisations)
     )
 
 
@@ -2833,6 +2898,7 @@ _APPLIERS: Mapping[CandidateKind, _Applier] = {
     CandidateKind.CAPABILITY_DOMAIN: _apply_capability_domain,
     CandidateKind.PORTFOLIO_NODE: _apply_portfolio_node,
     CandidateKind.REALISATION_RECORD: _apply_realisation_record,
+    CandidateKind.SPECIFICATION_RULE: _with_specification_rule,
     CandidateKind.SOURCE: _apply_source,
     CandidateKind.CONFLICT: _apply_conflict,
 }

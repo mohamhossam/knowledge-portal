@@ -26,7 +26,7 @@ from knowledge_portal.domain.architecture.knowledge import (
 )
 from knowledge_portal.domain.architecture.sources import SourceConfidence
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
+from tests.catalogue_seed import seed_knowledge
 
 ADAPTER = CatalogueFileAdapter()
 CALLS, EVENTS = RelationshipKind.CALLS_API, RelationshipKind.PUBLISHES_EVENTS_TO

@@ -22,6 +22,10 @@ REVIEWER = {"X-Fake-Actor-Id": "fake-reviewer"}
 
 FULL_CATALOGUE_FILE = ROOT / "catalogues" / "smb-architecture.yaml"
 FULL_CATALOGUE_NAME = "Business Pro Plus (SDD v2.3)"
+# The service starts with no catalogue, so the sample work first publishes the small reference
+# catalogue the tests use, as a maintainer would.
+INITIAL_CATALOGUE_FILE = ROOT / "tests" / "fixtures" / "smb_architecture.yaml"
+INITIAL_CATALOGUE_NAME = "Initial catalogue"
 
 POLL_SECONDS = 0.1
 WAIT_SECONDS = 120.0

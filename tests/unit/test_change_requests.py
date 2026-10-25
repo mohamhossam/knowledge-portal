@@ -57,10 +57,10 @@ from knowledge_portal.domain.architecture.products import (
     SourceConfidence,
 )
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.interfaces.api.container import Container, build_container
 from knowledge_portal.interfaces.api.main import create_app
 from knowledge_portal.interfaces.api.schemas.change_requests import ExportOfferingDraft
+from tests.catalogue_seed import seed_knowledge
 from tests.conftest import FAKE_PROVIDER_SETTINGS
 
 EXPORT = Path(__file__).resolve().parents[1] / "fixtures" / "requirement_ai_backlog_export.json"
@@ -286,7 +286,10 @@ def test_change_history_is_compared_and_round_trips_in_every_catalogue_file() ->
 
 @pytest.fixture
 def served() -> Iterator[tuple[Container, TestClient]]:
-    container = build_container(replace(FAKE_PROVIDER_SETTINGS, requirement_service_token=TOKEN))
+    container = build_container(
+        replace(FAKE_PROVIDER_SETTINGS, requirement_service_token=TOKEN),
+        in_service=seed_knowledge(),
+    )
     with TestClient(create_app(lambda: container)) as client:
         yield container, client
 
