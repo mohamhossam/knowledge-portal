@@ -73,6 +73,16 @@ export function ExplorerPage({ linkSystems }: { linkSystems: boolean }) {
   }
 
   const release = query.data;
+  if (release === null) {
+    return (
+      <div className="explorer">
+        <PageHeader title={TITLE} />
+        <EmptyState title="No catalogue version is in service yet">
+          <p>A knowledge maintainer publishes the first version of the catalogue. Its offerings and journeys appear here once it is in service.</p>
+        </EmptyState>
+      </div>
+    );
+  }
   const scenario = pickScenario(release, params.get("product"), params.get("order"), params.get("channel"));
   const view = VIEWS.find((item) => item === params.get("view")) ?? "swimlane";
   const choose = (product: string, order: string | null, channel: string | null = null) =>

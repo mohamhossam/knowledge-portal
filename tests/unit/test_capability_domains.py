@@ -33,19 +33,12 @@ from knowledge_portal.domain.architecture.knowledge import (
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.reasoning import FakeArchitectureReasoner
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
-from knowledge_portal.infrastructure.architecture.yaml_knowledge import (
-    YamlArchitectureKnowledge,
-    default_knowledge_path,
-)
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
-)
 from knowledge_portal.infrastructure.persistence.in_memory_organisation import (
     InMemoryOrganisationRepository,
 )
+from tests.catalogue_seed import indexed_repository, seed_knowledge
 
 NOW = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
 ADAPTER = CatalogueFileAdapter()
@@ -247,17 +240,17 @@ def test_suggestions_come_from_catalogue_words_one_per_branch() -> None:
 
 
 def _resolver() -> ResolveArchitectureKnowledge:
+    index = InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer())
     return ResolveArchitectureKnowledge(
-        InMemoryArchitectureKnowledgeRepository(seed_knowledge()),
-        InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
+        indexed_repository(index),
+        index,
         FakeArchitectureReasoner(),
-        YamlArchitectureKnowledge(default_knowledge_path()),
         InMemoryOrganisationRepository(FixedClock(NOW)),
     )
 
 
 def test_mapping_places_capabilities_and_suggests_domains_only_when_nothing_mapped() -> None:
-    mapped = _resolver().match(ArchitectureQuery(text=("The assisted sales journey",)))
+    mapped = _resolver().match(ArchitectureQuery(text=("The assisted sales journey in BCRM",)))
     unmapped = _resolver().match(
         ArchitectureQuery(text=("Speed up billing for small business orders",))
     )

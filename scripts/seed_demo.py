@@ -6,6 +6,10 @@ another admin's), failed and withdrawn; a published catalogue version placed in 
 landscape, with an offering and its journey; a draft catalogue release with proposed
 suggestions; squads that own some systems and leave others without an owner.
 
+The service starts with no catalogue, so the seed first publishes the tests' reference
+catalogue (`tests/fixtures/smb_architecture.yaml`) the way a maintainer would, and builds
+the sample version on it.
+
     uv run python -m knowledge_portal.interfaces.api.serve --port 8100   # fake, in memory
     uv run python scripts/seed_demo.py --api http://127.0.0.1:8100
     uv run python scripts/seed_demo.py --api http://127.0.0.1:8100 --full-catalogue
@@ -34,6 +38,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts._catalogue_seed import (  # noqa: E402
     FULL_CATALOGUE_FILE,
     FULL_CATALOGUE_NAME,
+    INITIAL_CATALOGUE_FILE,
+    INITIAL_CATALOGUE_NAME,
     OWNER,
     REVIEWER,
     one_draft_at_a_time,
@@ -802,6 +808,7 @@ def main() -> None:
         seed_library(client)
         seed_review_material(client)
         seed_governance(client)
+        load_full_catalogue(client, INITIAL_CATALOGUE_FILE, INITIAL_CATALOGUE_NAME, publish=True)
         seed_published_catalogue(client)
         # The squads own systems of the sample version, so they are placed while it is in service.
         seed_squads(client)

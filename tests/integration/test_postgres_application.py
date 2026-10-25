@@ -13,8 +13,8 @@ from fastapi.testclient import TestClient
 from smb_kernel.persistence.connector import DirectPostgresConnector
 
 from knowledge_portal.application.errors import PersistenceError
+from knowledge_portal.application.ports.architecture_knowledge_repository import put_in_service
 from knowledge_portal.domain.identity.entities import ActorId, ActorProfile
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.config.options import PersistenceProvider
 from knowledge_portal.infrastructure.persistence.actor_directory import PostgresActorDirectory
 from knowledge_portal.infrastructure.persistence.knowledge_events import PostgresKnowledgeEvents
@@ -25,6 +25,7 @@ from knowledge_portal.infrastructure.persistence.postgres_architecture_knowledge
 from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
 from knowledge_portal.interfaces.api.container import build_container
 from knowledge_portal.interfaces.api.main import create_app
+from tests.catalogue_seed import seed_knowledge
 from tests.conftest import FAKE_PROVIDER_SETTINGS
 
 DATABASE_URL = os.getenv("TEST_DATABASE_URL")
@@ -106,12 +107,18 @@ def test_activating_a_release_names_it_for_requirement_work() -> None:
     try:
         run_migrations(url)
         seed = seed_knowledge()
-        # A fresh database: the seed release is activated, and the event says so.
-        PostgresArchitectureKnowledgeRepository(
-            PostgresStore(DirectPostgresConnector(url)), seed
-        ).active()
-        events = PostgresKnowledgeEvents(PostgresStore(DirectPostgresConnector(url))).after(0, 10)
-        (activated,) = [e for e in events if e.kind == "architecture_release_activated"]
+        # A fresh database has no catalogue in service, and reports no activation.
+        repository = PostgresArchitectureKnowledgeRepository(
+            PostgresStore(DirectPostgresConnector(url))
+        )
+        assert repository.active() is None
+        outbox = PostgresKnowledgeEvents(PostgresStore(DirectPostgresConnector(url)))
+        assert not [e for e in outbox.after(0, 10) if e.kind == "architecture_release_activated"]
+        # The first version published goes in service, and the event says so.
+        put_in_service(repository, seed)
+        (activated,) = [
+            e for e in outbox.after(0, 10) if e.kind == "architecture_release_activated"
+        ]
         assert activated.payload == {"release_id": seed.id, "name": seed.name}
     finally:
         with psycopg.connect(DATABASE_URL, autocommit=True) as connection:

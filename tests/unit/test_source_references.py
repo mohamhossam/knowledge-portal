@@ -29,12 +29,12 @@ from knowledge_portal.domain.architecture.provenance import (
     AcceptedFrom,
 )
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     AcceptedFromSchema,
     ExplorerReleaseResponse,
     KnowledgeReleaseResponse,
 )
+from tests.catalogue_seed import seed_knowledge
 
 ADAPTER = CatalogueFileAdapter()
 SDD = KnowledgeSource("sdd", "Solution design", SourceLevel.L2, short="SDD v2.3")

@@ -99,10 +99,9 @@ function alertOf(delayed: string | null, due: string | null): Overview["alert"] 
 
 type NameOf = (actorId: string | null | undefined) => string;
 
-/** Who did something, by name. The packaged initial catalogue has no person behind it. */
+/** Who did something, by name. */
 export function nameDirectory(actors: Actor[] | undefined): NameOf {
   const names = new Map((actors ?? []).map((actor) => [actor.id, actor.display_name]));
-  names.set("packaged-seed", "the packaged initial catalogue");
   return (actorId) => (actorId ? names.get(actorId) ?? actorId : "someone");
 }
 

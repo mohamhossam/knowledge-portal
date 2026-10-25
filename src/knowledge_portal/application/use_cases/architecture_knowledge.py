@@ -11,6 +11,7 @@ from smb_kernel.documents.ports import DocumentScannerPort
 from knowledge_portal.application.document_upload_validation import require_clean
 from knowledge_portal.application.ports.architecture_knowledge_repository import (
     ArchitectureKnowledgeRepositoryPort,
+    release_in_service,
 )
 from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceIndexPort,
@@ -34,7 +35,11 @@ from knowledge_portal.domain.architecture.citations import (
 )
 from knowledge_portal.domain.architecture.concepts import BusinessCapability
 from knowledge_portal.domain.architecture.coverage import CatalogueCoverage, coverage
-from knowledge_portal.domain.architecture.diff import CatalogueDiff, diff_releases
+from knowledge_portal.domain.architecture.diff import (
+    CatalogueDiff,
+    diff_releases,
+    first_version_diff,
+)
 from knowledge_portal.domain.architecture.governance import KnowledgeSource, SourceConflict
 from knowledge_portal.domain.architecture.identity import renamed_journey, renamed_offering
 from knowledge_portal.domain.architecture.interfaces import SystemInterface
@@ -82,7 +87,8 @@ class ManageArchitectureKnowledge:
         require_maintainer(actor)
         return self._repository.list_all()
 
-    def view_active(self, actor: Actor) -> ArchitectureKnowledge:
+    def view_active(self, actor: Actor) -> ArchitectureKnowledge | None:
+        """The version in service; None until a maintainer publishes the first."""
         require_reader(actor)
         return self._repository.active()
 
@@ -145,7 +151,7 @@ class ManageArchitectureKnowledge:
         return self._index.retrieve(release.index_id or release.id, query, 8)
 
     def active(self) -> ArchitectureKnowledge:
-        return self._repository.active()
+        return release_in_service(self._repository)
 
     def audit(self, release_id: str, actor: Actor) -> tuple[KnowledgeAuditEvent, ...]:
         require_maintainer(actor)
@@ -165,7 +171,10 @@ class ManageArchitectureKnowledge:
         return version
 
     def create_draft(self, actor: Actor, name: str) -> ArchitectureKnowledge:
-        """Start the one version in progress, copied from the version in use."""
+        """Start the one version in progress, copied from the version in use.
+
+        With nothing in service yet, the first version starts empty.
+        """
         require_maintainer(actor)
         label = version_name(name)
         in_progress = next(
@@ -183,6 +192,12 @@ class ManageArchitectureKnowledge:
                 f"'{taken}' is already in progress{starter}. Publish or discard it first."
             )
         current = self._repository.active()
+        if current is None:
+            first = ArchitectureKnowledge(
+                f"draft-{uuid4().hex}", 1, (), (), name=label, created_by=actor.id
+            )
+            self._repository.save(first, None, actor.id, "create_draft")
+            return first
         draft = replace(
             current,
             id=f"draft-{uuid4().hex}",
@@ -400,7 +415,7 @@ class ManageArchitectureKnowledge:
         if not rationale.strip():
             raise InvalidKnowledgeError("Reactivation rationale is required.")
         release = self.get(release_id)
-        if release.id != "smb-source-reference-v1" and not self._index.reads(release.index_profile):
+        if not self._index.reads(release.index_profile):
             raise KnowledgeConflictError(
                 "This historical index uses a different embedding profile; create a new draft."
             )
@@ -508,7 +523,7 @@ class ManageArchitectureKnowledge:
             base = self.get(recorded) if recorded is not None else self._repository.active()
         else:
             base = self.get(base_id)
-        return diff_releases(base, release)
+        return diff_releases(base, release) if base is not None else first_version_diff(release)
 
     def select_documents(
         self,

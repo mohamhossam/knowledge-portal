@@ -40,15 +40,9 @@ from knowledge_portal.domain.architecture.provenance import AcceptedCitation, Ac
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import (
-    knowledge_from_yaml,
-    seed_knowledge,
-)
+from knowledge_portal.infrastructure.architecture.knowledge_yaml import knowledge_from_yaml
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
 from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
-)
 from knowledge_portal.infrastructure.persistence.in_memory_catalogue_candidates import (
     InMemoryCatalogueCandidates,
 )
@@ -58,6 +52,7 @@ from knowledge_portal.infrastructure.persistence.in_memory_transaction import (
 from knowledge_portal.interfaces.api.schemas.architecture_knowledge import (
     ExplorerReleaseResponse,
 )
+from tests.catalogue_seed import seeded_repository
 
 NOW = datetime(2026, 10, 21, 9, 0, tzinfo=UTC)
 CATALOGUE = Path(__file__).resolve().parents[2] / "catalogues" / "smb-architecture.yaml"
@@ -67,7 +62,7 @@ MAINTAINER = Actor("amina", frozenset({"knowledge_maintainer"}))
 
 class _World:
     def __init__(self) -> None:
-        self.repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+        self.repository = seeded_repository()
         self.manage = ManageArchitectureKnowledge(
             self.repository,
             CatalogueFileAdapter(),

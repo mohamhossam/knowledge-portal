@@ -61,10 +61,7 @@ from knowledge_portal.domain.organisation.catalogue import (
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import (
-    knowledge_from_yaml,
-    seed_knowledge,
-)
+from knowledge_portal.infrastructure.architecture.knowledge_yaml import knowledge_from_yaml
 from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
 )
@@ -73,10 +70,6 @@ from knowledge_portal.infrastructure.architecture.reasoning import FakeArchitect
 from knowledge_portal.infrastructure.architecture.requirement_reading import FakeRequirementReader
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
 from knowledge_portal.infrastructure.architecture.verdict_reasoning import FakeVerdictReasoner
-from knowledge_portal.infrastructure.architecture.yaml_knowledge import (
-    YamlArchitectureKnowledge,
-    default_knowledge_path,
-)
 from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.persistence.document_storage import InMemoryDocumentStorage
 from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
@@ -86,6 +79,7 @@ from knowledge_portal.infrastructure.persistence.in_memory_organisation import (
     InMemoryOrganisationRepository,
 )
 from knowledge_portal.infrastructure.persistence.in_memory_precedents import InMemoryPrecedents
+from tests.catalogue_seed import seeded_repository
 
 CATALOGUE = Path(__file__).resolve().parents[2] / "catalogues" / "smb-architecture.yaml"
 ADAPTER = CatalogueFileAdapter()
@@ -255,7 +249,6 @@ class _Worlds:
             self.repository,
             self.index,
             FakeArchitectureReasoner(),
-            YamlArchitectureKnowledge(default_knowledge_path()),
             self.organisation,
         ).match(replace(query, release_id=release.id))
 
@@ -263,7 +256,7 @@ class _Worlds:
 @pytest.fixture(scope="module")
 def worlds() -> _Worlds:
     clock = FixedClock(NOW)
-    repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    repository = seeded_repository()
     index = InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer())
     manage = ManageArchitectureKnowledge(
         repository, ADAPTER, index, 10_000_000, OfflineDocumentScanner()

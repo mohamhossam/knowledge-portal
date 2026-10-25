@@ -31,7 +31,6 @@ from knowledge_portal.domain.architecture.knowledge import (
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
 )
@@ -40,9 +39,7 @@ from knowledge_portal.infrastructure.documents.library_worker import OfflineDocu
 from knowledge_portal.infrastructure.persistence.document_storage import (
     InMemoryDocumentStorage,
 )
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
-)
+from tests.catalogue_seed import seed_knowledge, seeded_repository
 
 OWNER = {"X-Fake-Actor-Id": "fake-owner"}
 MAINTAINER = Actor("amina", frozenset({"knowledge_maintainer"}))
@@ -184,7 +181,7 @@ class _Recording(InMemoryEvidenceIndex):
 
 
 def _system_chunks(place: bool) -> dict[str, str]:
-    repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    repository = seeded_repository()
     index = _Recording()
     manage = ManageArchitectureKnowledge(
         repository, CatalogueFileAdapter(), index, 10_000_000, OfflineDocumentScanner()

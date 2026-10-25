@@ -68,16 +68,11 @@ from knowledge_portal.domain.organisation.catalogue import (
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
 )
 from knowledge_portal.infrastructure.architecture.reasoning import FakeArchitectureReasoner
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
-from knowledge_portal.infrastructure.architecture.yaml_knowledge import (
-    YamlArchitectureKnowledge,
-    default_knowledge_path,
-)
 from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.llm.catalogue_extraction import (
     FakeCatalogueExtractor,
@@ -86,9 +81,6 @@ from knowledge_portal.infrastructure.llm.catalogue_extraction import (
 from knowledge_portal.infrastructure.llm.catalogue_matching import FakeSystemMatcher
 from knowledge_portal.infrastructure.persistence.document_storage import (
     InMemoryDocumentStorage,
-)
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
 )
 from knowledge_portal.infrastructure.persistence.in_memory_catalogue_candidates import (
     InMemoryCatalogueCandidates,
@@ -106,6 +98,7 @@ from knowledge_portal.infrastructure.persistence.postgres_organisation import (
     PostgresOrganisationRepository,
 )
 from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
+from tests.catalogue_seed import seed_knowledge, seeded_repository
 
 NOW = datetime(2026, 9, 29, 9, 0, tzinfo=UTC)
 MAINTAINER = Actor("amina", frozenset({"knowledge_maintainer"}))
@@ -115,7 +108,7 @@ ADAPTER = CatalogueFileAdapter()
 
 
 def test_organisation_use_case_covers_every_record_kind() -> None:
-    releases = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    releases = seeded_repository()
     manage = ManageOrganisationCatalogue(InMemoryOrganisationRepository(FixedClock(NOW)), releases)
     manage.save_person(Person("layla", "Layla"), None, MAINTAINER)
     manage.save_value_stream(ValueStream("retail", "Retail", "layla"), None, MAINTAINER)
@@ -278,7 +271,7 @@ def test_workbook_rows_are_checked_against_the_systems_sheet() -> None:
 
 
 def test_file_import_refuses_published_empty_and_oversized_files() -> None:
-    repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    repository = seeded_repository()
     manage = ManageArchitectureKnowledge(
         repository,
         ADAPTER,
@@ -305,7 +298,7 @@ def _proposer(
     InMemoryCatalogueCandidates,
     ManageArchitectureKnowledge,
 ]:
-    repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    repository = seeded_repository()
     manage = ManageArchitectureKnowledge(
         repository,
         ADAPTER,
@@ -516,7 +509,7 @@ def test_fake_extractor_skips_table_rows() -> None:
 
 
 def test_ai_mapping_of_a_published_release_records_organisation_ownership() -> None:
-    repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    repository = seeded_repository()
     index = InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer())
     manage = ManageArchitectureKnowledge(
         repository, ADAPTER, index, 10_000, OfflineDocumentScanner()
@@ -554,7 +547,6 @@ def test_ai_mapping_of_a_published_release_records_organisation_ownership() -> N
         repository,
         index,
         FakeArchitectureReasoner(),
-        YamlArchitectureKnowledge(default_knowledge_path()),
         organisation,
     )
 

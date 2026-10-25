@@ -16,6 +16,7 @@ from knowledge_portal.application.ports.architecture_knowledge import (
 )
 from knowledge_portal.application.ports.architecture_knowledge_repository import (
     ArchitectureKnowledgeRepositoryPort,
+    release_in_service,
 )
 from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceError,
@@ -75,13 +76,11 @@ class ResolveArchitectureKnowledge(ArchitectureKnowledgePort):
         repository: ArchitectureKnowledgeRepositoryPort,
         index: ArchitectureEvidenceIndexPort,
         reasoner: ArchitectureReasonerPort,
-        initial: ArchitectureKnowledgePort,
         organisation: OrganisationRepositoryPort,
     ) -> None:
         self._repository = repository
         self._index = index
         self._reasoner = reasoner
-        self._initial = initial
         self._organisation = organisation
 
     def match(self, query: ArchitectureQuery) -> ArchitectureKnowledgeMatch:
@@ -175,12 +174,10 @@ class ResolveArchitectureKnowledge(ArchitectureKnowledgePort):
         release = (
             self._repository.get(query.release_id)
             if query.release_id
-            else self._repository.active()
+            else release_in_service(self._repository)
         )
         if release is None or release.status is not KnowledgeReleaseStatus.PUBLISHED:
             raise KnowledgeConflictError("The selected architecture release is unavailable.")
-        if release.id == "smb-source-reference-v1":
-            return release, self._initial.match(query)
         if release.built_revision != release.revision:
             raise KnowledgeConflictError("The published release has no complete evidence index.")
         if not self._index.reads(release.index_profile):

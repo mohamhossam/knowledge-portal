@@ -48,7 +48,6 @@ from knowledge_portal.domain.architecture.products import (
     ProductOffering,
 )
 from knowledge_portal.infrastructure.architecture.catalogue_tables import CatalogueTableReader
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
     _without_hidden_sheets,
@@ -61,6 +60,7 @@ from knowledge_portal.infrastructure.llm.prompts.catalogue_extraction_prompt imp
     DETAILED_SYSTEM_PROMPT,
     LEAN_SYSTEM_PROMPT,
 )
+from tests.catalogue_seed import seed_knowledge
 from tests.unit.test_document_reading_coverage import (
     MAINTAINER,
     _docx,

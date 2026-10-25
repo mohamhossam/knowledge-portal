@@ -18,6 +18,7 @@ from knowledge_portal.application.ports.identity import Actor
 from knowledge_portal.infrastructure.identity.fake_identity import FAKE_ACTORS
 from knowledge_portal.interfaces.api.container import Container, build_container
 from knowledge_portal.interfaces.api.main import create_app
+from tests.catalogue_seed import seed_knowledge
 from tests.conftest import FAKE_PROVIDER_SETTINGS
 from tests.unit.test_document_library import approve_fixture, owner
 
@@ -31,7 +32,8 @@ def served() -> Iterator[tuple[Container, TestClient]]:
     container = build_container(
         replace(
             FAKE_PROVIDER_SETTINGS, requirement_service_token=TOKEN, library_scan_mode="offline"
-        )
+        ),
+        in_service=seed_knowledge(),
     )
     with TestClient(create_app(lambda: container)) as client:
         yield container, client

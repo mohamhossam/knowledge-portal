@@ -49,12 +49,12 @@ from knowledge_portal.domain.architecture.knowledge import (
     KnowledgeReleaseStatus,
 )
 from knowledge_portal.domain.architecture.products import ProductOffering
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.persistence.in_memory_change_requests import (
     InMemoryChangeRequests,
 )
 from knowledge_portal.interfaces.api.container import Container, build_container
 from knowledge_portal.interfaces.api.main import create_app
+from tests.catalogue_seed import seed_knowledge
 from tests.conftest import FAKE_PROVIDER_SETTINGS
 
 TOKEN = "r" * 40
@@ -399,7 +399,10 @@ def test_a_later_closure_replaces_one_waiting_and_a_removal_withdraws_it() -> No
 
 @pytest.fixture
 def served() -> Iterator[tuple[Container, TestClient]]:
-    container = build_container(replace(FAKE_PROVIDER_SETTINGS, requirement_service_token=TOKEN))
+    container = build_container(
+        replace(FAKE_PROVIDER_SETTINGS, requirement_service_token=TOKEN),
+        in_service=seed_knowledge(),
+    )
     with TestClient(create_app(lambda: container)) as client:
         yield container, client
 

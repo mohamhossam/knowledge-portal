@@ -2628,7 +2628,8 @@ class CatalogueChangeResponse(BaseModel):
 
 
 class CatalogueDiffResponse(BaseModel):
-    base_release_id: str
+    # None when the draft is the first version: nothing was in service to compare with.
+    base_release_id: str | None
     draft_release_id: str
     changes: list[CatalogueChangeResponse]
 
@@ -3023,7 +3024,7 @@ class ImpactComparisonResponse(BaseModel):
 class MappingImpactResponse(BaseModel):
     """How much of the backlog is mapped, and how much uses an older catalogue version."""
 
-    active_release_id: str
+    active_release_id: str | None
     requirements: int
     features: int
     stories: int

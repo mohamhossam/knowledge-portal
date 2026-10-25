@@ -9,7 +9,6 @@ import pytest
 from openpyxl import Workbook
 from pydantic import TypeAdapter
 
-from knowledge_portal.application.ports.architecture_knowledge import ArchitectureQuery
 from knowledge_portal.application.ports.catalogue_extractor import (
     ExtractionRequest,
     ExtractionSegment,
@@ -35,12 +34,8 @@ from knowledge_portal.domain.architecture.knowledge import (
 )
 from knowledge_portal.domain.architecture.neighbours import adjacent
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
-from knowledge_portal.infrastructure.architecture.yaml_knowledge import (
-    YamlArchitectureKnowledge,
-    default_knowledge_path,
-)
 from knowledge_portal.infrastructure.llm.catalogue_extraction import FakeCatalogueExtractor
+from tests.catalogue_seed import seed_knowledge
 
 ADAPTER = CatalogueFileAdapter()
 
@@ -218,12 +213,7 @@ def test_workbooks_without_the_kind_column_still_import_and_labels_are_accepted(
         )
 
 
-def test_mapping_and_connected_systems_carry_the_kind() -> None:
-    seed = YamlArchitectureKnowledge(default_knowledge_path())
-
-    result = seed.match(ArchitectureQuery(text=(), declared_systems=("B2B Web", "B2B BFF")))
-
-    assert [item.kind for item in result.dependencies] == [RelationshipKind.CALLS_API]
+def test_connected_systems_carry_the_kind() -> None:
     nearby = adjacent({"rtf"}, seed_knowledge().relationships)
     assert {item.kind for item in nearby.dependencies} == {
         RelationshipKind.TRANSFERS_DATA_TO,

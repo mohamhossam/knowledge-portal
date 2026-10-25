@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { api, type LibraryDocument, type Release, type Reminders, type ReviewStanding, type SystemStanding } from "../api/client";
+import { api, type Actor, type LibraryDocument, type Release, type Reminders, type ReviewStanding, type SystemStanding } from "../api/client";
 import { AuthContext, type AuthState } from "../auth/authContext";
 import { architectureOverview, libraryOverview, nameDirectory } from "../home/derive";
 import { DocumentReview } from "./DocumentReview";
@@ -166,17 +166,17 @@ describe("reviews in the tables", () => {
     expect(library.alert).toEqual({ rank: "delayed", text: "1 re-confirmation overdue" });
     expect(library.next.label).toBe("1 document overdue for re-confirmation by its owner");
 
-    const active = { id: "r1", name: "Edition 7", status: "active", revision: 3, published_by: "packaged-seed", published_at: "2026-01-01T00:00:00Z", systems: [{}, {}], relationships: [] } as unknown as Release;
+    const active = { id: "r1", name: "Edition 7", status: "active", revision: 3, published_by: "ana", published_at: "2026-01-01T00:00:00Z", systems: [{}, {}], relationships: [] } as unknown as Release;
     const standings = [
       { system_id: "BRM", name: "Billing and Revenue", standing: standing("overdue", "2026-06-30T00:00:00Z") },
       { system_id: "CRM", name: "Customer care", standing: standing("due_soon", "2026-10-15T00:00:00Z") },
     ] as SystemStanding[];
-    const catalogue = architectureOverview([active], active, new Map(), nameDirectory([]), null, standings);
+    const catalogue = architectureOverview([active], active, new Map(), nameDirectory([{ id: "ana", display_name: "Ana" } as Actor]), null, standings);
     expect(catalogue.lines).toMatchObject([{
       rank: "delayed",
       name: "Edition 7",
       statusDetail: "1 more due within two weeks",
-      cells: { status: "1 system: re-confirmation overdue", preparedBy: "the packaged initial catalogue" },
+      cells: { status: "1 system: re-confirmation overdue", preparedBy: "Ana" },
     }]);
     expect(catalogue.alert).toEqual({ rank: "delayed", text: "1 re-confirmation overdue" });
     expect(catalogue.next).toEqual({ to: "/", label: "1 system overdue for re-confirmation" });

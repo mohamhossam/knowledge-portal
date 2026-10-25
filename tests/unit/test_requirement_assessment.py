@@ -105,7 +105,6 @@ from knowledge_portal.domain.organisation.catalogue import (
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
 )
@@ -124,10 +123,6 @@ from knowledge_portal.infrastructure.architecture.verdict_reasoning import (
     FakeVerdictReasoner,
     StructuredVerdictReasoner,
 )
-from knowledge_portal.infrastructure.architecture.yaml_knowledge import (
-    YamlArchitectureKnowledge,
-    default_knowledge_path,
-)
 from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
 from knowledge_portal.infrastructure.persistence.document_storage import InMemoryDocumentStorage
 from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
@@ -139,6 +134,7 @@ from knowledge_portal.infrastructure.persistence.in_memory_organisation import (
 from knowledge_portal.infrastructure.persistence.in_memory_precedents import InMemoryPrecedents
 from knowledge_portal.interfaces.api.container import Container, build_container
 from knowledge_portal.interfaces.api.main import create_app
+from tests.catalogue_seed import seeded_repository
 from tests.conftest import FAKE_PROVIDER_SETTINGS
 
 CATALOGUE = Path(__file__).resolve().parents[2] / "catalogues" / "smb-architecture.yaml"
@@ -172,7 +168,7 @@ class _World:
 @pytest.fixture(scope="module")
 def world() -> _World:
     clock = FixedClock(NOW)
-    repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    repository = seeded_repository()
     index = InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer())
     manage = ManageArchitectureKnowledge(
         repository, CatalogueFileAdapter(), index, 10_000_000, OfflineDocumentScanner()
@@ -386,7 +382,6 @@ def test_per_item_mapping_explains_its_systems_with_role_change_type_and_path(
         world.repository,
         world.index,
         FakeArchitectureReasoner(),
-        YamlArchitectureKnowledge(default_knowledge_path()),
         world.organisation,
     )
 

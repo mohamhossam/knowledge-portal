@@ -24,12 +24,9 @@ from knowledge_portal.domain.architecture.tracking import FalloutCase
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordTokenizer
 from knowledge_portal.infrastructure.documents.library_worker import OfflineDocumentScanner
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
-)
+from tests.catalogue_seed import seeded_repository
 
 MAINTAINER = Actor("maintainer", frozenset({"knowledge_maintainer"}))
 CATALOGUE = Path(__file__).resolve().parents[2] / "catalogues" / "smb-architecture.yaml"
@@ -37,7 +34,7 @@ CATALOGUE = Path(__file__).resolve().parents[2] / "catalogues" / "smb-architectu
 
 def _catalogue() -> tuple[ManageArchitectureKnowledge, ArchitectureKnowledge]:
     manage = ManageArchitectureKnowledge(
-        InMemoryArchitectureKnowledgeRepository(seed_knowledge()),
+        seeded_repository(),
         CatalogueFileAdapter(),
         InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer()),
         10_000_000,

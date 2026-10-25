@@ -29,23 +29,9 @@ _ADAPTER: TypeAdapter[ArchitectureKnowledge] = TypeAdapter(ArchitectureKnowledge
 
 
 class PostgresArchitectureKnowledgeRepository:
-    def __init__(self, store: PostgresStore, seed: ArchitectureKnowledge) -> None:
+    def __init__(self, store: PostgresStore) -> None:
+        # Nothing is seeded: the first release in service is one a maintainer publishes.
         self._store = store
-        # One transaction: the seed row and its activation event land together, and
-        # only the replica whose insert won writes the event (ON CONFLICT loses race).
-        with self._store.connection() as connection:
-            row = connection.execute(
-                "SELECT 1 FROM architecture_knowledge_releases LIMIT 1"
-            ).fetchone()
-            if row is None:
-                inserted = connection.execute(
-                    "INSERT INTO architecture_knowledge_releases "
-                    "(release_id, revision, payload, active) "
-                    "VALUES (%s, %s, %s, true) ON CONFLICT DO NOTHING RETURNING release_id",
-                    (seed.id, seed.revision, Jsonb(_ADAPTER.dump_python(seed, mode="json"))),
-                ).fetchone()
-                if inserted is not None:
-                    _activated(connection, seed)
 
     @staticmethod
     def _release(raw: object) -> ArchitectureKnowledge:
@@ -80,14 +66,12 @@ class PostgresArchitectureKnowledgeRepository:
         except ValidationError as exc:
             raise PersistenceError("Architecture document list failed.") from exc
 
-    def active(self) -> ArchitectureKnowledge:
+    def active(self) -> ArchitectureKnowledge | None:
         with self._store.connection() as connection:
             row = connection.execute(
                 "SELECT payload FROM architecture_knowledge_releases WHERE active"
             ).fetchone()
-        if row is None:
-            raise PersistenceError("No active architecture release exists.")
-        return self._release(row[0])
+        return self._release(row[0]) if row else None
 
     def save(
         self,

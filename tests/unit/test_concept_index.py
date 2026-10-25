@@ -48,7 +48,6 @@ from knowledge_portal.domain.document.value_objects import DocumentVersionId
 from knowledge_portal.infrastructure.architecture.catalogue_files import CatalogueFileAdapter
 from knowledge_portal.infrastructure.architecture.embeddings import FakeEmbeddings
 from knowledge_portal.infrastructure.architecture.evidence_index import InMemoryEvidenceIndex
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
 from knowledge_portal.infrastructure.architecture.located_extractor import (
     LocatedDocumentExtractor,
 )
@@ -57,9 +56,7 @@ from knowledge_portal.infrastructure.documents.library_worker import OfflineDocu
 from knowledge_portal.infrastructure.persistence.document_storage import (
     InMemoryDocumentStorage,
 )
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
-)
+from tests.catalogue_seed import seeded_repository
 
 MAINTAINER = Actor("amina", frozenset({"knowledge_maintainer"}))
 OWNER = {"X-Fake-Actor-Id": "fake-owner"}
@@ -167,7 +164,7 @@ def _release() -> ArchitectureKnowledge:
 
 def _build(release: ArchitectureKnowledge) -> tuple[_Recording, ArchitectureKnowledge]:
     """Build a draft holding the release's catalogue and one document of PASSAGES."""
-    repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    repository = seeded_repository()
     recording = _Recording()
     manage = ManageArchitectureKnowledge(
         repository, CatalogueFileAdapter(), recording, 10_000_000, OfflineDocumentScanner()
@@ -336,7 +333,7 @@ def test_an_index_from_before_links_is_still_read_but_reports_no_coverage() -> N
 
 
 def test_a_release_indexed_before_links_stays_in_service_until_rebuilt() -> None:
-    repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    repository = seeded_repository()
     index = InMemoryEvidenceIndex(FakeEmbeddings(), ApproximateTokenizer())
     manage = ManageArchitectureKnowledge(
         repository, CatalogueFileAdapter(), index, 10_000_000, OfflineDocumentScanner()

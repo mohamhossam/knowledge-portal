@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from knowledge_portal.application.ports.architecture_knowledge_repository import (
     ArchitectureKnowledgeRepositoryPort,
+    release_in_service,
 )
 from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceError,
@@ -93,8 +94,6 @@ from knowledge_portal.domain.organisation.catalogue import (
 )
 
 MAX_OPTIONS = 8
-# The release built from the packaged reference YAML has no catalogue to walk.
-REFERENCE_RELEASE = "smb-source-reference-v1"
 
 
 class AssessRequirement(RequirementAssessmentPort):
@@ -271,13 +270,11 @@ class AssessRequirement(RequirementAssessmentPort):
         )
 
     def _release(self, release_id: str | None) -> ArchitectureKnowledge:
-        release = self._repository.get(release_id) if release_id else self._repository.active()
+        release = (
+            self._repository.get(release_id) if release_id else release_in_service(self._repository)
+        )
         if release is None or release.status is not KnowledgeReleaseStatus.PUBLISHED:
             raise KnowledgeConflictError("The selected architecture release is unavailable.")
-        if release.id == REFERENCE_RELEASE:
-            raise KnowledgeConflictError(
-                "The packaged reference release cannot be assessed; publish a catalogue release."
-            )
         if release.built_revision != release.revision:
             raise KnowledgeConflictError("The published release has no complete evidence index.")
         if not self._index.reads(release.index_profile):

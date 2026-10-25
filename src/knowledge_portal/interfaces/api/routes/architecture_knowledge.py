@@ -172,9 +172,13 @@ def list_releases(
     return [KnowledgeReleaseResponse.from_domain(item) for item in knowledge.list_releases(actor)]
 
 
-@router.get("/releases/active", response_model=KnowledgeReleaseResponse)
-def active_release(knowledge: KnowledgeDep, actor: KnowledgeActorDep) -> KnowledgeReleaseResponse:
-    return KnowledgeReleaseResponse.from_domain(knowledge.view_active(actor))
+@router.get("/releases/active", response_model=KnowledgeReleaseResponse | None)
+def active_release(
+    knowledge: KnowledgeDep, actor: KnowledgeActorDep
+) -> KnowledgeReleaseResponse | None:
+    """The version in service; null until a maintainer publishes the first."""
+    release = knowledge.view_active(actor)
+    return KnowledgeReleaseResponse.from_domain(release) if release is not None else None
 
 
 @router.get("/releases/{release_id}", response_model=KnowledgeReleaseResponse)

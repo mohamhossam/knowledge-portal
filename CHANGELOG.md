@@ -5,6 +5,22 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ## Unreleased
 
+### Changed
+
+- The service starts with no architecture catalogue (ADR-0126). It no longer seeds
+  `smb-source-reference-v1` into an empty database; a knowledge maintainer publishes the first
+  version, and the first draft starts empty, its review listing everything as added. Until a
+  version is in service, `/internal/architecture/match` and `/internal/architecture/assess`
+  answer 409 with the code `architecture_catalogue_not_in_service` (internal contract 1.1.0;
+  requirement-portal should show that state rather than an error).
+  `GET /architecture-knowledge/releases/active` and `GET /explorer/release` answer null, and
+  the explorer says no version is in service yet. A diff's `base_release_id` and the mapping
+  report's `active_release_id` may be null. Public contract, widened. The seed's special cases
+  are gone: activation checks every release's embedding profile, and the deterministic YAML
+  matcher that answered for the seed is removed. The reference YAML is test data now
+  (`tests/fixtures/smb_architecture.yaml`); `scripts/seed_demo.py` publishes it through the API
+  first. An existing database keeps its releases: starting fresh means resetting it.
+
 ### Added
 
 - The Check step lists what nothing in the draft links to (review recommendation 17):

@@ -14,14 +14,11 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
+from knowledge_portal.application.ports.architecture_knowledge_repository import release_in_service
 from knowledge_portal.application.ports.architecture_mapping_stats import MappingCount
 from knowledge_portal.application.ports.identity import Actor
 from knowledge_portal.application.use_cases.architecture_mapping_impact import (
     ReportMappingImpact,
-)
-from knowledge_portal.infrastructure.architecture.knowledge_yaml import seed_knowledge
-from knowledge_portal.infrastructure.persistence.in_memory_architecture_knowledge import (
-    InMemoryArchitectureKnowledgeRepository,
 )
 from knowledge_portal.infrastructure.requirement_client import (
     FakeRequirementDependents,
@@ -29,6 +26,7 @@ from knowledge_portal.infrastructure.requirement_client import (
 )
 from knowledge_portal.interfaces.api.container import Container, RequirementWork, build_container
 from knowledge_portal.interfaces.api.main import create_app
+from tests.catalogue_seed import seed_knowledge, seeded_repository
 from tests.conftest import FAKE_PROVIDER_SETTINGS
 from tests.spreadsheet_fixtures import XLSX_MIME, spreadsheet_document
 from tests.word_table_fixtures import DOCX_MIME, word_document, word_paragraph
@@ -127,7 +125,9 @@ def mapped_client() -> Generator[TestClient, None, None]:
     work = RequirementWork(
         FakeRequirementDependents(), _StubMappingStats(), FakeRequirementImpact()
     )
-    container = build_container(FAKE_PROVIDER_SETTINGS, requirement_work=work)
+    container = build_container(
+        FAKE_PROVIDER_SETTINGS, requirement_work=work, in_service=seed_knowledge()
+    )
     with TestClient(create_app(lambda: container)) as c:
         yield c
 
@@ -175,7 +175,7 @@ def test_impact_sums_every_release_that_is_not_in_use() -> None:
                 MappingCount("old-2", 3, 5, 7),
             )
 
-    impact = ReportMappingImpact(InMemoryArchitectureKnowledgeRepository(seed_knowledge()), Stats())
+    impact = ReportMappingImpact(seeded_repository(), Stats())
     report = impact.execute(Actor("amina", frozenset({"knowledge_maintainer"})))
 
     assert (report.requirements, report.features, report.stories) == (6, 10, 18)
@@ -370,9 +370,9 @@ def test_an_image_has_no_passage_to_show(client: TestClient) -> None:
 
 
 def test_the_seed_release_keeps_its_name() -> None:
-    repository = InMemoryArchitectureKnowledgeRepository(seed_knowledge())
+    repository = seeded_repository()
 
-    assert repository.active().name == "Initial catalogue"
+    assert release_in_service(repository).name == "Initial catalogue"
 
 
 def test_a_job_queued_for_a_removed_draft_fails_instead_of_waiting(container: Container) -> None:

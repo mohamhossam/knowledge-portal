@@ -15,6 +15,7 @@ from knowledge_portal.application.ports.architecture_knowledge import (
 )
 from knowledge_portal.interfaces.api.container import Container, build_container
 from knowledge_portal.interfaces.api.main import create_app
+from tests.catalogue_seed import publish_built_copy, seed_knowledge
 from tests.conftest import FAKE_PROVIDER_SETTINGS
 
 TOKEN = "r" * 40
@@ -23,7 +24,10 @@ REQUIREMENTS = {"Authorization": f"Bearer {TOKEN}"}
 
 @pytest.fixture
 def served() -> Iterator[tuple[Container, TestClient]]:
-    container = build_container(replace(FAKE_PROVIDER_SETTINGS, requirement_service_token=TOKEN))
+    container = build_container(
+        replace(FAKE_PROVIDER_SETTINGS, requirement_service_token=TOKEN),
+        in_service=seed_knowledge(),
+    )
     with TestClient(create_app(lambda: container)) as client:
         yield container, client
 
@@ -47,6 +51,7 @@ def test_internal_answers_come_from_this_service_s_own_state(
     served: tuple[Container, TestClient],
 ) -> None:
     container, client = served
+    publish_built_copy(client)
     published = client.get("/internal/library/published", headers=REQUIREMENTS)
     assert published.json() == {"has_published": container.reference_knowledge.has_published()}
     search = client.post("/internal/library/search", json={"query": "q"}, headers=REQUIREMENTS)

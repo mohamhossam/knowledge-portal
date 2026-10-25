@@ -23,6 +23,7 @@ from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordToken
 from knowledge_portal.infrastructure.persistence.in_memory_sample_requirements import (
     InMemorySampleRequirements,
 )
+from tests.catalogue_seed import publish_built_copy
 
 OWNER = {"X-Fake-Actor-Id": "fake-owner"}
 READER = {"X-Fake-Actor-Id": "fake-reviewer"}
@@ -93,6 +94,7 @@ def test_maintainers_keep_one_shared_sample_list(client: TestClient) -> None:
 
 
 def test_a_built_draft_is_compared_with_the_version_in_use(client: TestClient) -> None:
+    publish_built_copy(client, "Version in use")
     draft = client.post(
         "/architecture-knowledge/releases", json={"name": "Next version"}, headers=OWNER
     ).json()

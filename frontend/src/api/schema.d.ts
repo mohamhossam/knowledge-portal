@@ -221,7 +221,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Active Release */
+        /**
+         * Active Release
+         * @description The version in service; null until a maintainer publishes the first.
+         */
         get: operations["active_release_architecture_knowledge_releases_active_get"];
         put?: never;
         post?: never;
@@ -1038,7 +1041,7 @@ export interface paths {
         };
         /**
          * Release In Service
-         * @description The catalogue version in service, as the explorer reads it.
+         * @description The catalogue version in service, as the explorer reads it; null before the first.
          */
         get: operations["release_in_service_explorer_release_get"];
         put?: never;
@@ -2987,7 +2990,7 @@ export interface components {
         /** CatalogueDiffResponse */
         CatalogueDiffResponse: {
             /** Base Release Id */
-            base_release_id: string;
+            base_release_id: string | null;
             /** Changes */
             changes: components["schemas"]["CatalogueChangeResponse"][];
             /** Draft Release Id */
@@ -4935,7 +4938,7 @@ export interface components {
          */
         MappingImpactResponse: {
             /** Active Release Id */
-            active_release_id: string;
+            active_release_id: string | null;
             /** Features */
             features: number;
             /** Outdated Features */
@@ -7457,7 +7460,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["KnowledgeReleaseResponse"];
+                    "application/json": components["schemas"]["KnowledgeReleaseResponse"] | null;
                 };
             };
             /** @description Validation Error */
@@ -9240,7 +9243,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ExplorerReleaseResponse"];
+                    "application/json": components["schemas"]["ExplorerReleaseResponse"] | null;
                 };
             };
             /** @description Validation Error */

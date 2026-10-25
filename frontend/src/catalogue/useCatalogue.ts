@@ -36,15 +36,12 @@ export function useRelease(releaseId: string | undefined) {
   return { query, book, activeId: active.data?.id };
 }
 
-/** Who publishes the catalogue the platform ships with. */
-const SEED_ACTOR = "packaged-seed";
-
 export function useActorNames() {
   const actors = useQuery({ queryKey: ["identity", "actors"], queryFn: api.knownActors });
   return useMemo(() => {
     const names = new Map((actors.data ?? []).map((actor) => [actor.id, actor.display_name]));
     return (actorId: string | null | undefined) =>
-      !actorId ? "someone" : actorId === SEED_ACTOR ? "the platform" : names.get(actorId) ?? actorId;
+      !actorId ? "someone" : names.get(actorId) ?? actorId;
   }, [actors.data]);
 }
 

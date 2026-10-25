@@ -70,7 +70,10 @@ from knowledge_portal.domain.architecture.errors import InvalidArchitectureConte
 from knowledge_portal.domain.architecture.knowledge import (
     InvalidKnowledgeError as InvalidArchitectureKnowledgeError,
 )
-from knowledge_portal.domain.architecture.knowledge import KnowledgeConflictError
+from knowledge_portal.domain.architecture.knowledge import (
+    KnowledgeConflictError,
+    NoReleaseInServiceError,
+)
 from knowledge_portal.domain.document.errors import (
     DocumentInclusionError,
     InvalidDocumentError,
@@ -137,6 +140,12 @@ ERROR_CATALOGUE: tuple[tuple[type[Exception], str, FailureCategory], ...] = (
         ArchitectureJobNotFoundError,
         "architecture_job_not_found",
         FailureCategory.NOT_FOUND,
+    ),
+    # Before the general conflict: requirement-portal tells "nothing in service yet" apart.
+    (
+        NoReleaseInServiceError,
+        "architecture_catalogue_not_in_service",
+        FailureCategory.CONFLICT,
     ),
     (
         KnowledgeConflictError,
