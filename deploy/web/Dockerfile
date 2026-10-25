@@ -27,7 +27,7 @@ ENV VITE_API_BASE=$VITE_API_BASE \
     VITE_CATALOGUE_LAB=$VITE_CATALOGUE_LAB
 RUN npm run build
 
-FROM nginxinc/nginx-unprivileged:1.31-alpine@sha256:26b0bf6fbf07297983cb341998d79c831508787de26627dd2a112321b9c3a4af
+FROM nginxinc/nginx-unprivileged:1.31-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
 # Take Alpine security fixes at build time, then drop back to the unprivileged user.
 USER root
 RUN apk upgrade --no-cache
