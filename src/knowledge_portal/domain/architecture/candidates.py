@@ -1005,6 +1005,28 @@ def _kept_governance(offering: ProductOffering, current: ProductOffering) -> Pro
     )
 
 
+def _kept_order_types(
+    offering: ProductOffering, current: ProductOffering, release: ArchitectureKnowledge
+) -> ProductOffering:
+    """The suggested offering keeping each order type of the draft's that a journey in the
+    draft is for, where the reading leaves it out: a document that doesn't mention an order
+    type never strands its journeys. Removing one is a hand edit."""
+    listed = {item.code.casefold() for item in offering.order_types}
+    used = {
+        journey.order_type_code.casefold()
+        for journey in release.journeys
+        if journey.product_id == current.id and journey.order_type_code
+    }
+    stranded = tuple(
+        item
+        for item in current.order_types
+        if item.code.casefold() in used and item.code.casefold() not in listed
+    )
+    if not stranded:
+        return offering
+    return replace(offering, order_types=(*offering.order_types, *stranded))
+
+
 def _kept_links(offering: ProductOffering, current: ProductOffering) -> ProductOffering:
     """The suggested offering keeping each component's concepts, or the reason it has none,
     where the reading says nothing about them, and its vocabulary terms where it writes the
@@ -2248,7 +2270,7 @@ def _with_offering(
     current = _current_offering(resolved, release)
     if current is None:
         return release.updated(products=(*release.products, resolved))
-    kept = _kept_governance(resolved, current)
+    kept = _kept_order_types(_kept_governance(resolved, current), current, release)
     return release.updated(
         products=tuple(kept if item.id == current.id else item for item in release.products)
     )

@@ -139,6 +139,10 @@ function describeNeed(key: string, item: Suggestion, words: Lexicon): Blocker {
     : prefix === "domain" ? words.domain(reference)
       : prefix === "channel" ? words.channel(reference)
         : reference;
+  // A component is one system's: the same name in two systems is two things missing.
+  if (prefix === "component") {
+    return { key, kind: "other", reference, name, label: `the component ${name} of ${item.system_name ?? words.system(systemId)}`, waiting: [] };
+  }
   const what = prefix === "domain" ? "landscape domain" : prefix;
   return { key, kind: "other", reference, name, label: `the ${what} ${name}`, waiting: [] };
 }

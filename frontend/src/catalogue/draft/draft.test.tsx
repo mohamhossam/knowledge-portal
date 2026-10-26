@@ -3,10 +3,12 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { ApiError } from "../../api/errors";
 import { api, type CatalogueCoverage, type DocumentExtraction, type Release, type Suggestion } from "../../api/client";
 import { CataloguePage } from "../CataloguePage";
 import { ChangesStep } from "./ChangesStep";
 import { CheckStep } from "./CheckStep";
+import { DecideFocus } from "./DecideFocus";
 import { DecideStep } from "./DecideStep";
 import { PublishStep } from "./PublishStep";
 import { SourcesStep } from "./SourcesStep";
@@ -85,6 +87,7 @@ function renderStep(
           <Route path="architecture/versions/:releaseId" element={<CataloguePage />}>
             <Route path="sources" element={<SourcesStep />} />
             <Route path="decide" element={<DecideStep />} />
+            <Route path="decide/focus" element={<DecideFocus />} />
             <Route path="changes" element={<ChangesStep />} />
             <Route path="check" element={<CheckStep />} />
             <Route path="publish" element={<PublishStep />} />
@@ -563,5 +566,81 @@ describe("Publish", () => {
     fireEvent.click(screen.getByRole("button", { name: "Build it, then publish" }));
     await waitFor(() => expect(publish).toHaveBeenCalled());
     expect(build).toHaveBeenCalledWith("d", 3);
+  });
+});
+
+describe("the Decide step in focus mode", () => {
+  const matches = [{ role: "system", written_as: "Dynamics CRM", system_id: "bcrm", system_name: "BCRM", reason: "Similar name to BCRM." }];
+  // As the service reads them: the system misses nothing; each link misses only the system it names.
+  const crm = base("crm", { kind: "system", system_id: "dynamics-crm", name: "Dynamics CRM" }, { possible_matches: matches, missing_systems: [] } as Partial<Suggestion>);
+  const naming = (id: string, text: string) => base(id, { kind: "relationship", system_id: "dynamics-crm", target_system_id: "cwom", relationship_kind: "transfers_data_to", text }, {
+    match: "needs_system", target_system_name: "CWOM", possible_matches: matches, missing_systems: ["dynamics-crm"],
+  } as Partial<Suggestion>);
+
+  it("asks about a name once, and sends that answer for every suggestion naming it", async () => {
+    const { decide } = renderStep("decide/focus", { suggestions: [crm, naming("sends", "Sends accounts"), naming("reads", "Reads orders")] });
+    expect(await screen.findByRole("heading", { name: "Is “Dynamics CRM” a system the draft already has?" })).toBeInTheDocument();
+    expect(screen.getByText(/Your answer covers all 3 suggestions that use this name/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: /Yes, it is BCRM/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm and next" }));
+    // The summary says what the answer does to each suggestion, the match taken.
+    expect(await screen.findByRole("heading", { name: "Send your 1 answer, covering 3 suggestions?" })).toBeInTheDocument();
+    expect(within(screen.getByRole("list", { name: "The same answer goes to" })).getAllByText("BCRM sends data to CWOM")).toHaveLength(2);
+    // An answer can be changed before anything is sent, and the way out asks first.
+    fireEvent.click(screen.getByRole("button", { name: "Change the answer to question 1" }));
+    expect(await screen.findByRole("radio", { name: /Yes, it is BCRM/ })).toBeChecked();
+    fireEvent.click(screen.getByRole("link", { name: "open it in the Decide step" }));
+    expect(await screen.findByRole("dialog", { name: "Leave without sending your answers?" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Stay" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm and next" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Send only my answers" }));
+    await waitFor(() => expect(decide).toHaveBeenCalledTimes(3));
+    // The system becomes another name of BCRM, and both links point at it.
+    expect(decide.mock.calls.map(([, id, body]) => [id, body.accept, body.content?.system_id])).toEqual([
+      ["crm", true, "bcrm"], ["sends", true, "bcrm"], ["reads", true, "bcrm"],
+    ]);
+  });
+});
+
+describe("an answer the service refuses in focus mode", () => {
+  it("says why, not only that it couldn't be taken", async () => {
+    // As the service reads it: a new system misses nothing.
+    const { decide } = renderStep("decide/focus", { suggestions: [{ ...SUGGESTIONS[3]!, missing_systems: [] } as Suggestion] });
+    decide.mockRejectedValueOnce(new ApiError(422, "UC4 Modify Password: order type 'MODIFY_PASSWORD' is not one of Business Pro Plus's.", "invalid_architecture_knowledge"));
+    fireEvent.click(await screen.findByRole("radio", { name: /No, it is a new system/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm and next" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Send only my answers" }));
+
+    expect(await screen.findByText(/1 suggestion couldn't be taken \(UC4 Modify Password: order type 'MODIFY_PASSWORD' is not one of Business Pro Plus's\): decide it here/)).toBeInTheDocument();
+  });
+});
+
+describe("a component the draft's system lacks", () => {
+  // CWOM has the component "Milestone tracker" only; a capability is read "in Ticket Engine".
+  const fault = base("fault", { kind: "capability", system_id: "cwom", component_id: "ticket-engine", name: "Fault intake", triggers: ["raise fault"] }, {
+    match: "needs_component", system_name: "CWOM",
+  });
+
+  it("is added to its system by hand, and then what waits on it is accepted", async () => {
+    const save = vi.spyOn(api, "saveSystem").mockImplementation(async (_, __, body) => ({ ...draft(), revision: 4, systems: [body.system] }) as Release);
+    const { decide } = renderStep("decide", { suggestions: [fault] });
+    fireEvent.click(await screen.findByRole("button", { name: "See the 1 missing thing" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add it to CWOM" }));
+
+    await waitFor(() => expect(decide).toHaveBeenCalledTimes(1));
+    const [, systemId, body] = save.mock.calls[0]!;
+    expect([systemId, body.expected_revision, body.system.components.map((item) => item.id)]).toEqual(["cwom", 3, ["milestones", "ticket-engine"]]);
+    // The capability is accepted as read, with the revision the edit returned.
+    expect(decide.mock.calls[0]!.slice(1)).toEqual(["fault", { expected_revision: 4, accept: true, content: null }]);
+    expect(await screen.findByText("Added Ticket Engine to CWOM; accepted 1 suggestion.")).toBeInTheDocument();
+  });
+
+  it("or what waits on it is accepted on the system itself, without the component", async () => {
+    const { decide } = renderStep("decide", { suggestions: [fault] });
+    fireEvent.click(await screen.findByRole("button", { name: "See the 1 missing thing" }));
+    fireEvent.click(screen.getByRole("button", { name: /Accept what waits on Ticket Engine on CWOM itself/ }));
+
+    await waitFor(() => expect(decide).toHaveBeenCalledTimes(1));
+    expect(decide.mock.calls[0]![2]).toMatchObject({ accept: true, content: { kind: "capability", system_id: "cwom", component_id: null, name: "Fault intake" } });
   });
 });

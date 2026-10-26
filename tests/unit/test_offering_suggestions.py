@@ -6,6 +6,7 @@ twenty-two component → system responsibilities were read and dropped.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -37,6 +38,7 @@ from knowledge_portal.domain.architecture.candidates import (
     classify,
     needs_one_by_one,
 )
+from knowledge_portal.domain.architecture.journeys import Journey
 from knowledge_portal.domain.architecture.knowledge import (
     ArchitectureKnowledge,
     KnowledgeDocumentVersion,
@@ -147,6 +149,33 @@ def test_replacing_an_offering_is_decided_one_by_one_and_keeps_its_id() -> None:
     replaced = apply_candidate(candidate.content, draft)
     assert [item.id for item in replaced.products] == [replace_offering.id]
     assert replaced.products[0].components[0].name == "Fibre Access"
+
+
+def test_replacing_an_offering_keeps_the_order_types_its_journeys_are_for() -> None:
+    # The draft's offering is ordered two ways, with a journey for the second; the document
+    # describes only New Activation. Replacing it must not strand the journey (the service
+    # answered 422: "order type 'MODIFY_PASSWORD' is not one of Office Connect's").
+    current = ProductOffering(
+        "office-connect",
+        "Office Connect",
+        code="OFFICE_CONNECT",
+        order_types=(
+            OrderType("NEW_ACTIVATION", "New Activation"),
+            OrderType("MODIFY_PASSWORD", "Modify Password"),
+            OrderType("TERMINATION", "Termination"),
+        ),
+    )
+    journey = Journey("modify", "Modify password", "office-connect", "MODIFY_PASSWORD")
+    draft = replace(_draft(current), journeys=(journey,))
+
+    replaced = apply_candidate(_suggestion(), draft)
+
+    # The document's order types, then the one a journey needs; an unused one goes.
+    assert [item.code for item in replaced.products[0].order_types] == [
+        "NEW_ACTIVATION",
+        "MODIFY_PASSWORD",
+    ]
+    assert replaced.journeys == (journey,)
 
 
 def test_two_readings_of_one_offering_merge_and_the_first_wins() -> None:

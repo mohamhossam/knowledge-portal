@@ -141,6 +141,8 @@
 
   /* Focus mode (UX rebuild, phase 2): one question at a time */
   --focus-measure: 46rem;
+  /* Prose inside the focus column keeps a reading measure (about 70 characters a line). */
+  --focus-prose: 70ch;
   --focus-aside-max: 34rem;
   --focus-aside-width: minmax(20rem, var(--focus-aside-max));
   --focus-choice-bg: var(--color-surface);

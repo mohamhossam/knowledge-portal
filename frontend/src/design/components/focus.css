@@ -129,6 +129,7 @@
 }
 
 .ds-focus__lead {
+  max-inline-size: var(--focus-prose);
   margin: 0;
   color: var(--color-ink-2);
 }
@@ -144,6 +145,12 @@
 
 .ds-focus__source > * {
   margin: 0;
+}
+
+/* Prose keeps a reading measure inside the wider column; lists and the quote use its width. */
+.ds-focus__source > p,
+.ds-focus__part > p {
+  max-inline-size: var(--focus-prose);
 }
 
 .ds-focus__choices {

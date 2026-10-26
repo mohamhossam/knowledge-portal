@@ -389,6 +389,24 @@ describe("what waits on what (focus mode)", () => {
     const link = questions.find((item) => item.id === inferred.id)!;
     expect(decideChoices(link)[0]!.consequence).toContain("The link was inferred, not stated.");
   });
+
+  it("asks about a name once, and gives that answer to every suggestion naming it", () => {
+    const named = suggestion(
+      { kind: "relationship", system_id: "dynamics-crm", target_system_id: "cwom", relationship_kind: "transfers_data_to", text: "Sends accounts" },
+      { match: "needs_system", possible_matches: [{ role: "system", written_as: "Dynamics  crm", system_id: "bcrm", system_name: "BCRM", reason: "Similar name to BCRM." }] },
+    );
+    const questions = decideQuestions([...all, named], lexicon(release, [...all, named]));
+    // The system leads; the link written the same way, case and spacing aside, follows it.
+    expect(questions.map((item) => item.id)).toEqual([crm.id, placement.id, inferred.id]);
+    const name = questions[0]!;
+    expect(name.also).toEqual([named]);
+    const [yes, no, reject] = decideChoices(name);
+    expect(yes!.consequence).toBe("Similar name to BCRM. Adds “Dynamics CRM” as another name of BCRM. The suggestion that names it points at BCRM.");
+    expect(yes!.answer.each.map(({ suggestion: item, content }) => [item.id, content?.system_id])).toEqual([[crm.id, "bcrm"], [named.id, "bcrm"]]);
+    expect(no!.answer.each.map((item) => [item.suggestion.id, item.content])).toEqual([[crm.id, null], [named.id, null]]);
+    expect(reject!.consequence).toBe("Neither it nor the suggestion that names it reaches the draft.");
+    expect([reject!.answer.accept, reject!.answer.each.length]).toEqual([false, 2]);
+  });
 });
 
 describe("an interface suggestion (ADR-0123)", () => {

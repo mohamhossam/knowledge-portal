@@ -258,6 +258,24 @@ describe("NextStep", () => {
     expect(onAnswer).toHaveBeenLastCalledWith(found[0], { kind: "without_link" });
   });
 
+  it("adds a missing component to its system, or accepts what waits on the system without it", async () => {
+    // The reported draft: capabilities "in Gpon Connectivity" for two systems, neither of which
+    // has that component. Each system's is its own row, and Reject was the only answer.
+    const capability = (id: string, systemId: string, systemName: string) =>
+      suggestion(id, { kind: "capability", system_id: systemId, component_id: "gpon-connectivity", name: "Fixed service activation" }, { match: "needs_component", system_name: systemName });
+    const suggestions = [capability("a", "e2eso", "E2ESO"), capability("b", "wfm", "WFM")];
+    const found = blockers(draft, suggestions, lexicon(draft, suggestions));
+    expect(found.map((item) => item.label)).toEqual(["the component Gpon Connectivity of E2ESO", "the component Gpon Connectivity of WFM"]);
+    const onAnswer = await open(found.slice(0, 1));
+
+    expect(screen.getByRole("row", { name: /Gpon Connectivity/ })).toHaveTextContent("Named as a component of E2ESO; E2ESO has no component by this name, and no suggestion adds one.");
+    expect(screen.getByRole("row", { name: /Gpon Connectivity/ })).toHaveTextContent("Component");
+    await userEvent.click(screen.getByRole("button", { name: "Add it to E2ESO" }));
+    expect(onAnswer).toHaveBeenLastCalledWith(found[0], { kind: "component" });
+    await userEvent.click(screen.getByRole("button", { name: /Accept what waits on Gpon Connectivity on E2ESO itself/ }));
+    expect(onAnswer).toHaveBeenLastCalledWith(found[0], { kind: "without_component" });
+  });
+
   it("says beside the missing things what settling one did, or why the service refused it", () => {
     const suggestions = [constraint("a", "Fortinet only")];
     const found = blockers(draft, suggestions, lexicon(draft, suggestions));
