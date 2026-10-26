@@ -293,7 +293,7 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
       .filter(Boolean)
       .join(" ");
     const group = domain?.groups.find((item) => item.id === system.group);
-    const caption = foot && foot.roles.length ? foot.roles.slice(0, 2).map((role) => roleName(data, role, "short")).join(" · ") : foot?.tier === "carries" ? "Carries calls" : shortFunction(system.function || group?.name || "");
+    const caption = foot && foot.roles.length ? foot.roles.slice(0, 2).map((role) => roleName(data, role, "short")).join(" · ") : foot?.tier === "carries" ? "Carries calls" : shortFunction(system.function || "");
     const facts = [
       domain?.name,
       group?.name,
@@ -360,12 +360,13 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
     const loose = systems.filter((system) => !domain?.groups.some((group) => group.id === system.group));
     if (loose.length) groups.push({ id: `${id}-other`, name: "Other", systems: loose });
     const dim = focusLayer !== null && focusLayer !== id;
+    const focused = focusLayer === id;
     // Columns a group needs to hold its systems in at most two rows, and the width it asks for: its columns, or its name if that is longer. A split row shares its width by these.
     const cols = (group: { systems: System[] }) => Math.ceil(group.systems.length / 2);
     const share = (group: { name: string; systems: System[] }) => Math.max(cols(group) * 18, group.name.length);
     const span = groups.reduce((sum, group) => sum + share(group), 0);
     return (
-      <div key={id} className={`am-layer am-layer--${id}${half ? " am-layer--half" : ""}${dim ? " is-dim" : ""}`} style={{ "--am-span": span } as CSSProperties}>
+      <div key={id} className={`am-layer am-layer--${id}${half ? " am-layer--half" : ""}${dim ? " is-dim" : ""}${focused ? " is-focus" : ""}`} style={{ "--am-span": span } as CSSProperties}>
         <div className="am-layer-head">
           <LayerIcon id={id} />
           <span className="am-layer-no" aria-hidden="true">
@@ -394,7 +395,7 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
     const domain = domains.get(id);
     const systems = bySystem.get(id) ?? [];
     return (
-      <div key={id} className={`am-bus${focusLayer && focusLayer !== id ? " is-dim" : ""}`}>
+      <div key={id} className={`am-bus${focusLayer && focusLayer !== id ? " is-dim" : ""}${focusLayer === id ? " is-focus" : ""}`}>
         <div className="am-bus-head">
           <LayerIcon id={id} />
           <span className="am-layer-name">{domain?.name ?? id}</span>
@@ -420,7 +421,7 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
     );
 
   return (
-    <div ref={box} className={`am${quietMode ? " is-focused" : ""}${compact ? " am--compact" : ""}`} role="group" aria-label={`${label}: ${plural(data.systems.length, "system")} in ${plural(rows.flat().length, "layer")}. Arrow keys move between them.`}>
+    <div ref={box} className={`am${quietMode ? " is-focused" : ""}${compact ? " am--compact" : ""}`} role="group" aria-label={`${label}: ${plural(order.length, "system")} in ${plural(rows.flat().length, "layer")}. Arrow keys move between them.`}>
       {compact ? (
         <div className="am-poster">
           <div className="am-stack">{renderRows(stackRows)}</div>

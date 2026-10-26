@@ -7,9 +7,9 @@
 import "./offering-views.css";
 
 import type { Offering } from "../../api/client";
-import { type Column, DataTable, Section, Status } from "../../design/components";
+import { type Column, DataTable, Section } from "../../design/components";
+import { SourceMark } from "../GovernanceSections";
 import { count } from "../../home/format";
-import { SOURCE_TONE, SOURCE_WORD } from "../ontology";
 import { SourceName } from "../provenance/Provenance";
 
 type Plan = Offering["plans"][number];
@@ -75,7 +75,7 @@ export function OfferingPlans({ offering }: { offering: Offering }) {
             {plans.map((plan) => (
               <li key={plan.name}>
                 <bdi>{short(plan.name)}</bdi>{" "}
-                {plan.confidence ? <Status tone={SOURCE_TONE[plan.confidence]}>{SOURCE_WORD[plan.confidence]}</Status> : <span className="cat-quiet">Not said</span>}
+                {plan.confidence ? <SourceMark confidence={plan.confidence} /> : <span className="cat-quiet">Not said</span>}
                 {plan.source && <span className="cat-detail" dir="auto"><SourceName text={plan.source} /></span>}
               </li>
             ))}

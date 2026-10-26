@@ -21,7 +21,7 @@ export function DeliveryMatrix({ data, selected, onSelect }: { data: Catalogue; 
     .sort((a, b) => rank(a.domain) - rank(b.domain) || (parts.get(b.id)?.size ?? 0) - (parts.get(a.id)?.size ?? 0));
   const many = data.offerings.length > 1;
   const describe = (list: Part[]) => list.map((part) => `${part.component}${many ? ` (${part.product})` : ""}${part.responsibility ? `: ${part.responsibility}` : ""}`).join("; ");
-  const domainName = (id: string) => data.domains.find((domain) => domain.id === id)?.name ?? (id || "In no layer yet");
+  const domainName = (id: string) => data.domains.find((domain) => domain.id === id)?.name ?? (id || "Not placed in the landscape");
 
   if (!systems.length) return <p className="cat-quiet">No offering names a system that delivers its parts yet.</p>;
   return (

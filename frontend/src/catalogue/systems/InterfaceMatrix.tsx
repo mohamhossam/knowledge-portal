@@ -6,7 +6,8 @@
  * hops (the caller to the layer, the layer to the callee). Systems run down and
  * across in layer order, the most connected first within a layer, each layer's
  * rows and columns in its own tint, on a calm slate ramp; maroon stays for the
- * picked system. A real table, so it reads by row and column.
+ * picked system. A real table, so it reads by row and column. Read from the
+ * systems' own records instead, a cell counts the connections recorded.
  */
 import { Fragment, useMemo, useState } from "react";
 
@@ -23,11 +24,13 @@ function shade(n: number): string {
   return "sx-1";
 }
 
-export function InterfaceMatrix({ data, interfaces, selected, onSelect }: {
+export function InterfaceMatrix({ data, interfaces, selected, onSelect, unit = "interface" }: {
   data: Catalogue;
   interfaces: Integration[];
   selected: string | null;
   onSelect: (id: string | null) => void;
+  /** What a cell counts: journey interfaces, or connections the systems' records hold. */
+  unit?: "interface" | "connection";
 }) {
   const [hover, setHover] = useState<{ row: string; col: string } | null>(null);
   // Directed hops, caller to callee, with the operations each carries; each system's partners, either way; the linked systems in layer order.
@@ -65,19 +68,27 @@ export function InterfaceMatrix({ data, interfaces, selected, onSelect }: {
   const reach = (id: string) => partners.get(id)?.size ?? 0;
   const operations = (from: string, to: string) => hops.get(`${from}>${to}`) ?? [];
   const firstOfDomain = new Set(linked.filter((system, index) => index === 0 || linked[index - 1]?.domain !== system.domain).map((system) => system.id));
-  const domainName = (id: string) => data.domains.find((domain) => domain.id === id)?.name ?? (id || "In no layer yet");
+  const domainName = (id: string) => data.domains.find((domain) => domain.id === id)?.name ?? (id || "Not placed in the landscape");
   const name = (id: string) => data.systems.find((system) => system.id === id)?.name ?? id;
   const focus = hover ?? (selected ? { row: selected, col: selected } : null);
   const most = Math.max(1, ...linked.map((system) => reach(system.id)));
   const brief = (list: string[]) => (list.length > 3 ? `${list.slice(0, 3).join(", ")} and ${list.length - 3} more` : list.join(", "));
   const hovered = hover && hover.row !== hover.col ? operations(hover.row, hover.col) : [];
 
-  if (!linked.length) return <p className="cat-quiet">No modelled journey calls one system from another yet, so there is nothing to cross.</p>;
+  if (!linked.length) {
+    return (
+      <p className="cat-quiet">
+        {unit === "connection"
+          ? "No system's record names a connection to another yet, so there is nothing to cross."
+          : "No modelled journey calls one system from another yet, so there is nothing to cross."}
+      </p>
+    );
+  }
   return (
     <div className="sm-matrix-wrap">
       <div className="sm-matrix-scroll" role="region" aria-label="Interface matrix (scrolls when narrow)" tabIndex={0}>
         <table className="sm-matrix">
-          <caption className="ds-visually-hidden">Distinct interfaces from each row's system to each column's system, in layer order</caption>
+          <caption className="ds-visually-hidden">{unit === "connection" ? "Connections recorded" : "Distinct interfaces"} from each row's system to each column's system, in layer order</caption>
           <thead>
             <tr>
               <td className="sm-matrix-corner">
@@ -121,9 +132,9 @@ export function InterfaceMatrix({ data, interfaces, selected, onSelect }: {
                         className={[n ? shade(n) : "", row.id === col.id ? "self" : "", firstOfDomain.has(col.id) ? "sm-split" : "", focus?.col === col.id ? "on" : ""].join(" ")}
                         onMouseEnter={() => setHover({ row: row.id, col: col.id })}
                         onMouseLeave={() => setHover(null)}
-                        title={n ? `${row.name} → ${col.name}: ${count(n, "interface")} (${brief(list)})` : undefined}
+                        title={n ? `${row.name} → ${col.name}: ${count(n, unit)} (${brief(list)})` : undefined}
                       >
-                        {n > 1 ? n : n === 1 ? <span className="ds-visually-hidden">1</span> : ""}
+                        {n || ""}
                       </td>
                     );
                   })}
@@ -134,11 +145,11 @@ export function InterfaceMatrix({ data, interfaces, selected, onSelect }: {
         </table>
       </div>
       <p className="sm-matrix-key" aria-hidden="true">
-        <span>Interfaces the row calls the column by</span>
+        <span>{unit === "connection" ? "Connections recorded from the row to the column" : "Interfaces the row calls the column by"}</span>
         <i className="sx-1" />1<i className="sx-2" />2<i className="sx-3" />3–4<i className="sx-4" />5+
         {hover && hover.row !== hover.col && (
           <strong>
-            {name(hover.row)} → {name(hover.col)}: {hovered.length ? `${count(hovered.length, "interface")}: ${brief(hovered)}` : "no interface"}
+            {name(hover.row)} → {name(hover.col)}: {hovered.length ? `${count(hovered.length, unit)}: ${brief(hovered)}` : `no ${unit}`}
           </strong>
         )}
       </p>

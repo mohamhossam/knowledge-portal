@@ -4,7 +4,7 @@
  * a band of its groups and systems; picking a system shows what it is and what it
  * is linked to beside the map, with the way to its full record. The layer filter
  * and the picked system live in the URL (`?layer=`, `?system=`), so a view can be
- * shared. Systems placed in no layer are listed under the map, never left out.
+ * shared. Systems not placed in the landscape are listed under the map, never left out.
  */
 import "./landscape.css";
 
@@ -85,7 +85,7 @@ export function LandscapePoster({ release, base }: { release: Release; base: str
       {unplaced.length > 0 && (
         <details className="lsc-unplaced">
           <summary className="lsc-unplaced__summary">
-            {count(unplaced.length, "system is", "systems are")} in no layer yet
+            {count(unplaced.length, "system is", "systems are")} not placed in the landscape
           </summary>
           <p className="cat-quiet">Placing one is an edit to its system record. Pick one to see what it is linked to.</p>
           <ul className="lsc-unplaced__list">
@@ -100,6 +100,7 @@ export function LandscapePoster({ release, base }: { release: Release; base: str
         </details>
       )}
       <p className="ds-visually-hidden" aria-live="polite">
+        {focus ? `Showing the ${layers.find((layer) => layer.id === focus)?.name ?? focus} layer; the others are dimmed. ` : ""}
         {picked ? `${picked.name} picked: ${count(partnersOf(picked.id, linkCounts).length, "linked system")}.` : ""}
       </p>
     </div>
@@ -146,7 +147,7 @@ export function SystemSummary({ data, system, linkCounts, base, onSelect, facts:
     .map((item) => byId.get(item.id))
     .filter((item): item is System => Boolean(item));
   const facts: [string, ReactNode][] = [
-    ["Layer", domain ? [domain.name, group?.name].filter(Boolean).join(" › ") : "In no layer yet"],
+    ["Layer", domain ? [domain.name, group?.name].filter(Boolean).join(" › ") : "Not placed in the landscape"],
     ["Owner", system.owner ?? <span className="cat-quiet">Not recorded</span>],
     ["Linked systems", partners.length.toLocaleString("en")],
     ...more,

@@ -8,12 +8,12 @@
  */
 import { type KeyboardEvent, type ReactNode, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import { Facts, Status } from "../../../design/components";
+import { Facts } from "../../../design/components";
+import { SourceMark } from "../../GovernanceSections";
 import { count } from "../../../home/format";
 import { laneKindName, laneName, MODE_WORDS, operationName, roleName, styleName, systemName } from "../../model/words";
 import { GEOMETRY, layoutFlow, type Placed } from "../../model/flowLayout";
 import { type ActivityStep, type Catalogue, type Evidence, type JourneyView, type Lane, laneKey, systemOf } from "../../model/model";
-import { SOURCE_TONE, SOURCE_WORD } from "../../ontology";
 import { SourceById } from "../../provenance/Provenance";
 
 /** Each TAM layer's tint for its lanes; the integration layer is the selection tint. */
@@ -65,7 +65,7 @@ export function EvidenceLine({ evidence }: { evidence: Evidence }) {
   const where = [evidence.where, evidence.note].filter(Boolean).join(" · ");
   return (
     <p className="jf-evidence">
-      <Status tone={SOURCE_TONE[evidence.status]}>{SOURCE_WORD[evidence.status]}</Status>
+      <SourceMark confidence={evidence.status} />
       {(evidence.source || where) && (
         <span className="cat-detail" dir="auto">
           {evidence.source && <SourceById id={evidence.source} />}
@@ -107,7 +107,8 @@ export function ProcessFlow({ data, view, title }: { data: Catalogue; view: Jour
     return () => window.removeEventListener("resize", fit);
   }, [view.id]);
 
-  const number = new Map(tasks.map((item, index) => [item.step.id, index + 1]));
+  // A step keeps the number its journey gives it (the swimlane's and the table's), and its place in the flow.
+  const place = new Map(tasks.map((item, index) => [item.step.id, index + 1]));
   const step = tasks.find((item) => item.step.id === selected)?.step;
   const stepCalls = step ? view.integrations.filter((call) => call.step === step.id) : [];
   const laneTitle = (lane: Lane) => laneName(data, lane);
@@ -173,7 +174,8 @@ export function ProcessFlow({ data, view, title }: { data: Catalogue; view: Jour
           <button type="button" className="fit" onClick={fitHeight}>Fit height</button>
         </div>
       </div>
-      <div className="jf-canvas" ref={canvas} style={{ height }} role="region" aria-label={`${title}, process flow (scrolls)`} tabIndex={-1}>
+      {/* A focusable region, so the keyboard can scroll the flow; its steps are picked from All steps. */}
+      <div className="jf-canvas" ref={canvas} style={{ height }} role="region" aria-label={`${title}, process flow (scrolls)`} tabIndex={0}>
         <div className="jf-flow" style={{ width: LABEL_W + W * scale, height: H * scale }}>
           <div className="jf-lanes" aria-hidden="true" style={{ height: H * scale }}>
             {layout.lanes.map((lane) => {
@@ -239,13 +241,13 @@ export function ProcessFlow({ data, view, title }: { data: Catalogue; view: Jour
                     role="button"
                     tabIndex={-1}
                     aria-pressed={on}
-                    aria-label={`Step ${number.get(item.id)}: ${item.name}, in ${laneTitle(item.lane)}${calls ? `, ${count(calls, "call")}` : ""}`}
+                    aria-label={`Step ${item.id}: ${item.name}, in ${laneTitle(item.lane)}${calls ? `, ${count(calls, "call")}` : ""}`}
                     onClick={() => choose(item.id)}
                     onKeyDown={keyDown(item.id)}
                   >
                     <rect className="ring" x={x - 4} y={y - 4} width={width + 8} height={h + 8} rx={6} />
                     <rect className="box" x={x} y={y} width={width} height={h} rx={3} />
-                    <text className="num" x={x + STEP_TEXT.inset} y={y + STEP_TEXT.numberY}>{number.get(item.id)}</text>
+                    <text className="num" x={x + STEP_TEXT.inset} y={y + STEP_TEXT.numberY}>{item.id}</text>
                     {calls > 0 && <text className="num" x={x + width - STEP_TEXT.inset} y={y + STEP_TEXT.numberY} textAnchor="end">{count(calls, "call")}</text>}
                     {wrap(item.name, STEP_TEXT.chars, STEP_TEXT.lines).map((line, row) => (
                       <text key={row} className="label" x={x + STEP_TEXT.inset} y={y + STEP_TEXT.nameY + row * STEP_TEXT.lineHeight}>{line}</text>
@@ -277,7 +279,7 @@ export function ProcessFlow({ data, view, title }: { data: Catalogue; view: Jour
           {step ? (
             <>
               <p className="cat-quiet">
-                Step {number.get(step.id)} of {tasks.length} · <span translate="no">{laneTitle(step.lane)}</span>
+                Step {step.id} ({place.get(step.id)} of {tasks.length}) · <span translate="no">{laneTitle(step.lane)}</span>
                 {step.role ? ` · ${roleName(data, step.role)}` : ""}
               </p>
               <h3 id="jf-step-h" dir="auto">{step.name}</h3>
@@ -309,7 +311,7 @@ export function ProcessFlow({ data, view, title }: { data: Catalogue; view: Jour
             {tasks.map(({ step: item }) => (
               <li key={item.id}>
                 <button type="button" aria-current={item.id === selected ? "step" : undefined} onClick={() => choose(item.id)}>
-                  <span className="n" aria-hidden="true">{number.get(item.id)}</span>
+                  <span className="n" aria-hidden="true">{item.id}</span>
                   <span className="t">
                     <strong dir="auto">{item.name}</strong>
                     <span translate="no">

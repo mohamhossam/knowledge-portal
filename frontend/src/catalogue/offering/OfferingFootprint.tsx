@@ -24,7 +24,7 @@ import { impactOf } from "../model/impact";
 const TIER_WORDS: Record<Foot["tier"], string> = {
   core: "Core: in half its journeys or more",
   used: "Used by some of its journeys",
-  carries: "Carries calls only",
+  carries: "Only passes calls on",
 };
 
 export function OfferingFootprint({ release, offeringId, base }: { release: Release; offeringId: string; base: string }) {
@@ -77,7 +77,7 @@ export function OfferingFootprint({ release, offeringId, base }: { release: Rele
       ) : (
         <div className="lsc">
           <p className="cat-lead">
-            {journey ? <>The systems <bdi>{journey.name}</bdi> reaches.</> : <>Every system the offering's {count(journeys.length, "journey")} reach, by how central it is.</>}
+            {journey ? <>The systems <bdi>{journey.name}</bdi> reaches.</> : <>Every system the offering's journeys reach ({count(journeys.length, "journey")}), by how central it is.</>}
           </p>
           <div className="lsc-tools">
             <div className="lsc-find">
@@ -93,7 +93,7 @@ export function OfferingFootprint({ release, offeringId, base }: { release: Rele
                 ["Systems reached", `${footprint.size.toLocaleString("en")} of ${data.systems.length.toLocaleString("en")}`],
                 ...(journey ? [] : [["Core", tiers.core.toLocaleString("en")] as [string, ReactNode]]),
                 ["Used", tiers.used.toLocaleString("en")],
-                ["Carry calls only", tiers.carries.toLocaleString("en")],
+                ["Only pass calls on", tiers.carries.toLocaleString("en")],
               ]}
             />
           </div>

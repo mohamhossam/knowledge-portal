@@ -50,7 +50,8 @@ describe("the lab's journey flow in the journey record (catalogue merge, step 4)
     for (const task of all.querySelectorAll(".jf-task")) expect(task).toHaveAttribute("tabindex", "-1");
     fireEvent.click(steps[2]!);
     expect(steps[2]).toHaveAttribute("aria-current", "step");
-    expect(screen.getByText(new RegExp(`^Step 3 of ${steps.length}`))).toBeInTheDocument();
+    // A step keeps its own number, the one the source gives it, with its place in the flow beside it.
+    expect(screen.getByText(new RegExp(`^Step \\S+ \\(3 of ${steps.length}\\)`))).toBeInTheDocument();
   });
 
   it("reads the journey in one channel at a time, in the address", async () => {

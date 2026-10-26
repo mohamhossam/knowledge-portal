@@ -35,14 +35,15 @@ describe("where systems sit, drawn (catalogue merge, step 2)", () => {
     expect(screen.getByRole("button", { name: /All layers/ })).toHaveTextContent("46");
   });
 
-  it("lists the systems placed in no layer under the map, never leaving them out", () => {
+  it("lists the systems not placed in the landscape under the map, never leaving them out", () => {
     const loose = { ...smb, systems: smb.systems.map((system) => (system.id === "bscs" ? { ...system, landscape_domain_id: null } : system)) };
     open(loose);
     expect(screen.getByRole("button", { name: /All layers/ })).toHaveTextContent("45");
-    expect(screen.getByText("1 system is in no layer yet")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("1 system is in no layer yet"));
+    expect(screen.getByRole("group", { name: /layers: 45 systems in/ })).toBeInTheDocument();
+    expect(screen.getByText("1 system is not placed in the landscape")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("1 system is not placed in the landscape"));
     fireEvent.click(screen.getByRole("button", { name: "BSCS" }));
-    expect(screen.getByRole("complementary", { name: "BSCS" })).toHaveTextContent("In no layer yet");
+    expect(screen.getByRole("complementary", { name: "BSCS" })).toHaveTextContent("Not placed in the landscape");
   });
 
   it("shows a picked system beside the map, with its links and the way to its full record", () => {
@@ -70,5 +71,7 @@ describe("where systems sit, drawn (catalogue merge, step 2)", () => {
     expect(resource).toHaveAttribute("aria-pressed", "true");
     expect(document.querySelectorAll(".am-layer.is-dim").length).toBeGreaterThan(0);
     expect(document.querySelector(".am-layer--resource")).not.toHaveClass("is-dim");
+    expect(document.querySelector(".am-layer--resource")).toHaveClass("is-focus");
+    expect(screen.getByText(/^Showing the .+ layer; the others are dimmed\./)).toBeInTheDocument();
   });
 });

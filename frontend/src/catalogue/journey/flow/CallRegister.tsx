@@ -96,7 +96,7 @@ export function CallRegister({ data, view }: { data: Catalogue; view: JourneyVie
     <section aria-label="Integration register" className="jf-register">
       <div className="jr-bar">
         <p className="jr-total">
-          <b>{calls.length}</b> calls between <b>{involved.length}</b> systems and parties
+          <b>{calls.length}</b> {calls.length === 1 ? "call" : "calls"} between <b>{involved.length}</b> {involved.length === 1 ? "system or party" : "systems and parties"}
         </p>
         <div className="jr-styles">
           <span className="jr-mix" aria-hidden="true">
@@ -164,11 +164,12 @@ export function CallRegister({ data, view }: { data: Catalogue; view: JourneyVie
             </ol>
           </div>
           {call && (
-            <aside className="jr-detail" aria-labelledby="jr-detail-h" aria-live="polite">
+            // Inside the register, not beside the page: a region, not a complementary landmark.
+            <div className="jr-detail" role="region" aria-labelledby="jr-detail-h" aria-live="polite">
               <p className="jr-detail-count">Call {at + 1} of {calls.length}</p>
-              <h4 id="jr-detail-h" className="jr-detail-route" translate="no">
+              <h3 id="jr-detail-h" className="jr-detail-route" translate="no">
                 {name(call.from)} <span aria-hidden="true">→</span> {name(call.to)}
-              </h4>
+              </h3>
               {call.via && <p className="jr-detail-via">Through {name(call.via)}</p>}
               <Facts
                 items={[
@@ -184,7 +185,7 @@ export function CallRegister({ data, view }: { data: Catalogue; view: JourneyVie
                 <Button unavailableReason={at === 0 ? "This is the first call." : null} onClick={() => setPicked(at - 1)}>Previous</Button>
                 <Button variant="primary" unavailableReason={at >= calls.length - 1 ? "This is the last call." : null} onClick={() => setPicked(at + 1)}>Next</Button>
               </div>
-            </aside>
+            </div>
           )}
         </div>
       ) : (
