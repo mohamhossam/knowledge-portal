@@ -57,12 +57,14 @@ export function decisionTree(
   words: Lexicon,
   options: {
     keep?: ReadonlySet<string>;
-    current?: string;
+    current?: string | readonly string[];
     mark?: (suggestion: Suggestion) => NodeMark | undefined;
     missing?: readonly Blocker[];
   } = {},
 ) {
   const { keep, current, mark, missing = [] } = options;
+  // A question may cover several suggestions: each is "This question".
+  const inHand = (id: string) => (typeof current === "string" ? id === current : (current?.includes(id) ?? false));
   const open = suggestions.filter((item) => item.status === "proposed" && (!keep || keep.has(item.id)));
   const drawn = new Set(open.map((item) => item.id));
   const gaps = missing
@@ -92,7 +94,7 @@ export function decisionTree(
         status: state === "waits" ? waitsFor(item, words) : STATE_LABEL[state],
         tone: state === "decide" ? "decide" : state === "ready" ? "ready" : "plain",
         ...marked,
-        ...(item.id === current ? { tone: "subject" as const, status: marked?.status ?? "This question" } : {}),
+        ...(inHand(item.id) ? { tone: "subject" as const, status: marked?.status ?? "This question" } : {}),
       };
     });
   return { nodes: [...missingNodes, ...nodes], edges };

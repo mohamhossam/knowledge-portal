@@ -24,6 +24,7 @@ import { DecisionTree } from "./DecisionTree";
 import { type Answer, type DraftChoices, settleRequest } from "./MissingThings";
 import { NextStep } from "./NextStep";
 import { Said } from "./parts";
+import { decideQuestions } from "./questions";
 import { SuggestionPane } from "./SuggestionPane";
 
 const FILTERS: Filter[] = ["waiting", "ready", "decide", "waits", "decided", "all"];
@@ -108,6 +109,8 @@ function Decide() {
   const bulkCount = bulk.ready.length + bulk.lifted.length;
   const readyIds = useMemo(() => new Set([...bulk.ready, ...bulk.lifted].map((item) => item.id)), [bulk]);
   const stuck = useMemo(() => deadEnds(release, all, words), [release, all, words]);
+  // Focus mode asks once for every suggestion naming the same system: count its questions, not the suggestions.
+  const questions = useMemo(() => decideQuestions(all, words).length, [all, words]);
   // What the draft already holds, for saying a missing name is one of them.
   const choices = useMemo<DraftChoices>(() => ({
     systems: release.systems.filter((system) => !system.deprecated).map((system) => ({ id: system.id, name: system.name, aliases: system.aliases })),
@@ -465,7 +468,7 @@ function Decide() {
         <progress max={Math.max(counts.all, 1)} value={decided} aria-label="Suggestions decided" />
       </section>
       <NextStep
-        questions={counts.decide}
+        questions={questions}
         bulk={bulkCount}
         bulkLabel={draft.acceptReady.isPending ? "Accepting…" : bulkLabel(bulk.ready.length, bulk.lifted.length)}
         waiting={counts.waiting}

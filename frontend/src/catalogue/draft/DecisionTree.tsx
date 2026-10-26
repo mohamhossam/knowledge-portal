@@ -21,7 +21,7 @@ export function DecisionTree({ suggestions, words, onChoose, onChooseMissing, ke
   caption?: string;
   legend?: ReactNode;
   keep?: ReadonlySet<string>;
-  current?: string;
+  current?: string | readonly string[];
   mark?: (suggestion: Suggestion) => NodeMark | undefined;
 }) {
   const graph = useMemo(() => decisionTree(suggestions, words, { keep, current, mark, missing }), [suggestions, words, keep, current, mark, missing]);

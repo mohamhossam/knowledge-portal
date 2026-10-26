@@ -582,6 +582,16 @@ describe("the Decide step in focus mode", () => {
     expect(screen.getByText(/Your answer covers all 3 suggestions that use this name/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("radio", { name: /Yes, it is BCRM/ }));
     fireEvent.click(screen.getByRole("button", { name: "Confirm and next" }));
+    // The summary says what the answer does to each suggestion, the match taken.
+    expect(await screen.findByRole("heading", { name: "Send your 1 answer, covering 3 suggestions?" })).toBeInTheDocument();
+    expect(within(screen.getByRole("list", { name: "The same answer goes to" })).getAllByText("BCRM sends data to CWOM")).toHaveLength(2);
+    // An answer can be changed before anything is sent, and the way out asks first.
+    fireEvent.click(screen.getByRole("button", { name: "Change the answer to question 1" }));
+    expect(await screen.findByRole("radio", { name: /Yes, it is BCRM/ })).toBeChecked();
+    fireEvent.click(screen.getByRole("link", { name: "open it in the Decide step" }));
+    expect(await screen.findByRole("dialog", { name: "Leave without sending your answers?" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Stay" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm and next" }));
     fireEvent.click(await screen.findByRole("button", { name: "Send only my answers" }));
     await waitFor(() => expect(decide).toHaveBeenCalledTimes(3));
     // The system becomes another name of BCRM, and both links point at it.

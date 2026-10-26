@@ -460,3 +460,33 @@
   font-size: var(--text-body);
   font-weight: 600;
 }
+
+/* The rest of a long list in focus mode's summary: a disclosure, so every item stays inspectable. */
+.draft-more__summary {
+  /* A list item keeps the disclosure triangle; the padding keeps the target over 24px. */
+  display: list-item;
+  min-block-size: var(--target-min);
+  inline-size: fit-content;
+  padding-block: var(--space-1);
+  cursor: pointer;
+}
+
+.draft-more__summary:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.draft-more[open] > .draft-more__summary {
+  margin-block-end: var(--space-1);
+}
+
+/* What else an answer covers sits beneath it, indented on a soft rule, so it reads as part of that answer. */
+.ds-focus__part .ds-lines .ds-lines {
+  margin-block-start: var(--space-2);
+  padding-inline-start: var(--space-3);
+  border-inline-start: var(--hair-rule);
+}
+
+.ds-focus__part .ds-lines .ds-lines > li {
+  padding-block: var(--space-1);
+}

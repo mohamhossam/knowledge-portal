@@ -135,7 +135,7 @@ export function decideChoices(question: DecideQuestion): { value: string; label:
         value: "new",
         label: isSystem ? "No, it is a new system" : "Keep the name as written",
         consequence: isSystem
-          ? `Adds ${match.writtenAs} to the draft as a new system${also.length ? `, with the ${naming}` : ""}.`
+          ? `Adds ${match.writtenAs} to the draft as a new system${also.length ? `, and accepts the ${naming} as written` : ""}.`
           : accepted(` as the document wrote ${all.length > 1 ? "them" : "it"}, once the draft has a system called ${match.writtenAs}.`),
         answer: { choice: "new", accept: true, each: each(() => null) },
       },

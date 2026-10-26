@@ -1,7 +1,7 @@
 import "./draft.css";
 
-import { type ReactNode, useCallback, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import type { Release, Suggestion } from "../../api/client";
 import { errorMessage } from "../../api/errors";
@@ -12,7 +12,7 @@ import { DiagramLegend } from "../../design/diagram";
 import { count } from "../../home/format";
 import { RouterLink } from "../../shell/links";
 import {
-  type Lexicon, bulkAcceptable, changeSentence, decideWhy, inDependencyOrder, inWords, lexicon, standaloneSentence, suggestionState, waitsFor,
+  type Lexicon, bulkAcceptable, decideWhy, inDependencyOrder, inWords, lexicon, standaloneSentence, suggestionState, waitsFor,
 } from "../suggestions";
 import { useCatalogueContext } from "../useCatalogue";
 import { useDraft } from "../useDraft";
@@ -26,6 +26,11 @@ import { type SendAnswer, sendAnswers, type SendPlan, type SendPort } from "./se
 const NAMED = 8;
 
 const nameOf = (release: Release) => release.name || "Untitled version";
+
+/** The tree's legend; the summary has no question in hand, so it drops the first. */
+const LEGEND: Parameters<typeof DiagramLegend>[0]["items"] = [
+  ["subject", "This question"], ["decide", "Needs your decision"], ["ready", "You accept it"], ["muted", "Dotted frame: you reject it"],
+];
 
 /**
  * A draft's Decide step in focus mode (UX rebuild plan, phase 2): the
@@ -66,30 +71,42 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
   const kept = useMemo(() => touching(all, asked), [all, asked]);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, DecideAnswer>>({});
-  // An answer marks every suggestion it covers.
-  const answered = useMemo(() => new Map(Object.values(answers).flatMap((answer) => answer.each.map(({ suggestion }) => [suggestion.id, answer.accept] as const))), [answers]);
+  // An answer marks every suggestion it covers, naming the system a match took.
+  const answered = useMemo(() => new Map(questions.flatMap((question) => {
+    const answer = answers[question.id];
+    const matched = question.match?.candidates.find((candidate) => answer?.choice === `match:${candidate.system_id}`)?.system_name;
+    return answer ? answer.each.map(({ suggestion }) => [suggestion.id, { accept: answer.accept, matched }] as const) : [];
+  })), [questions, answers]);
   const mark = useCallback((item: Suggestion): NodeMark | undefined => {
-    const accept = answered.get(item.id);
-    if (accept !== undefined) return accept ? { status: "You accept it", tone: "ready" } : { status: "You reject it", tone: "muted" };
+    const answer = answered.get(item.id);
+    if (answer) return answer.accept ? { status: answer.matched ? `You accept it as ${answer.matched}` : "You accept it", tone: "ready" } : { status: "You reject it", tone: "muted" };
     return { status: stateWords(item) };
   }, [answered]);
   const [skipped, setSkipped] = useState<Set<string>>(() => new Set());
   const [choice, setChoice] = useState<string | null>(null);
-  const [leaving, setLeaving] = useState(false);
+  // Where the person asked to go while answers were unsent.
+  const [leaving, setLeaving] = useState<string | null>(null);
+  const inHand = useMemo(() => (questions[index] ? covered(questions[index]).map((item) => item.id) : undefined), [questions, index]);
 
   const work = <bdi>{nameOf(release)}</bdi>;
   const given = Object.keys(answers).length;
-  // Answers live here until the summary sends them: leaving with some asks first.
-  const leave = () => (given > 0 ? setLeaving(true) : navigate(back));
+  // Answers live here until the summary sends them: leaving with some asks first, a reload too.
+  const leave = (to = back) => (given > 0 ? setLeaving(to) : navigate(to));
+  useEffect(() => {
+    if (!given) return undefined;
+    const hold = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", hold);
+    return () => window.removeEventListener("beforeunload", hold);
+  }, [given]);
   const leaveDialog = (
     <Dialog
-      open={leaving}
+      open={leaving !== null}
       title="Leave without sending your answers?"
-      onClose={() => setLeaving(false)}
+      onClose={() => setLeaving(null)}
       actions={
         <>
-          <Button variant="primary" data-autofocus onClick={() => setLeaving(false)}>Stay</Button>
-          <Button onClick={() => { setLeaving(false); navigate(back); }}>Leave without sending</Button>
+          <Button variant="primary" data-autofocus onClick={() => setLeaving(null)}>Stay</Button>
+          <Button onClick={() => { setLeaving(null); navigate(leaving ?? back); }}>Leave without sending</Button>
         </>
       }
     >
@@ -98,14 +115,14 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
   );
   if (draft.suggestions.isPending) {
     return (
-      <FocusFrame work={work} place="Reading the suggestions" steps={[]} onLeave={leave} documentTitle={`Decide · ${nameOf(release)}`}>
+      <FocusFrame work={work} place="Reading the suggestions" steps={[]} onLeave={() => leave()} documentTitle={`Decide · ${nameOf(release)}`}>
         <Skeleton label="Reading the suggestions" rows={6} />
       </FocusFrame>
     );
   }
   if (draft.suggestions.isError) {
     return (
-      <FocusFrame work={work} place="Couldn't read the suggestions" steps={[]} onLeave={leave} documentTitle={`Decide · ${nameOf(release)}`}>
+      <FocusFrame work={work} place="Couldn't read the suggestions" steps={[]} onLeave={() => leave()} documentTitle={`Decide · ${nameOf(release)}`}>
         <FocusTitle>Couldn't read the suggestions</FocusTitle>
         <EmptyState title={errorMessage(draft.suggestions.error)} action={<Button onClick={() => void draft.suggestions.refetch()}>Try again</Button>} />
       </FocusFrame>
@@ -130,10 +147,10 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
       suggestions={all}
       words={words}
       keep={kept}
-      current={atSummary ? undefined : current?.suggestion.id}
+      current={atSummary ? undefined : inHand}
       mark={mark}
       caption="Decided here, these follow: each card waits for the one to its left."
-      legend={<DiagramLegend items={[["subject", "This question"], ["decide", "Needs your decision"], ["ready", "You accept it"], ["muted", "Dotted frame: you reject it"]]} />}
+      legend={<DiagramLegend items={atSummary ? LEGEND.slice(1) : LEGEND} />}
     />
   );
   const frame = (children: ReactNode) => (
@@ -142,7 +159,7 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
         work={work}
         place={place}
         steps={steps}
-        onLeave={leave}
+        onLeave={() => leave()}
         leaveLabel="Leave focus mode"
         documentTitle={`${place} · Decide · ${nameOf(release)}`}
         aside={all.some((item) => item.status === "proposed") ? aside : undefined}
@@ -184,7 +201,7 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
           <Suggested basis={suggestion.basis === "inferred" ? "inferred" : "stated"} />
           {/* The tag already says a link was inferred; the line says only what else to know. */}
           {suggestion.basis === "inferred" && !suggestion.possible_matches.length ? null : <> {decideWhy(suggestion)}.</>}
-          {also.length > 0 && <> Your answer covers all {also.length + 1} suggestions that use this name.</>}
+          {also.length > 0 && <> Your answer covers {also.length === 1 ? "both" : `all ${also.length + 1}`} suggestions that use this name.</>}
         </>
       }
       source={
@@ -230,7 +247,8 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
       }}
     >
       <p className="draft-quiet">
-        To edit it before accepting, <RouterLink href={`${base}/decide`}>open it in the Decide step</RouterLink>.
+        To edit it before accepting,{" "}
+        <Link to={`${base}/decide`} onClick={(event) => { if (!given) return; event.preventDefault(); leave(`${base}/decide`); }}>open it in the Decide step</Link>.
       </p>
     </FocusQuestion>,
   );
@@ -306,40 +324,77 @@ function Summary({ release, all, words, questions, answers, draft, onBack, onDon
     }
   };
 
-  const sentence = (suggestion: Suggestion) => changeSentence(suggestion, words);
+  // Each line names the system it is about, as the answer leaves it: a match taken names the system matched.
+  const sentence = (suggestion: Suggestion) => standaloneSentence(suggestion, words);
+  const asAnswered = ({ suggestion, content }: { suggestion: Suggestion; content: Suggestion["content"] | null }): Suggestion => (content
+    ? {
+      ...suggestion,
+      content,
+      system_name: content.system_id === suggestion.content.system_id ? suggestion.system_name : null,
+      target_system_name: content.target_system_id === suggestion.content.target_system_id ? suggestion.target_system_name : null,
+    }
+    : suggestion);
+  // The first few, then the rest behind a disclosure: every one stays inspectable before it is accepted.
   const listed = (items: Suggestion[], label: string, line: (item: Suggestion) => ReactNode = sentence) => (
     <Lines label={label}>
       {items.slice(0, NAMED).map((item) => <li key={item.id} dir="auto">{line(item)}</li>)}
-      {items.length > NAMED && <li>and {(items.length - NAMED).toLocaleString("en")} more</li>}
+      {items.length > NAMED && (
+        <li>
+          <details className="draft-more">
+            <summary className="draft-more__summary">and {(items.length - NAMED).toLocaleString("en")} more</summary>
+            <Lines label={`${label}, the rest`}>
+              {items.slice(NAMED).map((item) => <li key={item.id} dir="auto">{line(item)}</li>)}
+            </Lines>
+          </details>
+        </li>
+      )}
+    </Lines>
+  );
+  // The answers given, one line each: what it does to the suggestion asked about, the others
+  // it covers beneath, and a way back to change it before anything is sent.
+  const answerLines = (accept: boolean, label: string) => (
+    <Lines label={label}>
+      {questions.map((question, at) => ({ question, at, answer: answers[question.id] })).filter(({ answer }) => answer?.accept === accept).map(({ question, at, answer }) => {
+        const [lead, ...rest] = answer!.each;
+        const match = question.match?.candidates.find((candidate) => answer!.choice === `match:${candidate.system_id}`);
+        const systems = answer!.choice === "accept" ? firstSystems(question) : "";
+        return (
+          <li key={question.id} dir="auto">
+            {sentence(asAnswered(lead!))}
+            {match ? <span className="draft-quiet"> · “{question.match!.writtenAs}” is {match.system_name}</span> : null}
+            {systems ? <span className="draft-quiet"> · adds {systems} first</span> : null}
+            {" "}
+            <Button variant="link" onClick={() => onBack(at)}>Change <span className="ds-visually-hidden">the answer to question {at + 1}</span></Button>
+            {rest.length > 0 && (
+              <Lines label="The same answer goes to">
+                {rest.map((item) => <li key={item.suggestion.id} dir="auto">{sentence(asAnswered(item))}</li>)}
+              </Lines>
+            )}
+          </li>
+        );
+      })}
     </Lines>
   );
   const answered = questions.filter((item) => answers[item.id]).length;
   return (
     <div className="ds-focus__question">
-      <FocusTitle>{answered ? `Send your ${count(answered, "answer")}?` : "Nothing answered yet"}</FocusTitle>
+      <FocusTitle>
+        {answered
+          ? `Send your ${count(answered, "answer")}${decided.length > answered ? `, covering ${count(decided.length, "suggestion")}` : ""}?`
+          : "Nothing answered yet"}
+      </FocusTitle>
       <p className="ds-focus__lead">Nothing reaches the draft until you confirm it here. A decision stays once sent; correct the draft afterwards with hand edits on its pages.</p>
 
       {accepted.length > 0 && (
         <section className="ds-focus__part" aria-labelledby="decide-accept">
           <h2 id="decide-accept" className="ds-focus__part-title">You accept · {accepted.length.toLocaleString("en")}</h2>
-          {listed(accepted.map((item) => item.suggestion), "You accept", (item) => {
-            const { question, answer } = byId.get(item.id)!;
-            const match = question.match?.candidates.find((candidate) => answer.choice === `match:${candidate.system_id}`);
-            const systems = answer.choice === "accept" ? firstSystems(question) : "";
-            return (
-              <>
-                {sentence(item)}
-                {match ? <span className="draft-quiet"> · “{question.match!.writtenAs}” is {match.system_name}</span> : null}
-                {systems ? <span className="draft-quiet"> · adds {systems} first</span> : null}
-              </>
-            );
-          })}
+          {answerLines(true, "You accept")}
         </section>
       )}
       {rejected.length > 0 && (
         <section className="ds-focus__part" aria-labelledby="decide-reject">
           <h2 id="decide-reject" className="ds-focus__part-title">You reject · {rejected.length.toLocaleString("en")}</h2>
-          {listed(rejected.map((item) => item.suggestion), "You reject")}
+          {answerLines(false, "You reject")}
         </section>
       )}
       <section className="ds-focus__part" aria-labelledby="decide-follow">
