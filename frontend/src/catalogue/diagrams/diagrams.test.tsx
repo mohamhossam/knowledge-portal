@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, type Offering, type Release } from "../../api/client";
 import { checkAxeAfterEach } from "../../test/axe";
 import { catalogue } from "../catalogue";
+import { DomainsPage } from "../DomainsPage";
 import { MapPage } from "../MapPage";
 import type { CatalogueContext } from "../useCatalogue";
 import { capabilityMap, connectionsFlow, offeringStructure, systemContext, versionTimeline } from "./build";
@@ -147,7 +148,7 @@ function renderMap(path: string) {
           <Route path="architecture" element={<Outlet context={context} />}>
             <Route index element={<p>The systems</p>} />
             <Route path="map" element={<MapPage />} />
-            <Route path="domains" element={<p>The landscape</p>} />
+            <Route path="domains" element={<DomainsPage />} />
             <Route path="systems/:systemId" element={<p>A system's record</p>} />
           </Route>
         </Routes>
@@ -163,9 +164,15 @@ describe("MapPage, after the catalogue merge (step 5)", () => {
     expect(screen.getByTestId("where")).toHaveTextContent("/architecture?view=interfaces");
   });
 
-  it("opens the Landscape's business areas for what systems do", () => {
+  it("opens the Landscape's business areas for what systems do, drawn as the capability map", async () => {
     renderMap("/architecture/map?lens=capabilities");
     expect(screen.getByTestId("where")).toHaveTextContent("/architecture/domains");
+    const map = screen.getByRole("group", { name: "What systems do, by business area" });
+    expect(within(map).getByRole("link", { name: "Rating, BSCS" })).toBeInTheDocument();
+    // The Landscape's own table, one press away.
+    const figure = map.closest("figure")!;
+    await userEvent.click(within(figure as HTMLElement).getByRole("button", { name: "Show as table" }));
+    expect(screen.getByRole("table", { name: "Business areas and their capabilities" })).toBeInTheDocument();
   });
 
   it("still draws one system in context at full width, with the way back to its record", () => {

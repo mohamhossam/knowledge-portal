@@ -5,6 +5,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import type { CatalogueSystem } from "../api/client";
 import { Button, type Column, DataTable, Section } from "../design/components";
 import { type DomainRow, domainTree } from "./catalogue";
+import { CapabilityMapDiagram } from "./diagrams/CatalogueDiagrams";
 import { DomainsEdit } from "./DraftEdits";
 import { LandscapePoster } from "./landscape/LandscapePoster";
 import { useCatalogueContext } from "./useCatalogue";
@@ -134,13 +135,18 @@ export function DomainsPage() {
         {editing === "areas" ? (
           <DomainsEdit tree="areas" onDone={() => setEditing(null)} />
         ) : (
-          <DataTable
-            caption="Business areas and their capabilities"
-            captionHidden
-            columns={areaColumns}
-            rows={areas}
-            rowId={(row) => row.domain.id}
-            emptyText="This version files no capability under a business area."
+          // Drawn as the capability map (the Map's second view, until the catalogue merge), its table one press away.
+          <CapabilityMapDiagram
+            table={
+              <DataTable
+                caption="Business areas and their capabilities"
+                captionHidden
+                columns={areaColumns}
+                rows={areas}
+                rowId={(row) => row.domain.id}
+                emptyText="This version files no capability under a business area."
+              />
+            }
           />
         )}
       </Section>
