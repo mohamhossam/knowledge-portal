@@ -14,7 +14,7 @@ import { LabIcon } from "./labIcon";
 import { channelKindName, contractPeriods, eligibilityGroup, hubOf, SELLING_KINDS } from "../../catalogue/model/catalogueRules";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { firstSentence, listOf, pathTo, plural, useTitle } from "./labUtil";
-import { capabilityOf, DEVICE_ICON, shortComponentName } from "./capabilities";
+import { capabilityOf, DEVICE_ICON, shortComponentName } from "../../catalogue/systems/partKinds";
 import { stageOf } from "./stages";
 import { SystemMonogram } from "./SystemMonogram";
 

@@ -53,10 +53,10 @@ const systemRoutes = (
 );
 
 describe("SystemsPage", () => {
-  it("counts the connections until a system is chosen, and points to the map", () => {
+  it("counts the connections until a system is chosen, and points to who calls whom", () => {
     renderAt("/architecture", systemRoutes);
     expect(screen.getByText("2 connections between systems in this version.", { exact: false })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /See the map/ })).toHaveAttribute("href", "/architecture/map");
+    expect(screen.getByRole("link", { name: "See who calls whom across every system" })).toHaveAttribute("href", "/architecture?view=interfaces");
   });
 
   it("finds a system by an alias and says so", () => {

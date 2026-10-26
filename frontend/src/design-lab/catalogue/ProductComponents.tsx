@@ -6,7 +6,7 @@ import { EvidenceTag } from "./labChrome";
 import { LabIcon } from "./labIcon";
 import { hubOf } from "../../catalogue/model/catalogueRules";
 import { useLabData, useOffering } from "./labData";
-import { CAPABILITIES, capabilityOf, DEVICE_ICON } from "./capabilities";
+import { CAPABILITIES, capabilityOf, DEVICE_ICON } from "../../catalogue/systems/partKinds";
 import { plural, scrollBehavior, useTitle } from "./labUtil";
 import { layerRank } from "../../catalogue/landscape/posterModel";
 import { Missing, ProductHeader } from "./productParts";

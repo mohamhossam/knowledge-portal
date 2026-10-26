@@ -8,7 +8,7 @@
  * their product, when more than one product is catalogued).
  */
 import type { Catalogue } from "../../catalogue/model/model";
-import { PART_KINDS, type Part, systemParts } from "./capabilities";
+import { PART_KINDS, type Part, systemParts } from "../../catalogue/systems/partKinds";
 import { plural } from "./labUtil";
 import { layerRank } from "../../catalogue/landscape/posterModel";
 import { SystemMonogram } from "./SystemMonogram";

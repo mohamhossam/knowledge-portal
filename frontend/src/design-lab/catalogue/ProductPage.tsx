@@ -12,7 +12,7 @@ import { Missing, ProductHeader } from "./productParts";
 import { hubOf } from "../../catalogue/model/catalogueRules";
 import { firstJourneyHref, LAB, useLabData, useOffering } from "./labData";
 import { leadingNumber, listOf, plural, useTitle } from "./labUtil";
-import { CAPABILITIES, DEVICE_ICON } from "./capabilities";
+import { CAPABILITIES, DEVICE_ICON } from "../../catalogue/systems/partKinds";
 import { SystemMonogram } from "./SystemMonogram";
 
 import { WhoCanBuy } from "./WhoCanBuy";

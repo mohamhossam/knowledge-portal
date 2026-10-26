@@ -13,7 +13,7 @@ import { diagramHref } from "../../shell/diagramHref";
 import { RoutedDiagram } from "../../shell/RoutedDiagram";
 import { systemName } from "../catalogue";
 import { useCatalogueContext, useReleases } from "../useCatalogue";
-import { capabilityMap, CONTEXT_LANES, connectionsFlow, type Href, type Landscape, OFFERING_LANES, offeringStructure, systemContext, versionTimeline } from "./build";
+import { CONTEXT_LANES, connectionsFlow, type Href, type Landscape, OFFERING_LANES, offeringStructure, systemContext, versionTimeline } from "./build";
 
 /** Every connection between systems, left to right; `highlight` marks an order's systems (explorer). */
 export function ConnectionsFlowDiagram({ landscape, href, highlight, table, caption }: {
@@ -69,23 +69,6 @@ export function SystemContextDiagram({ systemId }: { systemId: string }) {
       layout={layout}
       headers={{ lane: "Side" }}
       legend={owned ? <Legend items={[["subject", "This system"], ["gap", "Dashed frame: no squad runs it"]]} /> : undefined}
-    />
-  );
-}
-
-/** The capability map: one column per business area, each capability with the system that has it. */
-export function CapabilityMapDiagram() {
-  const { book, base } = useCatalogueContext();
-  const href = useMemo<Href>(() => (id) => diagramHref(`${base}/systems/${encodeURIComponent(id)}`), [base]);
-  const map = useMemo(() => capabilityMap(book.release, { href }), [book.release, href]);
-  const layout = useCallback((fitWidth?: number) => layered(map.nodes, map.edges, { lanes: map.lanes, nodeWidth: 184, columnGap: 20, align: "start", fitWidth }), [map]);
-  if (!map.nodes.length) return <p className="cat-quiet">This version records no capability.</p>;
-  return (
-    <RoutedDiagram
-      label="What systems do, by business area"
-      caption={`${count(map.nodes.length, "capability", "capabilities")} in ${count(map.lanes.length, "business area")}; under each, the system that has it.`}
-      layout={layout}
-      headers={{ lane: "Business area", detail: "Had by" }}
     />
   );
 }

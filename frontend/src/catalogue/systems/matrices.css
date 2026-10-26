@@ -1,0 +1,80 @@
+/*
+ * The Systems tab's two matrices (catalogue merge, step 5): who calls whom, and
+ * which systems deliver which kind of bundle part. Taken from the catalogue
+ * lab's styles (which keep their own copy until the lab goes, step 7), on
+ * semantic tokens so they hold in both themes.
+ */
+/* ---------- The matrix ---------- */
+.sm-matrix-scroll { position: relative; overflow: auto; max-height: 76dvh; border: 1px solid var(--color-rule-soft); border-radius: 12px; }
+.sm-matrix { border-collapse: separate; border-spacing: 0; font-size: 0.8125rem; }
+.sm-matrix thead th { position: sticky; top: 0; z-index: 2; background: var(--color-surface); height: 132px; vertical-align: bottom; padding: 0 0 6px; font-weight: 600; color: var(--color-ink-2); }
+.sm-matrix thead th span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; display: inline-block; max-height: 124px; overflow: hidden; text-overflow: ellipsis; }
+.sm-matrix thead th.on { color: var(--color-action-fill); }
+.sm-matrix-corner { position: sticky; top: 0; left: 0; z-index: 3; background: var(--color-surface); vertical-align: bottom; }
+.sm-matrix tbody th { position: sticky; left: 0; z-index: 1; background: var(--color-surface); text-align: left; padding: 0; }
+.sm-matrix tbody th button { min-height: 24px; display: flex; justify-content: space-between; gap: 8px; align-items: center; border: 0; background: none; padding: 0 8px; cursor: pointer; text-align: left; font-weight: 600; width: 224px; }
+.sm-matrix tbody th button b { font-weight: 500; color: var(--color-ink-2); }
+.sm-matrix tbody th button:hover { background: var(--color-surface-2); }
+.sm-matrix tbody th button[aria-pressed="true"] { background: var(--color-action-fill); color: var(--color-on-action-fill); }
+.sm-matrix tbody th button[aria-pressed="true"] b { color: var(--color-on-action-fill); }
+.sm-matrix td { width: 24px; min-width: 24px; height: 24px; text-align: center; font-weight: 700; font-size: 0.75rem; border-right: 1px solid var(--color-surface); border-bottom: 1px solid var(--color-surface); background: var(--color-surface-1); }
+.sm-matrix td.self { background: var(--color-rule-soft); }
+.sm-matrix .sm-split { border-left: 2px solid var(--color-surface); box-shadow: inset 1px 0 0 var(--color-rule); }
+.sm-matrix tr.on td, .sm-matrix td.on { outline: 1px solid color-mix(in srgb, var(--color-action-fill) 25%, transparent); outline-offset: -1px; }
+.sm-matrix-domain th { position: sticky; left: 0; text-align: left; padding: 10px 8px 4px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-ink-2); background: var(--color-surface); }
+.sm-matrix-key { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; font-size: 0.8125rem; color: var(--color-ink-2); }
+.sm-matrix-key i { width: 14px; height: 14px; border-radius: 2px; display: inline-block; margin-left: 8px; }
+.sm-matrix-key strong { margin-left: auto; color: var(--color-ink); }
+.sc-glyph { flex: none; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.sc-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: var(--color-surface-2); color: var(--color-ink); }
+.sm-tone--market-sales { --am-tint: var(--color-layer-market); --am-ink: var(--color-layer-market-ink); --am-edge: var(--color-layer-market-edge); }
+.sm-tone--product { --am-tint: var(--color-layer-product); --am-ink: var(--color-layer-product-ink); --am-edge: var(--color-layer-product-edge); }
+.sm-tone--customer { --am-tint: var(--color-layer-customer); --am-ink: var(--color-layer-customer-ink); --am-edge: var(--color-layer-customer-edge); }
+.sm-tone--service { --am-tint: var(--color-layer-service); --am-ink: var(--color-layer-service-ink); --am-edge: var(--color-layer-service-edge); }
+.sm-tone--resource { --am-tint: var(--color-layer-resource); --am-ink: var(--color-layer-resource-ink); --am-edge: var(--color-layer-resource-edge); }
+.sm-tone--engaged-party { --am-tint: var(--color-layer-party); --am-ink: var(--color-layer-party-ink); --am-edge: var(--color-layer-party-edge); }
+.sm-tone--enterprise { --am-tint: var(--color-layer-enterprise); --am-ink: var(--color-layer-enterprise-ink); --am-edge: var(--color-layer-enterprise-edge); }
+.sm-tone--integration { --am-tint: var(--color-selected); --am-ink: var(--color-action-fill); --am-edge: var(--color-amount-2); }
+.sc-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.sc-table thead th { padding: 8px 4px; border-bottom: 1px solid var(--color-rule); vertical-align: bottom; text-align: left; font-weight: 600; color: var(--color-ink-2); }
+.sc-table thead th:first-child { width: 30%; }
+.sc-colname { display: block; font-size: 0.75rem; line-height: 1.2; color: var(--color-ink); }
+.sc-table tbody th[scope="row"] { padding: 8px 6px; border-bottom: 1px solid var(--color-rule-soft); text-align: left; font-weight: 600; }
+.sc-table td { padding: 8px 4px; border-bottom: 1px solid var(--color-rule-soft); text-align: center; }
+.sm-matrix thead th[class*="tone--"] { background: color-mix(in srgb, var(--am-tint) 75%, var(--color-surface)); box-shadow: inset 0 3px 0 var(--am-edge); color: var(--am-ink); }
+.sm-matrix thead th.on { box-shadow: inset 0 3px 0 var(--color-action-fill); color: var(--color-action-fill); }
+.sm-matrix-domain th { background: var(--am-tint); box-shadow: inset 3px 0 0 var(--am-edge); color: var(--am-ink); }
+.sm-matrix td.sx-1 { background: var(--color-intensity-1); }
+.sm-matrix td.sx-2 { background: var(--color-intensity-2); color: var(--color-ink); }
+.sm-matrix td.sx-3 { background: var(--color-intensity-3); color: var(--color-ink); }
+.sm-matrix td.sx-4 { background: var(--color-intensity-4); color: var(--color-surface); }
+.sm-matrix-key .sx-1 { background: var(--color-intensity-1); box-shadow: inset 0 0 0 1px var(--color-intensity-2); }
+.sm-matrix-key .sx-2 { background: var(--color-intensity-2); }
+.sm-matrix-key .sx-3 { background: var(--color-intensity-3); }
+.sm-matrix-key .sx-4 { background: var(--color-intensity-4); }
+.sx-deg { flex: none; display: inline-flex; align-items: center; gap: 6px; }
+.sx-deg > i { display: block; width: 44px; height: 6px; overflow: hidden; border-radius: 3px; background: var(--color-surface-2); }
+.sx-deg > i > i { display: block; height: 100%; border-radius: 3px; background: var(--color-intensity-3); }
+.sx-deg b { min-width: 24px; text-align: right; font-weight: 500; color: var(--color-ink-2); }
+.sm-matrix tbody th button[aria-pressed="true"] .sx-deg > i { background: color-mix(in srgb, var(--color-surface) 25%, transparent); }
+.sm-matrix tbody th button[aria-pressed="true"] .sx-deg > i > i { background: var(--color-surface); }
+.sm-matrix tbody th button[aria-pressed="true"] .sx-deg b { color: var(--color-surface); }
+.sc-table tr.is-quiet th[scope="row"] { color: var(--color-ink-3); font-weight: 500; }
+.sx-corner { display: block; padding: 0 10px 8px; text-align: right; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-ink-3); }
+.sx-corner b { color: var(--color-ink-2); }
+/* Systems × capabilities: a row per system, a column per kind of bundle part, a teal mark with how many components. */
+.sc-panel { padding: 6px 16px 10px; background: var(--color-surface); }
+.sc-col { width: 128px; text-align: center !important; }
+.sc-col .sc-icon { margin: 0 auto 4px; }
+.sc-matrix tbody th[scope="row"] { padding: 3px 4px; }
+.sc-sys { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 36px; padding: 4px 6px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.sc-sys > span:last-child { display: flex; flex-direction: column; min-width: 0; }
+.sc-sys b { font-weight: 700; }
+.sc-sys small { font-size: 0.6875rem; color: var(--color-ink-3); }
+.sc-sys:hover { background: var(--color-surface-2); }
+.sc-sys[aria-pressed="true"] { background: var(--color-selected); color: var(--color-action-fill); }
+.sc-matrix tr.sc-first > * { border-top: 2px solid var(--color-rule); }
+.sc-mark { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--color-footprint); color: var(--color-surface); font-size: 0.75rem; font-weight: 700; }
+.sc-mark:empty { min-width: 14px; height: 14px; padding: 0; }
+/* Under the portal's two tiers a short screen has less room: tiles may go to 24px with slimmer padding. */
+.sc-matrix td { padding-block: 4px; }
