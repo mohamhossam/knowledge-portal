@@ -2,8 +2,9 @@
  * A catalogue journey read three ways (the owner's order): a swimlane by
  * system, a flowchart along the flow, and a timeline by stage. Under every
  * view, the same steps as a table, so the whole journey reads without the
- * drawing. Loaded on its own (`lazy()`), so the diagrams cost a page nothing
- * until a journey is opened.
+ * drawing. A page can add views of its own (`more`): the catalogue's record adds
+ * the process flow and the call register. Loaded on its own (`lazy()`), so the
+ * diagrams cost a page nothing until a journey is opened.
  */
 import "./journey.css";
 
@@ -18,7 +19,7 @@ import { MarkLines, type ViewProps } from "./parts";
 import { Swimlane } from "./Swimlane";
 import { Timeline } from "./Timeline";
 
-export type JourneyView = "swimlane" | "flowchart" | "timeline";
+export type JourneyView = "swimlane" | "flowchart" | "timeline" | "flow" | "integrations";
 
 export type JourneyViewsProps = {
   journey: Journey;
@@ -32,6 +33,8 @@ export type JourneyViewsProps = {
   /** Controlled view, so the page can keep it in the URL (?view=flowchart). */
   view?: JourneyView;
   onViewChange?: (view: JourneyView) => void;
+  /** Views a page adds after the three, each with what it shows; they carry their own steps. */
+  more?: { id: JourneyView; label: string; content: ReactNode }[];
 };
 
 const VIEWS: { id: JourneyView; label: string }[] = [
@@ -40,7 +43,7 @@ const VIEWS: { id: JourneyView; label: string }[] = [
   { id: "timeline", label: "Stage timeline" },
 ];
 
-export function JourneyViews({ view, onViewChange, ...props }: JourneyViewsProps) {
+export function JourneyViews({ view, onViewChange, more = [], ...props }: JourneyViewsProps) {
   const [own, setOwn] = useState<JourneyView>("swimlane");
   const current = view ?? own;
   const select = (next: JourneyView) => {
@@ -48,12 +51,15 @@ export function JourneyViews({ view, onViewChange, ...props }: JourneyViewsProps
     onViewChange?.(next);
   };
   const empty = props.journey.activities.length === 0;
+  const added = more.find((item) => item.id === current);
 
   return (
     <div className="journey">
-      <Tabs label={`Ways to read ${props.journey.name}`} tabs={VIEWS} selected={current} onSelect={select}>
+      <Tabs label={`Ways to read ${props.journey.name}`} tabs={[...VIEWS, ...more.map(({ id, label }) => ({ id, label }))]} selected={current} onSelect={select}>
         {empty ? (
           <EmptyState title="No step is recorded">This journey has no steps yet, so there is nothing to draw.</EmptyState>
+        ) : added ? (
+          added.content
         ) : current === "flowchart" ? (
           <Flowchart {...props} />
         ) : current === "timeline" ? (
@@ -62,7 +68,7 @@ export function JourneyViews({ view, onViewChange, ...props }: JourneyViewsProps
           <Swimlane {...props} />
         )}
       </Tabs>
-      {!empty && <StepsTable {...props} />}
+      {!empty && !added && <StepsTable {...props} />}
     </div>
   );
 }
