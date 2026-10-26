@@ -12,14 +12,14 @@ import { DiagramLegend } from "../../design/diagram";
 import { count } from "../../home/format";
 import { RouterLink } from "../../shell/links";
 import {
-  type Lexicon, bulkAcceptable, changeSentence, decideWhy, inDependencyOrder, inWords, lexicon, suggestionState, waitsFor,
+  type Lexicon, bulkAcceptable, changeSentence, decideWhy, inDependencyOrder, inWords, lexicon, standaloneSentence, suggestionState, waitsFor,
 } from "../suggestions";
 import { useCatalogueContext } from "../useCatalogue";
 import { useDraft } from "../useDraft";
 import { citedSource, stateWords } from "./decide";
 import { DecisionTree } from "./DecisionTree";
 import { type NodeMark, touching } from "./decisionTreeModel";
-import { type DecideAnswer, type DecideQuestion, decideChoices, decideQuestions, firstSystems } from "./questions";
+import { type DecideAnswer, type DecideQuestion, covered, decideChoices, decideQuestions, firstSystems } from "./questions";
 import { type SendAnswer, sendAnswers, type SendPlan, type SendPort } from "./sendAnswers";
 
 /** How many suggestions the summary names before "and N more". */
@@ -61,16 +61,18 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
   const fresh = useMemo(() => decideQuestions(all, words), [all, words]);
   if (frozen === null && draft.suggestions.isSuccess) setFrozen(fresh);
   const questions = useMemo(() => frozen ?? [], [frozen]);
-  const asked = useMemo(() => questions.map((item) => item.id), [questions]);
+  const asked = useMemo(() => questions.flatMap(covered).map((item) => item.id), [questions]);
   // The tree beside the questions: only what they touch, with the answers so far.
   const kept = useMemo(() => touching(all, asked), [all, asked]);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, DecideAnswer>>({});
+  // An answer marks every suggestion it covers.
+  const answered = useMemo(() => new Map(Object.values(answers).flatMap((answer) => answer.each.map(({ suggestion }) => [suggestion.id, answer.accept] as const))), [answers]);
   const mark = useCallback((item: Suggestion): NodeMark | undefined => {
-    const answer = answers[item.id];
-    if (answer) return answer.accept ? { status: "You accept it", tone: "ready" } : { status: "You reject it", tone: "muted" };
+    const accept = answered.get(item.id);
+    if (accept !== undefined) return accept ? { status: "You accept it", tone: "ready" } : { status: "You reject it", tone: "muted" };
     return { status: stateWords(item) };
-  }, [answers]);
+  }, [answered]);
   const [skipped, setSkipped] = useState<Set<string>>(() => new Set());
   const [choice, setChoice] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
@@ -169,13 +171,8 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
 
   const question = current!;
   const choices = decideChoices(question);
-  // The same name answered already: offered again, so one answer covers every link to it.
-  const sameName = question.match
-    ? questions.find((other) => other.id !== question.id && other.match?.writtenAs === question.match?.writtenAs && answers[other.id])
-    : undefined;
-  const echoed = sameName && choices.some((item) => item.value === answers[sameName.id]!.choice) ? answers[sameName.id]!.choice : undefined;
-  const value = choice ?? answers[question.id]?.choice ?? echoed;
-  const { suggestion } = question;
+  const value = choice ?? answers[question.id]?.choice;
+  const { suggestion, also } = question;
   const citation = suggestion.citations[0];
   const document = release.documents.find((item) => item.id === suggestion.document_version_id);
   return frame(
@@ -187,7 +184,7 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
           <Suggested basis={suggestion.basis === "inferred" ? "inferred" : "stated"} />
           {/* The tag already says a link was inferred; the line says only what else to know. */}
           {suggestion.basis === "inferred" && !suggestion.possible_matches.length ? null : <> {decideWhy(suggestion)}.</>}
-          {echoed && !answers[question.id] && !choice && <> Chosen from your earlier answer about “{question.match?.writtenAs}”.</>}
+          {also.length > 0 && <> Your answer covers all {also.length + 1} suggestions that use this name.</>}
         </>
       }
       source={
@@ -202,6 +199,14 @@ function Run({ release, base, back }: { release: Release; base: string; back: st
             <p className="draft-quiet">The suggestion cites no passage.</p>
           )}
           {suggestion.rationale && <p dir="auto"><span className="draft-quiet">Why it was inferred:</span> {suggestion.rationale}</p>}
+          {also.length > 0 && (
+            <>
+              <p className="draft-quiet">The same answer goes to:</p>
+              <Lines label="The same answer goes to">
+                {also.map((item) => <li key={item.id} dir="auto">{standaloneSentence(item, words)}</li>)}
+              </Lines>
+            </>
+          )}
         </>
       }
       choices={choices.map((item) => ({ value: item.value, label: item.label, consequence: item.consequence }))}
@@ -244,37 +249,38 @@ function Summary({ release, all, words, questions, answers, draft, onBack, onDon
 }) {
   const [sending, setSending] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
-  const accepted = questions.filter((item) => answers[item.id]?.accept);
-  const rejected = questions.filter((item) => answers[item.id] && !answers[item.id]!.accept);
+  // What the answers decide, suggestion by suggestion: one answer may cover several.
+  const decided = useMemo(() => questions.flatMap((question) => {
+    const answer = answers[question.id];
+    return answer ? answer.each.map((item) => ({ ...item, question, answer })) : [];
+  }), [questions, answers]);
+  const accepted = decided.filter((item) => item.answer.accept);
+  const rejected = decided.filter((item) => !item.answer.accept);
+  const byId = new Map(decided.map((item) => [item.suggestion.id, item]));
   const open = questions.map((item, at) => ({ item, at })).filter(({ item }) => !answers[item.id]);
   const follows = useMemo(() => {
     // What the answers accept, as it will be accepted: with a match taken, it adds what the match says.
-    const given = questions
-      .filter((item) => answers[item.id]?.accept)
-      .map((item) => ({ ...item.suggestion, content: answers[item.id]!.content ?? item.suggestion.content }));
+    const given = decided
+      .filter((item) => item.answer.accept)
+      .map(({ suggestion, content }) => ({ ...suggestion, content: content ?? suggestion.content }));
     const result = bulkAcceptable(release, all, given);
     return [...result.ready, ...result.lifted];
-  }, [release, all, questions, answers]);
-  const settled = new Set([...questions.filter((item) => answers[item.id]).map((item) => item.id), ...follows.map((item) => item.id)]);
-  const still = all.filter((item) => item.status === "proposed" && !settled.has(item.id) && !open.some(({ item: question }) => question.id === item.id));
+  }, [release, all, decided]);
+  const settled = new Set([...byId.keys(), ...follows.map((item) => item.id)]);
+  const unasked = new Set(open.flatMap(({ item }) => covered(item)).map((item) => item.id));
+  const still = all.filter((item) => item.status === "proposed" && !settled.has(item.id) && !unasked.has(item.id));
 
   const send = async (withFollowing: boolean) => {
     setSending(true);
     setFailed(null);
-    const answerOf = (question: DecideQuestion): SendAnswer => {
-      const answer = answers[question.id]!;
-      return { suggestionId: question.id, accept: answer.accept, content: answer.content };
-    };
-    const byId = new Map(accepted.map((item) => [item.id, item]));
+    const answerOf = ({ suggestion, answer, content }: (typeof decided)[number]): SendAnswer => ({ suggestionId: suggestion.id, accept: answer.accept, content });
+    const accepting = questions.filter((item) => answers[item.id]?.accept);
     const plan: SendPlan = {
       rejected: rejected.map(answerOf),
-      accepted: inDependencyOrder(accepted.map((item) => item.suggestion)).flatMap((suggestion) => {
-        const question = byId.get(suggestion.id);
-        return question ? [answerOf(question)] : [];
-      }),
+      accepted: inDependencyOrder(accepted.map((item) => item.suggestion)).map((suggestion) => answerOf(byId.get(suggestion.id)!)),
       first: {
-        accept: accepted.flatMap((item) => item.first?.accept ?? []).map((item) => item.id),
-        add: accepted.flatMap((item) => item.first?.add ?? []),
+        accept: accepting.flatMap((item) => item.first?.accept ?? []).map((item) => item.id),
+        add: accepting.flatMap((item) => item.first?.add ?? []),
       },
       withFollowing,
     };
@@ -288,8 +294,8 @@ function Summary({ release, all, words, questions, answers, draft, onBack, onDon
     try {
       const { done, refused, systems, remaining } = await sendAnswers(port, plan);
       const parts = [
-        `${count(done, "answer")} sent${systems ? `, with ${count(systems, "system")} they need` : ""}${withFollowing ? ", and what followed accepted" : ""}`,
-        refused ? `${count(refused, "answer")} couldn't be taken: decide ${refused === 1 ? "it" : "them"} here` : "",
+        `${count(done, "suggestion")} decided${systems ? `, with ${count(systems, "system")} they need` : ""}${withFollowing ? ", and what followed accepted" : ""}`,
+        refused ? `${count(refused, "suggestion")} couldn't be taken: decide ${refused === 1 ? "it" : "them"} here` : "",
         remaining ? `${count(remaining, "suggestion")} still ${remaining === 1 ? "waits" : "wait"} for you` : "",
       ].filter(Boolean);
       onDone(`${parts.join("; ")}.`);
@@ -307,7 +313,7 @@ function Summary({ release, all, words, questions, answers, draft, onBack, onDon
       {items.length > NAMED && <li>and {(items.length - NAMED).toLocaleString("en")} more</li>}
     </Lines>
   );
-  const answered = accepted.length + rejected.length;
+  const answered = questions.filter((item) => answers[item.id]).length;
   return (
     <div className="ds-focus__question">
       <FocusTitle>{answered ? `Send your ${count(answered, "answer")}?` : "Nothing answered yet"}</FocusTitle>
@@ -317,14 +323,13 @@ function Summary({ release, all, words, questions, answers, draft, onBack, onDon
         <section className="ds-focus__part" aria-labelledby="decide-accept">
           <h2 id="decide-accept" className="ds-focus__part-title">You accept · {accepted.length.toLocaleString("en")}</h2>
           {listed(accepted.map((item) => item.suggestion), "You accept", (item) => {
-            const choice = answers[item.id]!.choice;
-            const match = item.possible_matches.find((candidate) => choice === `match:${candidate.system_id}`);
-            const question = questions.find((candidate) => candidate.id === item.id);
-            const systems = choice === "accept" && question ? firstSystems(question) : "";
+            const { question, answer } = byId.get(item.id)!;
+            const match = question.match?.candidates.find((candidate) => answer.choice === `match:${candidate.system_id}`);
+            const systems = answer.choice === "accept" ? firstSystems(question) : "";
             return (
               <>
                 {sentence(item)}
-                {match ? <span className="draft-quiet"> · “{match.written_as}” is {match.system_name}</span> : null}
+                {match ? <span className="draft-quiet"> · “{question.match!.writtenAs}” is {match.system_name}</span> : null}
                 {systems ? <span className="draft-quiet"> · adds {systems} first</span> : null}
               </>
             );

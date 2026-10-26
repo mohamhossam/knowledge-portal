@@ -7,6 +7,7 @@ import { api, type CatalogueCoverage, type DocumentExtraction, type Release, typ
 import { CataloguePage } from "../CataloguePage";
 import { ChangesStep } from "./ChangesStep";
 import { CheckStep } from "./CheckStep";
+import { DecideFocus } from "./DecideFocus";
 import { DecideStep } from "./DecideStep";
 import { PublishStep } from "./PublishStep";
 import { SourcesStep } from "./SourcesStep";
@@ -85,6 +86,7 @@ function renderStep(
           <Route path="architecture/versions/:releaseId" element={<CataloguePage />}>
             <Route path="sources" element={<SourcesStep />} />
             <Route path="decide" element={<DecideStep />} />
+            <Route path="decide/focus" element={<DecideFocus />} />
             <Route path="changes" element={<ChangesStep />} />
             <Route path="check" element={<CheckStep />} />
             <Route path="publish" element={<PublishStep />} />
@@ -563,5 +565,28 @@ describe("Publish", () => {
     fireEvent.click(screen.getByRole("button", { name: "Build it, then publish" }));
     await waitFor(() => expect(publish).toHaveBeenCalled());
     expect(build).toHaveBeenCalledWith("d", 3);
+  });
+});
+
+describe("the Decide step in focus mode", () => {
+  const matches = [{ role: "system", written_as: "Dynamics CRM", system_id: "bcrm", system_name: "BCRM", reason: "Similar name to BCRM." }];
+  // As the service reads them: the system misses nothing; each link misses only the system it names.
+  const crm = base("crm", { kind: "system", system_id: "dynamics-crm", name: "Dynamics CRM" }, { possible_matches: matches, missing_systems: [] } as Partial<Suggestion>);
+  const naming = (id: string, text: string) => base(id, { kind: "relationship", system_id: "dynamics-crm", target_system_id: "cwom", relationship_kind: "transfers_data_to", text }, {
+    match: "needs_system", target_system_name: "CWOM", possible_matches: matches, missing_systems: ["dynamics-crm"],
+  } as Partial<Suggestion>);
+
+  it("asks about a name once, and sends that answer for every suggestion naming it", async () => {
+    const { decide } = renderStep("decide/focus", { suggestions: [crm, naming("sends", "Sends accounts"), naming("reads", "Reads orders")] });
+    expect(await screen.findByRole("heading", { name: "Is “Dynamics CRM” a system the draft already has?" })).toBeInTheDocument();
+    expect(screen.getByText(/Your answer covers all 3 suggestions that use this name/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: /Yes, it is BCRM/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm and next" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Send only my answers" }));
+    await waitFor(() => expect(decide).toHaveBeenCalledTimes(3));
+    // The system becomes another name of BCRM, and both links point at it.
+    expect(decide.mock.calls.map(([, id, body]) => [id, body.accept, body.content?.system_id])).toEqual([
+      ["crm", true, "bcrm"], ["sends", true, "bcrm"], ["reads", true, "bcrm"],
+    ]);
   });
 });
