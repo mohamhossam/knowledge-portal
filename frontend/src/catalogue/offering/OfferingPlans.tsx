@@ -4,7 +4,7 @@
  * the plans comes first; what every plan shares is listed apart, so the
  * differences are what the eye meets.
  */
-import "./offering.css";
+import "./offering-views.css";
 
 import type { Offering } from "../../api/client";
 import { type Column, DataTable, Section, Status } from "../../design/components";

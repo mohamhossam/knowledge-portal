@@ -3,7 +3,7 @@
  * page): each with what it governs and where it comes from, filtered by what it
  * governs. The offering's own free-text rules, edited on the record, follow.
  */
-import "./offering.css";
+import "./offering-views.css";
 
 import { type ReactNode, useState } from "react";
 
