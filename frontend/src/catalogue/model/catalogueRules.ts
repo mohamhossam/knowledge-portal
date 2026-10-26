@@ -1,10 +1,10 @@
 /**
- * The catalogue lab's business rules, each in one place for every page that needs it:
+ * The catalogue's business rules (from the lab, catalogue merge step 3), each in one place for every page that needs it:
  * which part is a bundle's hub, what a channel kind is called, which question an
  * eligibility point answers, a product's contract periods, when a system is core to a
  * product, and whether plans state a price. Agreed with Shady (phase 11, 2026-10-14).
  */
-import type { Catalogue, Offering } from "../../catalogue/model/model";
+import type { Catalogue, Offering } from "./model";
 
 /**
  * The device a bundle is built on: the part the version marks as its hub. A version that

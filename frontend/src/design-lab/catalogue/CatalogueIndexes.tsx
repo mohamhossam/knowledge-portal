@@ -11,7 +11,7 @@ import { Link } from "react-router-dom";
 import type { Offering } from "../../catalogue/model/model";
 import { AreaTabs } from "./labChrome";
 import { LabIcon } from "./labIcon";
-import { channelKindName, contractPeriods, eligibilityGroup, hubOf, SELLING_KINDS } from "./catalogueRules";
+import { channelKindName, contractPeriods, eligibilityGroup, hubOf, SELLING_KINDS } from "../../catalogue/model/catalogueRules";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { firstSentence, listOf, pathTo, plural, useTitle } from "./labUtil";
 import { capabilityOf, DEVICE_ICON, shortComponentName } from "./capabilities";

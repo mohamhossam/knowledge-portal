@@ -27,7 +27,7 @@ import { journeyView } from "../../catalogue/model/adapter";
 import { type Catalogue, type JourneyView, type Lane, laneKey, systemOf } from "../../catalogue/model/model";
 import { AreaTabs } from "./labChrome";
 import { LabIcon } from "./labIcon";
-import { channelKindName } from "./catalogueRules";
+import { channelKindName } from "../../catalogue/model/catalogueRules";
 import { journeyHref, LAB, useLabData } from "./labData";
 import { pathTo, plural, useTitle } from "./labUtil";
 import { STAGES, stageOfCode } from "./stages";

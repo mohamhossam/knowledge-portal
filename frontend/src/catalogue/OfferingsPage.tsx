@@ -4,7 +4,7 @@ import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } 
 
 import type { Offering, Release } from "../api/client";
 import {
-  ActionGroup, Button, type Column, DataTable, EmptyState, Facts, GapBadge, Lines, ListFind, ListTools, RecordList, type RecordGroup,
+  ActionGroup, Button, type Column, DataTable, EmptyState, Facts, FilterStrip, GapBadge, Lines, ListFind, ListTools, RecordList, type RecordGroup,
   RecordPlaceholder, RecordView, Section, Status, Tabs, Workbench,
 } from "../design/components";
 import { useFocusAfterRender } from "../design/hooks";
@@ -20,6 +20,9 @@ import { useFindParam } from "./frame/useFindParam";
 import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions } from "./GovernanceSections";
 import { conflictsFor, questionOf } from "./governance";
 import { LifecycleSection } from "./LifecycleNotes";
+import { OfferingFootprint } from "./offering/OfferingFootprint";
+import { OfferingPlans } from "./offering/OfferingPlans";
+import { OfferingRules } from "./offering/OfferingRules";
 import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
 import { conceptIndex, realisationRecords, SOURCE_TONE, SOURCE_WORD } from "./ontology";
 import { NfrSection, RealisationKey, RealisedAs } from "./Realisation";
@@ -181,16 +184,31 @@ function AllOfferings({ release }: { release: Release }) {
   );
 }
 
-const TABS = ["components", "orders", "journeys", "service", "governance", "audience"] as const;
+const TABS = ["components", "plans", "orders", "journeys", "footprint", "rules", "service", "governance", "audience"] as const;
 type Tab = (typeof TABS)[number];
 const TAB_LABEL: Record<Tab, string> = {
   components: "Components",
+  plans: "Plans",
   orders: "Order types",
   journeys: "Journeys",
+  footprint: "Footprint",
+  rules: "Rules",
   service: "Service",
   governance: "Questions and decisions",
   audience: "Who it is for",
 };
+
+/** Where an offering sits in the portfolio, from the top down, as "Business unit › Family". */
+function portfolioPath(release: Release, offering: Offering): string[] {
+  const nodes = new Map((release.portfolio ?? []).map((node) => [node.id, node]));
+  const path: string[] = [];
+  let node = offering.portfolio_node_id ? nodes.get(offering.portfolio_node_id) : undefined;
+  for (let hops = 0; node && hops < 16; hops++) {
+    path.unshift(node.name);
+    node = node.parent_id ? nodes.get(node.parent_id) : undefined;
+  }
+  return path;
+}
 
 /**
  * An offering's record (redesign phase 5): what it is made of in the
@@ -239,6 +257,7 @@ function OfferingRecord({ offering }: { offering: Offering }) {
   const channelName = (channelId: string) => channelNames.get(channelId) ?? channelId;
   const conflicts = conflictsFor(book.release.conflicts ?? [], offering.id);
   const system = (systemId: string) => <Link to={`${base}/systems/${encodeURIComponent(systemId)}`} dir="auto">{systemName(book, systemId)}</Link>;
+  const portfolio = portfolioPath(book.release, offering);
   // ADR-0121, review recommendation 7: a retired offering says what replaced it.
   const replacement = offering.replaced_by ? (book.release.products ?? []).find((item) => item.id === offering.replaced_by) : undefined;
 
@@ -313,9 +332,10 @@ function OfferingRecord({ offering }: { offering: Offering }) {
         />
       )}
       {/* Who it is for and what it promises, by name; what each means is on its own tab. */}
-      {(offering.audiences.length > 0 || offering.values.length > 0) && (
+      {(offering.audiences.length > 0 || offering.values.length > 0 || portfolio.length > 0) && (
         <Facts
           items={[
+            ...(portfolio.length ? [["Portfolio", <bdi key="portfolio">{portfolio.join(" › ")}</bdi>] as [string, ReactNode]] : []),
             ...(offering.audiences.length ? [["For", <bdi key="for">{offering.audiences.map((item) => item.name).join(" · ")}</bdi>] as [string, ReactNode]] : []),
             ...(offering.values.length ? [["Promises", <bdi key="promises">{offering.values.map((item) => item.name).join(" · ")}</bdi>] as [string, ReactNode]] : []),
           ]}
@@ -334,6 +354,22 @@ function OfferingRecord({ offering }: { offering: Offering }) {
           </div>
         )}
         {tab === "components" && edited("parts", <Components offering={offering} action={offer("parts")} orderName={orderName} />)}
+        {tab === "plans" && <OfferingPlans offering={offering} />}
+        {tab === "footprint" && <OfferingFootprint release={book.release} offeringId={offering.id} base={base} />}
+        {tab === "rules" && (
+          <OfferingRules
+            offering={offering}
+            freeText={edited("rules", (
+              <Section title="Other rules" count={offering.rules.length} actions={offer("rules")} headingLevel={3}>
+                {offering.rules.length ? (
+                  <Lines>{offering.rules.map((rule) => <li key={rule} dir="auto">{rule}</li>)}</Lines>
+                ) : (
+                  <p className="cat-quiet">No other rule is recorded.</p>
+                )}
+              </Section>
+            ))}
+          />
+        )}
         {tab === "orders" && edited("orders", <OrderMatrix offering={offering} action={offer("orders")} channelName={channelName} />)}
         {tab === "journeys" && (
           <Section title="Journeys" count={journeys.length} headingLevel={3}>
@@ -377,15 +413,6 @@ function OfferingRecord({ offering }: { offering: Offering }) {
             {edited("questions", <OpenQuestions offering={offering} conflicts={conflicts} beside={conflicts} headingId="offering-questions" action={offer("questions")} level={3} />)}
             {edited("decisions", <ArchitectureDecisions offering={offering} headingId="offering-decisions" action={offer("decisions")} level={3} />)}
             {edited("sources", <OfferingSourceList offering={offering} sources={book.release.sources ?? []} headingId="offering-sources" action={offer("sources")} level={3} />)}
-            {edited("rules", (
-              <Section title="Rules" count={offering.rules.length} actions={offer("rules")} headingLevel={3}>
-                {offering.rules.length ? (
-                  <Lines>{offering.rules.map((rule) => <li key={rule} dir="auto">{rule}</li>)}</Lines>
-                ) : (
-                  <p className="cat-quiet">No rule is recorded.</p>
-                )}
-              </Section>
-            ))}
           </div>
         )}
       </Tabs>
@@ -412,6 +439,12 @@ function Components({ offering, action, orderName }: { offering: Offering; actio
   const { book, base } = useCatalogueContext();
   const index = useMemo(() => conceptIndex(book.release), [book.release]);
   const records = useMemo(() => realisationRecords(book.release), [book.release]);
+  // Which system delivers which part, as a filter (from the lab's Components page).
+  const [by, setBy] = useState("all");
+  const deliverers = [...new Set(offering.components.flatMap((part) => part.responsibilities.map((item) => item.system_id)))]
+    .sort((a, b) => systemName(book, a).localeCompare(systemName(book, b), "en"));
+  const delivered = (part: Component, systemId: string) => part.responsibilities.some((item) => item.system_id === systemId);
+  const shown = by === "all" ? offering.components : offering.components.filter((part) => delivered(part, by));
   const columns: Column<Component>[] = [
     {
       id: "name",
@@ -479,7 +512,18 @@ function Components({ offering, action, orderName }: { offering: Offering; actio
     <Section title="What the offering is made of" count={offering.components.length} actions={action} headingLevel={3}>
       {offering.components.length ? (
         <>
-          <DataTable caption={`Components of ${offering.name}`} captionHidden columns={columns} rows={offering.components} rowId={(part) => part.id} />
+          {deliverers.length > 1 && (
+            <FilterStrip
+              label="Delivered by"
+              filters={[
+                { id: "all", label: "Every system", count: offering.components.length },
+                ...deliverers.map((id) => ({ id, label: systemName(book, id), count: offering.components.filter((part) => delivered(part, id)).length })),
+              ]}
+              active={deliverers.includes(by) ? by : "all"}
+              onChange={setBy}
+            />
+          )}
+          <DataTable caption={`Components of ${offering.name}`} captionHidden columns={columns} rows={shown} rowId={(part) => part.id} />
           <RealisationKey offering={offering} />
         </>
       ) : (

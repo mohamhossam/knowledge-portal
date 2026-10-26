@@ -4,7 +4,7 @@ import { type ReactNode, useState } from "react";
 import type { Offering } from "../../catalogue/model/model";
 import { EvidenceTag } from "./labChrome";
 import { LabIcon } from "./labIcon";
-import { hubOf } from "./catalogueRules";
+import { hubOf } from "../../catalogue/model/catalogueRules";
 import { useLabData, useOffering } from "./labData";
 import { CAPABILITIES, capabilityOf, DEVICE_ICON } from "./capabilities";
 import { plural, scrollBehavior, useTitle } from "./labUtil";

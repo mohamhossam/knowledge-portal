@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import type { Offering } from "../../catalogue/model/model";
 import { EvidenceTag } from "./labChrome";
 import { LabIcon } from "./labIcon";
-import { channelKindName, type EligibilityGroup, eligibilityGroup } from "./catalogueRules";
+import { channelKindName, type EligibilityGroup, eligibilityGroup } from "../../catalogue/model/catalogueRules";
 import { journeyHref, useLabData } from "./labData";
 import { plural } from "./labUtil";
 import { STAGES, stageOf } from "./stages";

@@ -7,7 +7,7 @@ import { type ReactNode, useMemo } from "react";
 import { Link } from "react-router-dom";
 
 import { type Offering, systemOf } from "../../catalogue/model/model";
-import { isPriced } from "./catalogueRules";
+import { isPriced } from "../../catalogue/model/catalogueRules";
 import { AreaTabs, EvidenceTag, PathBar } from "./labChrome";
 import { LabIcon } from "./labIcon";
 import { firstJourneyHref, LAB, useLabData } from "./labData";

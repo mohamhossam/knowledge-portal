@@ -126,13 +126,18 @@ function PosterKey() {
   );
 }
 
-/** The picked system, beside the map: where it sits, what it does, what it is linked to, and its record. */
-function SystemSummary({ data, system, linkCounts, base, onSelect }: {
+/**
+ * The picked system, beside a map: where it sits, what it does, what it is linked to, and its
+ * record. `facts` adds what the map around it knows (an offering's footprint says how much of
+ * the offering reaches it).
+ */
+export function SystemSummary({ data, system, linkCounts, base, onSelect, facts: more = [] }: {
   data: Catalogue;
   system: System;
   linkCounts: ReturnType<typeof useLinkCounts>["linkCounts"];
   base: string;
   onSelect: (id: string | null) => void;
+  facts?: [string, ReactNode][];
 }) {
   const domain = data.domains.find((item) => item.id === system.domain);
   const group = domain?.groups.find((item) => item.id === system.group);
@@ -144,6 +149,7 @@ function SystemSummary({ data, system, linkCounts, base, onSelect }: {
     ["Layer", domain ? [domain.name, group?.name].filter(Boolean).join(" › ") : "In no layer yet"],
     ["Owner", system.owner ?? <span className="cat-quiet">Not recorded</span>],
     ["Linked systems", partners.length.toLocaleString("en")],
+    ...more,
   ];
   return (
     <aside

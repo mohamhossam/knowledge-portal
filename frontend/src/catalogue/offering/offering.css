@@ -1,297 +1,43 @@
 /*
- * An offering's detail sections (non-functional requirements, order tracking,
- * lifecycle notes, conflicts, questions, decisions, sources) and the catalogue's
- * Governance page, on the Calm Ledger. Layout only, from semantic and component
- * tokens; logical properties only.
+ * An offering's plans and business rules (catalogue merge, step 3): the shared
+ * characteristics as quiet pairs, and each rule with its id, what it governs and
+ * where it comes from. Semantic tokens only.
  */
-
-.offering-stack {
-  display: grid;
-  gap: var(--space-2);
-  min-inline-size: 0;
-}
-
-.offering-stack > .ds-section,
-.offering-section {
-  min-inline-size: 0;
-}
-
-.offering-lead {
-  margin: 0;
-  max-inline-size: 62ch;
-  color: var(--color-ink-2);
-}
-
-.offering-lead strong {
-  color: var(--color-ink);
+.off-subhead {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-body);
   font-weight: var(--weight-strong);
 }
 
-.offering-quiet {
-  margin: 0;
-  color: var(--color-ink-2);
-  font-size: var(--text-meta);
-}
-
-.offering-actions {
+.off-pairs {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-/* A part of a section, such as Order tracking's tables: a medium head on a hairline. */
-.offering-part {
-  margin: var(--space-2) 0 0;
-  padding-block-end: var(--space-1);
-  border-block-end: var(--hair-rule);
-  font-size: var(--text-body);
-  font-weight: var(--weight-emphasis);
-}
-
-/* A second, quieter line inside a cell or an item: the source, the reason, the who. */
-.offering-by {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1) var(--space-2);
-  margin-block-start: var(--space-1);
-  color: var(--color-ink-2);
-  font-size: var(--text-meta);
-  font-weight: var(--weight-body);
-  overflow-wrap: anywhere;
-}
-
-.offering-by:empty {
-  display: none;
-}
-
-/* What a source leaves undefined, or a gap someone has to fill: weight, beside its status. */
-.offering-due {
-  font-weight: var(--weight-strong);
-}
-
-.offering-id {
-  font-family: var(--font-code);
-  font-size: var(--text-meta);
-  white-space: nowrap;
-}
-
-.offering-level abbr {
-  font-weight: var(--weight-emphasis);
-  text-decoration: none;
-}
-
-/* How a part is realised: the layer before each name, the name and its mark hanging beside it. */
-.offering-realised {
-  display: grid;
-  gap: var(--space-1);
+  gap: var(--space-1) var(--space-4);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.offering-realised > li {
+.off-rule {
   display: grid;
-  grid-template-columns: 4.5rem minmax(0, 1fr);
-  column-gap: var(--space-2);
-  align-items: baseline;
-}
-
-.offering-realised > li > .offering-by {
-  grid-column: 2;
-  margin-block-start: 0;
-}
-
-.offering-realised__layer {
-  color: var(--color-ink-2);
-  font-size: var(--text-meta);
-  font-stretch: var(--stretch-label);
-  font-weight: var(--weight-emphasis);
-  text-decoration: none;
-}
-
-.offering-realised__name {
-  overflow-wrap: break-word;
-}
-
-/*
- * On phones, how a part is realised rides in the part's cell rather than a third column.
- * The breakpoint matches the legacy Parts table's, which hides that column below 45rem.
- */
-.offering-realised-inline {
-  display: none;
-}
-
-@media (max-width: 45rem) {
-  .offering-realised-inline {
-    display: grid;
-    gap: var(--space-1);
-    margin-block-start: var(--space-2);
-  }
-}
-
-.offering-key {
-  margin: 0;
-  color: var(--color-ink-2);
-  font-size: var(--text-meta);
-}
-
-.offering-key strong {
-  color: var(--color-ink);
-  font-weight: var(--weight-emphasis);
-}
-
-/* A plain ledger list of items: an id (or a level) column, then the item. */
-.offering-items {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.offering-items > li {
-  display: grid;
-  grid-template-columns: 6rem minmax(0, 1fr);
-  gap: var(--space-1) var(--space-3);
-  align-items: baseline;
-  padding-block: var(--space-2);
-  border-block-end: var(--hair-rule);
-}
-
-.offering-items > li:last-child {
-  border-block-end: 0;
-}
-
-.offering-items p {
-  margin: 0;
-  max-inline-size: 62ch;
-}
-
-.offering-items__title {
-  font-weight: var(--weight-emphasis);
-}
-
-@media (max-width: 30rem) {
-  .offering-items > li {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-/* What the customer sees, in order. */
-.offering-steps {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-  padding-inline-start: var(--space-6);
-}
-
-.offering-steps > li {
-  padding-inline-start: var(--space-1);
-}
-
-/* The two sides of a conflict, each source over what it says. */
-.offering-sides {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-}
-
-.offering-sides dt {
-  color: var(--color-ink-2);
-  font-size: var(--text-meta);
-  font-weight: var(--weight-emphasis);
-}
-
-.offering-sides dd {
-  margin: 0;
-}
-
-.offering-changes {
-  display: grid;
-  gap: var(--space-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* A lifecycle note: a heading that opens it in place, what it holds, then its body. */
-.offering-notes {
-  display: grid;
-  min-inline-size: 0;
-}
-
-.offering-note {
-  display: grid;
-  gap: var(--space-1);
-  min-inline-size: 0;
-  padding-block: var(--space-2);
-  border-block-end: var(--hair-rule);
-}
-
-.offering-note:last-child {
-  border-block-end: 0;
-}
-
-.offering-note__head {
-  margin: 0;
-  font-size: var(--text-body);
-  font-weight: var(--weight-emphasis);
-}
-
-.offering-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-block-size: var(--target-min);
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--color-link);
-  font: inherit;
-  text-align: start;
-  cursor: pointer;
-}
-
-.offering-toggle:hover span {
-  text-decoration: underline;
-}
-
-.offering-toggle svg {
-  flex: none;
-}
-
-.offering-note__body {
-  display: grid;
+  grid-template-columns: minmax(4.5rem, auto) minmax(0, 1fr);
   gap: var(--space-3);
-  min-inline-size: 0;
-  padding-block-start: var(--space-2);
+  align-items: baseline;
 }
 
-.offering-note__body[hidden] {
-  display: none;
+.off-rule__id {
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
 }
 
-.offering-block {
+.off-rule__body {
   display: grid;
   gap: var(--space-1);
-  min-inline-size: 0;
 }
 
-.offering-block > p {
-  margin: 0;
-}
-
-.offering-block__title {
-  font-weight: var(--weight-emphasis);
-}
-
-.offering-text {
-  margin: 0;
-  max-inline-size: 62ch;
-  line-height: var(--leading-reading);
-}
-
-.offering-block .ds-lines {
-  margin: 0;
+.off-rule__source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
 }

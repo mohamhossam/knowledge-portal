@@ -22,7 +22,9 @@ const TAB_EDITS: [string, string[]][] = [
   ["", ["Edit what it is", "Edit the parts"]],
   ["?tab=orders", ["Edit what it is", "Edit the order types"]],
   ["?tab=service", ["Edit what it is", "Edit the non-functional requirements", "Edit the order tracking", "Edit the lifecycle notes"]],
-  ["?tab=governance", ["Edit what it is", "Edit the open questions", "Edit the architecture decisions", "Edit the sources and boundaries", "Edit the rules"]],
+  ["?tab=governance", ["Edit what it is", "Edit the open questions", "Edit the architecture decisions", "Edit the sources and boundaries"]],
+  // The offering's free-text rules sit under its business rules, on the Rules tab (catalogue merge, step 3).
+  ["?tab=rules", ["Edit what it is", "Edit the rules"]],
 ];
 const EDITS = [...new Set(TAB_EDITS.flatMap(([, names]) => names))];
 
@@ -79,7 +81,7 @@ describe("an offering edited one section at a time", () => {
 
   it("saves one section and sends the rest of the offering unchanged", async () => {
     const save = vi.spyOn(api, "saveDraft").mockResolvedValue(RELEASE);
-    open(true, `/architecture/offerings/${OFFERING.id}?tab=governance`);
+    open(true, `/architecture/offerings/${OFFERING.id}?tab=rules`);
     fireEvent.click(screen.getByRole("button", { name: "Edit the rules" }));
     const panel = screen.getByRole("form", { name: "Edit the rules of Business Pro Plus" });
     fireEvent.change(within(panel).getByLabelText(/^Rules/), { target: { value: "One line per site\n  \nNo resale" } });

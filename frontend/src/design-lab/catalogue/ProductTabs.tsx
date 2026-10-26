@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 
 import type { Offering } from "../../catalogue/model/model";
 import { EvidenceTag } from "./labChrome";
-import { isPriced } from "./catalogueRules";
+import { isPriced } from "../../catalogue/model/catalogueRules";
 import { firstJourneyHref, journeyHref, LAB, useLabData, useOffering } from "./labData";
 import { leadingNumber, plural, useTitle } from "./labUtil";
 import { Missing, Plans, ProductHeader } from "./productParts";

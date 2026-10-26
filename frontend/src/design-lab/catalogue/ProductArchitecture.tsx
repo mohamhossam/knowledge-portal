@@ -15,7 +15,7 @@ import { type Integration, type JourneyDef, type Lane, type Offering, systemOf }
 import { ArchitectureMap, type Foot } from "../../catalogue/landscape/ArchitectureMap";
 import { EvidenceTag } from "./labChrome";
 import { JourneyPicker } from "./JourneyPicker";
-import { coreThreshold } from "./catalogueRules";
+import { coreThreshold } from "../../catalogue/model/catalogueRules";
 import { journeyHref, useLabData, useOffering } from "./labData";
 import { plural, useTitle } from "./labUtil";
 import { allViews, links, reachOf } from "../../catalogue/landscape/posterModel";

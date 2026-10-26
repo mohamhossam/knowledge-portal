@@ -148,6 +148,22 @@
   clip-path: polygon(0 0, 100% 0, 100% 100%);
 }
 
+/* An offering's footprint, in the tiers the cards draw (the later, pine rules in architectureMap.css). */
+.lsc-key__mark--core {
+  border-color: var(--color-footprint);
+  background: var(--color-footprint);
+}
+
+.lsc-key__mark--used {
+  border-color: var(--color-footprint);
+  box-shadow: 0 0 0 1px var(--color-footprint);
+}
+
+.lsc-key__mark--carries {
+  border-style: dashed;
+  border-color: var(--color-footprint);
+}
+
 /* The systems in no layer: listed, never left out. */
 .lsc-unplaced {
   padding-block-start: var(--space-2);

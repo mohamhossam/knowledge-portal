@@ -9,7 +9,7 @@ import type { Component, Offering } from "../../catalogue/model/model";
 import { EvidenceTag } from "./labChrome";
 import { LabIcon } from "./labIcon";
 import { Missing, ProductHeader } from "./productParts";
-import { hubOf } from "./catalogueRules";
+import { hubOf } from "../../catalogue/model/catalogueRules";
 import { firstJourneyHref, LAB, useLabData, useOffering } from "./labData";
 import { leadingNumber, listOf, plural, useTitle } from "./labUtil";
 import { CAPABILITIES, DEVICE_ICON } from "./capabilities";

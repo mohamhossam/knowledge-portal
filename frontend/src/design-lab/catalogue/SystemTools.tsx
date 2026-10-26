@@ -9,7 +9,7 @@ import { type FormEvent, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { type Catalogue, systemOf } from "../../catalogue/model/model";
-import { coreThreshold } from "./catalogueRules";
+import { coreThreshold } from "../../catalogue/model/catalogueRules";
 import { journeyHref, LAB } from "./labData";
 import { plural } from "./labUtil";
 import { allViews, partnersOf, reachOf, type SystemLink } from "../../catalogue/landscape/posterModel";

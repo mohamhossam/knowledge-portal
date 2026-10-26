@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Offering } from "../../catalogue/model/model";
+import type { Offering } from "./model";
 import { channelKindName, contractPeriods, coreThreshold, eligibilityGroup, hubOf, isPriced } from "./catalogueRules";
 
 const offering = (parts: Partial<Offering>): Offering => ({ components: [], eligibility: [], plans: [], ...parts }) as unknown as Offering;
