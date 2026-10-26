@@ -10,6 +10,7 @@ import { type ReactNode, useState } from "react";
 import type { Offering } from "../../api/client";
 import { FilterStrip, Lines, Section, Status } from "../../design/components";
 import { SOURCE_TONE, SOURCE_WORD } from "../ontology";
+import { SourceName } from "../provenance/Provenance";
 
 const ALL = "all";
 const OTHER = "other";
@@ -56,7 +57,7 @@ export function OfferingRules({ offering, freeText }: { offering: Offering; free
                     <span dir="auto">{rule.statement}</span>
                     <span className="off-rule__source">
                       {rule.confidence ? <Status tone={SOURCE_TONE[rule.confidence]}>{SOURCE_WORD[rule.confidence]}</Status> : <span className="cat-quiet">Not said</span>}
-                      {rule.source && <span className="cat-detail" dir="auto">{rule.source}</span>}
+                      {rule.source && <span className="cat-detail" dir="auto"><SourceName text={rule.source} /></span>}
                     </span>
                   </span>
                 </li>

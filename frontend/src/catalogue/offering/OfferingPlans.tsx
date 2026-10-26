@@ -10,6 +10,7 @@ import type { Offering } from "../../api/client";
 import { type Column, DataTable, Section, Status } from "../../design/components";
 import { count } from "../../home/format";
 import { SOURCE_TONE, SOURCE_WORD } from "../ontology";
+import { SourceName } from "../provenance/Provenance";
 
 type Plan = Offering["plans"][number];
 type Row = { name: string; values: (string | undefined)[] };
@@ -75,7 +76,7 @@ export function OfferingPlans({ offering }: { offering: Offering }) {
               <li key={plan.name}>
                 <bdi>{short(plan.name)}</bdi>{" "}
                 {plan.confidence ? <Status tone={SOURCE_TONE[plan.confidence]}>{SOURCE_WORD[plan.confidence]}</Status> : <span className="cat-quiet">Not said</span>}
-                {plan.source && <span className="cat-detail" dir="auto">{plan.source}</span>}
+                {plan.source && <span className="cat-detail" dir="auto"><SourceName text={plan.source} /></span>}
               </li>
             ))}
           </ul>

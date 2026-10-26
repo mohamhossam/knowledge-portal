@@ -14,6 +14,7 @@ import { laneKindName, laneName, MODE_WORDS, operationName, roleName, styleName,
 import { GEOMETRY, layoutFlow, type Placed } from "../../model/flowLayout";
 import { type ActivityStep, type Catalogue, type Evidence, type JourneyView, type Lane, laneKey, systemOf } from "../../model/model";
 import { SOURCE_TONE, SOURCE_WORD } from "../../ontology";
+import { SourceById } from "../../provenance/Provenance";
 
 /** Each TAM layer's tint for its lanes; the integration layer is the selection tint. */
 const LAYER: Record<string, string> = {
@@ -61,11 +62,17 @@ function wrap(text: string, width: number, lines: number): string[] {
 
 /** Where a fact comes from: how sure its source is, and which source and place, when said. */
 export function EvidenceLine({ evidence }: { evidence: Evidence }) {
-  const where = [evidence.source, evidence.where, evidence.note].filter(Boolean).join(" · ");
+  const where = [evidence.where, evidence.note].filter(Boolean).join(" · ");
   return (
     <p className="jf-evidence">
       <Status tone={SOURCE_TONE[evidence.status]}>{SOURCE_WORD[evidence.status]}</Status>
-      {where && <span className="cat-detail" dir="auto">{where}</span>}
+      {(evidence.source || where) && (
+        <span className="cat-detail" dir="auto">
+          {evidence.source && <SourceById id={evidence.source} />}
+          {evidence.source && where ? " · " : ""}
+          {where}
+        </span>
+      )}
     </p>
   );
 }

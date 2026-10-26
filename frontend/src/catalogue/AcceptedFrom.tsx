@@ -1,6 +1,7 @@
 import { Lines } from "../design/components";
 import { formatDay } from "../home/format";
 import type { Accepted } from "./accepted";
+import { CitedPassage } from "./provenance/Provenance";
 import { useCatalogueContext } from "./useCatalogue";
 
 type Citation = Accepted["citations"][number];
@@ -26,6 +27,9 @@ function Cited({ entry }: { entry: Accepted }) {
       {cited.map((citation, index) => (
         <li key={index}>
           <bdi>{place(citation)}</bdi>: “<bdi>{citation.quote}</bdi>”
+          {citation.document_version_id && (
+            <CitedPassage versionId={citation.document_version_id} location={citation.location} quote={citation.quote} title={citation.document ?? "The document"} />
+          )}
         </li>
       ))}
     </Lines>

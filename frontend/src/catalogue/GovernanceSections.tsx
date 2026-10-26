@@ -6,6 +6,7 @@ import type { KnowledgeSource, Offering, SourceConflict } from "../api/client";
 import { type Column, DataTable, Lines, Section, Status, Suggested } from "../design/components";
 import { CONFIDENCE } from "./catalogue";
 import { LEVEL, levelTag, questionOf, useSourceText } from "./governance";
+import { SourceName } from "./provenance/Provenance";
 
 type Sourced = { confidence?: string | null; source?: string | null };
 
@@ -28,7 +29,7 @@ export function Provenance({ item }: { item: Sourced }) {
   return (
     <span className="offering-by">
       <ConfidenceMark confidence={item.confidence} />
-      {source && <span dir="auto">{source}</span>}
+      {source && <span dir="auto"><SourceName text={item.source} /></span>}
     </span>
   );
 }

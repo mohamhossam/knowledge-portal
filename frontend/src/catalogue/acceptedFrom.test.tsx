@@ -72,11 +72,12 @@ describe("AcceptedFrom (ADR-0120)", () => {
     };
     shown(<AcceptedFrom accepted={[read]} />);
     const cited = within(screen.getByRole("list", { name: "Where it was read" })).getAllByRole("listitem");
-    expect(cited.map((item) => item.textContent)).toEqual([
-      "Integration design, §4.1 › Table 2, row 3: “CWOM tracks orders”",
-      // Read from the catalogue itself or a change request: no document to name.
-      "Catalogue › 3 activities: “Order Handling”",
-    ]);
+    expect(cited[0]).toHaveTextContent(/^Integration design, §4.1 › Table 2, row 3: “CWOM tracks orders”/);
+    // A passage read from a document opens in place (catalogue merge, step 6).
+    expect(within(cited[0]!).getByRole("button", { name: "Show the passage in Integration design, §4.1 › Table 2, row 3" })).toHaveAttribute("aria-expanded", "false");
+    // Read from the catalogue itself or a change request: no document to name, nothing to open.
+    expect(cited[1]).toHaveTextContent("Catalogue › 3 activities: “Order Handling”");
+    expect(within(cited[1]!).queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("names where the last one was read in the heading's one line", () => {
