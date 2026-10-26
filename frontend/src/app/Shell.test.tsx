@@ -101,6 +101,15 @@ describe("the shell", () => {
     }
   });
 
+  it("opens one catalogue from Catalogue, and names the redesign lab apart from it", async () => {
+    open("/");
+    await screen.findByRole("heading", { level: 1, name: "To do" });
+    const areas = screen.getByRole("navigation", { name: "Areas" });
+    expect(within(areas).getByRole("link", { name: "Catalogue" })).toHaveAttribute("href", "/architecture");
+    // Tests run as a development build, where the lab is built in.
+    expect(within(areas).getByRole("link", { name: "Catalogue lab" })).toHaveAttribute("href", "/design-lab/catalogue");
+  });
+
   it("ranks the failed read first on To do, and the sidebar counts the same entries", async () => {
     open("/");
     const attention = await screen.findByRole("region", { name: /Needs attention/ });
