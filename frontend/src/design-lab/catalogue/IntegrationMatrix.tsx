@@ -13,7 +13,7 @@ import { Fragment, useMemo, useState } from "react";
 
 import { type Catalogue, type Integration, systemOf } from "../../catalogue/model/model";
 import { plural } from "./labUtil";
-import { layerRank } from "./posterModel";
+import { layerRank } from "../../catalogue/landscape/posterModel";
 import { NOT_STATED, operationName } from "./words";
 
 /** One slate ramp, light to dark, for 1, 2, 3–4 and 5+ interfaces. */

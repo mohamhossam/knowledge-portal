@@ -18,7 +18,7 @@ import { AreaTabs } from "./labChrome";
 import { IntegrationMatrix } from "./IntegrationMatrix";
 import { useLabData } from "./labData";
 import { plural, useTitle } from "./labUtil";
-import { useLinkCounts, useSystemParam } from "./systemHooks";
+import { useLinkCounts, useSystemParam } from "../../catalogue/landscape/systemHooks";
 import { FindSystem, SystemDrawer } from "./SystemTools";
 
 export function SystemsPage() {

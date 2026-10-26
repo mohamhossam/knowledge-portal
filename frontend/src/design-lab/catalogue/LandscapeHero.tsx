@@ -13,11 +13,11 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { AreaTabs } from "./labChrome";
-import { ArchitectureMap, LayerIcon } from "./ArchitectureMap";
+import { ArchitectureMap, LayerIcon } from "../../catalogue/landscape/ArchitectureMap";
 import { useLabData } from "./labData";
 import { useDismissableDetails, useTitle } from "./labUtil";
-import { layerRank } from "./posterModel";
-import { useLinkCounts, useSystemParam } from "./systemHooks";
+import { layerRank } from "../../catalogue/landscape/posterModel";
+import { useLinkCounts, useSystemParam } from "../../catalogue/landscape/systemHooks";
 import { FindSystem, SystemDrawer } from "./SystemTools";
 import { catalogueName } from "./words";
 

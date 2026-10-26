@@ -27,6 +27,19 @@ describe("a catalogue version as the views read it", () => {
     expect(data.systems.find((system) => system.id === "bscs")?.proposedMove?.from).toBe("Resource");
   });
 
+  it("places a system set deeper than a group in its top domain, in the group under it, and leaves an unplaced one unplaced", () => {
+    const nested = asRelease(release);
+    nested.landscape_domains = [
+      ...(nested.landscape_domains ?? []),
+      { id: "resource.inventory.network", name: "Network inventory", parent_id: "resource.inventory" } as never,
+    ];
+    const [placed, loose] = nested.systems;
+    nested.systems = [{ ...placed!, landscape_domain_id: "resource.inventory.network" }, { ...loose!, landscape_domain_id: null }, ...nested.systems.slice(2)];
+    const read = fromRelease(nested);
+    expect([read.systems[0]?.domain, read.systems[0]?.group]).toEqual(["resource", "resource.inventory"]);
+    expect([read.systems[1]?.domain, read.systems[1]?.group]).toEqual(["", ""]);
+  });
+
   it("reads evidence from a fact's confidence and source line, as the service read the line", () => {
     // What the service sends for these lines (citations.source_reference).
     const lines = new Map([

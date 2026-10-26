@@ -10,7 +10,7 @@
 import type { Catalogue } from "../../catalogue/model/model";
 import { PART_KINDS, type Part, systemParts } from "./capabilities";
 import { plural } from "./labUtil";
-import { layerRank } from "./posterModel";
+import { layerRank } from "../../catalogue/landscape/posterModel";
 import { SystemMonogram } from "./SystemMonogram";
 
 export function CapabilityMatrix({ data, selected, onSelect }: { data: Catalogue; selected: string | null; onSelect: (id: string | null) => void }) {

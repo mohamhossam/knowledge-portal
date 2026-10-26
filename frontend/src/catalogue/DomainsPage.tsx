@@ -1,10 +1,12 @@
+import { Network, Table2 } from "lucide-react";
 import { Fragment, type ReactNode, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import type { CatalogueSystem } from "../api/client";
 import { Button, type Column, DataTable, Section } from "../design/components";
 import { type DomainRow, domainTree } from "./catalogue";
 import { DomainsEdit } from "./DraftEdits";
+import { LandscapePoster } from "./landscape/LandscapePoster";
 import { useCatalogueContext } from "./useCatalogue";
 
 type Domain = { id: string; name: string; description?: string | null; parent_id?: string | null };
@@ -20,10 +22,22 @@ function DomainName({ row }: { row: DomainRow<Domain> }) {
   );
 }
 
-/** The two domain trees: where systems sit, and what they do by business area. */
+/**
+ * The two domain trees: where systems sit, drawn as the layered map (or as a table,
+ * where it is edited), and what they do by business area.
+ */
 export function DomainsPage() {
   const { book, base, editable } = useCatalogueContext();
   const [editing, setEditing] = useState<"landscape" | "areas" | null>(null);
+  const [params, setParams] = useSearchParams();
+  // The table is where the landscape is edited, so editing shows it.
+  const asTable = params.get("view") === "table" || editing === "landscape";
+  const switchView = () => {
+    const next = new URLSearchParams(params);
+    if (asTable) next.delete("view");
+    else next.set("view", "table");
+    setParams(next, { replace: true });
+  };
   const editButton = (tree: "landscape" | "areas", label: string) =>
     editable && editing !== tree ? <Button onClick={() => setEditing(tree)}>{label}</Button> : undefined;
   const landscape = useMemo(() => domainTree<Domain>(book.release.landscape_domains ?? []), [book]);
@@ -83,10 +97,26 @@ export function DomainsPage() {
 
   return (
     <div className="cat-stack">
-      <Section title="Where systems sit" actions={editButton("landscape", "Edit where systems sit")}>
-        <p className="cat-lead">The landscape: each domain with the systems placed directly in it.</p>
+      <Section
+        title="Where systems sit"
+        actions={
+          <>
+            {editing !== "landscape" && (
+              <Button variant="quiet" icon={asTable ? <Network size={16} /> : <Table2 size={16} />} onClick={switchView}>
+                {asTable ? "Show as drawing" : "Show as table"}
+              </Button>
+            )}
+            {editButton("landscape", "Edit where systems sit")}
+          </>
+        }
+      >
+        <p className="cat-lead">
+          {asTable ? "The landscape: each domain with the systems placed directly in it." : "The landscape by layer: pick a system to see what it is linked to."}
+        </p>
         {editing === "landscape" ? (
           <DomainsEdit tree="landscape" onDone={() => setEditing(null)} />
+        ) : !asTable ? (
+          <LandscapePoster release={book.release} base={base} />
         ) : (
           <DataTable
             caption="Landscape domains and their systems"

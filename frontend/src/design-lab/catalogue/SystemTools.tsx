@@ -12,7 +12,7 @@ import { type Catalogue, systemOf } from "../../catalogue/model/model";
 import { coreThreshold } from "./catalogueRules";
 import { journeyHref, LAB } from "./labData";
 import { plural } from "./labUtil";
-import { allViews, partnersOf, reachOf, type SystemLink } from "./posterModel";
+import { allViews, partnersOf, reachOf, type SystemLink } from "../../catalogue/landscape/posterModel";
 
 /** "Find a system": an exact name picks it as you type; Enter takes the first name that starts with, then contains, the text. */
 export function FindSystem({ data, onFound }: { data: Catalogue; onFound: (id: string) => void }) {

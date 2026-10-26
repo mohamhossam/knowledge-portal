@@ -177,10 +177,19 @@ function domainsOf(landscape: NonNullable<Release["landscape_domains"]>): Catalo
 /** The systems, each placed in its domain and group. */
 function systemsOf(release: Release, evidence: EvidenceOf): Catalogue["systems"] {
   const landscape = release.landscape_domains ?? [];
+  const byId = new Map(landscape.map((item) => [item.id, item]));
+  // A system placed deeper than a group sits in its top domain, in the group under it: the map draws two levels.
   const place = (id: string | null | undefined) => {
-    const node = landscape.find((item) => item.id === id);
+    let node = id ? byId.get(id) : undefined;
     if (!node) return { domain: "", group: "" };
-    return node.parent_id ? { domain: node.parent_id, group: node.id } : { domain: node.id, group: "" };
+    let group: typeof node | undefined;
+    for (let hops = 0; node.parent_id && hops < 16; hops++) {
+      const parent = byId.get(node.parent_id);
+      if (!parent) break;
+      group = node;
+      node = parent;
+    }
+    return { domain: node.id, group: group?.id ?? "" };
   };
   return release.systems.map((system) => ({
     id: system.id,

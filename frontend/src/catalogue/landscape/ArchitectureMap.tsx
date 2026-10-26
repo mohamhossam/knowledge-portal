@@ -15,10 +15,13 @@
  */
 import { type CSSProperties, type KeyboardEvent, type ReactNode, memo, useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import { type Catalogue, type Integration, type StepRole, type System, systemOf, type TamDomain } from "../../catalogue/model/model";
-import { monogram, plural, shortFunction } from "./labUtil";
+import "./architectureMap.css";
+
+import { roleName } from "../../design-lab/catalogue/words";
+import { count as plural } from "../../home/format";
+import { type Catalogue, type Integration, type StepRole, type System, systemOf, type TamDomain } from "../model/model";
+import { monogram, shortFunction } from "./names";
 import { busOf, mapRows, sideOf, type SystemLink } from "./posterModel";
-import { roleName } from "./words";
 
 /** Which layers share a row, top to bottom; the integration layer runs between them as a bus. */
 

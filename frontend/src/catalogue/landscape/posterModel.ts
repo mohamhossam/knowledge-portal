@@ -3,9 +3,9 @@
  * channel, each integration once, the system-to-system links and how each
  * system takes part in the calls.
  */
-import { journeyView } from "../../catalogue/model/adapter";
-import { WIDE_LAYER_GROUPS } from "../../catalogue/model/conventions";
-import { type Catalogue, type Integration, type JourneyView, laneKey, systemOf, type TamDomain } from "../../catalogue/model/model";
+import { journeyView } from "../model/adapter";
+import { WIDE_LAYER_GROUPS } from "../model/conventions";
+import { type Catalogue, type Integration, type JourneyView, laneKey, systemOf, type TamDomain } from "../model/model";
 
 /** Every journey seen through every channel it serves. */
 export function allViews(data: Catalogue): JourneyView[] {

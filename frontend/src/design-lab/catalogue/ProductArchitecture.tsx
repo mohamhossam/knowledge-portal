@@ -12,16 +12,16 @@ import { Link, useSearchParams } from "react-router-dom";
 import { journeyView } from "../../catalogue/model/adapter";
 import { impactOf } from "../../catalogue/model/impact";
 import { type Integration, type JourneyDef, type Lane, type Offering, systemOf } from "../../catalogue/model/model";
-import { ArchitectureMap, type Foot } from "./ArchitectureMap";
+import { ArchitectureMap, type Foot } from "../../catalogue/landscape/ArchitectureMap";
 import { EvidenceTag } from "./labChrome";
 import { JourneyPicker } from "./JourneyPicker";
 import { coreThreshold } from "./catalogueRules";
 import { journeyHref, useLabData, useOffering } from "./labData";
 import { plural, useTitle } from "./labUtil";
-import { allViews, links, reachOf } from "./posterModel";
+import { allViews, links, reachOf } from "../../catalogue/landscape/posterModel";
 import { Missing, ProductHeader } from "./productParts";
 import { catalogueName, channelMissingText, laneName, MODE_WORDS, NOT_STATED, operationName, roleName, styleName, systemName } from "./words";
-import { useSystemParam } from "./systemHooks";
+import { useSystemParam } from "../../catalogue/landscape/systemHooks";
 
 /** The systems a call reaches: its ends that are systems, and the integration layer it goes through. */
 const systemsOf = (call: Integration) => [systemOf(call.from), systemOf(call.to), call.via];

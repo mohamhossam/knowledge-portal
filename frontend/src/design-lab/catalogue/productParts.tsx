@@ -12,7 +12,7 @@ import { AreaTabs, EvidenceTag, PathBar } from "./labChrome";
 import { LabIcon } from "./labIcon";
 import { firstJourneyHref, LAB, useLabData } from "./labData";
 import { leadingNumber, plural } from "./labUtil";
-import { allViews } from "./posterModel";
+import { allViews } from "../../catalogue/landscape/posterModel";
 import { catalogueName, gapSource } from "./words";
 
 export function Missing({ what }: { what: string }) {

@@ -531,87 +531,6 @@
   .cl-jpick-panel { grid-template-columns: minmax(0, 1fr); max-height: 70vh; overflow: auto; }
 }
 
-/* ---------- Architecture map: TAM layers, groups and system cards ---------- */
-.am { position: relative; isolation: isolate; display: flex; flex-direction: column; gap: 12px; padding-left: 30px; }
-.am-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
-.am-row--split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.am-layer { --am-tint: var(--cl-sand); --am-ink: var(--cl-ink-2); --am-edge: var(--cl-rule); min-width: 0; background: var(--am-tint); border: 1px solid color-mix(in srgb, var(--am-edge) 45%, transparent); border-radius: 8px; padding: 14px 16px 16px; box-shadow: inset 0 3px 0 var(--am-edge); }
-.am-layer--market-sales { --am-tint: var(--cl-market); --am-ink: var(--cl-market-ink); --am-edge: var(--cl-market-edge); }
-.am-layer--product { --am-tint: var(--cl-product); --am-ink: var(--cl-product-ink); --am-edge: var(--cl-product-edge); }
-.am-layer--customer { --am-tint: var(--cl-customer); --am-ink: var(--cl-customer-ink); --am-edge: var(--cl-customer-edge); }
-.am-layer--service { --am-tint: var(--cl-service); --am-ink: var(--cl-service-ink); --am-edge: var(--cl-service-edge); }
-.am-layer--resource { --am-tint: var(--cl-resource); --am-ink: var(--cl-resource-ink); --am-edge: var(--cl-resource-edge); }
-.am-layer--engaged-party { --am-tint: var(--cl-party); --am-ink: var(--cl-party-ink); --am-edge: var(--cl-party-edge); }
-.am-layer--enterprise { --am-tint: var(--cl-enterprise); --am-ink: var(--cl-enterprise-ink); --am-edge: var(--cl-enterprise-edge); }
-.am-layer.is-dim { background: var(--cl-paper); box-shadow: inset 0 3px 0 var(--cl-hairline); border-color: var(--cl-hairline); }
-.am-layer-head { display: flex; flex-wrap: wrap; min-height: 24px; gap: 4px 10px; align-items: center; margin-bottom: 12px; }
-.am-layer-no { font-weight: 700; font-stretch: 80%; letter-spacing: 0.04em; color: var(--am-ink); padding: 1px 6px; border-radius: 4px; background: color-mix(in srgb, var(--am-edge) 35%, transparent); font-size: 0.6875rem; }
-.am-layer-name { font-weight: 700; font-stretch: 90%; color: var(--am-ink); white-space: nowrap; font-size: 1rem; padding-right: 4px; }
-.am-layer-scope { order: 3; flex: 1 0 100%; min-width: 0; font-size: 0.8125rem; line-height: 1.4; color: var(--cl-ink-2); padding-left: 40px; }
-.am-layer-count { margin-left: auto; font-weight: 600; color: var(--am-ink); white-space: nowrap; padding: 2px 10px; border-radius: 999px; background: var(--cl-page); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--am-edge) 60%, transparent); font-size: 0.75rem; }
-.am-layer-head .am-meter { margin-left: auto; }
-.am-groups { display: flex; flex-wrap: wrap; gap: 12px 16px; }
-.am-group { flex: var(--am-weight, 1) 1 0; min-width: 136px; display: flex; flex-direction: column; gap: 6px; }
-.am-group-name { padding-bottom: 4px; border-bottom: 1px solid var(--am-edge); font-size: 0.75rem; font-weight: 600; line-height: 1.3; color: var(--am-ink); display: flex; align-items: baseline; justify-content: space-between; gap: 6px; border-bottom-color: color-mix(in srgb, var(--am-edge) 70%, transparent); }
-.am-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 6px; container-type: inline-size; }
-.am-card { position: relative; z-index: 2; min-width: 0; min-height: 48px; flex-direction: column; justify-content: center; border: 1px solid var(--cl-hairline); background: var(--cl-page); color: var(--cl-ink); text-align: left; cursor: pointer; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; padding: 7px 10px 7px 8px; border-radius: 6px; box-shadow: none; transition: transform 150ms ease-out; }
-.am-card-name { font-size: 0.8125rem; font-weight: 650; line-height: 1.2; overflow-wrap: break-word; hyphens: auto; }
-.am-card-fn { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.75rem; line-height: 1.3; color: var(--cl-ink-2); }
-.am-card:hover { border-color: var(--cl-maroon); transform: translateY(-1px); }
-.am-card:active { background: var(--cl-sand); }
-.am-card.is-external { border-style: dashed; border-color: var(--cl-rule-strong); }
-.am-flag { position: absolute; right: 0; top: 0; width: 10px; height: 10px; background: var(--cl-ochre); clip-path: polygon(0 0, 100% 0, 100% 100%); border-top-right-radius: 3px; }
-.am-tag { position: absolute; right: 6px; top: 5px; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--cl-maroon); }
-/* Selection: the picked system in maroon, its partners outlined, the rest quiet but readable. */
-.am-card[aria-pressed="true"] { background: var(--cl-maroon); border-color: var(--cl-maroon); box-shadow: none; color: var(--cl-on-maroon); }
-.am-card[aria-pressed="true"] .am-card-fn { color: var(--cl-on-maroon-quiet); }
-.am-card.is-partner { border-color: var(--cl-maroon); box-shadow: 0 0 0 1px var(--cl-maroon); }
-.am-card.is-quiet { background: transparent; border-color: var(--am-edge); box-shadow: none; color: var(--cl-ink-3); }
-.am-card.is-quiet .am-card-fn { color: var(--cl-ink-3); }
-.am-card.is-quiet:hover { border-color: var(--cl-maroon); color: var(--cl-ink); }
-/* Product footprint: three calm tiers in the maroon family. */
-.am-card.is-core { background: var(--cl-maroon-mist); border-color: var(--cl-m3); box-shadow: 0 0 0 1px var(--cl-m3); }
-.am-card.is-core .am-card-fn, .am-card.is-used .am-card-fn { color: var(--cl-maroon-hover); font-weight: 600; }
-.am-card.is-used { border-color: var(--cl-m2); box-shadow: 0 0 0 1px var(--cl-m2); }
-.am-card.is-carries { border-style: dashed; border-color: var(--cl-m3); box-shadow: none; }
-.am-card.is-lit { background: var(--cl-maroon-mist); border-color: var(--cl-m3); box-shadow: none; }
-.am-card.is-current:focus-visible { box-shadow: 0 0 0 2px var(--cl-focus), 0 0 0 5px var(--cl-page); outline-offset: 5px; }
-/* The integration layer: the bus every layer talks through. */
-.am-bus { display: grid; grid-template-columns: minmax(180px, 260px) minmax(0, 1fr); align-items: center; gap: 8px 24px; background: var(--cl-spine); --am-ink: var(--cl-maroon); --am-tint: var(--cl-spine); --am-edge: var(--cl-m2); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--cl-m1); box-shadow: inset 0 3px 0 var(--cl-m2); }
-.am-bus.is-dim { background: var(--cl-paper); }
-.am-bus-head { flex-direction: column; min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 2px 10px; }
-.am-bus-head .am-layer-name { color: var(--cl-maroon); }
-.am-bus-head .am-layer-scope { white-space: normal; grid-column: 1 / -1; padding-left: 0; }
-.am-bus-line { position: relative; display: flex; justify-content: space-evenly; gap: 16px; padding: 4px 0; }
-.am-bus-line::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; z-index: 1; height: 2px; border-radius: 1px; background: var(--cl-maroon); }
-.am-bus-line .am-card { width: min(220px, 40%); }
-.am-bus-line .am-card.is-quiet { background: var(--cl-spine); }
-.am-bus.is-dim .am-bus-line .am-card.is-quiet { background: var(--cl-paper); }
-/* Links: soft curves under the cards, drawn on request. */
-.am-links { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
-.am-line path { fill: none; stroke-linecap: round; }
-.am-line .halo { stroke: var(--cl-page); stroke-width: 5; opacity: 0.7; }
-.am-line--all .ink { stroke: var(--cl-ink-3); stroke-width: 1; opacity: 0.5; }
-.am-line--all .halo { stroke-width: 3; opacity: 0.4; }
-.am-line--mine .ink { stroke: var(--cl-maroon); stroke-width: 1.75; animation: am-draw 200ms ease-out; }
-.am-line--past .ink { stroke: var(--cl-m3); stroke-width: 1.5; }
-.am-line--now .ink { stroke: var(--cl-red); stroke-width: 2.5; animation: am-draw 200ms ease-out; }
-@keyframes am-draw { from { opacity: 0; } }
-.am-callno circle { fill: var(--cl-red); stroke: var(--cl-page); stroke-width: 2; }
-.am-callno text { fill: var(--cl-on-red); font-size: 12px; font-weight: 700; }
-/* How much of a layer the product or journey uses: one dot per system. */
-.am-meter { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
-.am-meter > span { display: inline-flex; gap: 3px; }
-.am-meter i { width: 7px; height: 7px; border-radius: 50%; background: var(--cl-page); box-shadow: inset 0 0 0 1px var(--am-edge, var(--cl-rule)); }
-.am-meter i.on { background: var(--cl-maroon); box-shadow: none; }
-.am-meter b { font-size: 0.8125rem; font-weight: 600; color: var(--cl-maroon); }
-@media (max-width: 960px) {
-  .am-row--split { grid-template-columns: minmax(0, 1fr); }
-  .am-bus { grid-template-columns: minmax(0, 1fr); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .am-line .ink { animation: none; }
-}
 
 /* ---------- Landscape side panel: layer navigator and linked systems ---------- */
 .cl-stats--3 { grid-template-columns: repeat(3, 1fr); }
@@ -704,61 +623,10 @@
 }
 
 
-/* ---------- Layers view: spine, layer badges, monograms, a maroon bus ---------- */
-/* The integration spine: one rule down the left joins every layer to the bus. */
-.am::before { content: ""; position: absolute; left: 11px; top: 26px; bottom: 26px; width: 2px; border-radius: 1px; background: var(--cl-m2); }
-.am-layer, .am-bus { position: relative; }
-.am > .am-row > .am-layer:first-child::before, .am-bus::before { content: ""; position: absolute; left: -25px; top: 20px; width: 10px; height: 10px; border-radius: 50%; background: var(--cl-page); box-shadow: inset 0 0 0 2px var(--am-ink, var(--cl-maroon)); }
-.am > .am-row > .am-layer:first-child::after, .am-bus::after { content: ""; position: absolute; left: -15px; top: 24px; width: 15px; height: 2px; background: var(--cl-m2); }
-.am-bus::before { top: calc(50% - 6px); width: 12px; height: 12px; left: -26px; background: var(--cl-spine); box-shadow: inset 0 0 0 2px var(--cl-maroon), 0 0 0 3px var(--cl-page); }
-.am-bus::after { top: calc(50% - 1px); }
 
-/* Layer blocks: the tint, a soft frame in the layer's own edge, a badge with its icon. */
-.am-icon { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; background: var(--cl-page); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--am-edge) 70%, transparent); color: var(--am-ink); }
-.am-icon svg { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
-.am-layer.is-dim .am-icon { color: var(--cl-ink-3); box-shadow: inset 0 0 0 1px var(--cl-hairline); }
-.am-group-name small { font-size: 0.6875rem; font-weight: 700; color: var(--am-ink); padding: 0 6px; border-radius: 999px; background: color-mix(in srgb, var(--am-edge) 30%, transparent); }
 
-/* Cards: a monogram tile in the layer's colours beside the name and purpose. */
-.am-card-text { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.am-mono { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; background: var(--am-tint, var(--cl-sand)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--am-edge, var(--cl-rule)) 80%, transparent); color: var(--am-ink, var(--cl-ink)); font-size: 0.6875rem; font-weight: 800; font-stretch: 80%; letter-spacing: 0.02em; }
-.am-card.is-external .am-mono { background: var(--cl-page); box-shadow: inset 0 0 0 1px var(--cl-rule-strong); }
-.am-card[aria-pressed="true"] .am-mono { background: var(--cl-maroon-hover); box-shadow: none; color: var(--cl-on-maroon); }
-.am-card.is-partner .am-mono { background: var(--cl-maroon-mist); color: var(--cl-maroon); box-shadow: inset 0 0 0 1px var(--cl-m2); }
-.am-card.is-quiet .am-mono { background: transparent; box-shadow: inset 0 0 0 1px var(--cl-hairline); color: var(--cl-ink-3); }
-/* Footprint and journey tiers carry into the monogram. */
-.am-card.is-core .am-mono, .am-card.is-lit .am-mono { background: var(--cl-maroon); box-shadow: none; color: var(--cl-on-maroon); }
-.am-card.is-used .am-mono { background: var(--cl-maroon-mist); color: var(--cl-maroon); box-shadow: inset 0 0 0 1px var(--cl-m2); }
-.am-card.is-carries .am-mono { background: var(--cl-page); color: var(--cl-maroon); box-shadow: inset 0 0 0 1px var(--cl-m3); }
 
-/* The integration layer: the one solid maroon band, the bus every layer hangs from. */
-.am-bus:not(.is-dim) { background: var(--cl-spine); }
-.am-bus .am-icon { color: var(--cl-maroon); box-shadow: inset 0 0 0 1px var(--cl-m2); }
-.am-bus:not(.is-dim) .am-card.is-quiet { background: var(--cl-spine); }
-.am-bus .am-card { box-shadow: none; }
-.am-bus .am-mono { --am-tint: var(--cl-page); --am-ink: var(--cl-maroon); --am-edge: var(--cl-m2); }
-.am-bus.is-dim .am-card.is-quiet { background: var(--cl-paper); }
 
-@media (max-width: 960px) {
-  .am { padding-left: 0; }
-  .am::before, .am > .am-row > .am-layer:first-child::before, .am > .am-row > .am-layer:first-child::after, .am-bus::before, .am-bus::after { display: none; }
-  .am-layer-scope { padding-left: 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .am-card { transition: none; }
-  .am-card:hover { transform: none; }
-}
-.am-mono--4 { font-size: 0.625rem; letter-spacing: 0; }
-.am-mono--2 { font-size: 0.75rem; }
-/* Headings sit above the link curves, on their own tint, so a line never runs through words. */
-.am-layer-head > span, .am-group-name { position: relative; z-index: 2; }
-.am-layer-name, .am-layer-scope, .am-group-name { background: var(--am-tint); }
-.am-layer.is-dim .am-layer-name, .am-layer.is-dim .am-layer-scope, .am-layer.is-dim .am-group-name { background: var(--cl-paper); }
-.am-bus-head > span { position: relative; z-index: 2; }
-/* In a narrow group the monogram gives way to the name. */
-@container (max-width: 196px) { .am-card { grid-template-columns: minmax(0, 1fr); padding-left: 10px; } .am-mono { display: none; } }
-.am-bus:not(.is-dim) .am-bus-head > span:not(.am-icon) { background: var(--cl-spine); }
-.am-bus.is-dim .am-bus-head > span:not(.am-icon) { background: var(--cl-paper); }
 .cl-route-table thead tr:last-child th:first-child { width: 40%; }
 @media (max-width: 760px) {
   /* On a phone only the masthead stays pinned; two sticky tiers would cover too much of the screen. */
@@ -966,50 +834,6 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .jx-panel h2 { font-size: 1.125rem; }
 .jx-facts dd { font-size: 1.125rem; }
 
-/* ---------- Landscape for presentation: one screen, flat tints, no dark fills ---------- */
-/* Compact map: four bands with the side layers in a column, one-line cards. */
-.am--compact { padding-left: 0; gap: 8px; }
-.am--compact::before, .am--compact .am-layer::before, .am--compact .am-layer::after, .am--compact .am-bus::before, .am--compact .am-bus::after { display: none; }
-.am-poster { display: grid; grid-template-columns: minmax(0, 1fr) 208px; gap: 8px; }
-.am-stack { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.am-side { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.am-side .am-layer { flex: 1 1 auto; }
-.am-side .am-cards { grid-template-columns: minmax(0, 1fr); }
-.am--compact .am-layer { border-color: color-mix(in srgb, var(--am-edge) 35%, transparent); border: 0; border-radius: 12px; box-shadow: none; background: var(--am-tint); padding: clamp(8px, 1.3vh, 12px) 14px clamp(10px, 1.6vh, 14px); }
-.am--compact .am-layer.is-dim { background: var(--cl-paper); }
-.am--compact .am-layer-head { min-height: 0; gap: 8px; margin-bottom: 6px; }
-.am--compact .am-layer-scope { display: none; }
-.am--compact .am-icon { border-radius: 6px; width: auto; height: auto; background: none; box-shadow: none; color: var(--am-ink); }
-.am--compact .am-icon svg { width: 15px; height: 15px; }
-.am--compact .am-layer-name { background: none; font-size: 0.875rem; }
-.am--compact .am-layer-no { font-size: 0.625rem; }
-.am--compact .am-layer-count { padding: 0 8px; font-size: 0.6875rem; }
-.am--compact .am-groups { gap: 10px 22px; }
-.am--compact .am-group { min-width: 118px; gap: 4px; }
-.am--compact .am-group-name { padding-bottom: 3px; background: none; display: block; padding: 0; border: 0; font-size: 0.71875rem; font-weight: 500; color: var(--am-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.am--compact .am-group-name small { font-size: 0.625rem; display: none; }
-.am--compact .am-cards { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 5px; }
-.am--compact .am-card:hover { transform: none; border-color: var(--cl-m3); }
-.am--compact .am-mono, .am--compact .am-card-fn { display: none; }
-.am--compact .am-card-name { text-overflow: ellipsis; -webkit-box-orient: vertical; white-space: normal; font-size: 0.78125rem; font-weight: 600; line-height: 1.25; display: block; -webkit-line-clamp: unset; overflow: visible; hyphens: manual; }
-.am--compact .am-flag { width: 8px; height: 8px; }
-/* Calm selection: pale mist and a soft maroon edge, never a dark fill. */
-.am--compact .am-card[aria-pressed="true"] .am-card-name { color: var(--cl-maroon); }
-.am--compact .am-card.is-quiet { background: color-mix(in srgb, var(--cl-page) 55%, transparent); box-shadow: none; }
-.am--compact .am-line--mine .ink { stroke: var(--cl-m3); stroke-width: 1.5; }
-/* The integration layer: a pale band with a soft line. */
-.am--compact .am-bus { grid-template-columns: 196px minmax(0, 1fr); box-shadow: none; border: 0; border-radius: 12px; padding: 8px 14px; }
-.am--compact .am-bus:not(.is-dim) { background: var(--cl-spine); }
-.am--compact .am-bus-head .am-layer-scope { display: none; }
-.am--compact .am-bus-line::before { background: var(--cl-m2); height: 1.5px; display: none; }
-.am--compact .am-bus-line .am-card { width: min(200px, 40%); }
-@media (max-width: 1100px) {
-  .am-poster { grid-template-columns: minmax(0, 1fr); }
-}
-/* Landscape map: tighter cards so the whole map sits in one screen. */
-.am--compact, .am-stack, .am-side, .am-poster { gap: 6px; }
-.am--compact .am-group-name > :first-child { overflow: hidden; text-overflow: ellipsis; }
-.am--compact .am-card { border: 0; border-radius: 8px; background: var(--cl-page); box-shadow: none; min-height: clamp(28px, 3.9vh, 34px); padding: 5px 9px; }
 
 /* ---------- Landscape header: one line, full-width map, a drawer for the picked system ---------- */
 .lx-head { position: relative; display: flex; justify-content: space-between; gap: 12px 32px; flex-wrap: nowrap; align-items: center; margin-top: 14px; }
@@ -1049,71 +873,30 @@ a.cl-pill:hover { color: var(--cl-maroon); }
   .lx-find .cl-field { width: 100%; }
   .lx-drawer { position: fixed; top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; max-height: 70dvh; }
 }
-/* The map without chrome: a layer is its icon and name, a group a quiet label, a system a plain white tile. */
-.am--compact, .am-stack, .am-side { gap: clamp(8px, 1.4vh, 14px); }
-.am-poster { grid-template-columns: minmax(0, 1fr) 260px; gap: 14px; }
-.am--compact .am-layer-no, .am--compact .am-layer-count, .am--compact .am-layer-head .am-meter { display: none; }
-.am--compact .am-card:hover { border-color: transparent; box-shadow: inset 0 0 0 1px var(--cl-m2); }
-.am--compact .am-card.is-external { outline: 1px dashed var(--cl-rule-strong); outline-offset: -1px; }
-.am--compact .am-card[aria-pressed="true"] { background: var(--cl-maroon-mist); box-shadow: inset 0 0 0 1.5px var(--cl-m3); }
-.am--compact .am-card.is-partner { background: var(--cl-page); box-shadow: inset 0 0 0 1.5px var(--cl-m2); }
-.am--compact .am-card.is-quiet { background: color-mix(in srgb, var(--cl-page) 55%, transparent); box-shadow: none; color: var(--cl-ink-3); }
-.am--compact .am-card.is-quiet .am-card-name { font-weight: 500; }
-.am--compact .am-bus .am-card { box-shadow: none; }
-.am-side .am-cards { grid-template-columns: minmax(0, 1fr); }
 
 .cl-footlayers li > span:first-child::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--cl-layer-edge, var(--cl-rule)); }/* Labels stay readable where a link passes behind them. */
-.am--compact .am-group-name, .am--compact .am-layer-name { text-shadow: 0 0 2px var(--am-tint), 0 0 5px var(--am-tint), 0 0 8px var(--am-tint); }
 /* Landscape on one screen: the page takes the width, a group holds its systems in at most two rows, and a split row shares its width by the columns each layer needs. */
 .cl-page:has(.lx-head) { max-width: 1760px; padding: 10px 24px 16px; }
 .lx-title h1 { font-size: 1.625rem; }
 .lx-tools { flex: none; }
 .lx-find .cl-field { width: 220px; }
-.am-poster { grid-template-columns: minmax(0, 1fr) 280px; gap: clamp(8px, 1.4vh, 14px); }
-.am-side .am-groups { flex-direction: column; flex-wrap: nowrap; gap: 8px; }
-.am-side .am-group { flex: none; }
-.am-side .am-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-@media (min-width: 1101px) {
-  .am--compact .am-row--split { display: flex; }
-  .am--compact .am-row--split > .am-layer { flex: var(--am-span, 1) 1 0; }
-  .am-stack .am-groups { flex-wrap: nowrap; gap: 8px 16px; }
-  .am-stack .am-group { flex: var(--am-share, 1) 1 0; min-width: 0; }
-  .am-stack .am-cards { grid-template-columns: repeat(var(--am-cols, 1), minmax(0, 1fr)); }
-}
 @media (max-width: 1100px) {
   .lx-head { flex-wrap: wrap; }
 }
-/* The landscape fills the screen: the board takes the height left under the header, and the bands and their tiles share it, so no empty strip is left below the map. */
 @media (min-width: 1101px) and (min-height: 600px) {
   .cl-page:has(.lx-head) { display: flex; flex-direction: column; min-height: calc(100dvh - var(--sticky-top, 0px)); }
   .lx-board { flex: 1 1 auto; display: flex; flex-direction: column; }
-  .lx-board > .am--compact, .am--compact .am-poster { flex: 1 1 auto; }
-  .am-stack > .am-row { flex: 1 1 auto; }
-  .am--compact .am-layer { display: flex; flex-direction: column; }
-  .am--compact .am-groups { flex: 1 1 auto; }
-  /* A tile grows with the height the screen has to spare beyond the map's fixed parts, and still grows with a long name. */
-  .am--compact { --am-tile: clamp(24px, calc((100dvh - var(--sticky-top, 0px) - 544px) / 7), 48px); }
-  .am--compact .am-cards { flex: 1 1 auto; align-content: start; grid-auto-rows: minmax(var(--am-tile), auto); }
-  .am-stack .am-cards { grid-template-rows: repeat(2, minmax(var(--am-tile), auto)); }
-  .am--compact .am-card { min-height: var(--am-tile); }
-  .am--compact .am-card-name { font-size: clamp(0.78125rem, 1.4vh, 0.875rem); }
+  .lx-board > .am--compact { flex: 1 1 auto; }
 }
-/* On a large screen the map's type grows a step, so the extra room reads as a bigger map rather than empty tiles. */
-@media (min-width: 1600px) and (min-height: 900px) {
-  .am--compact .am-layer-name { font-size: 0.9375rem; }
-  .am--compact .am-group-name { font-size: 0.78125rem; }
-  .am--compact .am-icon svg { width: 16px; height: 16px; }
-}
-.am--compact .am-bus .am-bus-head > span:not(.am-icon) { background: none; }
 @media (max-height: 740px) {
   .lx-head { margin-top: 8px; }
   .lx-board { margin-top: 8px; }
 }
-/* The Systems page: the matrix is the page, so it takes the height left under the header and scrolls inside itself. */
 @media (min-width: 1101px) and (min-height: 600px) {
   .lx-board > .cl-matrix-wrap { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
   .lx-board > .cl-matrix-wrap > .cl-matrix-scroll { flex: 1 1 0; min-height: 240px; max-height: none; }
 }
+/* The Systems page: the matrix is the page, so it takes the height left under the header and scrolls inside itself. */
 /* The landscape header: a soft band under the tab bar, as wide as it. First the title, a one-line subtitle and the tools; then the layers, each in its own colour, which show one layer at a time and double as the legend. */
 .lx-head.lx-band, .jx-band, .cx-band { display: grid; justify-content: stretch; gap: 5px; margin: 0 calc(50% - 50vw); padding: 7px calc(50vw - 50%) 8px; background: var(--cl-paper); border-bottom: 1px solid var(--cl-hairline); }
 .lx-band-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
@@ -1141,12 +924,7 @@ a.cl-pill:hover { color: var(--cl-maroon); }
   .lx-band .lx-lede { white-space: normal; }
   .lx-layers { padding-left: 0; }
 }
-/* One layer shown: the others go quiet (their tiles already turn pale with grey names, which keep AA contrast), so the room sees only that layer. */
-.am--compact .am-layer.is-dim .am-layer-name, .am--compact .am-layer.is-dim .am-group-name { color: var(--cl-ink-3); text-shadow: none; }
 /* A short screen gives the tiles two pixels less, so the header band fits without a page scroll. */
-@media (min-width: 1101px) and (min-height: 600px) {
-  .am--compact { --am-tile: clamp(24px, calc((100dvh - var(--sticky-top, 0px) - 544px) / 7), 48px); }
-}
 /* The product header: the Landscape's soft band, for a product. The rail, then the mark, name and statement with the page's actions, the figures as links into their tabs with the source, and the tabs as the band's lower edge. The name, statement and figures hang from the name's left edge; the rail, mark and tabs from the page's. */
 .pd-band { margin: 0 calc(50% - 50vw); padding: 0 calc(50vw - 50%); background: var(--cl-paper); border-bottom: 1px solid var(--cl-hairline); }
 .pd-band .cl-path { margin-top: 0; padding-top: 12px; }
@@ -1198,22 +976,6 @@ a.cl-pill:hover { color: var(--cl-maroon); }
   .pv-sec .cl-elig { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* A product's footprint on the map has its own colour, a deep teal used nowhere else, so "this product uses it" can't be read as a layer tint or as a selection (maroon). Core: solid teal. Used: a teal outline. Carries calls only: a dashed teal outline. Not used: quiet. */
-.am-card.is-core { background: var(--cl-teal); border-color: var(--cl-teal); box-shadow: none; color: var(--cl-page); }
-.am-card.is-core .am-card-name, .am-card.is-core .am-card-fn { color: var(--cl-page); }
-.am-card.is-core .am-mono { background: var(--cl-page); color: var(--cl-teal-ink); box-shadow: none; }
-.am-card.is-core:hover { background: var(--cl-teal-ink); border-color: var(--cl-teal-ink); }
-.am-card.is-used { background: var(--cl-page); border-color: var(--cl-teal); box-shadow: 0 0 0 1px var(--cl-teal); }
-.am-card.is-used .am-card-fn, .am-card.is-carries .am-card-fn { color: var(--cl-teal-ink); font-weight: 600; }
-.am-card.is-used .am-mono { background: var(--cl-teal-soft); color: var(--cl-teal-ink); box-shadow: none; }
-.am-card.is-carries { background: var(--cl-page); border: 1px dashed var(--cl-teal); box-shadow: none; }
-.am-card.is-carries .am-mono { background: var(--cl-page); color: var(--cl-teal-ink); box-shadow: inset 0 0 0 1px var(--cl-teal-mid); }
-.am-card.is-lit { background: var(--cl-teal-soft); border-color: var(--cl-teal); box-shadow: 0 0 0 1px var(--cl-teal); }
-.am-card.is-lit .am-mono { background: var(--cl-teal); color: var(--cl-page); box-shadow: none; }
-.am-card.is-lit .am-card-fn { color: var(--cl-teal-ink); }
-.am-card[aria-pressed="true"].is-core, .am-card[aria-pressed="true"].is-used, .am-card[aria-pressed="true"].is-carries, .am-card[aria-pressed="true"].is-lit { background: var(--cl-maroon); border-color: var(--cl-maroon); box-shadow: 0 0 0 2px var(--cl-page), 0 0 0 4px var(--cl-maroon); color: var(--cl-page); }
-.am-card[aria-pressed="true"] .am-card-name, .am-card[aria-pressed="true"] .am-card-fn { color: var(--cl-page); }
-.am-meter i.on { background: var(--cl-teal); }
 .cl-legend .tier.core { background: var(--cl-teal); border-color: var(--cl-teal); }
 .cl-legend .tier.used { background: var(--cl-page); border-color: var(--cl-teal); box-shadow: inset 0 0 0 1px var(--cl-teal); }
 .cl-legend .tier.carries { background: var(--cl-page); border: 1px dashed var(--cl-teal); }
@@ -1242,7 +1004,6 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .jx-band .jx-scope-level + .jx-scope-level { padding-left: 22px; }
 .jx-band .jx-scope-level + .jx-scope-level::before { left: 7px; top: 50%; bottom: auto; transform: translateY(-50%) rotate(45deg); }
 .jx-scope-menu summary small { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--cl-ink-3); white-space: nowrap; }
-/* The Journeys page fits the screen: the board and the preview take their own height, and shrink to what is left under the header band when that is less. The board is compact enough to fit; the preview scrolls inside itself, its actions pinned at its foot (and kept clear of focus by the scroll padding). */
 @media (min-width: 1101px) and (min-height: 600px) {
   .cl-page:has(.jx-band) { box-sizing: border-box; display: flex; flex-direction: column; height: calc(100dvh - var(--sticky-top, 0px)); padding-bottom: 16px; }
   .cl-page:has(.jx-band) > .jx { flex: 0 1 auto; min-height: 0; grid-template-rows: minmax(0, 1fr); }
@@ -1258,11 +1019,12 @@ a.cl-pill:hover { color: var(--cl-maroon); }
   /* The preview scrolls; its parts keep their size instead of squeezing to fit. */
   .jx-panel > * { flex-shrink: 0; }
 }
-/* The preview narrows on a smaller screen, and a stage's subtitle wraps before its tiles give way, so all four stages keep their room. */
 @media (min-width: 1101px) {
   .jx { grid-template-columns: minmax(0, 1fr) clamp(320px, 26vw, 380px); }
   .jx-stage-text small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: normal; line-height: 1.2; }
 }
+/* The Journeys page fits the screen: the board and the preview take their own height, and shrink to what is left under the header band when that is less. The board is compact enough to fit; the preview scrolls inside itself, its actions pinned at its foot (and kept clear of focus by the scroll padding). */
+/* The preview narrows on a smaller screen, and a stage's subtitle wraps before its tiles give way, so all four stages keep their room. */
 /* Not every channel takes every order type. On the Journeys board, the order types a chosen channel can't take go quiet and say so; in the preview, the channels an order type can't be ordered through are listed, muted and dashed. */
 .jx-lens { flex: none; margin: 0 0 0 auto; padding: 0; list-style: none; }
 .jx-lens + .jx-scope-sum { margin-left: 16px; }
@@ -1469,9 +1231,7 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 @media (min-width: 1101px) and (min-height: 600px) {
   .cl .cl-page:has(.lx-head) { min-height: calc(100dvh - var(--sticky-top, 0px)); }
 }
-/* Under the portal's two tiers a short screen has less room: tiles may go to 24px with slimmer padding. */
 @media (min-width: 1101px) and (max-height: 760px) {
-  .am--compact .am-card { padding-block: 3px; }
   .cl .lx-band { padding-block: 5px 6px; }
 }
 @media (min-width: 1101px) and (max-height: 760px) {
@@ -1479,12 +1239,13 @@ a.cl-pill:hover { color: var(--cl-maroon); }
   .cl .cl-area { min-height: 46px; }
   .cl .cl-area-nav a { min-height: 46px; }
 }
+/* Under the portal's two tiers a short screen has less room: tiles may go to 24px with slimmer padding. */
 .cm-matrix td { padding-block: 4px; }
 @media (min-width: 1101px) and (max-height: 760px) {
   .cl .cl-page { padding-top: 12px; padding-bottom: 12px; }
   .cl .cl-area { margin-top: -12px; }
 }
-/* The capabilities grid keeps to the screen: it scrolls inside its panel rather than the page. */
 @media (min-width: 1101px) and (min-height: 600px) {
   .lx-board > .cm-panel { max-height: calc(100dvh - var(--sticky-top, 0px) - var(--cl-area) - 170px); }
 }
+/* The capabilities grid keeps to the screen: it scrolls inside its panel rather than the page. */

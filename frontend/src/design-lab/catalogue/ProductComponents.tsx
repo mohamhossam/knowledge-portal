@@ -8,7 +8,7 @@ import { hubOf } from "./catalogueRules";
 import { useLabData, useOffering } from "./labData";
 import { CAPABILITIES, capabilityOf, DEVICE_ICON } from "./capabilities";
 import { plural, scrollBehavior, useTitle } from "./labUtil";
-import { layerRank } from "./posterModel";
+import { layerRank } from "../../catalogue/landscape/posterModel";
 import { Missing, ProductHeader } from "./productParts";
 import { SystemMonogram } from "./SystemMonogram";
 
