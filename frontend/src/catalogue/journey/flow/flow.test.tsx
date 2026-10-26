@@ -15,6 +15,8 @@ checkAxeAfterEach();
 afterEach(() => vi.restoreAllMocks());
 
 // The committed SMB catalogue: Business Pro Plus's new activation, 27 steps and 31 calls, through three channels.
+// The views load in their own chunk: under a full run, the first one can take more than a second.
+const LAZY = { timeout: 5000 };
 const RELEASE = { ...asRelease(release), status: "published" } as Release;
 
 function Address() {
@@ -41,7 +43,7 @@ function open(search: string) {
 describe("the lab's journey flow in the journey record (catalogue merge, step 4)", () => {
   it("draws the process flow, and picks a step from All steps, one Tab stop per step", async () => {
     open("?view=flow");
-    expect(await screen.findByRole("region", { name: "New activation, process flow (scrolls)" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "New activation, process flow (scrolls)" }, LAZY)).toBeInTheDocument();
     const all = screen.getByRole("region", { name: "New activation, process flow (scrolls)" }).closest(".jf")!;
     const steps = within(all.querySelector(".jf-allsteps") as HTMLElement).getAllByRole("button");
     // In the flow, steps answer a pointer; All steps is the keyboard's way through.
@@ -53,7 +55,7 @@ describe("the lab's journey flow in the journey record (catalogue merge, step 4)
 
   it("reads the journey in one channel at a time, in the address", async () => {
     open("?view=flow");
-    const channel = (await screen.findByRole("combobox", { name: "Channel" })) as HTMLSelectElement;
+    const channel = (await screen.findByRole("combobox", { name: "Channel" }, LAZY)) as HTMLSelectElement;
     expect(channel.options.length).toBe(3);
     fireEvent.change(channel, { target: { value: channel.options[1]!.value } });
     expect(screen.getByRole("status", { name: "Address" })).toHaveTextContent(`channel=${channel.options[1]!.value}`);
@@ -61,7 +63,7 @@ describe("the lab's journey flow in the journey record (catalogue merge, step 4)
 
   it("steps through the calls in order, and shows them as a register", async () => {
     open("?view=integrations");
-    expect(await screen.findByText(/^Call 1 of \d+$/)).toBeInTheDocument();
+    expect(await screen.findByText(/^Call 1 of \d+$/, undefined, LAZY)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getByText(/^Call 2 of \d+$/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Table" }));
@@ -73,7 +75,7 @@ describe("the lab's journey flow in the journey record (catalogue merge, step 4)
     const made = vi.fn(() => "blob:journey");
     Object.assign(URL, { createObjectURL: made, revokeObjectURL: vi.fn() });
     open("");
-    fireEvent.click(await screen.findByText("Export"));
+    fireEvent.click(await screen.findByText("Export", undefined, LAZY));
     const items = screen.getAllByRole("button", { name: /^Download / });
     expect(items).toHaveLength(4);
     expect(items[0]).toHaveTextContent(/^Download BPMN 2\.0/);

@@ -10,7 +10,7 @@ import { type KeyboardEvent, type ReactNode, useLayoutEffect, useMemo, useRef, u
 
 import { Facts, Status } from "../../../design/components";
 import { count } from "../../../home/format";
-import { laneKindName, laneName, MODE_WORDS, operationName, roleName, styleName, systemName } from "../../../design-lab/catalogue/words";
+import { laneKindName, laneName, MODE_WORDS, operationName, roleName, styleName, systemName } from "../../model/words";
 import { GEOMETRY, layoutFlow, type Placed } from "../../model/flowLayout";
 import { type ActivityStep, type Catalogue, type Evidence, type JourneyView, type Lane, laneKey, systemOf } from "../../model/model";
 import { SOURCE_TONE, SOURCE_WORD } from "../../ontology";

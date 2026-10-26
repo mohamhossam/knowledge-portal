@@ -12,7 +12,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import type { Release } from "../../../api/client";
-import { channelMissingText, viewTitle } from "../../../design-lab/catalogue/words";
+import { channelMissingText, viewTitle } from "../../model/words";
 import { Select } from "../../../design/components";
 import { fromRelease, journeyView } from "../../model/adapter";
 import { download, toBpmn, toCsv, toMermaid, toPlantUml } from "../../model/exports";

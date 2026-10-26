@@ -10,7 +10,7 @@
  */
 import { Fragment, useMemo, useState } from "react";
 
-import { NOT_STATED, operationName } from "../../design-lab/catalogue/words";
+import { NOT_STATED, operationName } from "../model/words";
 import { count } from "../../home/format";
 import { layerRank } from "../landscape/posterModel";
 import { type Catalogue, type Integration, systemOf } from "../model/model";

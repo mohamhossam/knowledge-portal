@@ -18,7 +18,7 @@ import { SourcesContext, namedSource, withLevel } from "../governance";
 import { useCatalogueContext } from "../useCatalogue";
 
 /** Where a registered source's record is, on Governance. */
-export const sourceHref = (base: string, sourceId: string) => `${base}/governance/sources/${encodeURIComponent(sourceId)}`;
+const sourceHref = (base: string, sourceId: string) => `${base}/governance/sources/${encodeURIComponent(sourceId)}`;
 
 /**
  * The catalogue version's address, on a catalogue page; null elsewhere. The Explorer draws the

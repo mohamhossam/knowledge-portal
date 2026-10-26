@@ -31,7 +31,7 @@ describe("where systems sit, drawn (catalogue merge, step 2)", () => {
   it("draws every layer with its systems, and counts them all in the layer filter", () => {
     open(smb);
     const map = screen.getByRole("group", { name: /layers: 46 systems in/ });
-    expect(within(map).getByRole("button", { name: /^BSCS:/ })).toBeInTheDocument();
+    expect(within(map).getByRole("button", { name: /^BSCS / })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /All layers/ })).toHaveTextContent("46");
   });
 
@@ -47,7 +47,7 @@ describe("where systems sit, drawn (catalogue merge, step 2)", () => {
 
   it("shows a picked system beside the map, with its links and the way to its full record", () => {
     open(smb);
-    fireEvent.click(screen.getByRole("button", { name: /^BSCS:/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^BSCS / }));
     const summary = screen.getByRole("complementary", { name: "BSCS" });
     expect(screen.getByRole("status", { name: "Address" })).toHaveTextContent("?system=bscs");
     expect(within(summary).getByRole("link", { name: "Open the full record of BSCS" })).toHaveAttribute("href", "/architecture/systems/bscs");

@@ -1,4 +1,4 @@
-import { BookOpen, CircleHelp, Compass, FileText, FlaskConical, Inbox, Layers, ListChecks, UserRound, UsersRound, WifiOff } from "lucide-react";
+import { BookOpen, CircleHelp, Compass, FileText, Inbox, Layers, ListChecks, UserRound, UsersRound, WifiOff } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Outlet, useLocation, useSearchParams } from "react-router-dom";
 
@@ -15,7 +15,6 @@ import { useGlobalShortcuts } from "../shell/useGlobalShortcuts";
 import { activeJobs, useJobs } from "../shell/useJobs";
 import { useWorkQueue } from "../work/queue";
 import { ErrorBoundary, PageFailed } from "./ErrorBoundary";
-import { catalogueLabEnabled, LAB } from "./features";
 
 type Panel = "jobs" | "help" | "account";
 
@@ -103,7 +102,6 @@ export function Shell() {
   const navigation: NavItem[] = [
     { href: "/", label: "To do", current: path === "/", count: needsYou, countLabel: "need you", icon: <Inbox /> },
     { href: "/library", label: "Library", current: under("/library"), icon: <BookOpen />, group: "Look up" },
-    // One catalogue, wherever the redesign lab is built in: the lab has its own labelled entry below.
     { href: "/architecture", label: "Catalogue", current: under("/architecture"), icon: <Layers />, group: "Look up" },
     { href: "/squads", label: "Ownership", current: under("/squads"), icon: <UsersRound />, group: "Look up" },
     { href: "/requirement-knowledge", label: "Requirements", current: under("/requirement-knowledge"), icon: <FileText />, group: "Look up" },
@@ -111,8 +109,6 @@ export function Shell() {
   // Re-confirmations are To do's now (UX rebuild, phase 2): "/reminders" leads there.
   const secondary: NavItem[] = [
     { href: "/explorer", label: "Explorer", current: under("/explorer"), icon: <Compass /> },
-    // The catalogue redesign, where a development or lab build has it: named as a lab, never as the catalogue.
-    ...(catalogueLabEnabled ? [{ href: LAB, label: "Catalogue lab", current: under(LAB), icon: <FlaskConical /> }] : []),
   ];
 
   const actor = auth?.actor ?? null;
@@ -129,8 +125,7 @@ export function Shell() {
   const busy = activeJobs(jobs.jobs);
 
   return (
-    // The catalogue redesign is light only, so its view stays light whatever the theme.
-    <div data-density={densityFor(density, "page")} data-theme={under(LAB) ? "light" : undefined}>
+    <div data-density={densityFor(density, "page")}>
       <AppShell
         homeHref="/"
         product="Knowledge Portal"
@@ -140,7 +135,6 @@ export function Shell() {
         navigation={navigation}
         secondaryNavigation={secondary}
         reader={focus}
-        fullBleed={under(LAB)}
         banner={online ? undefined : <><WifiOff size={16} aria-hidden="true" /> You're offline. Your unsaved work stays here; the portal carries on when your connection returns.</>}
         utilities={
           <>

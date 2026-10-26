@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Catalogue, Evidence, Integration, Lane, Step } from "../../catalogue/model/model";
+import type { Catalogue, Evidence, Integration, Lane, Step } from "./model";
 import { catalogueName, channelMissingText, gapSource, laneKindName, laneName, MODE_WORDS, operationName, stepName, styleName, systemName, viewTitle } from "./words";
 
 const data = {

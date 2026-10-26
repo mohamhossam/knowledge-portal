@@ -7,6 +7,18 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Changed
 
+- One architecture catalogue: the catalogue redesign lab's views move into `/architecture`, on
+  the design system and in both themes, and the lab is removed (with `VITE_CATALOGUE_LAB`,
+  `VITE_CATALOGUE_SOURCE` and its sample switch). The Landscape tab draws where systems sit as
+  the layered map, every system shown (one placed in no layer is listed under it), and what
+  systems do by business area as the capability map, each with its table one press away. An
+  offering gains Plans, Footprint and Rules (its business rules), a portfolio line and a
+  "Delivered by" filter. A journey gains a process flow and a call register, and exports BPMN,
+  PlantUML, Mermaid and the register as CSV. The Systems tab reads its systems as records, who
+  calls whom or what they deliver; the Map tab goes (`/map` opens who calls whom). Provenance
+  opens what it names: a quote its passage, re-read from the stored document; a source line its
+  Governance record; a source its document when the version holds it. The architecture
+  diagrams' colours get warm-charcoal values.
 - The service starts with no architecture catalogue (ADR-0126). It no longer seeds
   `smb-source-reference-v1` into an empty database; a knowledge maintainer publishes the first
   version, and the first draft starts empty, its review listing everything as added. Until a

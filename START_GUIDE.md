@@ -182,18 +182,9 @@ With fake sign-in, the top bar has a **Persona** switch:
 The explorer at `http://localhost:5174/knowledge/explorer` shows the catalogue version in
 service to any signed-in reader.
 
-In development, **Catalogue** opens the catalogue redesign (`/knowledge/design-lab/catalogue`).
-It reads the catalogue version in service from the API. The **Data** switch at the end of its
-section bar turns to the bundled Business Pro Plus sample (**Sample JSON**) and back (**Live
-API**), to compare the two; a note under the bar says when the sample is shown, and a page reload
-returns to the API. To start on the sample, with no API needed, set `VITE_CATALOGUE_SOURCE=sample`:
-
-```bash
-# Windows PowerShell
-$env:VITE_CATALOGUE_SOURCE = "sample"; npm run dev
-# macOS / Linux
-VITE_CATALOGUE_SOURCE=sample npm run dev
-```
+**Catalogue** opens the catalogue version in service at `/knowledge/architecture`: its systems
+(as records, or read across as who calls whom and what they deliver), offerings, journeys, the
+landscape, channels, governance and versions.
 
 ## 5. Stop and start again
 

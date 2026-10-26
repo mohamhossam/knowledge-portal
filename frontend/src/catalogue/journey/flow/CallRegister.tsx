@@ -9,7 +9,7 @@
 import { type CSSProperties, useMemo, useState } from "react";
 
 import { Button, type Column, DataTable, Facts, Select } from "../../../design/components";
-import { laneName, MODE_WORDS, NOT_STATED, operationName, styleName, systemName, viewTitle } from "../../../design-lab/catalogue/words";
+import { laneName, MODE_WORDS, NOT_STATED, operationName, styleName, systemName, viewTitle } from "../../model/words";
 import { type ActivityStep, type Catalogue, type Integration, type JourneyView, type Lane, laneKey, type Step } from "../../model/model";
 import { EvidenceLine } from "./ProcessFlow";
 

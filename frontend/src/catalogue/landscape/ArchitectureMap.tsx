@@ -17,7 +17,7 @@ import { type CSSProperties, type KeyboardEvent, type ReactNode, memo, useCallba
 
 import "./architectureMap.css";
 
-import { roleName } from "../../design-lab/catalogue/words";
+import { roleName } from "../model/words";
 import { count as plural } from "../../home/format";
 import { type Catalogue, type Integration, type StepRole, type System, systemOf, type TamDomain } from "../model/model";
 import { monogram, shortFunction } from "./names";
@@ -314,7 +314,6 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
         className={classes}
         tabIndex={system.id === tabStop ? 0 : -1}
         aria-pressed={journey ? undefined : isSelected}
-        aria-label={`${system.name}: ${facts.join(", ")}`}
         onFocus={() => setFocusId(system.id)}
         onKeyDown={keyDown(system.id)}
         onClick={() => onSelect(journey ? system.id : isSelected ? null : system.id)}
@@ -329,6 +328,8 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
           {caption && <span className="am-card-fn">{caption}</span>}
         </span>
         {journey?.entry === system.id && <span className="am-tag">Entry</span>}
+        {/* Named by what it shows first (the monogram is hidden), then its facts: a voice command that reads the card finds it. */}
+        <span className="ds-visually-hidden">: {facts.join(", ")}</span>
         {system.proposedMove && <i className="am-flag" aria-hidden="true" />}
       </button>
     );
@@ -337,15 +338,17 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
   const meter = (systems: System[]) => {
     const used = systems.filter((system) => usedIn(system.id)).length;
     return (
-      <span className="am-meter" aria-label={`${used} of ${systems.length} used`}>
+      // Read as words ("3 of 5 used"), shown as dots and "3/5".
+      <span className="am-meter">
         <span aria-hidden="true">
           {systems.map((system) => (
             <i key={system.id} className={usedIn(system.id) ? "on" : undefined} />
           ))}
         </span>
-        <b>
+        <b aria-hidden="true">
           {used}/{systems.length}
         </b>
+        <span className="ds-visually-hidden">{used} of {systems.length} used</span>
       </span>
     );
   };
