@@ -39,8 +39,8 @@ every component's API, states, keyboard and accessibility behaviour.
 
 | Layer | File | Holds | May read |
 |---|---|---|---|
-| Primitive | `tokens/primitive.css` | e& primitives (the brief's values, unverified), derived neutrals, charcoal, maroon family, state hues, chart palettes, the architecture diagrams' palettes (light only), type, space, radius, motion, layers | — |
-| Semantic | `tokens/semantic.css` | What a value is *for*: surfaces, ink, rules, action, selected, focus, brand accent, masthead, states, highlight, charts, architecture diagrams (layer tints and inks, footprint, intensity, amounts; light only); type roles; density; reduced motion | primitives |
+| Primitive | `tokens/primitive.css` | e& primitives (the brief's values, unverified), derived neutrals, charcoal, maroon family, state hues, chart palettes, the architecture diagrams' palettes (light, and their charcoal counterparts), type, space, radius, motion, layers | — |
+| Semantic | `tokens/semantic.css` | What a value is *for*: surfaces, ink, rules, action, selected, focus, brand accent, masthead, states, highlight, charts, architecture diagrams (layer tints, inks and edges, footprint, intensity, amounts, in both themes); type roles; density; reduced motion | primitives |
 | Component | `tokens/component.css` | Per-component knobs: button, field, focus ring, masthead and rail, table, badge, suggested, panel, split pane, overlays, skeleton, quote | semantic |
 
 **Scoping rule.** A custom property's `var()` resolves *where it is declared*. That is why:
@@ -115,9 +115,11 @@ Notes:
   It is now 4.27:1, a finding from the token test.
 - The two lightest sequential chart steps are fills only, labelled directly.
 - The architecture diagrams' tokens (`--color-layer-*`, `--color-footprint*`, `--color-intensity-*`,
-  `--color-amount-*`, `--color-on-action-fill-quiet`) are light only: the catalogue keeps
-  `data-theme="light"`. The token test checks their pairs in light only: each layer's ink, ink and
-  ink-2 on its tint, quiet text on the action fill, and the footprint, intensity and amount marks.
+  `--color-amount-*`) hold in both themes: on charcoal each layer's tint is a dark of its own hue
+  with its ink and edge lifted, and the footprint, intensity and amount ramps run dim to bright.
+  The token test checks in both themes each layer's ink, ink and ink-2 on its tint, and the
+  footprint, intensity and amount marks; a layer's edge is a soft frame, not held to 3:1, since
+  its heading names the band. `--color-on-action-fill-quiet` is a light-theme pairing only.
 
 ## 4. Components
 
