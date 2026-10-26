@@ -21,7 +21,7 @@ import { useCatalogueContext } from "../useCatalogue";
 import { useDraft } from "../useDraft";
 import { STATE_TONE, citedPart, stateWords } from "./decide";
 import { DecisionTree } from "./DecisionTree";
-import { type Answer, type DraftChoices, settleRequest } from "./MissingThings";
+import { type Answer, type DraftChoices, componentSystem, settleRequest } from "./MissingThings";
 import { NextStep } from "./NextStep";
 import { Said } from "./parts";
 import { decideQuestions } from "./questions";
@@ -275,6 +275,10 @@ function Decide() {
       dropLink(blocker);
       return;
     }
+    if (chosen.kind === "component" || chosen.kind === "without_component") {
+      placeComponent(blocker, chosen.kind === "component");
+      return;
+    }
     draft.settleSubject.mutate(settleRequest(blocker, chosen), {
       onSuccess: (result) => setSettled({ text: settledWords(blocker, chosen, result) }),
       onError: (error) => setSettled({ text: inWords(errorMessage(error), words), failed: true }),
@@ -298,6 +302,31 @@ function Decide() {
       setSettled({
         text: `Accepted ${count(accepted, "suggestion")} without ${blocker.name}${accepted < edited.length ? `; ${edited.length - accepted} couldn't apply and wait for you` : ""}.`,
         failed: accepted < edited.length,
+      });
+    });
+  };
+  /**
+   * Accepts what waits on a component its system lacks: with the component added to the system
+   * first (a hand edit), or on the system itself, without the component.
+   */
+  const placeComponent = (blocker: Blocker, adding: boolean) => {
+    const [systemId = "", componentId = ""] = blocker.reference.split("/");
+    const system = componentSystem(blocker);
+    const waiting = blocker.waiting.filter((item) => adding || item.content.kind === "capability");
+    const edited = waiting.map((item) => ({ item, content: adding ? null : { ...item.content, component_id: null } }));
+    setSettled({ text: adding ? `Adding ${blocker.name} to ${system}…` : `Accepting ${count(edited.length, "suggestion")} on ${system}, without ${blocker.name}…` });
+    void (adding ? draft.addComponent(systemId, { id: componentId, name: blocker.name }) : Promise.resolve(true)).then((added) => {
+      if (!added) {
+        setSettled({ text: inWords(errorMessage(draft.refusal()), words), failed: true });
+        return;
+      }
+      void Promise.all(edited.map(({ item, content }) => draft.decide({ suggestionId: item.id, accept: true, content }))).then((done) => {
+        const accepted = done.filter(Boolean).length;
+        const left = edited.length - accepted + (blocker.waiting.length - waiting.length);
+        setSettled({
+          text: `${adding ? `Added ${blocker.name} to ${system}; accepted` : "Accepted"} ${count(accepted, "suggestion")}${adding ? "" : ` on ${system} without it`}${left ? `; ${left} couldn't apply and ${left === 1 ? "waits" : "wait"} for you` : ""}.`,
+          failed: left > 0,
+        });
       });
     });
   };

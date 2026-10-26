@@ -29,10 +29,15 @@ export type Answer =
   | { kind: "existing_order_type"; id: string; name: string }
   | { kind: "channel" }
   | { kind: "existing_channel"; id: string; name: string }
-  | { kind: "without_link" };
+  | { kind: "without_link" }
+  | { kind: "component" }
+  | { kind: "without_component" };
+
+/** The answers the page settles itself, by deciding or editing; the rest go to the service. */
+export type OwnAnswer = Extract<Answer, { kind: "without_link" | "component" | "without_component" }>;
 
 /** The service's settle request for an answer. An order type is named apart from its offering. */
-export function settleRequest(blocker: Blocker, chosen: Exclude<Answer, { kind: "without_link" }>) {
+export function settleRequest(blocker: Blocker, chosen: Exclude<Answer, OwnAnswer>) {
   const { reference, name } = blocker;
   const orderType = name.split(" › ").slice(1).join(" › ");
   switch (chosen.kind) {
@@ -58,12 +63,19 @@ const SPEC_WORD: Record<DraftSpecification["layer"], string> = { cfs: "CFSS", rf
 const squeezed = (value: string) => value.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
 
 /** What kind of thing is missing, read from the blocker's key ("ordertype:…", "channel:…"). */
-type Topic = "system" | "offering" | "ordertype" | "channel" | "specification" | "realisation" | "other";
+type Topic = "system" | "offering" | "ordertype" | "channel" | "specification" | "realisation" | "component" | "other";
 
 function topicOf(blocker: Blocker): Topic {
   if (blocker.kind !== "other") return blocker.kind;
   const prefix = blocker.key.split(":")[0];
-  return prefix === "ordertype" || prefix === "channel" || prefix === "specification" || prefix === "realisation" ? prefix : "other";
+  return prefix === "ordertype" || prefix === "channel" || prefix === "specification" || prefix === "realisation" || prefix === "component"
+    ? prefix
+    : "other";
+}
+
+/** The system a missing component belongs to, by name: what waits on it says. */
+export function componentSystem(blocker: Blocker): string {
+  return blocker.waiting[0]?.system_name ?? blocker.label.split(" of ").slice(-1)[0] ?? blocker.reference.split("/")[0]!;
 }
 
 const TOPIC_WORD: Record<Topic, string> = {
@@ -73,6 +85,7 @@ const TOPIC_WORD: Record<Topic, string> = {
   channel: "Channel",
   specification: "CFSS or RFSS",
   realisation: "Realised by",
+  component: "Component",
   other: "Other",
 };
 
@@ -131,6 +144,8 @@ function reason(
       return held
         ? `Named as what realises a record a layer below it, but it is the ${SPEC_WORD[held.layer]} ${held.name} in your draft: it can't realise what sits beside or above it.`
         : `Named as what realises a record, but nothing one layer below has this name (it should be ${blocker.label.split(" as ").slice(1).join(" as ") || "a lower layer"}).`;
+    case "component":
+      return `Named as a component of ${componentSystem(blocker)}; ${componentSystem(blocker)} has no component by this name, and no suggestion adds one.`;
     default:
       return `${blocker.label}: nothing in the draft or the suggestions adds it.`;
   }
@@ -295,6 +310,21 @@ export function MissingThings({ blockers, choices, busy, settling, onAnswer, onS
                     })}
                   >
                     One the draft has…
+                  </Button>
+                  {reject}
+                </>
+              );
+            } else if (topic === "component") {
+              const system = componentSystem(blocker);
+              actions = (
+                <>
+                  <Button busy={settling} onClick={() => answer(blocker, { kind: "component" })}>Add it to {system}</Button>
+                  <Button
+                    busy={settling}
+                    onClick={() => answer(blocker, { kind: "without_component" })}
+                    aria-label={`Accept what waits on ${blocker.name} on ${system} itself, without the component`}
+                  >
+                    Accept without it
                   </Button>
                   {reject}
                 </>

@@ -302,8 +302,14 @@ function Summary({ release, all, words, questions, answers, draft, onBack, onDon
       },
       withFollowing,
     };
+    // Why the service refused an answer, in the person's words, so the notice can say it.
+    const reasons: string[] = [];
     const port: SendPort = {
-      decide: draft.decide,
+      decide: async (decision) => {
+        const done = await draft.decide(decision);
+        if (!done) reasons.push(inWords(errorMessage(draft.refusal()), words));
+        return done;
+      },
       // What follows is listed above the send: only those are accepted.
       acceptReady: () => draft.acceptReady.mutateAsync(follows.map((item) => item.id)),
       settleSubject: (subject) => draft.settleSubject.mutateAsync(subject),
@@ -313,7 +319,9 @@ function Summary({ release, all, words, questions, answers, draft, onBack, onDon
       const { done, refused, systems, remaining } = await sendAnswers(port, plan);
       const parts = [
         `${count(done, "suggestion")} decided${systems ? `, with ${count(systems, "system")} they need` : ""}${withFollowing ? ", and what followed accepted" : ""}`,
-        refused ? `${count(refused, "suggestion")} couldn't be taken: decide ${refused === 1 ? "it" : "them"} here` : "",
+        refused
+          ? `${count(refused, "suggestion")} couldn't be taken (${reasons[0]?.replace(/\.$/, "") ?? "the draft refused it"}${reasons.length > 1 ? `, and ${reasons.length - 1} more` : ""}): decide ${refused === 1 ? "it" : "them"} here`
+          : "",
         remaining ? `${count(remaining, "suggestion")} still ${remaining === 1 ? "waits" : "wait"} for you` : "",
       ].filter(Boolean);
       onDone(`${parts.join("; ")}.`);

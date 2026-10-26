@@ -56,6 +56,9 @@ export function useDraft(release: Release) {
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const [pending, setPending] = useState(0);
   const [failure, setFailure] = useState<unknown>(null);
+  // The last refusal, readable as soon as a decision's promise settles (state lags a render).
+  const lastRefusal = useRef<unknown>(null);
+  const refusal = useCallback(() => lastRefusal.current, []);
   const decide = useCallback(
     (decision: Decision) => {
       setPending((n) => n + 1);
@@ -70,6 +73,7 @@ export function useDraft(release: Release) {
           settle(next);
           return true;
         } catch (error) {
+          lastRefusal.current = error;
           setFailure(error);
           void queryClient.invalidateQueries({ queryKey: suggestionsKey(releaseId) });
           return false;
@@ -81,6 +85,37 @@ export function useDraft(release: Release) {
       return run;
     },
     [queryClient, releaseId, settle],
+  );
+
+  // A component suggestions name, added to its system by hand. It runs in the decision queue,
+  // so it carries the draft's latest revision and what waits on it is decided after it.
+  const addComponent = useCallback(
+    (systemId: string, component: { id: string; name: string }) => {
+      setPending((n) => n + 1);
+      const run = queue.current.then(async () => {
+        try {
+          const current = queryClient.getQueryData<Release>(releaseKey(releaseId)) ?? release;
+          const system = current.systems.find((item) => item.id === systemId);
+          if (!system) throw new Error(`The draft has no system ${systemId}.`);
+          const next = await api.saveSystem(releaseId, systemId, {
+            expected_revision: revision.current,
+            system: { ...system, components: [...system.components, { id: component.id, name: component.name, aliases: [], accepted: [] }] },
+          });
+          setFailure(null);
+          settle(next);
+          return true;
+        } catch (error) {
+          lastRefusal.current = error;
+          setFailure(error);
+          return false;
+        } finally {
+          setPending((n) => n - 1);
+        }
+      });
+      queue.current = run.catch(() => undefined);
+      return run;
+    },
+    [queryClient, release, releaseId, settle],
   );
 
   // Only the suggestions the person was shown: a reading that finished meanwhile adds none.
@@ -178,7 +213,7 @@ export function useDraft(release: Release) {
   }, [queryClient]);
 
   return {
-    suggestions, extractions, decide, pending, failure, acceptReady, rejectMany, settleSubject, addDocument, addDocuments, removeDocument, read, cancel, retry, reload,
+    suggestions, extractions, decide, refusal, addComponent, pending, failure, acceptReady, rejectMany, settleSubject, addDocument, addDocuments, removeDocument, read, cancel, retry, reload,
   };
 }
 
