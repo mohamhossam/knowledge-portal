@@ -145,7 +145,6 @@ export function CatalogueHeader({ page, chosen, record, children }: {
 function pages(base: string, page: CataloguePageId, inService: boolean, release: Release, waiting: number) {
   return [
     { href: base, label: "Systems", current: page === "systems", count: release.systems.length },
-    { href: `${base}/map`, label: "Map", current: page === "map" },
     { href: `${base}/concepts`, label: "Concepts", current: page === "concepts", count: release.business_capabilities?.length ?? 0 },
     { href: `${base}/offerings`, label: "Offerings", current: page === "offerings", count: release.products?.length ?? 0 },
     { href: `${base}/journeys`, label: "Journeys", current: page === "journeys", count: release.journeys?.length ?? 0 },

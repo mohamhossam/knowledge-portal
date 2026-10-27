@@ -15,7 +15,6 @@ import { useGlobalShortcuts } from "../shell/useGlobalShortcuts";
 import { activeJobs, useJobs } from "../shell/useJobs";
 import { useWorkQueue } from "../work/queue";
 import { ErrorBoundary, PageFailed } from "./ErrorBoundary";
-import { catalogueLabEnabled, LAB } from "./features";
 
 type Panel = "jobs" | "help" | "account";
 
@@ -103,8 +102,7 @@ export function Shell() {
   const navigation: NavItem[] = [
     { href: "/", label: "To do", current: path === "/", count: needsYou, countLabel: "need you", icon: <Inbox /> },
     { href: "/library", label: "Library", current: under("/library"), icon: <BookOpen />, group: "Look up" },
-    // In development the catalogue opens on its redesign (a development-only lab, like its route); production keeps /architecture.
-    { href: catalogueLabEnabled ? LAB : "/architecture", label: "Catalogue", current: under("/architecture") || under(LAB), icon: <Layers />, group: "Look up" },
+    { href: "/architecture", label: "Catalogue", current: under("/architecture"), icon: <Layers />, group: "Look up" },
     { href: "/squads", label: "Ownership", current: under("/squads"), icon: <UsersRound />, group: "Look up" },
     { href: "/requirement-knowledge", label: "Requirements", current: under("/requirement-knowledge"), icon: <FileText />, group: "Look up" },
   ];
@@ -127,8 +125,7 @@ export function Shell() {
   const busy = activeJobs(jobs.jobs);
 
   return (
-    // The catalogue redesign is light only, so its view stays light whatever the theme.
-    <div data-density={densityFor(density, "page")} data-theme={under(LAB) ? "light" : undefined}>
+    <div data-density={densityFor(density, "page")}>
       <AppShell
         homeHref="/"
         product="Knowledge Portal"
@@ -138,7 +135,6 @@ export function Shell() {
         navigation={navigation}
         secondaryNavigation={secondary}
         reader={focus}
-        fullBleed={under(LAB)}
         banner={online ? undefined : <><WifiOff size={16} aria-hidden="true" /> You're offline. Your unsaved work stays here; the portal carries on when your connection returns.</>}
         utilities={
           <>

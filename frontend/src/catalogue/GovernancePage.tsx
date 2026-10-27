@@ -18,6 +18,7 @@ import { ConflictsEdit, SourcesEdit } from "./GovernanceEditor";
 import { Level, NOT_SUPPLIED, Provenance } from "./GovernanceSections";
 import { byLevel, ITEM_STATUS, LEVEL, levelTag } from "./governance";
 import { traceLine } from "./inbox";
+import { OpenDocument } from "./provenance/Provenance";
 import { useCatalogueContext } from "./useCatalogue";
 
 /** The three registers, as the address names them: governance/conflicts/CF-01. */
@@ -333,6 +334,8 @@ function SourceRecord({ source, action }: { source: KnowledgeSource; action: Rea
   const offerings = (release.products ?? []).filter((item) => (item.sources ?? []).includes(source.id) || item.primary_source === source.id);
   const conflicts = (release.conflicts ?? []).filter((item) => item.a.source_id === source.id || item.b.source_id === source.id);
   const uses = sourceUses(release, source.id).length;
+  // The document itself, when the version holds the file the source names (by its exact name).
+  const document = source.file ? release.documents.find((item) => item.filename === source.file) : undefined;
   return (
     <RecordView
       title={source.title}
@@ -351,7 +354,9 @@ function SourceRecord({ source, action }: { source: KnowledgeSource; action: Rea
           ["Level", LEVEL[source.level].long],
           ...(source.short ? [["Cited as", <bdi key="short">{source.short}</bdi>] as [string, ReactNode]] : []),
           ...(source.version ? [["Version", <bdi key="version">{source.version}</bdi>] as [string, ReactNode]] : []),
-          ...(source.file ? [["File", <bdi key="file">{source.file}</bdi>] as [string, ReactNode]] : []),
+          ...(source.file
+            ? [["File", <span key="file" className="cat-inline"><bdi>{source.file}</bdi>{document && <OpenDocument versionId={document.id} title={document.title} />}</span>] as [string, ReactNode]]
+            : []),
           ["Covers", source.scope ? <bdi key="scope">{source.scope}</bdi> : <span className="cat-quiet">Not stated</span>],
           ["Cannot tell", source.boundary ? <bdi key="boundary">{source.boundary}</bdi> : <span className="cat-quiet">Not stated</span>],
         ]}

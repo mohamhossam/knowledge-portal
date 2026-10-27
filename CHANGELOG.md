@@ -7,6 +7,29 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Changed
 
+- One architecture catalogue: the catalogue redesign lab's views move into `/architecture`, on
+  the design system and in both themes, and the lab is removed (with `VITE_CATALOGUE_LAB`,
+  `VITE_CATALOGUE_SOURCE` and its sample switch). The Landscape tab draws where systems sit as
+  the layered map, every system shown (one not placed in the landscape is listed under it), and what
+  systems do by business area as the capability map, each with its table one press away. An
+  offering gains Plans, Footprint and Rules (its business rules), a portfolio line and a
+  "Delivered by" filter. A journey gains a process flow and a call register, and exports BPMN,
+  PlantUML, Mermaid and the register as CSV. The Systems tab reads its systems as records, who
+  calls whom (from the modelled journeys or the systems' own records) or what they deliver; the Map tab goes (`/map` opens who calls whom). Provenance
+  opens what it names: a quote its passage, re-read from the stored document; a source line its
+  Governance record; a source its document when the version holds it. The architecture
+  diagrams' colours get warm-charcoal values.
+- "Accepted from" leads with who accepted a suggestion and when, then which reader suggested it
+  ("the catalogue reader"); the model and prompt version sit one step away, under "Model and
+  prompt". The footprint's pine is documented in `DESIGN.md` as its one diagram hue.
+- Every offering, listed and side by side, in one order: a family of two or more under its own
+  name, the families of one offering together under "Other families" (each row naming its own),
+  then those with no family stated. The side-by-side table gains a Family column and a "What it
+  holds" filter (`?holds=components` or `empty`), marks an inferred offering as Suggested, and no
+  longer repeats the intro.
+- When no capability is filed under a business area, the Landscape says so (the areas the
+  version names, how many capabilities its systems record, and where one is filed) instead of
+  drawing empty areas beside one long column of the rest.
 - A capability read under a business area is filed there (ADR-0128).
   - **Reading.** The reader (catalogue-extraction-v23) gives a capability's area only where the
     document places it under a heading, column or row naming one, and never guesses. The lean

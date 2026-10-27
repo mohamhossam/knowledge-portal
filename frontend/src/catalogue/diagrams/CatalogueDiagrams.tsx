@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useCallback, useMemo } from "react";
 
 import { api, type Offering, type Release } from "../../api/client";
+import { EmptyState } from "../../design/components";
 import { DiagramLegend as Legend, layered, type LegendMark } from "../../design/diagram";
 import { count } from "../../home/format";
 import { diagramHref } from "../../shell/diagramHref";
@@ -73,20 +74,45 @@ export function SystemContextDiagram({ systemId }: { systemId: string }) {
   );
 }
 
-/** The capability map: one column per business area, each capability with the system that has it. */
-export function CapabilityMapDiagram() {
+/**
+ * The capability map: one column per business area, each capability with the system that has it.
+ * `table` is the page's own table of the same, shown by "Show as table" (the Landscape's).
+ */
+export function CapabilityMapDiagram({ table }: { table?: ReactNode }) {
   const { book, base } = useCatalogueContext();
   const href = useMemo<Href>(() => (id) => diagramHref(`${base}/systems/${encodeURIComponent(id)}`), [base]);
   const map = useMemo(() => capabilityMap(book.release, { href }), [book.release, href]);
   const layout = useCallback((fitWidth?: number) => layered(map.nodes, map.edges, { lanes: map.lanes, nodeWidth: 184, columnGap: 20, align: "start", fitWidth }), [map]);
-  if (!map.nodes.length) return <p className="cat-quiet">This version records no capability.</p>;
+  if (!map.nodes.length) return <>{table ?? <p className="cat-quiet">This version records no capability.</p>}</>;
+  // With nothing filed under an area, the drawing would be empty columns beside one long column of the rest: say so instead.
+  if (map.nodes.every((node) => node.lane === "unfiled")) return <NothingFiled capabilities={map.nodes.length} areas={map.lanes.filter((lane) => lane.id !== "unfiled").map((lane) => lane.label)} />;
   return (
     <RoutedDiagram
       label="What systems do, by business area"
       caption={`${count(map.nodes.length, "capability", "capabilities")} in ${count(map.lanes.length, "business area")}; under each, the system that has it.`}
       layout={layout}
       headers={{ lane: "Business area", detail: "Had by" }}
+      table={table}
     />
+  );
+}
+
+/** Why the capability map has nothing to draw: the areas the version names, if any, and that no capability is filed under one. */
+function NothingFiled({ capabilities, areas }: { capabilities: number; areas: string[] }) {
+  const held = `Its systems record ${count(capabilities, "capability", "capabilities")}`;
+  const named = areas.length > 5 ? `${areas.slice(0, 5).join(", ")} and ${areas.length - 5} more` : areas.join(", ");
+  return areas.length ? (
+    <EmptyState title="No capability is filed under a business area yet.">
+      <p>
+        This version names {count(areas.length, "business area")} (<bdi>{named}</bdi>). {held}, none of them filed under one, so
+        there is nothing to draw by area. A capability is filed under an area in a draft, from its system's record, or by
+        accepting a suggestion read under that area.
+      </p>
+    </EmptyState>
+  ) : (
+    <EmptyState title="This version names no business area yet.">
+      <p>{held}. Once business areas are named and capabilities filed under them, each area is drawn here with its capabilities.</p>
+    </EmptyState>
   );
 }
 

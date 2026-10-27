@@ -115,7 +115,7 @@
   --layer-enterprise-tint: #eaeff3;
   --layer-enterprise-ink: #34434f;
   --layer-enterprise-edge: #9fb0bf;
-  /* A product's footprint: a deep pine that no layer, state or brand colour uses. */
+  /* Footprint Pine (DESIGN.md): a product's footprint only, a deep pine that no layer, state or brand colour uses. */
   --pine-700: #17615d;
   --pine-900: #0f4744;
   --pine-300: #8fc3bc;
@@ -130,6 +130,40 @@
   --maroon-400: #b9707f;
   --maroon-600: #7d2a3e;
   --maroon-blush: #f1dfe3;
+  /*
+   * The diagram colours on warm charcoal: each layer's tint a dark of its own hue,
+   * its ink and edge lifted; the footprint, intensity and amount ramps run from
+   * dim to bright, so more still reads as stronger.
+   */
+  --layer-market-night: #2e2820;
+  --layer-market-ink-night: #e6d4ad;
+  --layer-market-edge-night: #8a7650;
+  --layer-product-night: #30241f;
+  --layer-product-ink-night: #efc6b6;
+  --layer-product-edge-night: #96695a;
+  --layer-customer-night: #33201f;
+  --layer-customer-ink-night: #f3b9b2;
+  --layer-customer-edge-night: #a05b55;
+  --layer-service-night: #2b2622;
+  --layer-service-ink-night: #ddd0c4;
+  --layer-service-edge-night: #887a6e;
+  --layer-resource-night: #2c2820;
+  --layer-resource-ink-night: #e3d5ae;
+  --layer-resource-edge-night: #8a7a50;
+  --layer-party-night: #232a22;
+  --layer-party-ink-night: #cbd9c1;
+  --layer-party-edge-night: #708266;
+  --layer-enterprise-night: #20272d;
+  --layer-enterprise-ink-night: #c4d3df;
+  --layer-enterprise-edge-night: #687c8d;
+  --pine-night: #17302d;
+  --pine-500: #4f8f88;
+  --slate-night-1: #232a36;
+  --slate-night-2: #3b4a63;
+  --slate-night-3: #6f82a6;
+  --slate-night-4: #b6c3dc;
+  --maroon-night-2: #6a3343;
+  --maroon-night-3: #a35a6b;
 
   /* Shadow colour bases (overlays only) */
   --shadow-ink: rgb(31 27 26 / 0.12);

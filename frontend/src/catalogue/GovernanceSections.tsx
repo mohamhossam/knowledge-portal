@@ -6,6 +6,7 @@ import type { KnowledgeSource, Offering, SourceConflict } from "../api/client";
 import { type Column, DataTable, Lines, Section, Status, Suggested } from "../design/components";
 import { CONFIDENCE } from "./catalogue";
 import { LEVEL, levelTag, questionOf, useSourceText } from "./governance";
+import { SourceName } from "./provenance/Provenance";
 
 type Sourced = { confidence?: string | null; source?: string | null };
 
@@ -19,6 +20,15 @@ export function ConfidenceMark({ confidence }: { confidence?: string | null }) {
   return null;
 }
 
+/**
+ * How a fact stands against its source where every row says it: confirmed as done,
+ * a gap as needing attention, and inferred as the Suggested mark, never a plain status.
+ */
+export function SourceMark({ confidence }: { confidence: "confirmed" | "inferred" | "gap" }) {
+  if (confidence === "confirmed") return <Status tone="done">Confirmed</Status>;
+  return <ConfidenceMark confidence={confidence} />;
+}
+
 /** A fact's mark and its source, "BPP SDD (L2) §11", on a quiet line; nothing when confirmed and unsourced. */
 export function Provenance({ item }: { item: Sourced }) {
   const sourceText = useSourceText();
@@ -28,7 +38,7 @@ export function Provenance({ item }: { item: Sourced }) {
   return (
     <span className="offering-by">
       <ConfidenceMark confidence={item.confidence} />
-      {source && <span dir="auto">{source}</span>}
+      {source && <span dir="auto"><SourceName text={item.source} /></span>}
     </span>
   );
 }

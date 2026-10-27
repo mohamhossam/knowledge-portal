@@ -86,18 +86,21 @@ const NON_TEXT: [string, string][] = [
   ["--color-chart-4", "--color-surface"], ["--color-chart-5", "--color-surface"], ["--color-chart-6", "--color-surface"],
 ];
 
-// The architecture diagrams' tokens are light only for now (the catalogue keeps data-theme="light").
+// The architecture diagrams' colours: each layer's ink, and the page's inks, on its tint; the
+// footprint's ink on its wash; the footprint, intensity and amount marks against the page.
 const LAYERS = ["market", "product", "customer", "service", "resource", "party", "enterprise"];
-const LIGHT_TEXT: [string, string][] = [
+const DIAGRAM_TEXT: [string, string][] = [
   ...LAYERS.map((layer): [string, string] => [`--color-layer-${layer}-ink`, `--color-layer-${layer}`]),
   ...LAYERS.map((layer): [string, string] => ["--color-ink", `--color-layer-${layer}`]),
   ...LAYERS.map((layer): [string, string] => ["--color-ink-2", `--color-layer-${layer}`]),
-  ["--color-on-action-fill-quiet", "--color-action-fill"],
   ["--color-footprint-ink", "--color-footprint-soft"], ["--color-footprint", "--color-surface"],
 ];
-const LIGHT_NON_TEXT: [string, string][] = [
+// A layer's edge is a soft frame, not the band's only cue (its heading names it), so it is not held to 3:1.
+const DIAGRAM_NON_TEXT: [string, string][] = [
   ["--color-footprint", "--color-surface"], ["--color-intensity-4", "--color-surface"], ["--color-amount-4", "--color-surface"],
 ];
+// Quiet text on the maroon action fill is a light-theme pairing only.
+const LIGHT_TEXT: [string, string][] = [["--color-on-action-fill-quiet", "--color-action-fill"]];
 
 describe("design tokens", () => {
   for (const [name, theme] of [["light", light], ["dark", dark]] as const) {
@@ -107,13 +110,16 @@ describe("design tokens", () => {
     it.each(NON_TEXT)(`${name}: %s against %s reaches 3:1`, (fg, bg) => {
       expect(ratio(resolve(fg, theme), resolve(bg, theme))).toBeGreaterThanOrEqual(3);
     });
+    it.each(DIAGRAM_TEXT)(`${name}: diagram %s on %s reaches 4.5:1`, (fg, bg) => {
+      expect(ratio(resolve(fg, theme), resolve(bg, theme))).toBeGreaterThanOrEqual(4.5);
+    });
+    it.each(DIAGRAM_NON_TEXT)(`${name}: diagram %s against %s reaches 3:1`, (fg, bg) => {
+      expect(ratio(resolve(fg, theme), resolve(bg, theme))).toBeGreaterThanOrEqual(3);
+    });
   }
 
   it.each(LIGHT_TEXT)("light: %s on %s reaches 4.5:1", (fg, bg) => {
     expect(ratio(resolve(fg, light), resolve(bg, light))).toBeGreaterThanOrEqual(4.5);
-  });
-  it.each(LIGHT_NON_TEXT)("light: %s against %s reaches 3:1", (fg, bg) => {
-    expect(ratio(resolve(fg, light), resolve(bg, light))).toBeGreaterThanOrEqual(3);
   });
 
   it("keeps the OS-preference dark theme identical to the forced one", () => {

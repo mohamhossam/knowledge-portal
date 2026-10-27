@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import release from "./fixtures/smb-release.json";
-import { asRelease, loadSampleRelease } from "./sample";
+import { asRelease } from "./sample";
 
 describe("the bundled catalogue sample", () => {
-  it("reads as a catalogue version, with the per-channel flows the service sends", async () => {
-    const sample = await loadSampleRelease();
+  it("reads as a catalogue version, with the per-channel flows the service sends", () => {
+    const sample = asRelease(release);
     expect(sample.id).toBe("smb-architecture-draft");
     expect(sample.systems.length).toBeGreaterThan(0);
     expect(sample.journeys?.some((journey) => journey.channel_edges.length > 0)).toBe(true);

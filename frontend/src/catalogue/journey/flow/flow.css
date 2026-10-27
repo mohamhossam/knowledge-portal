@@ -1,0 +1,201 @@
+/*
+ * A journey's process flow and its call register (catalogue merge, step 4): the
+ * lanes and steps of the flow, its zoom, the picked step and every step under
+ * it, and the register's sequence of calls. First drawn in the catalogue lab,
+ * now on the Calm Ledger's tokens, radii and type, so it holds in both themes.
+ */
+.jf-zoom { display: inline-flex; margin-left: auto; border: 1px solid var(--color-rule-strong); border-radius: 3px; }
+.jf-zoom button { min-width: 32px; min-height: 30px; border: 0; background: var(--color-surface); cursor: pointer; font-weight: 600; padding: 0 8px; }
+.jf-zoom button + button { border-left: 1px solid var(--color-rule); }
+.jf-zoom button:hover:not([aria-disabled="true"]) { background: var(--color-surface-2); }
+.jf-zoom button[aria-disabled="true"] { color: var(--color-ink-3); }
+.jf-zoom .pct { min-width: 6ch; }
+.jf-zoom button:first-child { border-radius: 2px 0 0 2px; }
+.jf-zoom button:last-child { border-radius: 0 2px 2px 0; }
+.jf-callcards li { padding: 8px 0; border-top: 1px solid var(--color-rule-soft); display: flex; flex-direction: column; gap: 2px; }
+.jf-callcards p { color: var(--color-ink-2); }
+.jf-callcards span { font-size: var(--text-meta); color: var(--color-ink-2); }
+/* ---------- Journey flow ---------- */
+.jf-canvas { overflow: auto; border: 1px solid var(--color-rule); border-radius: 4px; background: var(--color-surface); }
+.jf-canvas:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+.jf-flow { display: flex; }
+.jf-lanes { position: sticky; left: 0; z-index: 2; flex: none; width: 176px; border-right: 1px solid var(--color-rule); }
+.jf-lane-name { display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 0 12px; border-bottom: 1px solid color-mix(in srgb, var(--color-surface) 70%, transparent); overflow: hidden; }
+.jf-lane-name strong { font-size: var(--text-meta); font-weight: 700; font-stretch: 85%; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.jf-lane-name span { font-size: var(--text-meta); color: var(--color-ink-2); }
+.jf-flow svg { display: block; flex: none; }
+.jf-task { cursor: pointer; outline: none; }
+.jf-task .box { fill: var(--color-surface); stroke: var(--color-rule-strong); stroke-width: 1; }
+.jf-task .ring { fill: none; stroke: transparent; stroke-width: 2.5; }
+.jf-task:hover .box { stroke: var(--color-action-fill); stroke-width: 1.5; }
+.jf-task:focus-visible .ring { stroke: var(--color-action-fill); }
+.jf-task.on .box { fill: var(--color-action-fill); stroke: var(--color-action-fill); }
+.jf-task.on:focus-visible .ring { stroke: var(--color-focus); }
+.jf-task .label { font-size: 12.5px; fill: var(--color-ink); }
+.jf-task .num { font-size: 12px; font-weight: 700; fill: var(--color-ink-2); }
+.jf-task.on .label { fill: var(--color-on-action-fill); }
+.jf-task.on .num { fill: var(--color-on-action-fill-quiet); }
+.jf-edge { fill: none; stroke: var(--color-ink-2); stroke-width: 1.4; }
+/* A way back to an earlier step (a loop): dashed, under the lanes. */
+.jf-edge--back { stroke-dasharray: 6 4; }
+.jf-edge-label { font-size: 12px; fill: var(--color-ink-2); }
+.jf-flowbar { display: flex; gap: 12px; align-items: center; justify-content: flex-end; margin: 12px 0; }
+.jf-flowbar .jf-zoom { margin-left: 0; align-self: center; }
+.jf-below { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-6); margin-top: var(--space-6); align-items: start; }
+.jf-stepcard { border: 1px solid var(--color-rule); border-radius: var(--radius-overlay); padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.jf-stepcard h3 { font-size: 1.25rem; font-weight: 700; font-stretch: 87.5%; }
+.jf-stepcard h4 { font-size: var(--text-meta); color: var(--color-ink-2); margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--color-rule-soft); }
+.jf-allsteps h3 { font-size: var(--text-meta); color: var(--color-ink-2); margin-bottom: 8px; }
+.jf-allsteps ol { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
+.jf-allsteps button { width: 100%; height: 100%; display: flex; gap: 8px; align-items: flex-start; text-align: left; border: 1px solid var(--color-rule-soft); border-radius: 4px; background: var(--color-surface); padding: 8px; cursor: pointer; }
+.jf-allsteps button:hover { border-color: var(--color-action-fill); }
+.jf-allsteps button[aria-current="step"] { background: var(--color-selected); border-color: var(--color-action-fill); }
+.jf-allsteps .n { flex: none; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 999px; background: var(--color-action-fill); color: var(--color-on-action-fill); display: grid; place-items: center; font-size: 0.75rem; font-weight: 700; }
+.jf-allsteps .t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.jf-allsteps .t strong { font-weight: 650; line-height: 1.3; }
+.jf-allsteps .t span { font-size: var(--text-meta); color: var(--color-ink-2); }
+.jf-register { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.jf-regtable th[scope="row"] { color: var(--color-ink); white-space: nowrap; }
+.jf-regtable small { color: var(--color-ink-2); font-weight: 500; }
+.jf-regtable td { font-size: var(--text-meta); }
+@media (max-width: 1180px) {
+  .jf-below { grid-template-columns: 1fr; }
+}
+/* ---------- Integrations tab: how the calls are made, then the calls as a sequence beside the picked call ---------- */
+.jr-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 12px 16px; border: 1px solid var(--color-rule-soft); border-radius: var(--radius-overlay); background: var(--color-surface-1); }
+.jr-total { font-size: 0.9375rem; color: var(--color-ink-2); }
+.jr-total b { font-size: 1.125rem; font-weight: 700; color: var(--color-ink); }
+.jr-styles { flex: 1 1 360px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.jr-mix { display: flex; gap: 2px; height: 8px; overflow: hidden; border-radius: 4px; }
+.jr-mix i { display: block; min-width: 4px; }
+.jr-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0; list-style: none; font-size: var(--text-meta); color: var(--color-ink-2); }
+.jr-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.jr-legend b { color: var(--color-ink); }
+.jr-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.jr-mix .is-s1, .jr-legend .is-s1 { background: var(--color-intensity-4); }
+.jr-mix .is-s2, .jr-legend .is-s2 { background: var(--color-intensity-3); }
+.jr-mix .is-s3, .jr-legend .is-s3 { background: var(--color-intensity-2); }
+.jr-mix .is-s4, .jr-legend .is-s4 { background: var(--color-intensity-1); box-shadow: inset 0 0 0 1px var(--color-intensity-2); }
+.jr-mix .is-none, .jr-legend .is-none { background: repeating-linear-gradient(135deg, var(--color-surface) 0 3px, var(--color-rule-strong) 3px 4px); }
+.jr-tools { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.jr-system { display: inline-flex; align-items: center; gap: 8px; font-size: var(--text-meta); color: var(--color-ink-2); }
+.jr-seqwrap { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.jr-seq { min-width: 0; overflow-x: auto; padding: 6px 12px 12px; border: 1px solid var(--color-rule-soft); border-radius: var(--radius-overlay); background: var(--color-surface); }
+.jr-heads, .jr-call { display: grid; grid-template-columns: 30px 190px minmax(calc(var(--ir-lanes) * 40px), 1fr); }
+.jr-heads { position: sticky; top: 0; z-index: 2; padding-bottom: 6px; border-bottom: 1px solid var(--color-rule-soft); background: var(--color-surface); }
+.jr-headgap { grid-column: 1 / 3; }
+.jr-lanes { display: grid; grid-template-columns: repeat(var(--ir-lanes), minmax(0, 1fr)); }
+.jr-head { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; padding: 2px 0; border: 0; background: none; color: var(--color-ink-2); cursor: pointer; }
+.jr-head > span:last-child { max-height: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; writing-mode: vertical-rl; transform: rotate(180deg); font-size: 0.6875rem; font-weight: 600; }
+.jr-head:hover, .jr-head.is-on { color: var(--color-action-fill); }
+.jr-calls { margin: 0; padding: 0; list-style: none; }
+.jr-call { width: 100%; min-height: 30px; align-items: center; padding: 0; border: 0; border-radius: var(--radius-overlay); background: none; font: inherit; text-align: left; cursor: pointer; }
+.jr-call:hover { background: var(--color-surface-1); }
+.jr-call[aria-pressed="true"] { background: var(--color-selected); }
+.jr-num { justify-self: center; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--color-surface-2); font-size: 0.6875rem; font-weight: 700; color: var(--color-ink-2); }
+.jr-call[aria-pressed="true"] .jr-num { background: var(--color-action-fill); color: var(--color-surface); }
+.jr-op { overflow: hidden; padding-right: 10px; white-space: nowrap; text-overflow: ellipsis; font-size: var(--text-meta); font-weight: 500; }
+.jr-lanes.jr-track { position: relative; display: block; align-self: stretch; height: 30px; background-image: linear-gradient(to right, transparent calc(50% - 0.5px), var(--color-rule-soft) calc(50% - 0.5px), var(--color-rule-soft) calc(50% + 0.5px), transparent calc(50% + 0.5px)); background-size: calc(100% / var(--ir-lanes)) 100%; }
+.jr-arrow { --ir-ink: var(--color-ink-2); position: absolute; top: 50%; height: 2px; margin-top: -1px; background: var(--ir-ink); }
+.jr-arrow::before { content: ""; position: absolute; left: -3px; top: -2px; width: 6px; height: 6px; border-radius: 50%; background: var(--ir-ink); }
+.jr-arrow::after { content: ""; position: absolute; right: -1px; top: -4px; width: 7px; height: 10px; background: var(--ir-ink); clip-path: polygon(0 0, 100% 50%, 0 100%); }
+.jr-arrow.is-back::before { left: auto; right: -3px; }
+.jr-arrow.is-back::after { right: auto; left: -1px; clip-path: polygon(100% 0, 0 50%, 100% 100%); }
+.jr-via { position: absolute; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--color-surface); box-shadow: inset 0 0 0 2px var(--color-ink-2); }
+.jr-self { position: absolute; top: 7px; width: 16px; height: 16px; border: 2px solid var(--color-ink-2); border-left: 0; border-radius: 0 8px 8px 0; }
+.jr-call[aria-pressed="true"] .jr-arrow { --ir-ink: var(--color-action-fill); }
+.jr-call[aria-pressed="true"] .jr-via { box-shadow: inset 0 0 0 2px var(--color-action-fill); }
+.jr-calls li.is-quiet .jr-op { color: var(--color-ink-3); font-weight: 400; }
+.jr-calls li.is-quiet .jr-arrow { --ir-ink: var(--color-rule-strong); }
+.jr-calls li.is-quiet .jr-via { box-shadow: inset 0 0 0 2px var(--color-rule-strong); }
+.jr-detail { position: sticky; top: calc(var(--sticky-top, 0px) + 12px); display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--color-rule-soft); border-radius: var(--radius-overlay); background: var(--color-surface-1); }
+.jr-detail-count { font-size: var(--text-meta); font-weight: 600; color: var(--color-ink-3); }
+.jr-detail-route { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 1.0625rem; font-weight: 700; }
+.jr-detail-via { font-size: var(--text-meta); color: var(--color-ink-2); }
+.jr-facts { display: grid; margin: 0; border-top: 1px solid var(--color-rule-soft); }
+.jr-facts div { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--color-rule-soft); font-size: var(--text-meta); }
+.jr-facts dt { color: var(--color-ink-3); }
+.jr-facts dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.jr-purpose { font-size: 0.875rem; line-height: 1.5; color: var(--color-ink-2); }
+.jr-stepper { display: flex; gap: 8px; margin-top: 4px; }
+@media (max-width: 1100px) {
+  .jr-seqwrap { grid-template-columns: minmax(0, 1fr); }
+  .jr-detail { position: static; }
+}
+
+/* The record's own parts around the flow and the register (not from the lab). */
+.jf-views {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.jf-channel {
+  max-inline-size: 20rem;
+}
+
+.jf-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.jr-switch {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-self: end;
+}
+
+/* Export: a small menu under its button, the one overlay on the record. */
+.jf-export {
+  position: relative;
+}
+
+.jf-export__summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.jf-export__summary::-webkit-details-marker {
+  display: none;
+}
+
+.jf-export__menu {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-start: calc(100% + var(--space-1));
+  z-index: var(--z-drawer);
+  display: grid;
+  min-inline-size: 18rem;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  border: var(--hair-rule);
+  background: var(--color-surface);
+  box-shadow: var(--overlay-shadow);
+}
+
+.jf-export__item {
+  display: grid;
+  inline-size: 100%;
+  min-block-size: var(--target-min);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  background: none;
+  color: var(--color-ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.jf-export__item:hover {
+  background: var(--color-surface-2);
+}
+
+.jf-export__item:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(-1 * var(--focus-ring-offset));
+}

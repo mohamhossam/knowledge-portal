@@ -22,7 +22,10 @@ import { useCatalogueContext } from "./useCatalogue";
 
 /** The diagrams load as their own chunk, on the first journey opened (the main chunk stays under budget). */
 const JourneyViews = lazy(() => import("./journey/JourneyViews"));
-const VIEWS: JourneyView[] = ["swimlane", "flowchart", "timeline"];
+// The lab's process flow, call register and exports (catalogue merge, step 4), in their own chunk.
+const JourneyFlowViews = lazy(() => import("./journey/flow/JourneyFlowViews"));
+const JourneyExport = lazy(() => import("./journey/flow/JourneyFlowViews").then((module) => ({ default: module.JourneyExport })));
+const VIEWS: JourneyView[] = ["swimlane", "flowchart", "timeline", "flow", "integrations"];
 
 const ALL = "all";
 
@@ -271,13 +274,18 @@ function JourneyRecord({ journey }: { journey: Journey }) {
         </>
       }
       actions={
-        editable ? (
-          <ActionGroup label="This journey">
+        <ActionGroup label="This journey">
+          <Suspense fallback={null}>
+            <JourneyExport release={book.release} journeyId={journey.id} />
+          </Suspense>
+          {editable && (
+            <>
             <Button id={buttonId("edit")} aria-expanded={editing === "edit"} onClick={() => toggle("edit")}>Edit this journey</Button>
             <Button id={buttonId("remove")} variant="tertiary" aria-expanded={editing === "remove"} onClick={() => toggle("remove")}>Remove this journey…</Button>
             <Button id={buttonId("rename")} variant="tertiary" aria-expanded={editing === "rename"} onClick={() => toggle("rename")}>Change the id…</Button>
-          </ActionGroup>
-        ) : undefined
+            </>
+          )}
+        </ActionGroup>
       }
     >
       {editing === "edit" && <JourneyEdit journey={journey} onDone={() => close("edit")} />}
@@ -302,6 +310,10 @@ function JourneyRecord({ journey }: { journey: Journey }) {
             system={system}
             channelName={(channelId) => channels.get(channelId) ?? channelId}
             view={view}
+            more={[
+              { id: "flow", label: "Process flow", content: <JourneyFlowViews release={book.release} journeyId={journey.id} title={journey.name} show="flow" /> },
+              { id: "integrations", label: "Integrations", content: <JourneyFlowViews release={book.release} journeyId={journey.id} title={journey.name} show="integrations" /> },
+            ]}
             onViewChange={(next) =>
               setParams((previous) => {
                 const query = new URLSearchParams(previous);

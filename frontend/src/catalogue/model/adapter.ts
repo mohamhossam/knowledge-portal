@@ -124,8 +124,9 @@ function journeyOf(
     activities,
     flow: {
       all: flowEdges(journey.edges),
-      byChannel: Object.fromEntries(journey.channel_edges.map((item) => [item.channel_id, flowEdges(item.edges)])),
-      shared: flowEdges(journey.shared_edges),
+      // The channels' own flows arrived after the whole one: a journey read before them has none.
+      byChannel: Object.fromEntries((journey.channel_edges ?? []).map((item) => [item.channel_id, flowEdges(item.edges)])),
+      shared: flowEdges(journey.shared_edges ?? []),
     },
     calls,
   };
@@ -177,10 +178,19 @@ function domainsOf(landscape: NonNullable<Release["landscape_domains"]>): Catalo
 /** The systems, each placed in its domain and group. */
 function systemsOf(release: Release, evidence: EvidenceOf): Catalogue["systems"] {
   const landscape = release.landscape_domains ?? [];
+  const byId = new Map(landscape.map((item) => [item.id, item]));
+  // A system placed deeper than a group sits in its top domain, in the group under it: the map draws two levels.
   const place = (id: string | null | undefined) => {
-    const node = landscape.find((item) => item.id === id);
+    let node = id ? byId.get(id) : undefined;
     if (!node) return { domain: "", group: "" };
-    return node.parent_id ? { domain: node.parent_id, group: node.id } : { domain: node.id, group: "" };
+    let group: typeof node | undefined;
+    for (let hops = 0; node.parent_id && hops < 16; hops++) {
+      const parent = byId.get(node.parent_id);
+      if (!parent) break;
+      group = node;
+      node = parent;
+    }
+    return { domain: node.id, group: group?.id ?? "" };
   };
   return release.systems.map((system) => ({
     id: system.id,
@@ -222,8 +232,9 @@ function offeringOf(product: NonNullable<Release["products"]>[number], channels:
     purpose,
     values: product.values.map(point),
     eligibility: product.audiences.map(point),
-    plans: product.plans.map((plan) => ({ name: plan.name, characteristics: plan.characteristics, evidence: evidence(plan) })),
-    rules: product.business_rules.map((rule) => ({ id: rule.id, kind: rule.kind ?? undefined, statement: rule.statement, evidence: evidence(rule) })),
+    // Plans and business rules arrived later than the rest: a release read before them has none.
+    plans: (product.plans ?? []).map((plan) => ({ name: plan.name, characteristics: plan.characteristics, evidence: evidence(plan) })),
+    rules: (product.business_rules ?? []).map((rule) => ({ id: rule.id, kind: rule.kind ?? undefined, statement: rule.statement, evidence: evidence(rule) })),
     components: product.components.map((part) => ({
       id: part.id,
       name: part.name,

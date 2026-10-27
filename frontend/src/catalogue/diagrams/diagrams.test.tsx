@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, type Offering, type Release } from "../../api/client";
 import { checkAxeAfterEach } from "../../test/axe";
 import { catalogue } from "../catalogue";
+import { DomainsPage } from "../DomainsPage";
 import { MapPage } from "../MapPage";
 import type { CatalogueContext } from "../useCatalogue";
 import { capabilityMap, connectionsFlow, offeringStructure, systemContext, versionTimeline } from "./build";
@@ -136,16 +137,18 @@ function Where() {
   return <p data-testid="where">{location.pathname}{location.search}</p>;
 }
 
-function renderMap(path: string) {
+function renderMap(path: string, given = release()) {
   vi.spyOn(api, "changeRequests").mockResolvedValue([] as never);
   vi.spyOn(api, "mappingImpact").mockResolvedValue({ outdated_requirements: 0 } as never);
-  const context: CatalogueContext = { book: catalogue(release()), base: "/architecture", inService: true, actorName: () => "Amina Owner" };
+  const context: CatalogueContext = { book: catalogue(given), base: "/architecture", inService: true, actorName: () => "Amina Owner" };
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
           <Route path="architecture" element={<Outlet context={context} />}>
+            <Route index element={<p>The systems</p>} />
             <Route path="map" element={<MapPage />} />
+            <Route path="domains" element={<DomainsPage />} />
             <Route path="systems/:systemId" element={<p>A system's record</p>} />
           </Route>
         </Routes>
@@ -155,27 +158,41 @@ function renderMap(path: string) {
   );
 }
 
-describe("MapPage", () => {
-  it("draws how systems connect, with every connection and what it is for one press away", async () => {
+describe("MapPage, after the catalogue merge (step 5)", () => {
+  it("opens who calls whom on the Systems tab, where the whole-estate drawing was", () => {
     renderMap("/architecture/map");
-    expect(screen.getByRole("heading", { level: 1, name: "Map" })).toBeInTheDocument();
-    const flow = screen.getByRole("group", { name: "How systems connect" });
-    expect(within(flow).getByRole("link", { name: "CWOM, Order orchestration" })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Show as table" }));
-    const table = screen.getByRole("table", { name: "Every connection between systems in this version" });
-    expect(within(table).getByText("Work orders")).toBeInTheDocument();
+    expect(screen.getByTestId("where")).toHaveTextContent("/architecture?view=interfaces");
   });
 
-  it("opens a system's record in the app when its node is pressed", async () => {
-    renderMap("/architecture/map");
-    await userEvent.click(within(screen.getByRole("group", { name: "How systems connect" })).getByRole("link", { name: "WFM" }));
-    expect(screen.getByTestId("where")).toHaveTextContent("/architecture/systems/wfm");
+  it("opens the Landscape's business areas for what systems do, drawn as the capability map", async () => {
+    renderMap("/architecture/map?lens=capabilities");
+    expect(screen.getByTestId("where")).toHaveTextContent("/architecture/domains");
+    const map = screen.getByRole("group", { name: "What systems do, by business area" });
+    expect(within(map).getByRole("link", { name: "Rating, BSCS" })).toBeInTheDocument();
+    // The Landscape's own table, one press away.
+    const figure = map.closest("figure")!;
+    await userEvent.click(within(figure as HTMLElement).getByRole("button", { name: "Show as table" }));
+    expect(screen.getByRole("table", { name: "Business areas and their capabilities" })).toBeInTheDocument();
   });
 
-  it("reads what systems do by business area under its own lens, kept in the address", async () => {
-    renderMap("/architecture/map");
-    await userEvent.click(screen.getByRole("tab", { name: "What systems do" }));
-    expect(screen.getByTestId("where")).toHaveTextContent("/architecture/map?lens=capabilities");
-    expect(within(screen.getByRole("group", { name: "What systems do, by business area" })).getByRole("link", { name: "Rating, BSCS" })).toBeInTheDocument();
+  it("says so, instead of drawing empty areas, when no capability is filed under one", () => {
+    const unfiled = (systems: Release["systems"]) => systems.map((item) => ({ ...item, capabilities: item.capabilities.map((cap) => ({ ...cap, domain_id: null })) }));
+    renderMap("/architecture/domains", release({ systems: unfiled(release().systems) }));
+    expect(screen.queryByRole("group", { name: "What systems do, by business area" })).not.toBeInTheDocument();
+    const notice = screen.getByText("No capability is filed under a business area yet.").closest(".ds-empty")!;
+    expect(notice).toHaveTextContent(/names 2 business areas \(Fulfilment, Billing\)\. Its systems record 3 capabilities, none of them filed under one/);
+  });
+
+  it("says when the version names no business area at all", () => {
+    renderMap("/architecture/domains", release({ capability_domains: [] }));
+    expect(screen.getByText("This version names no business area yet.")).toBeInTheDocument();
+    expect(screen.getByText(/^Its systems record 3 capabilities\./)).toBeInTheDocument();
+  });
+
+  it("still draws one system in context at full width, with the way back to its record", () => {
+    renderMap("/architecture/map?system=cwom");
+    expect(screen.getByRole("link", { name: "Back to the record of CWOM" })).toHaveAttribute("href", "/architecture/systems/cwom");
+    expect(screen.getByRole("link", { name: "See who calls whom across every system" })).toHaveAttribute("href", "/architecture?view=interfaces");
   });
 });
+
