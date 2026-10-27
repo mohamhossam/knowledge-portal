@@ -35,18 +35,36 @@ not count them again.
    context with half kept for the answer has no room left for the rule.
 3. **The reading resolves the name, and never adds an area for it.** A name the draft's areas
    answer to becomes that area's id. Otherwise, a name the same reading's area suggestions
-   answer to becomes the suggested area's id. Any other name is dropped: the capability is
-   suggested in no business area, and the reading's warnings list the names it dropped.
+   answer to becomes the suggested area's id. Any other name is kept as the document wrote it,
+   and no area is added for it. The reading's warnings list each such name with the
+   capabilities that named it. The capability is filed under that area only if a maintainer adds
+   the area before accepting it. This is how a missing system or channel is already named, as
+   written until the draft resolves it.
 4. **Acceptance files only an unfiled capability, in an area the draft has.** Accepting a
    capability whose area is in the draft sets `domain_id` on a new capability, or on an existing
    one that has none. An existing capability that already has an area keeps it. When the draft
    does not have the area, for example because its suggestion was not accepted yet, the
    capability is accepted in no business area, and no area is created. Accept-all already
    accepts areas before capabilities, so a reading accepted in one go files its capabilities.
-5. **The suggestion says where it files the capability.** A capability suggestion that names
-   an area reads "…, filed under the business area X". When the draft does not have X yet, it
-   adds "if that area is accepted first". The suggestion editor has a "Business area" select,
-   like the system editor's, to change or clear the area before accepting.
+5. **Decide shows where a capability is filed, and what filing it depends on.** This is shown
+   wherever the decision is made, but it never blocks accepting:
+   - **The suggestion's sentence** names the area before the matching phrases: "Adds the
+     capability X, under the business area Y, matched by …". That way a row cut short still
+     shows the area.
+   - **When the draft lacks the area,** the row's State and the pane's decision say which case
+     applies. If a suggestion adds the area, they say "Filed under Y only if that business area
+     is accepted first", and the pane offers "Open the business area". If nothing suggests it,
+     they say "Y is not in the draft and nothing suggests it: accepted now, this capability goes
+     in no business area".
+   - **"What waits for what"** draws the capability as waiting on its area's suggestion.
+   - **The suggestion editor** has a wide "Business area" select under the capability's name,
+     as the system editor has it. Its groups are "Named by the document" and "In the draft".
+     When the chosen area is not in the draft, its hint says "Accepted in no business area
+     unless this area is in the draft by then".
+
+   These came out of the Impeccable critique of the first version of this change, run against
+   a live seeded draft. That version said the condition only at the end of the sentence, where
+   the row cut it off, and dropped an unknown area without saying so on Decide.
 
 ## Consequences
 
@@ -57,8 +75,8 @@ not count them again.
   area the draft has for it. If the draft does not have the area, the capability is "already
   present", so it is left out of that reading. Reading the document again once the area is
   accepted files it.
-- Accepting a capability before its area leaves it unfiled. The curator can file it later in
-  the system editor.
+- Accepting a capability before its area leaves it unfiled. Decide says so beforehand, and the
+  curator can file the capability later in the system editor.
 - **HYPOTHESIS:** gpt-5.1 under catalogue-extraction-v23 fills `domain` for capabilities read
   under area headings like testManual's. This needs a reading of those documents to confirm.
 

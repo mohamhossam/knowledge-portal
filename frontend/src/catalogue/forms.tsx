@@ -88,13 +88,14 @@ export function LinesField({ label, value, onChange, hint, required }: {
   );
 }
 
-export function SelectField({ label, value, onChange, options, wide }: {
+export function SelectField({ label, value, onChange, options, wide, hint }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   /** Options with a group are set under it, in an optgroup, in the order given. */
   options: { value: string; label: string; group?: string }[];
   wide?: boolean;
+  hint?: string;
 }) {
   const runs: { group?: string; options: typeof options }[] = [];
   for (const option of options) {
@@ -105,7 +106,7 @@ export function SelectField({ label, value, onChange, options, wide }: {
   const render = (list: typeof options) => list.map((option) => <option key={option.value} value={option.value}>{option.label}</option>);
   return (
     <div className={wide ? "cat-form__cell cat-form__wide" : "cat-form__cell"}>
-      <Field label={label}>
+      <Field label={label} hint={hint}>
         {(control) => (
           <select className="ds-input ds-input--select" {...control} value={value} onChange={(event) => onChange(event.target.value)}>
             {runs.map((run, index) =>

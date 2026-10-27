@@ -748,13 +748,14 @@ def _canonical(
 
 def _filed(
     changes: tuple[ProposedChange, ...], release: ArchitectureKnowledge
-) -> tuple[tuple[ProposedChange, ...], tuple[str, ...]]:
+) -> tuple[tuple[ProposedChange, ...], dict[str, list[str]]]:
     """Every capability naming its business area by the id the area has, or will have once
-    accepted; and the names no area answers to, one per capability (ADR-0128).
+    accepted; and, by the name no area answers to, the capabilities naming it (ADR-0128).
 
     The reader gives an area as the document names it. One the draft has, or the reading
-    suggests beside it, is kept; any other is dropped rather than added, so the capability
-    is suggested in no business area and the reading says so.
+    suggests beside it, is named by its id. Any other is kept as written, never added: the
+    capability is filed under it only if a maintainer adds the area before accepting it,
+    and the reading says so.
     """
     suggested = tuple(
         item.content.capability_domain
@@ -762,20 +763,23 @@ def _filed(
         if item.content.capability_domain is not None
     )
     result: list[ProposedChange] = []
-    unfiled: list[str] = []
+    unanswered: dict[str, list[str]] = {}
     for change in changes:
         reference = change.content.capability_domain_id
-        if reference is None:
+        area = (
+            capability_domain_named(release.capability_domains, reference)
+            or capability_domain_named(suggested, reference)
+            if reference is not None
+            else None
+        )
+        if reference is not None and area is None:
+            unanswered.setdefault(reference, []).append(change.content.name)
+        if area is None:
             result.append(change)
             continue
-        area = capability_domain_named(release.capability_domains, reference) or (
-            capability_domain_named(suggested, reference)
-        )
-        if area is None:
-            unfiled.append(reference)
-        content = replace(change.content, capability_domain_id=area.id if area else None)
+        content = replace(change.content, capability_domain_id=area.id)
         result.append(replace(change, content=content))
-    return tuple(result), tuple(unfiled)
+    return tuple(result), unanswered
 
 
 # Words a table writes where it has no system's name.
@@ -1498,7 +1502,7 @@ class ProposeCatalogueChanges:
         kinds: dict[CandidateContent, list[tuple[bool, RelationshipKind | None]]] = {}
         self_linked = 0
         read = tuple(_cited_where_repeated(change, repeats) for change in proposal.changes)
-        canonical, unfiled = _filed(_canonical(read, release), release)
+        canonical, unanswered = _filed(_canonical(read, release), release)
         for change in _one_journey_each(
             _one_offering_each(_one_channel_each(_one_interface_each(canonical)))
         ):
@@ -1567,12 +1571,16 @@ class ProposeCatalogueChanges:
                 f"{self_linked} dependency suggestion(s) were left out because they linked a "
                 "system to itself."
             )
-        if unfiled:
-            areas = ", ".join(dict.fromkeys(unfiled))
+        if unanswered:
+            # Said without a count, so it reads right for one capability or many.
+            areas = "; ".join(
+                f"{area} (for {', '.join(dict.fromkeys(names))})"
+                for area, names in unanswered.items()
+            )
             warnings.append(
-                f"{len(unfiled)} capability suggestion(s) named a business area that neither "
-                f"the draft has nor this reading suggests, so they are suggested in no business "
-                f"area: {areas}."
+                f"Business areas named that neither the draft has nor this reading suggests: "
+                f"{areas}. A capability is filed under such an area only if the area is in the "
+                "draft when the capability is accepted."
             )
         if same:
             merged = ", ".join(

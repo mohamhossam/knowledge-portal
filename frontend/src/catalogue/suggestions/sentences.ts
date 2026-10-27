@@ -33,15 +33,17 @@ function details(product: Offering | null | undefined): string[] {
 }
 
 /**
- * The business area a capability is filed under (ADR-0128). One the draft lacks is only
- * suggested: accepting the capability first leaves it in no business area.
+ * What filing a capability under its business area depends on (ADR-0128), or null when it
+ * depends on nothing: the area is in the draft, or none is named. It never blocks accepting;
+ * a capability accepted while its area is missing goes in no business area.
  */
-function filedUnder(area: string | null | undefined, words: Lexicon): string {
-  if (!area) return "";
+export function areaNote(suggestion: Suggestion, words: Lexicon): string | null {
+  const area = suggestion.content.kind === "capability" ? suggestion.content.capability_domain_id : null;
+  if (!area || suggestion.status !== "proposed" || words.inDraft(nodeKeys("area", area)[0]!)) return null;
   const name = words.area(area);
-  return words.inDraft(nodeKeys("area", area)[0]!)
-    ? `, filed under the business area ${name}`
-    : `, filed under the business area ${name} if that area is accepted first`;
+  return words.areaSuggestion(area)
+    ? `Filed under ${name} only if that business area is accepted first`
+    : `${name} is not in the draft and nothing suggests it: accepted now, this capability goes in no business area`;
 }
 
 /** The change a suggestion would make, said as a sentence about its system. */
@@ -61,7 +63,9 @@ export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
       const within = content.component_id ? `, in ${words.component(content.system_id, content.component_id)}` : "";
       const concept = content.concept_ids?.[0];
       const realises = concept ? `, realising the concept ${concept}` : "";
-      return `Adds the capability ${content.name}${within}${realises}, matched by ${quoted(content.triggers)}${filedUnder(content.capability_domain_id, words)}`;
+      // The area comes before the phrases, so a row cut short still shows it.
+      const area = content.capability_domain_id ? `, under the business area ${words.area(content.capability_domain_id)}` : "";
+      return `Adds the capability ${content.name}${area}${within}${realises}, matched by ${quoted(content.triggers)}`;
     }
     case "constraint":
       return `Adds the constraint “${content.text}”`;

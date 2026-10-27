@@ -341,7 +341,7 @@ def test_a_capability_read_under_an_area_is_filed_there_on_acceptance(
     client: TestClient,
 ) -> None:
     """ADR-0128: an area the reading suggests is accepted first and holds the capability; one
-    nothing answers to is dropped, never added, and the reading says so."""
+    nothing answers to is kept as written, never added, and the reading says so."""
     draft = client.post(
         "/architecture-knowledge/releases", json={"name": "Next version"}, headers=OWNER
     ).json()
@@ -357,11 +357,11 @@ def test_a_capability_read_under_an_area_is_filed_there_on_acceptance(
     by_name = {item["content"]["name"]: item for item in listing["suggestions"]}
     area = by_name["Partner management"]["content"]["system_id"]
     assert by_name["Take orders"]["content"]["capability_domain_id"] == area
-    assert by_name["Quote"]["content"]["capability_domain_id"] is None
-    assert any(
-        "business area" in note and "Pricing desk" in note
-        for note in listing["runs"][0]["warnings"]
-    )
+    assert by_name["Quote"]["content"]["capability_domain_id"] == "Pricing desk"
+    assert (
+        "Business areas named that neither the draft has nor this reading suggests: "
+        "Pricing desk (for Quote)."
+    ) in " ".join(listing["runs"][0]["warnings"])
 
     accepted = client.post(
         f"{base}/suggestions/acceptance",

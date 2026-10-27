@@ -8,7 +8,7 @@ import { ActionGroup, Button, EvidenceQuote, Facts, Lines, RadioGroup, Status, S
 import { formatDay } from "../../home/format";
 import { traceLine, useChangeRequests } from "../inbox";
 import { SuggestionEditor } from "../SuggestionEditor";
-import { type Lexicon, changeSentence, decideWhy, fromCatalogue, offeringHolds, suggestionState, waitsFor, waitsForMany } from "../suggestions";
+import { type Lexicon, areaNote, changeSentence, decideWhy, fromCatalogue, offeringHolds, suggestionState, waitsFor, waitsForMany } from "../suggestions";
 import { NEW, STATE_TONE, citedPart, citedSource, linked, stateWords } from "./decide";
 
 const TABLE_READER = "catalogue-table-reader";
@@ -19,9 +19,11 @@ const TABLE_READER = "catalogue-table-reader";
  * the decision: accept, edit then accept, or reject.
  */
 export function SuggestionPane({
-  suggestion, release, words, document, actorName, busy, kept, notes, editing, headingRef, onEdit, onKeep, onDecide, settling = false, onSettle, deadEnd,
+  suggestion, release, words, document, actorName, busy, kept, notes, editing, headingRef, onEdit, onKeep, onDecide, settling = false, onSettle, deadEnd, onChoose,
 }: {
   suggestion: Suggestion;
+  /** Opens another suggestion, such as the business area a capability is filed under. */
+  onChoose?: (id: string) => void;
   /** What it waits for when nothing adds that ("the system IT"): its Accept says so. */
   deadEnd?: string;
   release: Release;
@@ -109,7 +111,7 @@ export function SuggestionPane({
           />
         ) : (
           <>
-            <Decision key={suggestion.id} suggestion={suggestion} words={words} deadEnd={deadEnd} busy={busy} kept={kept !== undefined} onEdit={() => onEdit(true)} onDrop={() => onKeep(null)} onDecide={onDecide} />
+            <Decision key={suggestion.id} suggestion={suggestion} words={words} deadEnd={deadEnd} busy={busy} kept={kept !== undefined} onEdit={() => onEdit(true)} onDrop={() => onKeep(null)} onDecide={onDecide} onChoose={onChoose} />
             {onSettle && <Retype suggestion={suggestion} words={words} busy={settling} onSettle={onSettle} />}
           </>
         )}
@@ -119,9 +121,10 @@ export function SuggestionPane({
 }
 
 /** The plain decision: possible matches first, then accept, edit or reject. */
-function Decision({ suggestion, words, deadEnd, busy, kept, onEdit, onDrop, onDecide }: {
+function Decision({ suggestion, words, deadEnd, busy, kept, onEdit, onDrop, onDecide, onChoose }: {
   suggestion: Suggestion;
   words: Lexicon;
+  onChoose?: (id: string) => void;
   deadEnd?: string;
   busy: boolean;
   kept: boolean;
@@ -133,6 +136,8 @@ function Decision({ suggestion, words, deadEnd, busy, kept, onEdit, onDrop, onDe
   const [choice, setChoice] = useState<Record<string, string>>({});
   const unchosen = roles.filter((role) => choice[role] === undefined);
   const waits = suggestionState(suggestion) === "waits";
+  const filing = areaNote(suggestion, words);
+  const areaId = suggestion.content.capability_domain_id ? words.areaSuggestion(suggestion.content.capability_domain_id) : undefined;
   const why = unchosen.length
     ? "Say first whether the name means a system the draft has."
     : waits && deadEnd
@@ -159,6 +164,13 @@ function Decision({ suggestion, words, deadEnd, busy, kept, onEdit, onDrop, onDe
         />
       ))}
       {suggestionState(suggestion) === "present" && <p className="draft-quiet">The draft already says this. Rejecting it changes nothing.</p>}
+      {/* Said before the buttons: accepting goes ahead, but files the capability only under an area the draft has. */}
+      {filing && (
+        <p className="draft-quiet">
+          {filing}.{" "}
+          {areaId && onChoose && <Button variant="link" onClick={() => onChoose(areaId)}>Open the business area</Button>}
+        </p>
+      )}
       <ActionGroup label="Decide this suggestion">
         <Button variant="primary" icon={<Check size={14} />} aria-keyshortcuts="a" busy={busy} unavailableReason={why} onClick={() => onDecide(true, linked(suggestion, choice))}>
           {kept ? (fromCatalogue(suggestion) ? "Accept as suggested" : "Accept as the document said") : "Accept"}

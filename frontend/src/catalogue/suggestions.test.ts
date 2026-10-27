@@ -4,7 +4,7 @@ import type { Release, Suggestion } from "../api/client";
 import { formatClock } from "../home/format";
 import { decideChoices, decideQuestions } from "./draft/questions";
 import {
-  bulkAcceptable, changeSentence, decideWhy, dependencyEdges, inWords, lexicon, needsOneByOne, reading, suggestionGroups, suggestionState, tally,
+  areaNote, bulkAcceptable, changeSentence, decideWhy, dependencyEdges, inWords, lexicon, needsOneByOne, reading, suggestionGroups, suggestionState, tally,
   typedFile, offeringHolds, waitsFor, waitsForMany, warningInWords,
 } from "./suggestions";
 
@@ -471,15 +471,23 @@ describe("business area and portfolio suggestions (ADR-0123)", () => {
     expect(changeSentence(smb, named)).toBe("Adds SMB (Segment) to the portfolio, under Fixed");
   });
 
-  it("says a capability is filed under its area only once the draft has that area (ADR-0128)", () => {
+  it("says where a capability is filed, and when that depends on an area the draft lacks (ADR-0128)", () => {
     const filed = suggestion({ kind: "capability", system_id: "cwom", name: "Sign partners", triggers: ["sign a partner"], capability_domain_id: "partners" });
+    const unanswered = suggestion({ kind: "capability", system_id: "cwom", name: "Pay partners", triggers: ["pay a partner"], capability_domain_id: "Partner finance" });
     const withArea = { ...release, capability_domains: [{ id: "partners", name: "Partners", accepted: [] }] } as unknown as Release;
-    expect(changeSentence(filed, named)).toBe(
-      "Adds the capability Sign partners, matched by “sign a partner”, filed under the business area Partners if that area is accepted first",
+    const named = lexicon(release, [...all, filed, unanswered]);
+
+    // The area comes before the phrases, so a row cut short still shows it.
+    expect(changeSentence(filed, named)).toBe("Adds the capability Sign partners, under the business area Partners, matched by “sign a partner”");
+    expect(areaNote(filed, named)).toBe("Filed under Partners only if that business area is accepted first");
+    expect(areaNote(unanswered, named)).toBe(
+      "Partner finance is not in the draft and nothing suggests it: accepted now, this capability goes in no business area",
     );
-    expect(changeSentence(filed, lexicon(withArea, []))).toBe(
-      "Adds the capability Sign partners, matched by “sign a partner”, filed under the business area Partners",
-    );
+    expect(areaNote(filed, lexicon(withArea, [filed]))).toBeNull();
+    expect(areaNote({ ...filed, status: "accepted" }, named)).toBeNull();
+    // Drawn as waiting on the area, though accepting is never blocked.
+    expect(dependencyEdges([area, filed, unanswered])).toEqual([{ from: area.id, to: filed.id }]);
+    expect(suggestionState(filed)).toBe("ready");
   });
 
   it("waits for its parent, which another suggestion adds", () => {

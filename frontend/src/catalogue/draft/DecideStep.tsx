@@ -14,7 +14,7 @@ import { densityFor, usePreferences } from "../../shell/preferences";
 import { ButtonLink } from "../../shell/links";
 import { openShortcuts } from "../../shell/shortcuts";
 import {
-  type Blocker, type Filter, type SuggestionGroup, blockers as deadEnds, realisedByKey, bulkAcceptable, changeSentence, decideWhy, dependencyEdges, draftedForRequirement, featureWarnings, fromCatalogue, inWords, lexicon,
+  type Blocker, type Filter, type SuggestionGroup, areaNote, blockers as deadEnds, realisedByKey, bulkAcceptable, changeSentence, decideWhy, dependencyEdges, draftedForRequirement, featureWarnings, fromCatalogue, inWords, lexicon,
   matchesFind, shown as inFilter, suggestionGroups, suggestionState, tally, waitsFor,
 } from "../suggestions";
 import { useCatalogueContext } from "../useCatalogue";
@@ -457,6 +457,10 @@ function Decide() {
         if (!content) say("Your edits are dropped.");
       }}
       onDecide={(accept, content) => decide(current, accept, content, "pane")}
+      onChoose={(id) => {
+        move(id);
+        focusRow(id);
+      }}
       settling={draft.settleSubject.isPending}
       onSettle={settle}
     />
@@ -709,6 +713,7 @@ function SuggestionGrid({ rows, deadEndOf, selected, onSelectedChange, currentId
               : <Status tone={STATE_TONE[state]}>{stateWords(suggestion)}</Status>}
             {state === "decide" && <span className="draft-detail">{decideWhy(suggestion)}</span>}
             {state === "waits" && <span className="draft-detail">{waitsFor(suggestion, words)}</span>}
+            {areaNote(suggestion, words) && <span className="draft-detail">{areaNote(suggestion, words)}</span>}
             {edits[suggestion.id] && suggestion.status === "proposed" && <span className="draft-detail">Edited, not accepted yet</span>}
           </>
         );

@@ -23,6 +23,11 @@ export type Lexicon = {
   hasOffering: (reference: string) => boolean;
   /** Whether the draft already has a system or channel ("system:cwom", "channel:business-web"). */
   inDraft: (key: string) => boolean;
+  /**
+   * The open suggestion that adds a business area the draft lacks, by id or name; undefined
+   * when the draft has it or nothing suggests it (ADR-0128).
+   */
+  areaSuggestion: (reference: string) => string | undefined;
   /** A vocabulary by id: a built-in one, or one a curator defined ("NFR quality"). */
   vocabulary: (scheme: string) => string;
 };
@@ -80,6 +85,15 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
       if (id) set(systems, id, match.written_as);
     }
   }
+  // The business areas open suggestions add, by their keys.
+  const suggestedAreas = new Map<string, string>();
+  for (const suggestion of suggestions) {
+    const { content } = suggestion;
+    if (suggestion.status !== "proposed" || content.kind !== "capability_domain") continue;
+    for (const key of nodeKeys("area", content.system_id, content.capability_domain?.name ?? content.name)) {
+      if (!suggestedAreas.has(key)) suggestedAreas.set(key, suggestion.id);
+    }
+  }
   const drafted = new Set([
     ...release.systems.map((system) => `system:${system.id}`),
     ...(release.channels ?? []).flatMap((channel) => channelKeys(channel.id, channel.name)),
@@ -113,5 +127,9 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
     // A channel the document named that no suggestion adds is kept as written.
     channel: (id) => channels.get(id) ?? id,
     inDraft: (key) => drafted.has(key.startsWith("channel:") ? channelKeys(key.slice(8))[0]! : key),
+    areaSuggestion: (reference) => {
+      const [key] = nodeKeys("area", reference);
+      return key && !drafted.has(key) ? suggestedAreas.get(key) : undefined;
+    },
   };
 }
