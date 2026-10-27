@@ -589,13 +589,13 @@ def test_a_quote_re_spaced_by_the_model_keeps_the_passage_s_own_words(world: _Wo
 
 
 def test_a_quote_matches_across_typographic_marks() -> None:
-    from knowledge_portal.infrastructure.architecture.verdict_reasoning import _verbatim
+    from knowledge_portal.infrastructure.architecture.quotes import verbatim
 
     text = "CWOM \u2014 the \u201cwork order\u201d  manager"
-    assert _verbatim('the "work order" manager', text) == "the \u201cwork order\u201d  manager"
-    assert _verbatim("CWOM - the", text) == "CWOM \u2014 the"
-    assert _verbatim("the job manager", text) is None
-    assert _verbatim("   ", text) is None
+    assert verbatim('the "work order" manager', text) == "the \u201cwork order\u201d  manager"
+    assert verbatim("CWOM - the", text) == "CWOM \u2014 the"
+    assert verbatim("the job manager", text) is None
+    assert verbatim("   ", text) is None
 
 
 TOKEN = "r" * 40

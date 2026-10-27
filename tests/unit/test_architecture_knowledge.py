@@ -584,18 +584,10 @@ def test_reviewed_retrieval_fixture_reaches_top_eight_and_resolves_citations() -
     )
 
 
-@pytest.mark.parametrize(
-    "citation_id,quote",
-    [
-        ("invented", "GIS coverage"),
-        ("evidence-1", "fabricated passage"),
-    ],
-)
-def test_local_reasoner_rejects_invented_citation_or_quote(
+def test_local_reasoner_rejects_an_invented_citation(
     monkeypatch: pytest.MonkeyPatch,
-    citation_id: str,
-    quote: str,
 ) -> None:
+    citation_id, quote = "invented", "GIS coverage"
     client = LocalStructuredOutputClient(
         base_url="http://localhost:1234/v1",
         http_client=httpx.Client(),
@@ -617,12 +609,69 @@ def test_local_reasoner_rejects_invented_citation_or_quote(
         ),
     )
     reasoner = StructuredArchitectureReasoner(client, max_input_tokens=4096)
-    with pytest.raises(ArchitectureEvidenceError):
+    with pytest.raises(ArchitectureEvidenceError, match="invented a citation id"):
         reasoner.select(
             ArchitectureQuery(("GIS coverage",)),
             seed_knowledge(),
             (EvidenceChunk("evidence-1", "GIS", "system gis", "GIS coverage evidence"),),
         )
+
+
+def _selecting(
+    monkeypatch: pytest.MonkeyPatch, *impacts: tuple[str, str]
+) -> StructuredArchitectureReasoner:
+    client = LocalStructuredOutputClient(
+        base_url="http://localhost:1234/v1",
+        http_client=httpx.Client(),
+        model="test",
+        timeout_seconds=1,
+        reasoning_effort=None,
+    )
+    monkeypatch.setattr(
+        client,
+        "parse",
+        lambda **kwargs: SimpleNamespace(
+            impacts=[
+                SimpleNamespace(
+                    system_id=system, citations=[SimpleNamespace(id="shared", quote=quote)]
+                )
+                for system, quote in impacts
+            ],
+            uncertainty=None,
+            conflicts=[],
+        ),
+    )
+    return StructuredArchitectureReasoner(client, max_input_tokens=4096)
+
+
+SHARED = (EvidenceChunk("shared", "Document", "line 1", "GIS coverage  enables BCRM sales"),)
+
+
+def test_a_misquoted_system_is_set_aside_and_the_rest_of_the_match_kept(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reasoner = _selecting(monkeypatch, ("gis", "GIS coverage"), ("bcrm", "fabricated passage"))
+
+    selected = reasoner.select(ArchitectureQuery(("sales coverage",)), seed_knowledge(), SHARED)
+
+    assert selected.system_ids == ("gis",)
+    assert [(item.system_id, item.quote) for item in selected.citations] == [
+        ("gis", "GIS coverage")
+    ]
+    assert selected.uncertainty is not None
+    assert "Set aside bcrm" in selected.uncertainty
+
+
+def test_a_quote_re_spaced_by_the_model_keeps_the_passage_s_words(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reasoner = _selecting(monkeypatch, ("gis", "coverage enables"))
+
+    selected = reasoner.select(ArchitectureQuery(("sales coverage",)), seed_knowledge(), SHARED)
+
+    assert selected.system_ids == ("gis",)
+    assert [item.quote for item in selected.citations] == ["coverage  enables"]
+    assert selected.uncertainty is None
 
 
 def test_profile_change_creates_new_build_job(
