@@ -3,7 +3,8 @@
 The fake keeps the rules' verdict and selects every candidate its own catalogue record
 backs. The structured reasoner asks the configured `knowledge` model, and keeps today's
 checks: ids only from the release, every selected system cited, every quote found in the
-passage it cites.
+passage it cites. A system whose quotes are not found is set aside and named in the
+uncertainty, rather than failing the assessment.
 """
 
 from __future__ import annotations
@@ -210,37 +211,78 @@ class StructuredVerdictReasoner:
         systems_known = {item.id for item in in_service(release.systems)}
         by_id = {item.id: item for item in kept}
         decisions: list[SystemDecision] = []
+        unquoted: set[str] = set()
         for item in result.systems:
             if item.system_id not in systems_known:
                 raise ArchitectureEvidenceError("Weighing the verdict invented a system id.")
             if not item.citations:
                 raise ArchitectureEvidenceError("Weighing the verdict selected a system uncited.")
+            citations: list[ArchitectureCitation] = []
             for citation in item.citations:
                 cited = by_id.get(citation.id)
                 if cited is None:
                     raise ArchitectureEvidenceError("Weighing the verdict invented a citation id.")
-                if not citation.quote.strip() or citation.quote not in cited.text:
-                    raise ArchitectureEvidenceError("Weighing the verdict invented a quote.")
+                quote = _verbatim(citation.quote, cited.text)
+                if quote is not None:
+                    citations.append(ArchitectureCitation(item.system_id, citation.id, quote))
+            # A quote not in its passage is set aside, and a system left with none with it:
+            # one misquoted system no longer costs the whole assessment.
+            if not citations:
+                unquoted.add(item.system_id)
+                continue
             decisions.append(
-                SystemDecision(
-                    item.system_id,
-                    ChangeType(item.change_type),
-                    tuple(
-                        ArchitectureCitation(item.system_id, citation.id, citation.quote)
-                        for citation in item.citations
-                    ),
-                )
+                SystemDecision(item.system_id, ChangeType(item.change_type), tuple(citations))
             )
         uncertainty = result.uncertainty.strip() if result.uncertainty else None
         if len(kept) < len(context.evidence):
             uncertainty = (
                 f"{uncertainty} " if uncertainty else ""
             ) + f"Evidence context budget omitted {len(context.evidence) - len(kept)} passages."
+        unquoted -= {decision.system_id for decision in decisions}
+        if unquoted:
+            uncertainty = (f"{uncertainty} " if uncertainty else "") + (
+                f"Set aside {', '.join(sorted(unquoted))}: no quote was found in the passage "
+                "it cited."
+            )
         reason = result.reason.strip() or context.rule.reason
         unique: dict[str, SystemDecision] = {}
         for decision in decisions:
             unique.setdefault(decision.system_id, decision)
         return VerdictDecision(verdict, offering_id, reason, tuple(unique.values()), uncertainty)
+
+
+_TYPOGRAPHY = str.maketrans(
+    {"\u2018": "'", "\u2019": "'", "\u201c": '"', "\u201d": '"', "\u2013": "-", "\u2014": "-"}
+)
+
+
+def _verbatim(quote: str, text: str) -> str | None:
+    """The passage's own words for `quote`, or None when it is not there.
+
+    A model copying a passage often re-spaces it or straightens its quotation marks and
+    dashes; those still match, and what is kept is the passage's text, never the model's.
+    """
+    quote = quote.strip()
+    if not quote:
+        return None
+    if quote in text:
+        return quote
+    # The passage with marks plain and spacing single, and where each character came from.
+    # `translate` keeps one character for one, so positions still index `text`.
+    chars: list[str] = []
+    origins: list[int] = []
+    for index, char in enumerate(text.translate(_TYPOGRAPHY)):
+        if char.isspace():
+            if not chars or chars[-1] == " ":
+                continue
+            char = " "
+        chars.append(char)
+        origins.append(index)
+    wanted = " ".join(quote.translate(_TYPOGRAPHY).split())
+    found = "".join(chars).find(wanted)
+    if found < 0:
+        return None
+    return text[origins[found] : origins[found + len(wanted) - 1] + 1]
 
 
 def _clip(text: str) -> str:

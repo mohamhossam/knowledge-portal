@@ -5,6 +5,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ## Unreleased
 
+### Fixed
+
+- One misquoted system no longer fails a requirement's assessment. Weighing the verdict
+  refused the whole answer (502, "Weighing the verdict invented a quote") when any quote was
+  not found word for word in the passage it cited, and requirement work showed "Product impact
+  was not assessed". A quote now still matches when the model re-spaced it or straightened its
+  quotation marks or dashes, and the passage's own words are kept. A system none of whose
+  quotes is found is set aside and named in the assessment's uncertainty; the verdict and the
+  other systems stand. No upgrade step.
+
 ### Changed
 
 - One architecture catalogue: the catalogue redesign lab's views move into `/architecture`, on
