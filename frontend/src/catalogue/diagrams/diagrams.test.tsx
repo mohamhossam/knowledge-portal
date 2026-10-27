@@ -137,10 +137,10 @@ function Where() {
   return <p data-testid="where">{location.pathname}{location.search}</p>;
 }
 
-function renderMap(path: string) {
+function renderMap(path: string, given = release()) {
   vi.spyOn(api, "changeRequests").mockResolvedValue([] as never);
   vi.spyOn(api, "mappingImpact").mockResolvedValue({ outdated_requirements: 0 } as never);
-  const context: CatalogueContext = { book: catalogue(release()), base: "/architecture", inService: true, actorName: () => "Amina Owner" };
+  const context: CatalogueContext = { book: catalogue(given), base: "/architecture", inService: true, actorName: () => "Amina Owner" };
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <MemoryRouter initialEntries={[path]}>
@@ -173,6 +173,20 @@ describe("MapPage, after the catalogue merge (step 5)", () => {
     const figure = map.closest("figure")!;
     await userEvent.click(within(figure as HTMLElement).getByRole("button", { name: "Show as table" }));
     expect(screen.getByRole("table", { name: "Business areas and their capabilities" })).toBeInTheDocument();
+  });
+
+  it("says so, instead of drawing empty areas, when no capability is filed under one", () => {
+    const unfiled = (systems: Release["systems"]) => systems.map((item) => ({ ...item, capabilities: item.capabilities.map((cap) => ({ ...cap, domain_id: null })) }));
+    renderMap("/architecture/domains", release({ systems: unfiled(release().systems) }));
+    expect(screen.queryByRole("group", { name: "What systems do, by business area" })).not.toBeInTheDocument();
+    const notice = screen.getByText("No capability is filed under a business area yet.").closest(".ds-empty")!;
+    expect(notice).toHaveTextContent(/names 2 business areas \(Fulfilment, Billing\)\. Its systems record 3 capabilities, none of them filed under one/);
+  });
+
+  it("says when the version names no business area at all", () => {
+    renderMap("/architecture/domains", release({ capability_domains: [] }));
+    expect(screen.getByText("This version names no business area yet.")).toBeInTheDocument();
+    expect(screen.getByText(/^Its systems record 3 capabilities\./)).toBeInTheDocument();
   });
 
   it("still draws one system in context at full width, with the way back to its record", () => {
