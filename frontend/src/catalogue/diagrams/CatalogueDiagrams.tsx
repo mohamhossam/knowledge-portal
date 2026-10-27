@@ -105,7 +105,8 @@ function NothingFiled({ capabilities, areas }: { capabilities: number; areas: st
     <EmptyState title="No capability is filed under a business area yet.">
       <p>
         This version names {count(areas.length, "business area")} (<bdi>{named}</bdi>). {held}, none of them filed under one, so
-        there is nothing to draw by area. A capability is filed under an area in a draft, from its system's record.
+        there is nothing to draw by area. A capability is filed under an area in a draft, from its system's record, or by
+        accepting a suggestion read under that area.
       </p>
     </EmptyState>
   ) : (

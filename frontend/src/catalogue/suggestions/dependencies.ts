@@ -157,10 +157,13 @@ export function dependencyEdges(suggestions: Suggestion[]): { from: string; to: 
   for (const item of open) for (const key of provides(item)) providers.set(key, [...(providers.get(key) ?? []), item.id]);
   const edges: { from: string; to: string }[] = [];
   for (const item of open) {
-    if (!item.match.startsWith("needs_")) continue;
-    for (const key of new Set(requires(item))) {
-      for (const from of providers.get(key) ?? []) if (from !== item.id) edges.push({ from, to: item.id });
-    }
+    // A capability is filed under its business area only once the area is accepted
+    // (ADR-0128): drawn as waiting on it, though it never blocks accepting.
+    const area = item.content.kind === "capability" && item.content.capability_domain_id ? nodeKeys("area", item.content.capability_domain_id) : [];
+    const keys = new Set([...(item.match.startsWith("needs_") ? requires(item) : []), ...area]);
+    // One edge per provider: an area's id and name can give the same key.
+    const froms = new Set([...keys].flatMap((key) => providers.get(key) ?? []));
+    for (const from of froms) if (from !== item.id) edges.push({ from, to: item.id });
   }
   return edges;
 }

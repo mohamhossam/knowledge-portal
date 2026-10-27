@@ -35,6 +35,7 @@ from knowledge_portal.infrastructure.llm.catalogue_extraction import (
     StructuredCatalogueExtractor,
 )
 from knowledge_portal.infrastructure.llm.prompts.catalogue_extraction_prompt import (
+    CAPABILITY_AREA_RULE,
     LEAN_SYSTEM_PROMPT,
     SYSTEM_PROMPT,
     TREE_RULE,
@@ -212,6 +213,58 @@ def test_a_portfolio_node_without_its_level_is_left_out() -> None:
     assert [item.content.kind for item in proposal.changes] == [CandidateKind.CAPABILITY_DOMAIN]
 
 
+def test_the_model_files_a_capability_under_the_area_it_is_read_under() -> None:
+    """ADR-0128: the area as the document names it; none when the document names none."""
+    output = ExtractionOutput(
+        changes=[
+            _change(
+                kind="capability",
+                system="CRM",
+                name="Take orders",
+                triggers=["take an order"],
+                domain="Order capture",
+                parent_domain=None,
+                portfolio_level=None,
+                text=None,
+                quote="take orders",
+            ),
+            _change(
+                kind="capability",
+                system="CRM",
+                name="Quote",
+                triggers=["quote"],
+                domain=" ",
+                parent_domain=None,
+                portfolio_level=None,
+                text=None,
+                quote="take orders",
+            ),
+        ]
+    )
+
+    filed, unfiled = (
+        item.content
+        for item in StructuredCatalogueExtractor(_Answer(output), supports_images=False)  # type: ignore[arg-type]
+        .propose(
+            ExtractionRequest(
+                "Notes", (ExtractionSegment(1, "paragraph 1", "Order capture: take orders"),), ()
+            )
+        )
+        .changes
+    )
+
+    assert filed.capability_domain_id == "Order capture"
+    assert unfiled.capability_domain_id is None
+
+
+def test_the_full_reading_may_name_a_capabilitys_area_and_never_guesses_one() -> None:
+    assert CAPABILITY_AREA_RULE in SYSTEM_PROMPT
+    assert "Never guess an area" in CAPABILITY_AREA_RULE
+    assert "A capability read under it names it as its domain" in TREE_RULE
+    # The lean reading proposes no areas, and an 8k context has no room for the rule.
+    assert CAPABILITY_AREA_RULE not in LEAN_SYSTEM_PROMPT
+
+
 def test_only_the_full_reading_proposes_domains_and_portfolio_nodes() -> None:
     assert TREE_RULE in SYSTEM_PROMPT
     assert "- portfolio_node:" not in LEAN_SYSTEM_PROMPT
@@ -270,6 +323,59 @@ def test_accepting_a_documents_tree_adds_it_in_order_and_records_where_it_came_f
     domains = {item["name"]: item for item in accepted["release"]["capability_domains"]}
     assert domains["Partner onboarding"]["parent_id"] == domains["Partner management"]["id"]
     assert domains["Partner management"]["accepted"]
+
+
+FILED = b"""# Partner management
+
+Capability domain: Partner management
+
+System: Zorbit
+
+Capability: Take orders (take an order) in area Partner management
+
+Capability: Quote (quote a price) in area Pricing desk
+"""
+
+
+def test_a_capability_read_under_an_area_is_filed_there_on_acceptance(
+    client: TestClient,
+) -> None:
+    """ADR-0128: an area the reading suggests is accepted first and holds the capability; one
+    nothing answers to is kept as written, never added, and the reading says so."""
+    draft = client.post(
+        "/architecture-knowledge/releases", json={"name": "Next version"}, headers=OWNER
+    ).json()
+    uploaded = client.post(
+        f"/architecture-knowledge/releases/{draft['id']}/documents",
+        data={"title": "Orders", "expected_revision": draft["revision"]},
+        files={"file": ("orders.md", FILED, "text/markdown")},
+        headers=OWNER,
+    ).json()
+    base = f"/architecture-knowledge/releases/{draft['id']}"
+    client.post(f"{base}/documents/{uploaded['documents'][-1]['id']}/extractions", headers=OWNER)
+    listing = client.get(f"{base}/suggestions", headers=OWNER).json()
+    by_name = {item["content"]["name"]: item for item in listing["suggestions"]}
+    area = by_name["Partner management"]["content"]["system_id"]
+    assert by_name["Take orders"]["content"]["capability_domain_id"] == area
+    assert by_name["Quote"]["content"]["capability_domain_id"] == "Pricing desk"
+    assert (
+        "Business areas named that neither the draft has nor this reading suggests: "
+        "Pricing desk (for Quote)."
+    ) in " ".join(listing["runs"][0]["warnings"])
+
+    accepted = client.post(
+        f"{base}/suggestions/acceptance",
+        json={"expected_revision": listing["release_revision"]},
+        headers=OWNER,
+    ).json()
+
+    assert accepted["remaining"] == 0
+    zorbit = next(item for item in accepted["release"]["systems"] if item["name"] == "Zorbit")
+    filed = {item["name"]: item["domain_id"] for item in zorbit["capabilities"]}
+    assert filed == {"Take orders": area, "Quote": None}
+    areas = {item["name"] for item in accepted["release"]["capability_domains"]}
+    assert "Partner management" in areas
+    assert "Pricing desk" not in areas
 
 
 @pytest.mark.parametrize("file_format", list(CatalogueFileFormat))

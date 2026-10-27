@@ -1,6 +1,6 @@
 /** The names things go by in the draft and its documents, so a sentence can say them. */
 import type { Release, Suggestion } from "../../api/client";
-import { channelKeys } from "./keys";
+import { channelKeys, nodeKeys } from "./keys";
 
 /** Names the documents gave things the draft does not have yet, so waits and errors can say them in words. */
 export type Lexicon = {
@@ -23,6 +23,11 @@ export type Lexicon = {
   hasOffering: (reference: string) => boolean;
   /** Whether the draft already has a system or channel ("system:cwom", "channel:business-web"). */
   inDraft: (key: string) => boolean;
+  /**
+   * The open suggestion that adds a business area the draft lacks, by id or name; undefined
+   * when the draft has it or nothing suggests it (ADR-0128).
+   */
+  areaSuggestion: (reference: string) => string | undefined;
   /** A vocabulary by id: a built-in one, or one a curator defined ("NFR quality"). */
   vocabulary: (scheme: string) => string;
 };
@@ -80,9 +85,19 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
       if (id) set(systems, id, match.written_as);
     }
   }
+  // The business areas open suggestions add, by their keys.
+  const suggestedAreas = new Map<string, string>();
+  for (const suggestion of suggestions) {
+    const { content } = suggestion;
+    if (suggestion.status !== "proposed" || content.kind !== "capability_domain") continue;
+    for (const key of nodeKeys("area", content.system_id, content.capability_domain?.name ?? content.name)) {
+      if (!suggestedAreas.has(key)) suggestedAreas.set(key, suggestion.id);
+    }
+  }
   const drafted = new Set([
     ...release.systems.map((system) => `system:${system.id}`),
     ...(release.channels ?? []).flatMap((channel) => channelKeys(channel.id, channel.name)),
+    ...(release.capability_domains ?? []).flatMap((area) => nodeKeys("area", area.id, area.name)),
   ]);
   // A name no suggestion spells out, from its id: a part with a digit, without a vowel or of two
   // letters reads as an acronym ("om-e2eso" is "OM E2ESO", "rtf" is "RTF"), a word is capitalised
@@ -112,5 +127,9 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
     // A channel the document named that no suggestion adds is kept as written.
     channel: (id) => channels.get(id) ?? id,
     inDraft: (key) => drafted.has(key.startsWith("channel:") ? channelKeys(key.slice(8))[0]! : key),
+    areaSuggestion: (reference) => {
+      const [key] = nodeKeys("area", reference);
+      return key && !drafted.has(key) ? suggestedAreas.get(key) : undefined;
+    },
   };
 }

@@ -30,6 +30,21 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 - When no capability is filed under a business area, the Landscape says so (the areas the
   version names, how many capabilities its systems record, and where one is filed) instead of
   drawing empty areas beside one long column of the rest.
+- A capability read under a business area is filed there (ADR-0128).
+  - **Reading.** The reader (catalogue-extraction-v23) gives a capability's area only where the
+    document places it under a heading, column or row naming one, and never guesses. The lean
+    reading for small contexts gives none.
+  - **Resolving the name.** The reading resolves the name to an area the draft has, or one the
+    same reading suggests. Any other name is kept as written, never added as an area, and the
+    reading's warnings list it with the capabilities that named it.
+  - **Accepting.** Accepting files the capability under its area when the draft has the area
+    and the capability has none. A capability already filed keeps its area. That way the
+    Landscape's "What systems do, by business area" fills in from documents.
+  - **Decide.** The sentence names the area. When the draft lacks the area, the row and the
+    pane say whether filing waits on the area being accepted ("Open the business area") or
+    whether nothing suggests it. "What waits for what" draws the link. The suggestion editor
+    has a "Business area" select with a hint.
+  - Suggestion content gains `capability_domain_id`. Public contract, additive.
 - The service starts with no architecture catalogue (ADR-0126). It no longer seeds
   `smb-source-reference-v1` into an empty database; a knowledge maintainer publishes the first
   version, and the first draft starts empty, its review listing everything as added. Until a

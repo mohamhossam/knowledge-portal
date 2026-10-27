@@ -385,7 +385,7 @@ class LeanChangeOutput(_Output):
     component: str | None = Field(max_length=_MAX_NAME)
     technology: str | None = Field(max_length=_MAX_NAME)
     # Where systems sit (ADR-0094): a placement's domain, and a landscape domain's parent,
-    # as named; null for other kinds.
+    # as named; a capability's business area (ADR-0128), as named; null for other kinds.
     domain: str | None = Field(max_length=_MAX_NAME)
     parent_domain: str | None = Field(max_length=_MAX_NAME)
     # The whole offering, for a product_offering; null for other kinds (ADR-0095).
@@ -1286,6 +1286,7 @@ def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateConten
         )
     if kind is CandidateKind.CAPABILITY:
         component = (item.component or "").strip()
+        area = (item.domain or "").strip()
         return CandidateContent(
             kind,
             system_id,
@@ -1293,6 +1294,8 @@ def _content(item: DetailedChangeOutput, names: _SystemNames) -> CandidateConten
             capability_id=slug(name),
             triggers=_clean(item.triggers),
             component_id=slug(component) if component else None,
+            # As named, until the reading resolves it to an area (ADR-0128).
+            capability_domain_id=area or None,
         )
     if kind is CandidateKind.CONSTRAINT:
         return CandidateContent(kind, system_id, text=(item.text or "").strip())
@@ -1978,9 +1981,9 @@ class FakeCatalogueExtractor:
     """Deterministic offline extraction from labelled lines; not a language model.
 
     Recognises ``System: Name``, ``Component: Name [technology]``,
-    ``Capability: Name (phrase, phrase) @ Component``, ``Constraint: text`` and
-    ``Interface: Name [api] consumed by A, B`` (all for the last system named; the
-    technology, component, style and consumers are optional),
+    ``Capability: Name (phrase, phrase) @ Component in area Area``, ``Constraint: text``
+    and ``Interface: Name [api] consumed by A, B`` (all for the last system named; the
+    technology, component, area, style and consumers are optional),
     ``Capability domain: Name under Parent`` and ``Portfolio: Name (Level) under Parent``
     (the parent optional), ``Realisation: NAME [cfs] realised by A, B`` (delivered by the last
     system named, if any), ``Source: Title [L2] as SHORT`` (level and short name optional),
@@ -2000,7 +2003,8 @@ class FakeCatalogueExtractor:
         r"^component:\s*(?P<name>[^\[]+?)\s*(?:\[(?P<technology>[^\]]+)\])?$", re.I
     )
     _CAPABILITY = re.compile(
-        r"^capability:\s*(?P<name>[^(]+)\((?P<triggers>[^)]+)\)(?:\s*@\s*(?P<component>.+))?",
+        r"^capability:\s*(?P<name>[^(]+)\((?P<triggers>[^)]+)\)"
+        r"(?:\s*@\s*(?P<component>.+?))?(?:\s+in area\s+(?P<area>.+?))?\.?$",
         re.I,
     )
     _CONSTRAINT = re.compile(r"^constraint:\s*(?P<text>.+)$", re.IGNORECASE)
@@ -2104,6 +2108,7 @@ class FakeCatalogueExtractor:
                         capability_id=slug(name),
                         triggers=_clean(match["triggers"].split(",")),
                         component_id=slug(component) if component else None,
+                        capability_domain_id=(match["area"] or "").strip() or None,
                     )
                 elif (match := self._CONSTRAINT.match(line)) and current:
                     content = CandidateContent(

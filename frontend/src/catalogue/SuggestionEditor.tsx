@@ -187,10 +187,27 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
         const written = original.component_id && !system?.components.some((item) => item.id === original.component_id)
           ? [{ value: original.component_id, label: `${words.component(original.system_id, original.component_id)} (not in the draft yet)` }]
           : [];
+        const areas = [...(release.capability_domains ?? [])].sort((a, b) => a.name.localeCompare(b.name));
+        const inDraft = (reference: string) => areas.some((item) => item.id === reference);
+        const named = original.capability_domain_id && !inDraft(original.capability_domain_id)
+          ? [{ value: original.capability_domain_id, label: `${words.area(original.capability_domain_id)} (not in the draft yet)`, group: "Named by the document" }]
+          : [];
         return (
           <>
             <SystemField label="Of the system" value={content.system_id} systems={systems} writtenAs={writtenAs} onChange={(system_id) => set({ system_id })} />
             <TextField label="Capability" value={content.name} required onChange={(name) => set({ name })} />
+            <SelectField
+              label="Business area"
+              value={content.capability_domain_id ?? ""}
+              wide
+              options={[
+                { value: "", label: "No business area" },
+                ...named,
+                ...areas.map((item) => ({ value: item.id, label: item.name, group: "In the draft" })),
+              ]}
+              hint={content.capability_domain_id && !inDraft(content.capability_domain_id) ? "Accepted in no business area unless this area is in the draft by then." : undefined}
+              onChange={(capability_domain_id) => set({ capability_domain_id: capability_domain_id || null })}
+            />
             <SelectField
               label="Delivered by the component"
               value={content.component_id ?? ""}
