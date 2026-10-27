@@ -19,6 +19,9 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   opens what it names: a quote its passage, re-read from the stored document; a source line its
   Governance record; a source its document when the version holds it. The architecture
   diagrams' colours get warm-charcoal values.
+- "Accepted from" leads with who accepted a suggestion and when, then which reader suggested it
+  ("the catalogue reader"); the model and prompt version sit one step away, under "Model and
+  prompt". The footprint's pine is documented in `DESIGN.md` as its one diagram hue.
 - The service starts with no architecture catalogue (ADR-0126). It no longer seeds
   `smb-source-reference-v1` into an empty database; a knowledge maintainer publishes the first
   version, and the first draft starts empty, its review listing everything as added. Until a

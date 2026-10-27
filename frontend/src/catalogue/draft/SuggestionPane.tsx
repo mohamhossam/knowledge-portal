@@ -9,9 +9,9 @@ import { formatDay } from "../../home/format";
 import { traceLine, useChangeRequests } from "../inbox";
 import { SuggestionEditor } from "../SuggestionEditor";
 import { type Lexicon, changeSentence, decideWhy, fromCatalogue, offeringHolds, suggestionState, waitsFor, waitsForMany } from "../suggestions";
+import { TABLE_READER } from "../accepted";
 import { NEW, STATE_TONE, citedPart, citedSource, linked, stateWords } from "./decide";
 
-const TABLE_READER = "catalogue-table-reader";
 
 /**
  * The decide desk's pane: one suggestion in full. What it would change, the

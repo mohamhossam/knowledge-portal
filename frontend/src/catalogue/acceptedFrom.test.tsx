@@ -43,17 +43,26 @@ describe("AcceptedFrom (ADR-0120)", () => {
     expect(screen.getByTestId("record")).toBeEmptyDOMElement();
   });
 
-  it("says which model suggested it and who accepted it when", () => {
+  it("says who accepted it when and which reader suggested it, the model and prompt one step away", () => {
     shown(<AcceptedFrom accepted={[FIRST]} />);
-    expect(screen.getByTestId("record")).toHaveTextContent(/^A suggestion from model-x \(prompt prompt-7\), accepted by Amina Owner on .*2026$/);
+    expect(screen.getByTestId("record")).toHaveTextContent(/^Accepted by Amina Owner on .*2026, from a suggestion by the catalogue reader/);
+    const detail = screen.getByText("Model and prompt").closest("details")!;
+    expect(detail).not.toHaveAttribute("open");
+    expect(detail).toHaveTextContent("model-x · prompt prompt-7");
+  });
+
+  it("names the table reader in words, and gives the record's meta one line", () => {
+    shown(<AcceptedFrom accepted={[{ ...FIRST, model: "catalogue-table-reader" }, SECOND]} summary />);
+    expect(screen.getByTestId("record")).toHaveTextContent(/^From 2 accepted suggestions; the last accepted by Ravi Curator on /);
+    expect(screen.getByText("Model and prompt").closest("details")).toHaveTextContent("model-y · prompt prompt-8; catalogue-table-reader · prompt prompt-7");
   });
 
   it("lists every acceptance, newest first", () => {
     shown(<AcceptedFrom accepted={[FIRST, SECOND]} />);
     const items = within(screen.getByRole("list", { name: "Accepted suggestions" })).getAllByRole("listitem");
     expect(items.map((item) => item.textContent)).toEqual([
-      expect.stringContaining("model-y (prompt prompt-8), accepted by Ravi Curator"),
-      expect.stringContaining("model-x (prompt prompt-7), accepted by Amina Owner"),
+      expect.stringMatching(/^Accepted by Ravi Curator .*model-y · prompt prompt-8/),
+      expect.stringMatching(/^Accepted by Amina Owner .*model-x · prompt prompt-7/),
     ]);
   });
 
@@ -83,11 +92,11 @@ describe("AcceptedFrom (ADR-0120)", () => {
   it("names where the last one was read in the heading's one line", () => {
     const read: Accepted = { ...SECOND, citations: [{ document_version_id: "doc-1", document: "Integration design", location: "§4.1", quote: "CWOM tracks orders" }] };
     shown(<AcceptedFrom accepted={[FIRST, read]} summary />);
-    expect(screen.getByTestId("record")).toHaveTextContent(/accepted by Ravi Curator on .*2026, read in Integration design, §4\.1$/);
+    expect(screen.getByTestId("record")).toHaveTextContent(/accepted by Ravi Curator on .*2026, read in Integration design, §4\.1Model and prompt/);
   });
 
   it("sums them up in one line for a record's heading", () => {
     shown(<AcceptedFrom accepted={[FIRST, SECOND]} summary />);
-    expect(screen.getByTestId("record")).toHaveTextContent(/^From 2 accepted suggestions; the last accepted by Ravi Curator on .*2026$/);
+    expect(screen.getByTestId("record")).toHaveTextContent(/^From 2 accepted suggestions; the last accepted by Ravi Curator on .*2026Model and prompt/);
   });
 });

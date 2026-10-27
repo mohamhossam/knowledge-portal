@@ -120,6 +120,8 @@ Notes:
   The token test checks in both themes each layer's ink, ink and ink-2 on its tint, and the
   footprint, intensity and amount marks; a layer's edge is a soft frame, not held to 3:1, since
   its heading names the band. `--color-on-action-fill-quiet` is a light-theme pairing only.
+- `--color-footprint*` is Footprint Pine, DESIGN.md's one diagram hue: a product's footprint and
+  nothing else, its tier always said in words. It is not a state hue and not the Suggested mark.
 
 ## 4. Components
 

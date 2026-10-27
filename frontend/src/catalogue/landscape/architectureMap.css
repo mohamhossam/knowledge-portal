@@ -43,11 +43,6 @@
 .am-card.is-quiet { background: transparent; border-color: var(--am-edge); box-shadow: none; color: var(--color-ink-3); }
 .am-card.is-quiet .am-card-fn { color: var(--color-ink-3); }
 .am-card.is-quiet:hover { border-color: var(--color-action-fill); color: var(--color-ink); }
-/* Product footprint: three calm tiers in the maroon family. */
-.am-card.is-core { background: var(--color-selected); border-color: var(--color-amount-3); box-shadow: 0 0 0 1px var(--color-amount-3); }
-.am-card.is-core .am-card-fn, .am-card.is-used .am-card-fn { color: var(--color-action-fill-hover); font-weight: 600; }
-.am-card.is-used { border-color: var(--color-amount-2); box-shadow: 0 0 0 1px var(--color-amount-2); }
-.am-card.is-carries { border-style: dashed; border-color: var(--color-amount-3); box-shadow: none; }
 .am-card.is-lit { background: var(--color-selected); border-color: var(--color-amount-3); box-shadow: none; }
 .am-card.is-current:focus-visible { box-shadow: 0 0 0 2px var(--color-focus), 0 0 0 5px var(--color-surface); outline-offset: 5px; }
 /* The integration layer: the bus every layer talks through. */
@@ -106,10 +101,6 @@
 .am-card[aria-pressed="true"] .am-mono { background: var(--color-action-fill-hover); box-shadow: none; color: var(--color-on-action-fill); }
 .am-card.is-partner .am-mono { background: var(--color-selected); color: var(--color-action-fill); box-shadow: inset 0 0 0 1px var(--color-amount-2); }
 .am-card.is-quiet .am-mono { background: transparent; box-shadow: inset 0 0 0 1px var(--color-rule-soft); color: var(--color-ink-3); }
-/* Footprint and journey tiers carry into the monogram. */
-.am-card.is-core .am-mono, .am-card.is-lit .am-mono { background: var(--color-action-fill); box-shadow: none; color: var(--color-on-action-fill); }
-.am-card.is-used .am-mono { background: var(--color-selected); color: var(--color-action-fill); box-shadow: inset 0 0 0 1px var(--color-amount-2); }
-.am-card.is-carries .am-mono { background: var(--color-surface); color: var(--color-action-fill); box-shadow: inset 0 0 0 1px var(--color-amount-3); }
 /* The integration layer: the one solid maroon band, the bus every layer hangs from. */
 .am-bus:not(.is-dim) { background: var(--color-selected); }
 .am-bus .am-icon { color: var(--color-action-fill); box-shadow: inset 0 0 0 1px var(--color-amount-2); }
@@ -230,7 +221,7 @@
 @media (min-width: 1101px) and (min-height: 600px) {
   .am--compact { --am-tile: clamp(24px, calc((100dvh - var(--sticky-top, 0px) - 544px) / 7), 48px); }
 }
-/* A product's footprint on the map has its own colour, a deep teal used nowhere else, so "this product uses it" can't be read as a layer tint or as a selection (maroon). Core: solid teal. Used: a teal outline. Carries calls only: a dashed teal outline. Not used: quiet. */
+/* A product's footprint on the map has its own colour, Footprint Pine (DESIGN.md), used nowhere else, so "this product uses it" can't be read as a layer tint or as a selection (maroon). Core: solid pine. Used: a pine outline. Only passes calls on: a dashed pine outline. Not used: quiet. The tier's words are always on the card. */
 .am-card.is-core { background: var(--color-footprint); border-color: var(--color-footprint); box-shadow: none; color: var(--color-surface); }
 .am-card.is-core .am-card-name, .am-card.is-core .am-card-fn { color: var(--color-surface); }
 .am-card.is-core .am-mono { background: var(--color-surface); color: var(--color-footprint-ink); box-shadow: none; }
