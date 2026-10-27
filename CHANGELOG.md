@@ -22,6 +22,11 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 - "Accepted from" leads with who accepted a suggestion and when, then which reader suggested it
   ("the catalogue reader"); the model and prompt version sit one step away, under "Model and
   prompt". The footprint's pine is documented in `DESIGN.md` as its one diagram hue.
+- Every offering, listed and side by side, in one order: a family of two or more under its own
+  name, the families of one offering together under "Other families" (each row naming its own),
+  then those with no family stated. The side-by-side table gains a Family column and a "What it
+  holds" filter (`?holds=components` or `empty`), marks an inferred offering as Suggested, and no
+  longer repeats the intro.
 - The service starts with no architecture catalogue (ADR-0126). It no longer seeds
   `smb-source-reference-v1` into an empty database; a knowledge maintainer publishes the first
   version, and the first draft starts empty, its review listing everything as added. Until a
