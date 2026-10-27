@@ -506,7 +506,6 @@ def _decision(chunk: EvidenceChunk, **changes: Any) -> Any:
         ({"system": {"system_id": "cwom-2"}}, "invented a system id"),
         ({"system": {"citations": []}}, "uncited"),
         ({"system": {"citations": [{"id": "nowhere", "quote": "x"}]}}, "invented a citation"),
-        ({"system": {"citations": [{"id": "CHUNK", "quote": "not in it"}]}}, "invented a quote"),
         ({"offering_id": "business-pro"}, "outside the release"),
     ],
 )
@@ -542,6 +541,61 @@ def test_the_reasoner_s_checked_answer_is_used(world: _World) -> None:
     assert [(item.system_id, item.change_type) for item in decision.systems] == [
         ("cwom", ChangeType.MODIFY)
     ]
+
+
+def test_a_misquoted_system_is_set_aside_and_the_verdict_kept(world: _World) -> None:
+    context = _context(world)
+    chunk = context.evidence[0]
+    misquoted = [{"id": chunk.id, "quote": "not in it"}]
+    reasoner = StructuredVerdictReasoner(
+        _Client(_decision(chunk, system={"citations": misquoted})),
+        max_input_tokens=None,
+    )
+
+    decision = reasoner.decide(context)
+
+    assert decision.verdict is ProductVerdict.CHANGE_EXISTING_OFFERING
+    assert decision.systems == ()
+    assert decision.uncertainty is not None
+    assert "Set aside cwom" in decision.uncertainty
+
+
+def test_a_quote_re_spaced_by_the_model_keeps_the_passage_s_own_words(world: _World) -> None:
+    context = _context(world)
+    chunk = context.evidence[0]
+    words = chunk.text.split()[:6]
+    assert len(words) > 1
+    reasoner = StructuredVerdictReasoner(
+        _Client(
+            _decision(
+                chunk,
+                system={
+                    "citations": [
+                        {"id": chunk.id, "quote": "not in it"},
+                        {"id": chunk.id, "quote": "  \n ".join(words)},
+                    ]
+                },
+            )
+        ),
+        max_input_tokens=None,
+    )
+
+    decision = reasoner.decide(context)
+
+    ((citation,),) = [item.citations for item in decision.systems]
+    assert citation.quote in chunk.text
+    assert citation.quote.split() == words
+    assert decision.uncertainty is None
+
+
+def test_a_quote_matches_across_typographic_marks() -> None:
+    from knowledge_portal.infrastructure.architecture.verdict_reasoning import _verbatim
+
+    text = "CWOM \u2014 the \u201cwork order\u201d  manager"
+    assert _verbatim('the "work order" manager', text) == "the \u201cwork order\u201d  manager"
+    assert _verbatim("CWOM - the", text) == "CWOM \u2014 the"
+    assert _verbatim("the job manager", text) is None
+    assert _verbatim("   ", text) is None
 
 
 TOKEN = "r" * 40
