@@ -2793,6 +2793,8 @@ export interface components {
              */
             aliases: string[];
             capability_domain?: components["schemas"]["CapabilityDomainSchema"] | null;
+            /** Capability Domain Id */
+            capability_domain_id?: string | null;
             /** Capability Id */
             capability_id?: string | null;
             /**

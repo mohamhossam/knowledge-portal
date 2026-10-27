@@ -1620,6 +1620,18 @@
               }
             ]
           },
+          "capability_domain_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capability Domain Id"
+          },
           "capability_id": {
             "anyOf": [
               {

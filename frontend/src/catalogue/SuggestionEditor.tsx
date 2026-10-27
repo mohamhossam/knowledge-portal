@@ -187,6 +187,10 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
         const written = original.component_id && !system?.components.some((item) => item.id === original.component_id)
           ? [{ value: original.component_id, label: `${words.component(original.system_id, original.component_id)} (not in the draft yet)` }]
           : [];
+        const areas = release.capability_domains ?? [];
+        const suggestedArea = original.capability_domain_id && !areas.some((item) => item.id === original.capability_domain_id)
+          ? [{ value: original.capability_domain_id, label: `${words.area(original.capability_domain_id)} (not in the draft yet)` }]
+          : [];
         return (
           <>
             <SystemField label="Of the system" value={content.system_id} systems={systems} writtenAs={writtenAs} onChange={(system_id) => set({ system_id })} />
@@ -200,6 +204,16 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
                 ...(system?.components ?? []).map((item) => ({ value: item.id, label: item.name })),
               ]}
               onChange={(component_id) => set({ component_id: component_id || null })}
+            />
+            <SelectField
+              label="Business area"
+              value={content.capability_domain_id ?? ""}
+              options={[
+                { value: "", label: "No business area" },
+                ...suggestedArea,
+                ...areas.map((item) => ({ value: item.id, label: item.name })),
+              ]}
+              onChange={(capability_domain_id) => set({ capability_domain_id: capability_domain_id || null })}
             />
             <LinesField
               label="Matched by"

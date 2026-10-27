@@ -4,7 +4,7 @@ import json
 
 from knowledge_portal.application.ports.catalogue_extractor import ExtractionRequest
 
-PROMPT_VERSION = "catalogue-extraction-v22"
+PROMPT_VERSION = "catalogue-extraction-v23"
 
 # A journey is the largest answer shape. A model whose context leaves too little room for
 # it reads without it (ADR-0096): LEAN_SYSTEM_PROMPT and an answer schema without journeys.
@@ -59,12 +59,20 @@ interface item per consumer the document names; they are merged. An interface is
 reason for a dependency: propose the relationship as well when the document says one system \
 calls or feeds another through it."""
 
+# A capability's business area (ADR-0128): not in the lean prompt, which proposes no areas
+# and must leave an 8k context room for the document.
+CAPABILITY_AREA_RULE = """ When the document places it under a heading, or in a column or \
+row, that names the business area it belongs to, such as "Order capture", give that area's \
+name as written (domain); otherwise leave domain null. Never guess an area, and never give a \
+system, team or landscape domain as one."""
+
 # Capability domains and the product portfolio (ADR-0123): only the full prompts propose them.
 TREE_RULE = """
 - capability_domain: a business area that capabilities belong to, such as "Order capture" or \
 "Billing", or an area inside one. Give its name, the name of the area it sits inside \
 (parent_domain) only if stated, and a short description (text) only if the document gives \
-one. Leave "system" empty. It is an area of business, never a system, team or landscape domain.
+one. Leave "system" empty. It is an area of business, never a system, team or landscape domain. \
+A capability read under it names it as its domain, with the same name.
 - portfolio_node: a place in the product portfolio that offerings sit in, such as a business \
 unit, line of business, segment or product family ("Enterprise", "Fixed", "SMB"). Give its \
 name, its level in the document's own words (portfolio_level, such as "Segment"), the node \
@@ -102,7 +110,7 @@ Give its name, any aliases, what it does in one sentence (text) and what it is b
 (technology, such as "Microservice" or "Batch job") only if the document says.
 - capability: something a system does, with short matching phrases a requirement might use \
 to describe it (triggers). When the document says which component of the system delivers it, \
-give that component's name (component).
+give that component's name (component).{capability_area}
 - constraint: a stated limitation or rule for one system.
 - offering_rule: a stated limitation or rule for one product offering, bundle or plan \
 ("system": its name). A CFSS or RFSS is never a product offering.
@@ -216,6 +224,7 @@ def _prompt(*, details: str, journey: str, channel: str, lean: bool = False) -> 
         .replace("{journey}", journey)
         .replace("{channel}", channel)
         .replace("{system_rule}", LEAN_SYSTEM_RULE if lean else SYSTEM_RULE)
+        .replace("{capability_area}", "" if lean else CAPABILITY_AREA_RULE)
         .replace("{plans}", "" if lean else PLANS_RULE)
         .replace("{plan_table}", "" if lean else PLAN_TABLE_RULE)
     )

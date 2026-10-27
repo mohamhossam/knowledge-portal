@@ -77,6 +77,7 @@ from knowledge_portal.domain.architecture.candidates import (
     PossibleMatch,
     accept_from_change_request,
     apply_candidate,
+    capability_domain_named,
     classify,
     find_system,
     missing_systems,
@@ -745,6 +746,38 @@ def _canonical(
     return (*result, *named.values(), *unsuggested.values())
 
 
+def _filed(
+    changes: tuple[ProposedChange, ...], release: ArchitectureKnowledge
+) -> tuple[tuple[ProposedChange, ...], tuple[str, ...]]:
+    """Every capability naming its business area by the id the area has, or will have once
+    accepted; and the names no area answers to, one per capability (ADR-0128).
+
+    The reader gives an area as the document names it. One the draft has, or the reading
+    suggests beside it, is kept; any other is dropped rather than added, so the capability
+    is suggested in no business area and the reading says so.
+    """
+    suggested = tuple(
+        item.content.capability_domain
+        for item in changes
+        if item.content.capability_domain is not None
+    )
+    result: list[ProposedChange] = []
+    unfiled: list[str] = []
+    for change in changes:
+        reference = change.content.capability_domain_id
+        if reference is None:
+            result.append(change)
+            continue
+        area = capability_domain_named(release.capability_domains, reference) or (
+            capability_domain_named(suggested, reference)
+        )
+        if area is None:
+            unfiled.append(reference)
+        content = replace(change.content, capability_domain_id=area.id if area else None)
+        result.append(replace(change, content=content))
+    return tuple(result), tuple(unfiled)
+
+
 # Words a table writes where it has no system's name.
 _NO_SYSTEM = frozenset(
     {"system", "systems", "unknown", "n/a", "na", "tbd", "tbc", "none", "other", "others"}
@@ -1078,6 +1111,7 @@ def _merged_content(lead: CandidateContent, others: list[CandidateContent]) -> C
             triggers=_labels(*(item.triggers for item in every)),
             concept_ids=tuple(dict.fromkeys(cid for item in every for cid in item.concept_ids)),
             component_id=_first([item.component_id for item in every]),
+            capability_domain_id=_first([item.capability_domain_id for item in every]),
         )
     if lead.capability_domain is not None:
         domain = lead.capability_domain
@@ -1464,7 +1498,7 @@ class ProposeCatalogueChanges:
         kinds: dict[CandidateContent, list[tuple[bool, RelationshipKind | None]]] = {}
         self_linked = 0
         read = tuple(_cited_where_repeated(change, repeats) for change in proposal.changes)
-        canonical = _canonical(read, release)
+        canonical, unfiled = _filed(_canonical(read, release), release)
         for change in _one_journey_each(
             _one_offering_each(_one_channel_each(_one_interface_each(canonical)))
         ):
@@ -1532,6 +1566,13 @@ class ProposeCatalogueChanges:
             warnings.append(
                 f"{self_linked} dependency suggestion(s) were left out because they linked a "
                 "system to itself."
+            )
+        if unfiled:
+            areas = ", ".join(dict.fromkeys(unfiled))
+            warnings.append(
+                f"{len(unfiled)} capability suggestion(s) named a business area that neither "
+                f"the draft has nor this reading suggests, so they are suggested in no business "
+                f"area: {areas}."
             )
         if same:
             merged = ", ".join(

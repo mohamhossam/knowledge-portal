@@ -1,6 +1,7 @@
 /** A suggestion, and why it needs a person, said as sentences in the documents' names. */
 import type { Offering, RelationshipKind, Suggestion } from "../../api/client";
 import { COVERAGE, LAYERS } from "../catalogue";
+import { nodeKeys } from "./keys";
 import type { Lexicon } from "./lexicon";
 import { draftedForRequirement, fromCatalogue } from "./state";
 
@@ -31,6 +32,18 @@ function details(product: Offering | null | undefined): string[] {
   ].filter(Boolean);
 }
 
+/**
+ * The business area a capability is filed under (ADR-0128). One the draft lacks is only
+ * suggested: accepting the capability first leaves it in no business area.
+ */
+function filedUnder(area: string | null | undefined, words: Lexicon): string {
+  if (!area) return "";
+  const name = words.area(area);
+  return words.inDraft(nodeKeys("area", area)[0]!)
+    ? `, filed under the business area ${name}`
+    : `, filed under the business area ${name} if that area is accepted first`;
+}
+
 /** The change a suggestion would make, said as a sentence about its system. */
 export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
   const { content } = suggestion;
@@ -48,7 +61,7 @@ export function changeSentence(suggestion: Suggestion, words: Lexicon): string {
       const within = content.component_id ? `, in ${words.component(content.system_id, content.component_id)}` : "";
       const concept = content.concept_ids?.[0];
       const realises = concept ? `, realising the concept ${concept}` : "";
-      return `Adds the capability ${content.name}${within}${realises}, matched by ${quoted(content.triggers)}`;
+      return `Adds the capability ${content.name}${within}${realises}, matched by ${quoted(content.triggers)}${filedUnder(content.capability_domain_id, words)}`;
     }
     case "constraint":
       return `Adds the constraint “${content.text}”`;

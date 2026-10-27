@@ -471,6 +471,17 @@ describe("business area and portfolio suggestions (ADR-0123)", () => {
     expect(changeSentence(smb, named)).toBe("Adds SMB (Segment) to the portfolio, under Fixed");
   });
 
+  it("says a capability is filed under its area only once the draft has that area (ADR-0128)", () => {
+    const filed = suggestion({ kind: "capability", system_id: "cwom", name: "Sign partners", triggers: ["sign a partner"], capability_domain_id: "partners" });
+    const withArea = { ...release, capability_domains: [{ id: "partners", name: "Partners", accepted: [] }] } as unknown as Release;
+    expect(changeSentence(filed, named)).toBe(
+      "Adds the capability Sign partners, matched by “sign a partner”, filed under the business area Partners if that area is accepted first",
+    );
+    expect(changeSentence(filed, lexicon(withArea, []))).toBe(
+      "Adds the capability Sign partners, matched by “sign a partner”, filed under the business area Partners",
+    );
+  });
+
   it("waits for its parent, which another suggestion adds", () => {
     expect(waitsFor(onboarding, named)).toBe("Waits for the business area Partners");
     expect(waitsFor(smb, named)).toBe("Waits for Fixed in the portfolio");

@@ -1,6 +1,6 @@
 /** The names things go by in the draft and its documents, so a sentence can say them. */
 import type { Release, Suggestion } from "../../api/client";
-import { channelKeys } from "./keys";
+import { channelKeys, nodeKeys } from "./keys";
 
 /** Names the documents gave things the draft does not have yet, so waits and errors can say them in words. */
 export type Lexicon = {
@@ -83,6 +83,7 @@ export function lexicon(release: Release, suggestions: Suggestion[]): Lexicon {
   const drafted = new Set([
     ...release.systems.map((system) => `system:${system.id}`),
     ...(release.channels ?? []).flatMap((channel) => channelKeys(channel.id, channel.name)),
+    ...(release.capability_domains ?? []).flatMap((area) => nodeKeys("area", area.id, area.name)),
   ]);
   // A name no suggestion spells out, from its id: a part with a digit, without a vowel or of two
   // letters reads as an acronym ("om-e2eso" is "OM E2ESO", "rtf" is "RTF"), a word is capitalised

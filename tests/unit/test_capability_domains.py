@@ -19,7 +19,9 @@ from knowledge_portal.application.use_cases.resolve_architecture_knowledge impor
 from knowledge_portal.domain.architecture.candidates import (
     CandidateContent,
     CandidateKind,
+    CandidateMatch,
     apply_candidate,
+    classify,
 )
 from knowledge_portal.domain.architecture.diff import ChangedItem, ChangeKind, diff_releases
 from knowledge_portal.domain.architecture.knowledge import (
@@ -288,3 +290,52 @@ def test_a_capability_suggestion_keeps_the_domain_it_was_placed_in() -> None:
     merged = next(item for item in updated.systems if item.id == "bcrm").capabilities[0]
     assert "new phrase" in merged.triggers
     assert merged.domain_id == capability.domain_id
+
+
+def _filed(area: str | None, capability_id: str = "quote") -> CandidateContent:
+    return CandidateContent(
+        CandidateKind.CAPABILITY,
+        "crm",
+        name="Quote",
+        capability_id=capability_id,
+        triggers=("quote",),
+        capability_domain_id=area,
+    )
+
+
+def test_a_capability_suggestion_files_it_under_the_business_area_it_names() -> None:
+    """ADR-0128: the area is named by id or by name; the draft's area is the one kept."""
+    (system,) = apply_candidate(_filed("order CAPTURE"), _release((ORDERS,))).systems
+
+    assert system.capabilities[0].domain_id == "orders"
+
+
+def test_an_area_the_draft_lacks_leaves_the_capability_unfiled_and_adds_none() -> None:
+    draft = _release(())
+
+    assert classify(_filed("Order capture"), draft) is CandidateMatch.NEW
+    accepted = apply_candidate(_filed("Order capture"), draft)
+
+    assert accepted.systems[0].capabilities[0].domain_id is None
+    assert accepted.capability_domains == ()
+
+
+def test_a_named_area_files_an_unfiled_capability_and_never_moves_a_filed_one() -> None:
+    unfiled = KnowledgeCapability("quote", "Quote", ("quote",))
+    draft = _release((ORDERS, QUOTES), unfiled)
+
+    assert classify(_filed("orders"), draft) is CandidateMatch.UPDATES_EXISTING
+    assert classify(_filed("Billing"), draft) is CandidateMatch.ALREADY_PRESENT
+    filed = apply_candidate(_filed("orders"), draft)
+    assert filed.systems[0].capabilities[0].domain_id == "orders"
+
+    assert classify(_filed("quotes"), filed) is CandidateMatch.ALREADY_PRESENT
+    kept = apply_candidate(_filed("quotes"), filed)
+    assert kept.systems[0].capabilities[0].domain_id == "orders"
+
+
+def test_only_a_capability_is_filed_under_a_business_area() -> None:
+    with pytest.raises(InvalidKnowledgeError, match="Only a capability"):
+        CandidateContent(CandidateKind.CONSTRAINT, "crm", text="x", capability_domain_id="orders")
+    with pytest.raises(InvalidKnowledgeError, match="Business area"):
+        _filed("  ")

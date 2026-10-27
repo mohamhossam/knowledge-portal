@@ -2696,6 +2696,9 @@ class CandidateContentSchema(BaseModel):
     # The whole source or conflict, for a source or conflict suggestion (ADR-0123).
     knowledge_source: KnowledgeSourceSchema | None = None
     conflict: SourceConflictSchema | None = None
+    # The business area a capability suggestion files it under, when the document names one
+    # (ADR-0128).
+    capability_domain_id: Identifier | None = None
 
     @classmethod
     def from_domain(cls, content: CandidateContent) -> CandidateContentSchema:
@@ -2760,6 +2763,7 @@ class CandidateContentSchema(BaseModel):
             conflict=(
                 SourceConflictSchema.from_domain(content.conflict) if content.conflict else None
             ),
+            capability_domain_id=content.capability_domain_id,
         )
 
     def to_domain(self) -> CandidateContent:
@@ -2797,6 +2801,7 @@ class CandidateContentSchema(BaseModel):
             realisation=self.realisation.to_domain() if self.realisation else None,
             knowledge_source=(self.knowledge_source.to_domain() if self.knowledge_source else None),
             conflict=self.conflict.to_domain() if self.conflict else None,
+            capability_domain_id=self.capability_domain_id,
         )
 
 

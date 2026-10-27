@@ -228,8 +228,10 @@ class CandidateContent:
     - component: ``system_id``, ``component_id``, ``name``, ``aliases``,
       ``description`` and ``technology``
     - capability: ``system_id``, ``capability_id``, ``name``, ``triggers``,
-      ``component_id`` when the source says which component delivers it, and one of
-      ``concept_ids`` when it is known to realise that concept (a delivered change)
+      ``component_id`` when the source says which component delivers it, one of
+      ``concept_ids`` when it is known to realise that concept (a delivered change), and
+      ``capability_domain_id`` when the source names the business area it belongs to, by id
+      or by name as the document names it until the draft resolves it (ADR-0128)
     - constraint: ``system_id``, ``text``
     - offering_rule: ``system_id`` (the offering, by id or name until the draft resolves
       it) and ``text``, the rule it is sold or fulfilled by
@@ -297,6 +299,7 @@ class CandidateContent:
     realisation: RealisationRecord | None = None
     knowledge_source: KnowledgeSource | None = None
     conflict: SourceConflict | None = None
+    capability_domain_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "kind", CandidateKind(self.kind))
@@ -321,6 +324,8 @@ class CandidateContent:
             object.__setattr__(self, "component_id", _required(self.component_id, "Component"))
         if self.technology is not None and self.kind is not CandidateKind.COMPONENT:
             raise InvalidKnowledgeError("Only a component has a technology.")
+        if self.capability_domain_id is not None and self.kind is not CandidateKind.CAPABILITY:
+            raise InvalidKnowledgeError("Only a capability is filed under a business area.")
         if self.description is not None and self.kind not in _DESCRIBED:
             raise InvalidKnowledgeError("Only a system, component or domain has a description.")
         if self.landscape_domain_id is not None and self.kind not in _PLACING:
@@ -332,6 +337,7 @@ class CandidateContent:
             ("technology", "Technology"),
             ("landscape_domain_id", "Landscape domain"),
             ("parent_domain_id", "Parent domain"),
+            ("capability_domain_id", "Business area"),
         ):
             value = getattr(self, field)
             if value is not None:
@@ -826,7 +832,14 @@ def find_capability_domain(
     release: ArchitectureKnowledge, reference: str
 ) -> CapabilityDomain | None:
     """A capability domain named by id or, when only one has it, by name, ignoring case."""
-    return _find_node(release.capability_domains, reference)
+    return capability_domain_named(release.capability_domains, reference)
+
+
+def capability_domain_named(
+    domains: tuple[CapabilityDomain, ...], reference: str
+) -> CapabilityDomain | None:
+    """One of these business areas, named by id or, when only one has it, by name."""
+    return _find_node(domains, reference)
 
 
 def find_portfolio_node(release: ArchitectureKnowledge, reference: str) -> PortfolioNode | None:
@@ -1702,14 +1715,22 @@ def _classify_capability(
         return CandidateMatch.NEW
     places = named is not None and current.component_id is None
     linking = concept is not None and current.concept_id is None
+    filing = current.domain_id is None and _area(content, release) is not None
     return (
         CandidateMatch.ALREADY_PRESENT
         if set(content.triggers) <= set(current.triggers)
         and current.name == content.name
         and not places
         and not linking
+        and not filing
         else CandidateMatch.UPDATES_EXISTING
     )
+
+
+def _area(content: CandidateContent, release: ArchitectureKnowledge) -> CapabilityDomain | None:
+    """The draft's business area a capability suggestion names, if the draft has it."""
+    reference = content.capability_domain_id
+    return find_capability_domain(release, reference) if reference else None
 
 
 def _classify_constraint(
@@ -2842,12 +2863,15 @@ def _apply_capability(
                 "that realise it."
             )
     held = current.concept_id if current else None
+    area = _area(content, release)
     capability = KnowledgeCapability(
         capability_id,
         content.name.strip(),
         _merged(current.triggers, content.triggers) if current else content.triggers,
-        # A suggestion never moves a capability out of the domain it was placed in,
-        current.domain_id if current else None,
+        # A suggestion never moves a capability out of the domain it was placed in; it
+        # files one that has none in an area the draft has, and an area the draft lacks
+        # leaves it unfiled rather than adding one (ADR-0128),
+        (current.domain_id if current else None) or (area.id if area else None),
         # nor out of its component; it only places one that has none.
         (current.component_id if current else None) or (named.id if named else None),
         # It links a capability no one has linked, and never relinks one.
