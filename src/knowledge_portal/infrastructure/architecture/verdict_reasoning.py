@@ -29,6 +29,7 @@ from knowledge_portal.domain.architecture.assessment import ChangeType, PathStep
 from knowledge_portal.domain.architecture.deprecation import in_service
 from knowledge_portal.domain.architecture.entities import ArchitectureCitation
 from knowledge_portal.domain.architecture.verdicts import ProductVerdict
+from knowledge_portal.infrastructure.architecture.quotes import verbatim
 
 
 def _record(chunk: EvidenceChunk, system_id: str) -> bool:
@@ -222,7 +223,7 @@ class StructuredVerdictReasoner:
                 cited = by_id.get(citation.id)
                 if cited is None:
                     raise ArchitectureEvidenceError("Weighing the verdict invented a citation id.")
-                quote = _verbatim(citation.quote, cited.text)
+                quote = verbatim(citation.quote, cited.text)
                 if quote is not None:
                     citations.append(ArchitectureCitation(item.system_id, citation.id, quote))
             # A quote not in its passage is set aside, and a system left with none with it:
@@ -249,40 +250,6 @@ class StructuredVerdictReasoner:
         for decision in decisions:
             unique.setdefault(decision.system_id, decision)
         return VerdictDecision(verdict, offering_id, reason, tuple(unique.values()), uncertainty)
-
-
-_TYPOGRAPHY = str.maketrans(
-    {"\u2018": "'", "\u2019": "'", "\u201c": '"', "\u201d": '"', "\u2013": "-", "\u2014": "-"}
-)
-
-
-def _verbatim(quote: str, text: str) -> str | None:
-    """The passage's own words for `quote`, or None when it is not there.
-
-    A model copying a passage often re-spaces it or straightens its quotation marks and
-    dashes; those still match, and what is kept is the passage's text, never the model's.
-    """
-    quote = quote.strip()
-    if not quote:
-        return None
-    if quote in text:
-        return quote
-    # The passage with marks plain and spacing single, and where each character came from.
-    # `translate` keeps one character for one, so positions still index `text`.
-    chars: list[str] = []
-    origins: list[int] = []
-    for index, char in enumerate(text.translate(_TYPOGRAPHY)):
-        if char.isspace():
-            if not chars or chars[-1] == " ":
-                continue
-            char = " "
-        chars.append(char)
-        origins.append(index)
-    wanted = " ".join(quote.translate(_TYPOGRAPHY).split())
-    found = "".join(chars).find(wanted)
-    if found < 0:
-        return None
-    return text[origins[found] : origins[found + len(wanted) - 1] + 1]
 
 
 def _clip(text: str) -> str:

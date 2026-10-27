@@ -7,6 +7,13 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- One misquoted system no longer fails an architecture match. Architecture reasoning refused the
+  whole selection (502, "Architecture reasoning invented a quoted passage") when any quote was
+  not found word for word in its passage, and requirement work's feature generation failed with
+  "The service could not complete the request" after three attempts. The match now finds quotes
+  the way the verdict does (re-spacing and straightened quotation marks and dashes still match,
+  and the passage's own words are kept); a system none of whose quotes is found is set aside and
+  named in the match's uncertainty. The two steps share one quote finder. No upgrade step.
 - One misquoted system no longer fails a requirement's assessment. Weighing the verdict
   refused the whole answer (502, "Weighing the verdict invented a quote") when any quote was
   not found word for word in the passage it cited, and requirement work showed "Product impact

@@ -19,6 +19,7 @@ from knowledge_portal.application.ports.architecture_rag import (
 from knowledge_portal.domain.architecture.deprecation import in_service
 from knowledge_portal.domain.architecture.entities import ArchitectureCitation
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
+from knowledge_portal.infrastructure.architecture.quotes import verbatim
 
 
 class _QuotedCitation(BaseModel):
@@ -168,11 +169,16 @@ class StructuredArchitectureReasoner:
             )
         if not set(citation_ids) <= set(evidence_by_id):
             raise ArchitectureEvidenceError("Architecture reasoning invented a citation id.")
-        if any(
-            not item.quote.strip() or item.quote not in evidence_by_id[item.id].text
-            for item in citations
-        ):
-            raise ArchitectureEvidenceError("Architecture reasoning invented a quoted passage.")
+        # A quote not in its passage is set aside, and a system left with none with it:
+        # one misquoted system no longer costs the whole match.
+        kept: list[ArchitectureCitation] = []
+        for impact in result.impacts:
+            for citation in impact.citations:
+                quote = verbatim(citation.quote, evidence_by_id[citation.id].text)
+                if quote is not None:
+                    kept.append(ArchitectureCitation(impact.system_id, citation.id, quote))
+        quoted = {item.system_id for item in kept}
+        unquoted = sorted({item.system_id for item in result.impacts} - quoted)
         limited = len(selected_evidence) < len(evidence)
         uncertainty = result.uncertainty.strip() if result.uncertainty else None
         if not result.impacts and not uncertainty:
@@ -183,6 +189,10 @@ class StructuredArchitectureReasoner:
                 (f"{uncertainty} " if uncertainty else "")
                 + "Conflicting evidence requires review: "
                 + "; ".join(conflicts)
+            )
+        if unquoted:
+            uncertainty = (f"{uncertainty} " if uncertainty else "") + (
+                f"Set aside {', '.join(unquoted)}: no quote was found in the passage it cited."
             )
         if limited:
             uncertainty = (
@@ -195,14 +205,10 @@ class StructuredArchitectureReasoner:
                 f"{uncertainty} " if uncertainty else ""
             ) + f"{hidden} catalogue systems did not fit the model's input and were not offered."
         return EvidenceSelection(
-            tuple(dict.fromkeys(item.system_id for item in result.impacts)),
-            tuple(dict.fromkeys(citation_ids)),
+            tuple(dict.fromkeys(item.system_id for item in kept)),
+            tuple(dict.fromkeys(item.chunk_id for item in kept)),
             uncertainty,
-            tuple(
-                ArchitectureCitation(item.system_id, citation.id, citation.quote)
-                for item in result.impacts
-                for citation in item.citations
-            ),
+            tuple(kept),
         )
 
 
