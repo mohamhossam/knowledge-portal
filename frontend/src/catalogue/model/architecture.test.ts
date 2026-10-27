@@ -8,6 +8,7 @@ import { GEOMETRY, layoutFlow, waysBack } from "./flowLayout";
 import { type ActivityStep, type JourneyView, laneKey, type Step } from "./model";
 import { impactOf } from "./impact";
 import release from "./fixtures/smb-release.json";
+import { EXPLORED } from "../../explorer/fixtures";
 import { asRelease } from "./sample";
 
 // The draft seeded from catalogues/smb-architecture.yaml, as the API returns it.
@@ -62,15 +63,17 @@ describe("a catalogue version as the views read it", () => {
     expect(offering.orderTypes.find((type) => type.code === "UPDOWNGRD")?.priority).toBe("P2 / P3");
   });
 
-  it("reads an offering saved before plans and business rules as having none", () => {
-    const older = structuredClone(asRelease(release)) as Release;
-    for (const product of older.products ?? []) {
-      delete (product as Partial<typeof product>).plans;
-      delete (product as Partial<typeof product>).business_rules;
+  it("reads a release saved before plans, business rules and the channels' own flows, every view and export included", () => {
+    // The explorer's fixture predates all three: every journey view, its layout and its exports read it.
+    const older = fromRelease(EXPLORED as unknown as Release);
+    expect(older.offerings.every((offering) => offering.plans.length === 0 && offering.rules.length === 0)).toBe(true);
+    const views = older.offerings.flatMap((offering) => journeyViews(older, offering.id));
+    expect(views.length).toBeGreaterThan(0);
+    for (const view of views) {
+      expect(() => layoutFlow(view)).not.toThrow();
+      const title = viewTitle(older, view);
+      expect(() => [toBpmn(older, view), toPlantUml(older, title, view.integrations), toMermaid(older, title, view.integrations), toCsv(older, view.integrations)]).not.toThrow();
     }
-    const offering = fromRelease(older).offerings[0]!;
-    expect(offering.plans).toEqual([]);
-    expect(offering.rules).toEqual([]);
   });
 
   it("holds the journeys' activities, flow and calls, and not the release it was read from", () => {

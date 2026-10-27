@@ -124,8 +124,9 @@ function journeyOf(
     activities,
     flow: {
       all: flowEdges(journey.edges),
-      byChannel: Object.fromEntries(journey.channel_edges.map((item) => [item.channel_id, flowEdges(item.edges)])),
-      shared: flowEdges(journey.shared_edges),
+      // The channels' own flows arrived after the whole one: a journey read before them has none.
+      byChannel: Object.fromEntries((journey.channel_edges ?? []).map((item) => [item.channel_id, flowEdges(item.edges)])),
+      shared: flowEdges(journey.shared_edges ?? []),
     },
     calls,
   };
