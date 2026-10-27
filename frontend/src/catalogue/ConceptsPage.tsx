@@ -15,6 +15,7 @@ import { useFindParam } from "./frame/useFindParam";
 import {
   type Concept, type ConceptIndex, conceptIndex, conceptPath, coverage, findConcepts, realisationRecords, SOURCE_TONE, SOURCE_WORD,
 } from "./ontology";
+import { SourceName } from "./provenance/Provenance";
 import { useCatalogueContext } from "./useCatalogue";
 
 const ALL = "all";
@@ -256,7 +257,7 @@ function ConceptRecord({ concept, index }: { concept: Concept; index: ConceptInd
             ["Broader concept", broader ? conceptLink(broader) : <span className="cat-quiet">None (a top concept)</span>],
             ...(narrower.length ? [["Narrower", <span key="narrower">{narrower.map((item, position) => <span key={item.id}>{position > 0 && ", "}{conceptLink(item)}</span>)}</span>] as [string, ReactNode]] : []),
             ["Outside match", concept.exact_match ? <bdi>{concept.exact_match}</bdi> : <span className="cat-quiet">None recorded</span>],
-            ["Source", concept.source ? <bdi>{concept.source}</bdi> : <span className="cat-quiet">Not stated</span>],
+            ["Source", concept.source ? <SourceName text={concept.source} /> : <span className="cat-quiet">Not stated</span>],
             ...(acceptances(concept).length ? [["Accepted from", <AcceptedFrom key="accepted" accepted={acceptances(concept)} />] as [string, ReactNode]] : []),
           ]}
         />

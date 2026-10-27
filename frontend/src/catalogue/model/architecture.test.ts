@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import type { Release } from "../../api/client";
-import { laneName, viewTitle } from "../../design-lab/catalogue/words";
+import { laneName, viewTitle } from "./words";
 import { edgesFor, fromRelease, journeyView, journeyViews, modeOf, parseEvidence } from "./adapter";
 import { toBpmn, toCsv, toMermaid, toPlantUml } from "./exports";
 import { GEOMETRY, layoutFlow, waysBack } from "./flowLayout";
 import { type ActivityStep, type JourneyView, laneKey, type Step } from "./model";
 import { impactOf } from "./impact";
 import release from "./fixtures/smb-release.json";
+import { EXPLORED } from "../../explorer/fixtures";
 import { asRelease } from "./sample";
 
 // The draft seeded from catalogues/smb-architecture.yaml, as the API returns it.
@@ -25,6 +26,19 @@ describe("a catalogue version as the views read it", () => {
       expect(domain?.groups.some((group) => group.id === system.group), system.id).toBe(true);
     }
     expect(data.systems.find((system) => system.id === "bscs")?.proposedMove?.from).toBe("Resource");
+  });
+
+  it("places a system set deeper than a group in its top domain, in the group under it, and leaves an unplaced one unplaced", () => {
+    const nested = asRelease(release);
+    nested.landscape_domains = [
+      ...(nested.landscape_domains ?? []),
+      { id: "resource.inventory.network", name: "Network inventory", parent_id: "resource.inventory" } as never,
+    ];
+    const [placed, loose] = nested.systems;
+    nested.systems = [{ ...placed!, landscape_domain_id: "resource.inventory.network" }, { ...loose!, landscape_domain_id: null }, ...nested.systems.slice(2)];
+    const read = fromRelease(nested);
+    expect([read.systems[0]?.domain, read.systems[0]?.group]).toEqual(["resource", "resource.inventory"]);
+    expect([read.systems[1]?.domain, read.systems[1]?.group]).toEqual(["", ""]);
   });
 
   it("reads evidence from a fact's confidence and source line, as the service read the line", () => {
@@ -47,6 +61,19 @@ describe("a catalogue version as the views read it", () => {
     expect(offering.plans[0]?.characteristics.map((item) => item.name)).toEqual(["Download", "Upload", "CPE", "Access point", "Backup 5G"]);
     expect(offering.plans.flatMap((plan) => plan.characteristics).some((item) => /price/i.test(item.name))).toBe(false);
     expect(offering.orderTypes.find((type) => type.code === "UPDOWNGRD")?.priority).toBe("P2 / P3");
+  });
+
+  it("reads a release saved before plans, business rules and the channels' own flows, every view and export included", () => {
+    // The explorer's fixture predates all three: every journey view, its layout and its exports read it.
+    const older = fromRelease(EXPLORED as unknown as Release);
+    expect(older.offerings.every((offering) => offering.plans.length === 0 && offering.rules.length === 0)).toBe(true);
+    const views = older.offerings.flatMap((offering) => journeyViews(older, offering.id));
+    expect(views.length).toBeGreaterThan(0);
+    for (const view of views) {
+      expect(() => layoutFlow(view)).not.toThrow();
+      const title = viewTitle(older, view);
+      expect(() => [toBpmn(older, view), toPlantUml(older, title, view.integrations), toMermaid(older, title, view.integrations), toCsv(older, view.integrations)]).not.toThrow();
+    }
   });
 
   it("holds the journeys' activities, flow and calls, and not the release it was read from", () => {

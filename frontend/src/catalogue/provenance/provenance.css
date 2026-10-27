@@ -1,0 +1,46 @@
+/*
+ * Provenance one step away (catalogue merge, step 6): the passage a quote was
+ * read in, opened in place under it, with the passages either side quieter, and
+ * the way to the document. Semantic tokens only.
+ */
+.prov-cited {
+  display: grid;
+  gap: var(--space-2);
+  margin-block-start: var(--space-1);
+}
+
+.prov-cited > .ds-button {
+  justify-self: start;
+}
+
+.prov-passage {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-inline-start: var(--rule-heavy) solid var(--color-rule-strong);
+  background: var(--color-surface-1);
+}
+
+.prov-context {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.prov-context__near {
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.prov-open {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.prov-image {
+  display: block;
+  max-inline-size: 100%;
+  border: var(--hair-rule);
+}

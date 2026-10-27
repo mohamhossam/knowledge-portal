@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { api, type CatalogueSystem, type Release } from "../api/client";
 import {
   Button, EmptyState, GapBadge, ListFilter, ListFind, ListTools, RecordList, type RecordGroup,
-  RecordPlaceholder, Status, Workbench,
+  RecordPlaceholder, Status, Tabs, Workbench,
 } from "../design/components";
 import { count } from "../home/format";
 import { RouterLink } from "../shell/links";
@@ -16,6 +16,7 @@ import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useFindParam } from "./frame/useFindParam";
 import { type ConceptIndex, conceptIndex, interfacesOf, systemConcepts, systemDomains } from "./ontology";
 import { SystemRecord } from "./SystemRecord";
+import { type MatrixView, SystemsMatrices } from "./systems/SystemsMatrices";
 import { useCatalogueContext } from "./useCatalogue";
 
 type Row = { system: CatalogueSystem; place: string; why: string | null };
@@ -35,6 +36,8 @@ export function SystemsPage() {
   const [adding, setAdding] = useState(false);
   const chosen = systemId !== undefined ? book.systems.get(systemId) : undefined;
   const index = useMemo(() => conceptIndex(book.release), [book.release]);
+  const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const record = adding ? (
     <SystemEdit onDone={() => setAdding(false)} />
@@ -52,18 +55,43 @@ export function SystemsPage() {
     </RecordPlaceholder>
   );
 
+  // The systems one at a time (their records), or read across as a matrix (catalogue merge, step 5).
+  const view: View = systemId === undefined && (params.get("view") === "interfaces" || params.get("view") === "delivery") ? (params.get("view") as View) : "records";
+  const chooseView = (next: View) =>
+    setParams((previous) => {
+      const query = new URLSearchParams(previous);
+      if (next === "records") query.delete("view");
+      else query.set("view", next);
+      query.delete("system");
+      return query;
+    }, { replace: true });
+
   return (
     <>
       <CatalogueHeader page="systems" chosen={chosen?.name} />
-      <Workbench
-        listLabel="Systems"
-        chosen={Boolean(chosen) || adding}
-        list={<SystemsList index={index} current={chosen?.id} onAdd={editable && !adding ? () => setAdding(true) : undefined} />}
-        record={record}
-      />
+      <Tabs label="Ways to read the systems" tabs={VIEWS} selected={view} onSelect={(next) => (systemId !== undefined && next !== "records" ? navigate(`${base}?view=${next}`) : chooseView(next))}>
+        {view === "records" ? (
+          <Workbench
+            listLabel="Systems"
+            chosen={Boolean(chosen) || adding}
+            list={<SystemsList index={index} current={chosen?.id} onAdd={editable && !adding ? () => setAdding(true) : undefined} />}
+            record={record}
+          />
+        ) : (
+          <SystemsMatrices view={view} />
+        )}
+      </Tabs>
     </>
   );
 }
+
+type View = "records" | MatrixView;
+
+const VIEWS: { id: View; label: string }[] = [
+  { id: "records", label: "Records" },
+  { id: "interfaces", label: "Who calls whom" },
+  { id: "delivery", label: "What they deliver" },
+];
 
 function SystemsList({ index, current, onAdd }: { index: ConceptIndex; current?: string; onAdd?: () => void }) {
   const { book, base } = useCatalogueContext();
@@ -204,14 +232,14 @@ export function ConceptChips({ system, index }: { system: CatalogueSystem; index
   return <span className="cat-quiet">Not linked</span>;
 }
 
-/** With no system chosen: how many connections there are, and the way to see them drawn. */
+/** With no system chosen: how many connections there are, and the way to read them across. */
 function MapLine() {
   const { book, base } = useCatalogueContext();
   const connections = book.release.relationships.length;
   return (
     <p className="cat-lead">
       {connections ? `${count(connections, "connection")} between systems in this version.` : "No system depends on another in this version."}{" "}
-      <RouterLink href={`${base}/map`}>See the map of how systems connect and what they do</RouterLink>
+      <RouterLink href={`${base}?view=interfaces`}>See who calls whom across every system</RouterLink>
     </p>
   );
 }

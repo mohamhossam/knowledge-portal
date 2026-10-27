@@ -1,0 +1,224 @@
+/*
+ * Where systems sit, drawn (catalogue merge, step 2): the tools above the map,
+ * the map beside the picked system's summary on a wide main area (under it on a
+ * narrow one), the key, and the systems in no layer. Semantic tokens only, so it
+ * holds in both themes.
+ */
+.lsc {
+  display: grid;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
+.lsc-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2) var(--space-4);
+}
+
+.lsc-tools .ds-filters {
+  flex: 1 1 28rem;
+  min-inline-size: 0;
+}
+
+.lsc-find {
+  flex: 0 1 18rem;
+  min-inline-size: 12rem;
+}
+
+/* The map keeps its width; the summary takes a column of its own beside it while a system is picked. */
+.lsc-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.lsc-board--picked {
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+}
+
+.lsc-map {
+  display: grid;
+  gap: var(--space-3);
+  min-inline-size: 0;
+  /* The cards read at the catalogue's UI size, with tabular numbers in their counts. */
+  font-size: var(--text-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.lsc-summary {
+  position: sticky;
+  top: calc(var(--sticky-top, 0px) + var(--space-3));
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: var(--hair-rule);
+  border-block-start: var(--rule-heavy) solid var(--color-rule-heavy);
+  background: var(--color-surface);
+}
+
+.lsc-summary > * {
+  margin: 0;
+}
+
+.lsc-summary__head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.lsc-summary__head h3 {
+  margin: 0;
+  font-size: var(--text-h3);
+  font-weight: var(--weight-strong);
+}
+
+.lsc-summary__note {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-warning-bg);
+  color: var(--color-ink);
+}
+
+.lsc-summary__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lsc-summary__record {
+  font-weight: var(--weight-strong);
+}
+
+/* The key: each mark drawn as the cards draw it. */
+.lsc-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.lsc-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.lsc-key__mark {
+  position: relative;
+  inline-size: 1.5rem;
+  block-size: 1rem;
+  border: 1px solid var(--color-rule-soft);
+  border-radius: 4px;
+  background: var(--color-surface);
+}
+
+.lsc-key__mark--picked {
+  border-color: var(--color-action-fill);
+  background: var(--color-action-fill);
+}
+
+.lsc-key__mark--linked {
+  border-color: var(--color-action-fill);
+  box-shadow: 0 0 0 1px var(--color-action-fill);
+}
+
+.lsc-key__mark--external {
+  border-style: dashed;
+  border-color: var(--color-rule-strong);
+}
+
+.lsc-key__mark--proposed::after {
+  content: "";
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  inline-size: 8px;
+  block-size: 8px;
+  background: var(--color-warning);
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
+/* An offering's footprint, in the tiers the cards draw (the later, pine rules in architectureMap.css). */
+.lsc-key__mark--core {
+  border-color: var(--color-footprint);
+  background: var(--color-footprint);
+}
+
+.lsc-key__mark--used {
+  border-color: var(--color-footprint);
+  box-shadow: 0 0 0 1px var(--color-footprint);
+}
+
+.lsc-key__mark--carries {
+  border-style: dashed;
+  border-color: var(--color-footprint);
+}
+
+/* The systems in no layer: listed, never left out. */
+.lsc-unplaced {
+  padding-block-start: var(--space-2);
+  border-block-start: var(--hair-rule);
+}
+
+.lsc-unplaced > p {
+  margin: var(--space-2) 0;
+}
+
+.lsc-unplaced__summary {
+  /* A list item keeps the disclosure triangle; the padding keeps the target over 24px. */
+  display: list-item;
+  min-block-size: var(--target-min);
+  inline-size: fit-content;
+  padding-block: var(--space-1);
+  cursor: pointer;
+  font-weight: var(--weight-strong);
+}
+
+.lsc-unplaced__summary:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.lsc-unplaced__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lsc-unplaced__list .ds-button[aria-pressed="true"] {
+  font-weight: var(--weight-strong);
+  text-decoration-thickness: 2px;
+}
+
+/* With the summary beside it, layers that shared a row take one each, so no name breaks mid-word. */
+@media (max-width: 1600px) {
+  .lsc-board--picked .am-row--split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A narrow main area: the summary leaves the side for a row of its own. */
+@media (max-width: 1100px) {
+  .lsc-board--picked {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Stacked, the picked system comes first, so picking one shows it without scrolling past the map. */
+  .lsc-summary {
+    position: static;
+    order: -1;
+  }
+}

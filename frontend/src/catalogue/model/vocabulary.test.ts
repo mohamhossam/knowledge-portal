@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { roleName } from "../../design-lab/catalogue/words";
+import { roleName } from "./words";
 import { fromRelease, journeyView } from "./adapter";
 import release from "./fixtures/smb-release.json";
 import { impactOf } from "./impact";

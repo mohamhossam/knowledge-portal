@@ -101,6 +101,14 @@ describe("the shell", () => {
     }
   });
 
+  it("opens the catalogue from Catalogue", async () => {
+    open("/");
+    await screen.findByRole("heading", { level: 1, name: "To do" });
+    const areas = screen.getByRole("navigation", { name: "Areas" });
+    expect(within(areas).getByRole("link", { name: "Catalogue" })).toHaveAttribute("href", "/architecture");
+    expect(within(areas).queryByRole("link", { name: /lab/i })).not.toBeInTheDocument();
+  });
+
   it("ranks the failed read first on To do, and the sidebar counts the same entries", async () => {
     open("/");
     const attention = await screen.findByRole("region", { name: /Needs attention/ });

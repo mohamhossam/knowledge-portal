@@ -8,7 +8,7 @@
  * - the integration register as CSV.
  * Everything is generated in the browser from the model, named in the lab's words.
  */
-import { laneName, MODE_WORDS, operationName, stepName, styleName, systemName, viewTitle } from "../../design-lab/catalogue/words";
+import { laneName, MODE_WORDS, operationName, stepName, styleName, systemName, viewTitle } from "./words";
 import { GEOMETRY, layoutFlow } from "./flowLayout";
 import { type Catalogue, EVIDENCE_WORDS, type Evidence, type Integration, type JourneyView, laneKey, type Step } from "./model";
 

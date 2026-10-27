@@ -53,11 +53,11 @@ export const ROUTES: RouteDef[] = [
   { key: "library-about", path: (s) => s.serviceDocument && `library/${s.serviceDocument}/about`, mask: [".ds-provenance", ".review-line__text"] },
   // The architecture catalogue.
   { key: "architecture", path: at("architecture") },
-  // The map (UX rebuild phase 4): how systems connect, one system in context, what systems do.
   { key: "architecture-golden-set", path: at("architecture/golden-set"), mask: [".golden-meta", "select"] },
-  { key: "architecture-map", path: at("architecture/map") },
+  // The systems read across (catalogue merge, step 5): who calls whom, what they deliver; one system in context.
+  { key: "architecture-interfaces", path: at("architecture?view=interfaces") },
+  { key: "architecture-delivery", path: at("architecture?view=delivery") },
   { key: "architecture-map-system", path: (s) => s.system && `architecture/map?system=${s.system}` },
-  { key: "architecture-map-capabilities", path: at("architecture/map?lens=capabilities") },
   { key: "architecture-system", path: (s) => s.system && `architecture/systems/${s.system}` },
   { key: "architecture-concepts", path: at("architecture/concepts") },
   { key: "architecture-concept", path: (s) => s.concept && `architecture/concepts/${s.concept}` },

@@ -16,6 +16,7 @@ import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRo
 import { SystemContextDiagram } from "./diagrams/CatalogueDiagrams";
 import { ConnectionEdit, ConnectionRemove, SystemEdit, SystemRemove } from "./DraftEdits";
 import { type ConceptIndex, entityNames, INTERFACE_STYLE, type Interface, interfacesOf, SOURCE_TONE, SOURCE_WORD } from "./ontology";
+import { SourceName } from "./provenance/Provenance";
 import { useCatalogueContext } from "./useCatalogue";
 
 /** Where a record was reached from, so the way back can be lit and retraced. */
@@ -440,7 +441,7 @@ function SourceStated({ fact }: { fact: { confidence?: SourceConfidence | null; 
   return (
     <span className="cat-inline">
       {fact.confidence && <Status tone={SOURCE_TONE[fact.confidence]}>{SOURCE_WORD[fact.confidence]}</Status>}
-      {fact.source ? <bdi>{fact.source}</bdi> : !fact.confidence && <span className="cat-quiet">Not stated</span>}
+      {fact.source ? <SourceName text={fact.source} /> : !fact.confidence && <span className="cat-quiet">Not stated</span>}
     </span>
   );
 }

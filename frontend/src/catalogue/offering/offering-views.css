@@ -1,0 +1,43 @@
+/*
+ * An offering's plans and business rules (catalogue merge, step 3): the shared
+ * characteristics as quiet pairs, and each rule with its id, what it governs and
+ * where it comes from. Semantic tokens only.
+ */
+.off-subhead {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-body);
+  font-weight: var(--weight-strong);
+}
+
+.off-pairs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.off-rule {
+  display: grid;
+  grid-template-columns: minmax(4.5rem, auto) minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: baseline;
+}
+
+.off-rule__id {
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.off-rule__body {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.off-rule__source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}

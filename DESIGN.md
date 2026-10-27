@@ -24,6 +24,8 @@ colors:
   sage-wash: "#e6f0e8"
   slate-teal: "#2b5a6e"
   slate-teal-wash: "#e4eef1"
+  footprint-pine: "#17615d"
+  footprint-pine-wash: "#e3f1ef"
   charcoal: "#1c1917"
   charcoal-1: "#221e1c"
   charcoal-2: "#2a2623"
@@ -199,7 +201,18 @@ is paired with an icon and a word.
 - **Ochre** (#7a5a00, wash #f6efd9): held, overdue, out of date.
 - **Sage** (#2d6640, wash #e6f0e8): done, in service.
 - **Slate Teal** (#2b5a6e, wash #e4eef1): working, and the **Suggested** mark on anything a
-  model proposed. It is the one cool hue, so AI provenance stands apart.
+  model proposed. It is the one cool hue among the states, so AI provenance stands apart.
+
+### Diagram hue
+
+- **Footprint Pine** (#17615d, wash #e3f1ef; on charcoal #8fc3bc over #17302d): a product's
+  footprint on the architecture map, and nothing else. It marks which systems an offering's
+  journeys reach (core: solid; used: an outline; only passes calls on: a dashed outline) and the
+  delivery dots in "What they deliver". It is not a state, so it never carries an icon of its own,
+  but the tier is always said in words on the card or in the key. Maroon was not used because on
+  the same map solid maroon means the system you picked, and a footprint lighting many cards would
+  push maroon past its share of the view. Pine sits apart from Sage (greener, lighter wash) and
+  Slate Teal (bluer) and is never used beside the Suggested mark to mean anything about a model.
 
 ### Neutral
 

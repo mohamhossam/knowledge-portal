@@ -325,3 +325,27 @@ a.cat-chip:hover {
   text-decoration: line-through;
   text-decoration-thickness: 1px;
 }
+
+/* Which model and prompt read an accepted suggestion: one step away, beside the line that says who accepted it. */
+.accepted-model {
+  display: inline-block;
+  margin-inline-start: var(--space-2);
+  color: var(--color-ink-2);
+  font-size: var(--text-meta);
+}
+
+.accepted-model[open] {
+  display: block;
+  margin-inline-start: 0;
+}
+
+.accepted-model__summary {
+  min-block-size: var(--target-min);
+  padding-block: var(--space-1);
+  cursor: pointer;
+}
+
+.accepted-model__summary:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}

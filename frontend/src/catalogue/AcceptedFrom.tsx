@@ -1,12 +1,26 @@
 import { Lines } from "../design/components";
 import { formatDay } from "../home/format";
-import type { Accepted } from "./accepted";
+import { type Accepted, readerName } from "./accepted";
+import { CitedPassage } from "./provenance/Provenance";
 import { useCatalogueContext } from "./useCatalogue";
 
 type Citation = Accepted["citations"][number];
 
+// Who decided it first (PRODUCT.md: nothing is published unreviewed), then which reader suggested it.
+// Not the Suggested mark: that marks what nobody has decided yet, and this was accepted.
 function line(entry: Accepted, actorName: (id: string) => string): string {
-  return `A suggestion from ${entry.model} (prompt ${entry.prompt_version}), accepted by ${actorName(entry.decided_by)} on ${formatDay(entry.decided_at)}`;
+  return `Accepted by ${actorName(entry.decided_by)} on ${formatDay(entry.decided_at)}, from a suggestion by ${readerName(entry.model)}`;
+}
+
+/** Which model and prompt read it, each once: kept for the audit, one step away from the line a curator reads. */
+function ModelDetail({ entries }: { entries: readonly Accepted[] }) {
+  const read = [...new Set(entries.map((entry) => `${entry.model} · prompt ${entry.prompt_version}`))];
+  return (
+    <details className="accepted-model">
+      <summary className="accepted-model__summary">Model and prompt</summary>
+      <span translate="no">{read.join("; ")}</span>
+    </details>
+  );
 }
 
 /** Where in its source a passage is: the document's title, when it came from one, then the place. */
@@ -26,6 +40,9 @@ function Cited({ entry }: { entry: Accepted }) {
       {cited.map((citation, index) => (
         <li key={index}>
           <bdi>{place(citation)}</bdi>: “<bdi>{citation.quote}</bdi>”
+          {citation.document_version_id && (
+            <CitedPassage versionId={citation.document_version_id} location={citation.location} quote={citation.quote} title={citation.document ?? "The document"} />
+          )}
         </li>
       ))}
     </Lines>
@@ -50,6 +67,7 @@ export function AcceptedFrom({ accepted, summary = false }: { accepted: readonly
         {newest.length === 1
           ? `${line(last, actorName)}${read}`
           : `From ${newest.length} accepted suggestions; the last accepted by ${actorName(last.decided_by)} on ${formatDay(last.decided_at)}${read}`}
+        <ModelDetail entries={newest} />
       </span>
     );
   }
@@ -57,6 +75,7 @@ export function AcceptedFrom({ accepted, summary = false }: { accepted: readonly
     return (
       <>
         <span>{line(last, actorName)}</span>
+        <ModelDetail entries={[last]} />
         <Cited entry={last} />
       </>
     );
@@ -66,6 +85,7 @@ export function AcceptedFrom({ accepted, summary = false }: { accepted: readonly
       {newest.map((entry) => (
         <li key={entry.candidate_id}>
           {line(entry, actorName)}
+          <ModelDetail entries={[entry]} />
           <Cited entry={entry} />
         </li>
       ))}

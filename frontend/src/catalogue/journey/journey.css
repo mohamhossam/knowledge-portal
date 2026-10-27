@@ -8,6 +8,8 @@
 
 .journey {
   display: grid;
+  /* One column the record's width: a drawing scrolls inside it, never widens it. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
   min-inline-size: 0;
 }
