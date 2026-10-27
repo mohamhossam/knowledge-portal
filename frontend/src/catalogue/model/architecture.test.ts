@@ -62,6 +62,17 @@ describe("a catalogue version as the views read it", () => {
     expect(offering.orderTypes.find((type) => type.code === "UPDOWNGRD")?.priority).toBe("P2 / P3");
   });
 
+  it("reads an offering saved before plans and business rules as having none", () => {
+    const older = structuredClone(asRelease(release)) as Release;
+    for (const product of older.products ?? []) {
+      delete (product as Partial<typeof product>).plans;
+      delete (product as Partial<typeof product>).business_rules;
+    }
+    const offering = fromRelease(older).offerings[0]!;
+    expect(offering.plans).toEqual([]);
+    expect(offering.rules).toEqual([]);
+  });
+
   it("holds the journeys' activities, flow and calls, and not the release it was read from", () => {
     expect("release" in data).toBe(false);
     const journey = data.journeys.find((item) => item.id === "bpp-new-activation")!;

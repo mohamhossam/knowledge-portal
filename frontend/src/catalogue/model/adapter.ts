@@ -231,8 +231,9 @@ function offeringOf(product: NonNullable<Release["products"]>[number], channels:
     purpose,
     values: product.values.map(point),
     eligibility: product.audiences.map(point),
-    plans: product.plans.map((plan) => ({ name: plan.name, characteristics: plan.characteristics, evidence: evidence(plan) })),
-    rules: product.business_rules.map((rule) => ({ id: rule.id, kind: rule.kind ?? undefined, statement: rule.statement, evidence: evidence(rule) })),
+    // Plans and business rules arrived later than the rest: a release read before them has none.
+    plans: (product.plans ?? []).map((plan) => ({ name: plan.name, characteristics: plan.characteristics, evidence: evidence(plan) })),
+    rules: (product.business_rules ?? []).map((rule) => ({ id: rule.id, kind: rule.kind ?? undefined, statement: rule.statement, evidence: evidence(rule) })),
     components: product.components.map((part) => ({
       id: part.id,
       name: part.name,
