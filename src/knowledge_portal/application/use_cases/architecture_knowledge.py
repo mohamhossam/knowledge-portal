@@ -148,7 +148,9 @@ class ManageArchitectureKnowledge:
             raise KnowledgeConflictError("Build this release with the current embedding profile.")
         if not query.strip():
             raise InvalidKnowledgeError("Retrieval query must not be blank.")
-        return self._index.retrieve(release.index_id or release.id, query, 8)
+        return self._index.retrieve(
+            release.index_id or release.id, self._index.queries((query,))[0], 8
+        )
 
     def active(self) -> ArchitectureKnowledge:
         return release_in_service(self._repository)

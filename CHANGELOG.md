@@ -7,6 +7,14 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- A requirement's assessment embeds its search texts in batches. Each need's concept shortlist
+  and each data, interface or need facet's passage search embedded its text in a call of its
+  own, so a requirement with many needs made dozens of embedding requests one after another
+  (about 50 at about 1.2 s each on the local stack), and requirement work gave up after its 120 s
+  wait with "Product impact not assessed: The knowledge service could not be reached." The needs
+  are now embedded in one call and the searched facets in another; the results are the same.
+  The evidence index's searches take a query embedded beforehand (`queries`), which is never
+  cached, unlike a stored passage. No upgrade step.
 - A citation of a passage the model was not given no longer fails a requirement's assessment or
   an architecture match. Weighing the verdict refused the whole answer (502, "Weighing the
   verdict invented a citation id"), and requirement work showed "Product impact was not

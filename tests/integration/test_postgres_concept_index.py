@@ -139,12 +139,21 @@ def test_pgvector_holds_the_same_links_and_answers_concept_queries() -> None:
     }
     assert index.coverage(built.index_id) == memory.coverage(expected.index_id)
 
-    (wifi, *_) = index.match_concepts(built.index_id, "Wi-Fi access point for the branch", 5)
+    (wifi, *_) = index.match_concepts(
+        built.index_id, index.queries(("Wi-Fi access point for the branch",))[0], 5
+    )
     assert wifi.concept_id == "cap-wifi-access"
-    linked = index.concept_chunks(built.index_id, "access point", ("cap-wifi-access",), 5)
+    linked = index.concept_chunks(
+        built.index_id, index.queries(("access point",))[0], ("cap-wifi-access",), 5
+    )
     # Both windows of the offering whose access point component realises it.
     assert {item.location.split(",")[0] for item in linked} == {"product business-pro-plus"}
-    assert index.concept_chunks(built.index_id, "access point", ("cap-unknown",), 5) == ()
+    assert (
+        index.concept_chunks(
+            built.index_id, index.queries(("access point",))[0], ("cap-unknown",), 5
+        )
+        == ()
+    )
 
     # Discarding the draft removes its index with every link.
     knowledge.discard_draft(built.id, built.revision, ACTOR)
@@ -174,9 +183,39 @@ def test_an_index_stored_before_links_reports_no_coverage() -> None:
     index.store(draft.id, index_id, (EvidenceChunk("c1", "BSCS", "system bscs", "BSCS billing"),))
 
     assert index.coverage(index_id) is None
-    assert index.match_concepts(index_id, "billing", 3) == ()
-    assert [item.id for item in index.retrieve(index_id, "billing", 3)] == ["c1"]
+    assert index.match_concepts(index_id, index.queries(("billing",))[0], 3) == ()
+    assert [item.id for item in index.retrieve(index_id, index.queries(("billing",))[0], 3)] == [
+        "c1"
+    ]
     # pgvector keeps single precision.
     (vector,) = index.vectors(("BSCS billing",))
     assert vector == pytest.approx(FakeEmbeddings().embed(("BSCS billing",))[0], rel=1e-6)
     knowledge.discard_draft(draft.id, draft.revision, ACTOR)
+
+
+class _Counted(FakeEmbeddings):
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, ...]] = []
+
+    def embed(self, texts: tuple[str, ...]) -> tuple[tuple[float, ...], ...]:
+        self.calls.append(texts)
+        return super().embed(texts)
+
+
+def test_search_queries_are_embedded_together_and_never_cached() -> None:
+    assert DATABASE_URL is not None
+    run_migrations(DATABASE_URL)
+    embeddings = _Counted()
+    index = PostgresEvidenceIndex(
+        PostgresStore(DirectPostgresConnector(DATABASE_URL)), embeddings, FakeWordTokenizer()
+    )
+    texts = (f"query {uuid4().hex}", f"query {uuid4().hex}")
+
+    queries = index.queries((*texts, texts[0]))
+
+    assert embeddings.calls == [texts]
+    assert [item.text for item in queries] == [*texts, texts[0]]
+    assert queries[1].vector == FakeEmbeddings().embed((texts[1],))[0]
+    # Not written to the passage cache: asked again, it is embedded again.
+    index.queries((texts[0],))
+    assert embeddings.calls[1:] == [(texts[0],)]

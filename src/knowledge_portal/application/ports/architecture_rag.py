@@ -91,6 +91,14 @@ class IndexLinks:
 
 
 @dataclass(frozen=True)
+class SearchQuery:
+    """A text to search for, with its embedding: searched by its words and by its vector."""
+
+    text: str
+    vector: tuple[float, ...]
+
+
+@dataclass(frozen=True)
 class ConceptMatch:
     concept_id: str
     score: float
@@ -116,7 +124,14 @@ class ArchitectureEvidenceIndexPort(Protocol):
 
     def store(self, release_id: str, index_id: str, chunks: tuple[EvidenceChunk, ...]) -> None: ...
 
-    def retrieve(self, release_id: str, query: str, limit: int) -> tuple[EvidenceChunk, ...]: ...
+    def queries(self, texts: tuple[str, ...]) -> tuple[SearchQuery, ...]:
+        """The texts as search queries, all embedded in one call: each call is a round trip
+        to the embedding provider. A query is not cached, unlike a stored passage."""
+        ...
+
+    def retrieve(
+        self, release_id: str, query: SearchQuery, limit: int
+    ) -> tuple[EvidenceChunk, ...]: ...
 
     def get(self, release_id: str, chunk_id: str) -> EvidenceChunk | None: ...
 
@@ -142,12 +157,14 @@ class ArchitectureEvidenceIndexPort(Protocol):
         self, index_id: str, chunk_ids: tuple[str, ...]
     ) -> tuple[tuple[ChunkEntityLink, ...], tuple[ChunkConceptLink, ...]]: ...
 
-    def match_concepts(self, index_id: str, query: str, limit: int) -> tuple[ConceptMatch, ...]:
+    def match_concepts(
+        self, index_id: str, query: SearchQuery, limit: int
+    ) -> tuple[ConceptMatch, ...]:
         """The concepts of the index's scheme closest to the text, best first."""
         ...
 
     def concept_chunks(
-        self, index_id: str, query: str, concept_ids: tuple[str, ...], limit: int
+        self, index_id: str, query: SearchQuery, concept_ids: tuple[str, ...], limit: int
     ) -> tuple[EvidenceChunk, ...]:
         """The best search results among the chunks linked to any of the concepts."""
         ...

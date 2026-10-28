@@ -24,7 +24,9 @@ from smb_kernel.time.fixed import FixedClock
 from knowledge_portal.application.ports.architecture_knowledge import ArchitectureQuery
 from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceError,
+    EmbeddingPort,
     EvidenceChunk,
+    SearchQuery,
 )
 from knowledge_portal.application.ports.precedents import PrecedentMatch
 from knowledge_portal.application.ports.requirement_assessment import (
@@ -49,6 +51,7 @@ from knowledge_portal.application.use_cases.assess_requirement import AssessRequ
 from knowledge_portal.application.use_cases.assessment_lanes import (
     PASSAGE_BUDGET,
     RECORD_BUDGET,
+    SEARCHED_FACETS,
     passage_lane,
 )
 from knowledge_portal.application.use_cases.mapping_evaluation import (
@@ -165,11 +168,10 @@ class _World:
         return self.assessor(reasoner).assess(AssessmentQuery((text,), release_id=self.release.id))
 
 
-@pytest.fixture(scope="module")
-def world() -> _World:
+def _built(embeddings: EmbeddingPort) -> _World:
     clock = FixedClock(NOW)
     repository = seeded_repository()
-    index = InMemoryEvidenceIndex(FakeEmbeddings(), FakeWordTokenizer())
+    index = InMemoryEvidenceIndex(embeddings, FakeWordTokenizer())
     manage = ManageArchitectureKnowledge(
         repository, CatalogueFileAdapter(), index, 10_000_000, OfflineDocumentScanner()
     )
@@ -203,6 +205,27 @@ def world() -> _World:
     )
     organisation.change(lambda _: seeded, "test", "seed", "organisation")
     return _World(release, manage, index, repository, organisation)
+
+
+@pytest.fixture(scope="module")
+def world() -> _World:
+    return _built(FakeEmbeddings())
+
+
+class _Counted:
+    """Fake embeddings that record each call's texts."""
+
+    def __init__(self) -> None:
+        self._embeddings = FakeEmbeddings()
+        self.calls: list[tuple[str, ...]] = []
+
+    @property
+    def model(self) -> str:
+        return self._embeddings.model
+
+    def embed(self, texts: tuple[str, ...]) -> tuple[tuple[float, ...], ...]:
+        self.calls.append(texts)
+        return self._embeddings.embed(texts)
 
 
 def _system(assessment: ArchitectureAssessment, system_id: str) -> Any:
@@ -260,6 +283,31 @@ def test_a_requirement_on_an_offering_gets_its_verdict_systems_paths_and_owners(
     assert result.proposal is not None and result.proposal.offering_id == BPP
     assert {item.component_id for item in result.proposal.components} == {"ap"}
     assert result.questions == ()
+
+
+def test_an_assessment_embeds_its_needs_together_and_its_facets_together() -> None:
+    """One embedding call for every need's shortlist and one for every facet's passages, not
+    one per text: each is a round trip to the provider, and a requirement-portal analysis
+    waits on the assessment."""
+    embeddings = _Counted()
+    world = _built(embeddings)
+    text = (
+        "Let Business Pro Plus customers add a second FortiAP as an add-on from B2B Web. "
+        "A technician visit installs it."
+    )
+    embeddings.calls.clear()
+
+    result = world.assess(text)
+
+    needs = tuple(item.text for item in result.facets if item.kind is FacetKind.NEED)
+    searched = tuple(item.text for item in result.facets if item.kind in SEARCHED_FACETS)
+    assert len(needs) > 1 and len(searched) > 1
+    # The needs, the requirement for its precedents, then the facets for their passages.
+    assert embeddings.calls == [
+        tuple(dict.fromkeys(needs)),
+        (text,),
+        tuple(dict.fromkeys(searched)),
+    ]
 
 
 class _Untouched:
@@ -689,13 +737,16 @@ class _Passages:
     def system_chunk(self, index_id: str, system_id: str) -> EvidenceChunk:
         return EvidenceChunk(f"record-{system_id}", system_id, f"system {system_id}", system_id)
 
-    def retrieve(self, index_id: str, query: str, limit: int) -> tuple[EvidenceChunk, ...]:
-        return self.pools.get(query, ())[:limit]
+    def queries(self, texts: tuple[str, ...]) -> tuple[SearchQuery, ...]:
+        return tuple(SearchQuery(text, ()) for text in texts)
+
+    def retrieve(self, index_id: str, query: SearchQuery, limit: int) -> tuple[EvidenceChunk, ...]:
+        return self.pools.get(query.text, ())[:limit]
 
     def concept_chunks(
-        self, index_id: str, query: str, concept_ids: tuple[str, ...], limit: int
+        self, index_id: str, query: SearchQuery, concept_ids: tuple[str, ...], limit: int
     ) -> tuple[EvidenceChunk, ...]:
-        return self.pools.get(query, ())[:limit]
+        return self.pools.get(query.text, ())[:limit]
 
     def links(self, index_id: str, chunk_ids: tuple[str, ...]) -> tuple[tuple[()], tuple[()]]:
         return (), ()

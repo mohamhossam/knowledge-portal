@@ -118,7 +118,7 @@ QUERY = "The catalogue upload flow publishes offers nightly to the portal via BC
 def test_a_named_system_is_found_even_when_search_ranks_its_record_out() -> None:
     index, release = _crowded_index()
 
-    assert all(chunk.id != "own" for chunk in index.retrieve("idx", QUERY, 8))
+    assert all(chunk.id != "own" for chunk in index.retrieve("idx", index.queries((QUERY,))[0], 8))
     evidence = gather_evidence(index, release, "idx", QUERY)
 
     assert evidence[0].id == "own"

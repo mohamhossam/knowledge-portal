@@ -135,7 +135,7 @@ def test_stale_build_cannot_replace_newly_published_evidence() -> None:
     with pytest.raises(KnowledgeConflictError):
         builder.execute(draft.id, draft.revision, actor.id, fence=lambda: None)
     assert replacement is not None and replacement.index_id is not None
-    evidence = index.retrieve(replacement.index_id, "Newest evidence", 8)
+    evidence = index.retrieve(replacement.index_id, index.queries(("Newest evidence",))[0], 8)
     assert any(item.text.endswith("\nNewest evidence") for item in evidence)
     assert all(index.get(replacement.index_id, item.id) == item for item in evidence)
 
@@ -564,12 +564,12 @@ def test_reviewed_retrieval_fixture_reaches_top_eight_and_resolves_citations() -
     answerable = [case for case in cases if case["system"] is not None]
     found = 0
     for case in answerable:
-        results = index.retrieve(built.index_id, case["query"], 8)
+        results = index.retrieve(built.index_id, index.queries((case["query"],))[0], 8)
         if any(chunk.location == f"system {case['system']}" for chunk in results):
             found += 1
         assert all(index.get(built.index_id, chunk.id) == chunk for chunk in results)
     assert found / len(answerable) >= 0.9
-    conflict = index.retrieve(built.index_id, cases[-2]["query"], 8)
+    conflict = index.retrieve(built.index_id, index.queries((cases[-2]["query"],))[0], 8)
     assert {"conflict-one", "conflict-two"} <= {chunk.document_version_id for chunk in conflict}
     empty = cases[-1]
     assert (
@@ -577,7 +577,7 @@ def test_reviewed_retrieval_fixture_reaches_top_eight_and_resolves_citations() -
         .select(
             ArchitectureQuery((empty["query"],)),
             release,
-            index.retrieve(built.index_id, empty["query"], 8),
+            index.retrieve(built.index_id, index.queries((empty["query"],))[0], 8),
         )
         .system_ids
         == ()

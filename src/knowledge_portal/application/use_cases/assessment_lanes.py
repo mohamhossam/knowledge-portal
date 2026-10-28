@@ -14,6 +14,7 @@ from knowledge_portal.application.ports.architecture_rag import (
     ArchitectureEvidenceIndexPort,
     EntityRole,
     EvidenceChunk,
+    SearchQuery,
 )
 from knowledge_portal.application.ports.passage_reranker import PassageRerankerPort
 from knowledge_portal.application.ports.precedents import PrecedentMatch, PrecedentStorePort
@@ -147,11 +148,22 @@ def named_components(
     )
 
 
-def shortlist(
+def shortlists(
     release: ArchitectureKnowledge,
     index: ArchitectureEvidenceIndexPort,
     index_id: str,
-    need: Facet,
+    needs: tuple[Facet, ...],
+) -> tuple[tuple[ConceptOption, ...], ...]:
+    """Each need's shortlist, the needs' texts embedded together in one call."""
+    queries = index.queries(tuple(need.text for need in needs))
+    return tuple(_shortlist(release, index, index_id, query) for query in queries)
+
+
+def _shortlist(
+    release: ArchitectureKnowledge,
+    index: ArchitectureEvidenceIndexPort,
+    index_id: str,
+    need: SearchQuery,
 ) -> tuple[ConceptOption, ...]:
     """The concepts a need could mean: by label, by a component it names, then by the index.
     A retired concept is never one of them (ADR-0121)."""
@@ -162,7 +174,7 @@ def shortlist(
     for _, part in named_components(release, need.text):
         for concept_id in part.capability_ids:
             found.setdefault(concept_id, ConceptBasis.COMPONENT)
-    for match in index.match_concepts(index_id, need.text, SHORTLIST_LIMIT):
+    for match in index.match_concepts(index_id, need, SHORTLIST_LIMIT):
         found.setdefault(match.concept_id, ConceptBasis.INDEX)
     return tuple(
         ConceptOption(
@@ -499,14 +511,15 @@ def passage_lane(
         if record is not None:
             chunks.setdefault(record.id, record)
     per_facet: list[list[EvidenceChunk]] = []
-    for facet in facets:
-        if facet.kind not in SEARCHED_FACETS:
-            continue
+    searched = tuple(facet for facet in facets if facet.kind in SEARCHED_FACETS)
+    # Every searched facet's text in one embedding call.
+    queries = index.queries(tuple(facet.text for facet in searched))
+    for facet, query in zip(searched, queries, strict=True):
         ids = tuple(item.concept_id for item in facet.concepts)
         pool = (
-            index.concept_chunks(index_id, facet.text, ids, POOL_PER_FACET)
+            index.concept_chunks(index_id, query, ids, POOL_PER_FACET)
             if ids
-            else index.retrieve(index_id, facet.text, POOL_PER_FACET)
+            else index.retrieve(index_id, query, POOL_PER_FACET)
         )
         pool = tuple(item for item in pool if item.id not in chunks)
         if not pool:

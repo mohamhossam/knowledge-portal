@@ -15,6 +15,7 @@ from knowledge_portal.application.ports.architecture_rag import (
     EvidenceChunk,
     IndexCoverage,
     IndexLinks,
+    SearchQuery,
 )
 from knowledge_portal.application.ports.architecture_tokenizer import ArchitectureTokenizerPort
 
@@ -39,6 +40,15 @@ def fuse(*orderings: Iterable[str], depth: int = 20) -> dict[str, float]:
         for rank, key in enumerate(list(ordering)[:depth], 1):
             ranks[key] = ranks.get(key, 0.0) + 1.0 / (60 + rank)
     return ranks
+
+
+def search_queries(embeddings: EmbeddingPort, texts: tuple[str, ...]) -> tuple[SearchQuery, ...]:
+    """The texts as search queries, each distinct text embedded once, all in one call."""
+    distinct = tuple(dict.fromkeys(texts))
+    if not distinct:
+        return ()
+    vectors = dict(zip(distinct, embeddings.embed(distinct), strict=True))
+    return tuple(SearchQuery(text, vectors[text]) for text in texts)
 
 
 class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
@@ -85,6 +95,9 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
             )
         return tuple(self._cache[(model, text)] for text in texts)
 
+    def queries(self, texts: tuple[str, ...]) -> tuple[SearchQuery, ...]:
+        return search_queries(self._embeddings, texts)
+
     def store(self, release_id: str, index_id: str, chunks: tuple[EvidenceChunk, ...]) -> None:
         if index_id in self._entries:
             raise ValueError("Evidence indexes are immutable.")
@@ -92,15 +105,17 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
         self._entries[index_id] = tuple(zip(chunks, vectors, strict=True))
 
     def _ranked(
-        self, entries: tuple[tuple[EvidenceChunk, tuple[float, ...]], ...], query: str, limit: int
+        self,
+        entries: tuple[tuple[EvidenceChunk, tuple[float, ...]], ...],
+        query: SearchQuery,
+        limit: int,
     ) -> tuple[EvidenceChunk, ...]:
         if not entries:
             return ()
-        query_vector = self._embeddings.embed((query,))[0]
-        terms = set(query.casefold().split())
+        terms = set(query.text.casefold().split())
         lexical = sorted(entries, key=lambda row: -len(terms & set(row[0].text.casefold().split())))
         vector = sorted(
-            entries, key=lambda row: -sum(a * b for a, b in zip(query_vector, row[1], strict=True))
+            entries, key=lambda row: -sum(a * b for a, b in zip(query.vector, row[1], strict=True))
         )
         ranks = fuse((row[0].id for row in lexical), (row[0].id for row in vector))
         by_id = {chunk.id: chunk for chunk, _ in entries}
@@ -109,7 +124,9 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
             for chunk_id in sorted(ranks, key=lambda key: ranks[key], reverse=True)[:limit]
         )
 
-    def retrieve(self, release_id: str, query: str, limit: int) -> tuple[EvidenceChunk, ...]:
+    def retrieve(
+        self, release_id: str, query: SearchQuery, limit: int
+    ) -> tuple[EvidenceChunk, ...]:
         return self._ranked(self._entries.get(release_id, ()), query, limit)
 
     def get(self, release_id: str, chunk_id: str) -> EvidenceChunk | None:
@@ -147,12 +164,13 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
             tuple(item for item in links.concepts if item.chunk_id in wanted),
         )
 
-    def match_concepts(self, index_id: str, query: str, limit: int) -> tuple[ConceptMatch, ...]:
+    def match_concepts(
+        self, index_id: str, query: SearchQuery, limit: int
+    ) -> tuple[ConceptMatch, ...]:
         scheme = self._links.get(index_id, IndexLinks()).scheme
         if not scheme:
             return ()
-        query_vector = self._embeddings.embed((query,))[0]
-        terms = set(query.casefold().split())
+        terms = set(query.text.casefold().split())
         model = self._embeddings.model
         lexical = sorted(scheme, key=lambda item: -len(terms & set(item.text.casefold().split())))
         lexical = [item for item in lexical if terms & set(item.text.casefold().split())]
@@ -161,7 +179,7 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
             key=lambda item: (
                 -sum(
                     a * b
-                    for a, b in zip(query_vector, self._cache[(model, item.text)], strict=True)
+                    for a, b in zip(query.vector, self._cache[(model, item.text)], strict=True)
                 )
             ),
         )
@@ -170,7 +188,7 @@ class InMemoryEvidenceIndex(ArchitectureEvidenceIndexPort):
         return tuple(ConceptMatch(key, round(ranks[key], 6)) for key in best)
 
     def concept_chunks(
-        self, index_id: str, query: str, concept_ids: tuple[str, ...], limit: int
+        self, index_id: str, query: SearchQuery, concept_ids: tuple[str, ...], limit: int
     ) -> tuple[EvidenceChunk, ...]:
         wanted = set(concept_ids)
         linked = {
