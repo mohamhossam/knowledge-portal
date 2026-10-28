@@ -3,12 +3,14 @@
 The fake reads by words alone: clauses become needs, catalogue names become facets, and
 a need takes the concepts its words or the components it names point at. The structured
 reader asks the configured `knowledge` model, and keeps today's checks: every id from the
-lists it was given, every quote from the requirement's own words.
+lists it was given, every quote from the requirement's own words. A quote may join lines
+from separate items; a facet whose quote is not the requirement's is set aside.
 """
 
 from __future__ import annotations
 
 import json
+import logging
 import re
 from typing import Literal
 
@@ -32,6 +34,8 @@ from knowledge_portal.domain.architecture.assessment import (
 )
 from knowledge_portal.domain.architecture.invariants import InvalidKnowledgeError
 
+LOGGER = logging.getLogger(__name__)
+
 MAX_FACETS = 24
 
 _SPEED = re.compile(r"\d+(?:\.\d+)?\s*[kmg]b(?:it)?/?p?s\b", re.IGNORECASE)
@@ -52,6 +56,18 @@ _CALL_WORDS = r"(?:api|apis|interface|call|callback|endpoint|event|message)"
 
 def folded(text: str) -> str:
     return " ".join(text.split()).casefold()
+
+
+def in_requirement(quote: str, corpus: str) -> bool:
+    """Whether every word of `quote` is the requirement's own, `corpus` being it folded.
+
+    A model often joins sentences from separate items on new lines; each line must then be
+    in the requirement, though the whole is not one span. Empty lines are ignored.
+    """
+    if folded(quote) in corpus:
+        return True
+    parts = [part for line in quote.splitlines() if (part := folded(line))]
+    return bool(parts) and all(part in corpus for part in parts)
 
 
 def _spelled(text: str, label: str) -> re.Match[str] | None:
@@ -264,10 +280,14 @@ class StructuredRequirementReader:
             raise ArchitectureEvidenceError("Reading the requirement failed.") from exc
         corpus = folded(text)
         facets: list[Facet] = []
+        unquoted = 0
         for item in result.facets[:MAX_FACETS]:
             kind = FacetKind(item.kind)
-            if folded(item.quote) not in corpus:
-                raise ArchitectureEvidenceError("Requirement reading invented a quote.")
+            # A facet whose quote is not the requirement's words is set aside: one misread
+            # facet no longer costs the whole assessment (ADR-0114, Amendment 3).
+            if not in_requirement(item.quote, corpus):
+                unquoted += 1
+                continue
             ref_id = item.ref_id.strip() if item.ref_id and item.ref_id.strip() else None
             if kind is FacetKind.CHANGE_TYPE:
                 if ref_id not in {value.value for value in ChangeType}:
@@ -283,6 +303,17 @@ class StructuredRequirementReader:
                 facets.append(Facet(kind, item.text, item.quote, ref_id))
             except InvalidKnowledgeError as exc:
                 raise ArchitectureEvidenceError("Requirement reading gave a blank facet.") from exc
+        if unquoted:
+            # A reading left with no need has nothing to assess.
+            if not any(facet.kind is FacetKind.NEED for facet in facets):
+                raise ArchitectureEvidenceError("Requirement reading invented a quote.")
+            # Counts only: the requirement's words never reach the log.
+            LOGGER.warning(
+                "Requirement reading set aside %d facets whose quote is not in the requirement; "
+                "%d kept.",
+                unquoted,
+                len(facets),
+            )
         return tuple(facets)
 
     def pick(

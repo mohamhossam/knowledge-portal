@@ -14,6 +14,14 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   are compared alike; the concepts suggested to a vague requirement use the same text. If
   precedents still cannot be embedded, the assessment goes on without them, and the failure is
   logged without requirement text. ADR-0114 Amendment 4. No upgrade step.
+- A quote stitched from separate lines of a requirement no longer fails its assessment.
+  Requirement reading refused the whole answer (502, "Requirement reading invented a quote")
+  when the model joined real sentences from items that are not next to each other, and
+  requirement work showed "Product impact was not assessed". Such a quote now counts when each
+  of its lines is in the requirement. A facet whose quote is still not found is set aside and
+  the rest of the reading stands; the reader logs counts only. A reading left with no need, or
+  a catalogue id or change type outside the lists, still fails. ADR-0114 Amendment 3. No upgrade
+  step.
 - A requirement's assessment embeds its search texts in batches. Each need's concept shortlist
   and each data, interface or need facet's passage search embedded its text in a call of its
   own, so a requirement with many needs made dozens of embedding requests one after another
