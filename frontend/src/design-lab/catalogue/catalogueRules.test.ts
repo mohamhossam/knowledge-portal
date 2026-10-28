@@ -68,5 +68,7 @@ describe("the catalogue lab's shared rules", () => {
     expect(isPriced(offering({ plans: [plan("Download", "Upload")] } as Partial<Offering>))).toBe(false);
     expect(isPriced(offering({ plans: [plan("Download"), plan("Monthly fee")] } as Partial<Offering>))).toBe(true);
     expect(isPriced(offering({ plans: [plan("Price (AED)")] } as Partial<Offering>))).toBe(true);
+    expect(isPriced(offering({ plans: [plan("Monthly (EUR)")] } as Partial<Offering>))).toBe(true);
+    expect(isPriced(offering({ plans: [plan("SLA", "Static IP", "All sites", "Top speed")] } as Partial<Offering>))).toBe(false);
   });
 });

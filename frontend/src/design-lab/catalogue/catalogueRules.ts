@@ -48,7 +48,18 @@ export function coreThreshold(journeys: number): number {
   return Math.max(2, Math.ceil(journeys / 2));
 }
 
-/** Whether the plans state a price: a characteristic named as one (price, fee, AED). Otherwise the price is a gap. */
+/** Every ISO 4217 currency code the runtime knows ("AED", "EUR", "USD"…), upper case. */
+const CURRENCIES = new Set(Intl.supportedValuesOf("currency"));
+
+/**
+ * A characteristic name that states a price: a price word, or a currency code written in capitals as a
+ * word ("Monthly (EUR)"). Capitals only, so ordinary words that spell a code ("All", "Top") don't count.
+ */
+function namesPrice(name: string): boolean {
+  return /price|fee|cost|charge|tariff|rental/i.test(name) || (name.match(/\b[A-Z]{3}\b/g) ?? []).some((word) => CURRENCIES.has(word));
+}
+
+/** Whether the plans state a price: a characteristic named as one, in any currency. Otherwise the price is a gap. */
 export function isPriced(offering: Offering): boolean {
-  return offering.plans.some((plan) => plan.characteristics.some((item) => /price|fee|aed/i.test(item.name)));
+  return offering.plans.some((plan) => plan.characteristics.some((item) => namesPrice(item.name)));
 }

@@ -58,7 +58,7 @@ export function LandscapeHero() {
           </span>
           <div className="lx-title">
             <h1 id="cl-hero-h">{catalogueName(data)}</h1>
-            <p className="lx-lede">TM Forum application map of every SMB system, by layer and group</p>
+            <p className="lx-lede">TM Forum application map of every system, by layer and group</p>
           </div>
           <div className="lx-tools">
             <FindSystem data={data} onFound={select} />

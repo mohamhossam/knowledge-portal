@@ -32,7 +32,7 @@ export const CAPABILITIES: { id: string; name: string; blurb: string; test: RegE
     id: "office",
     name: "In the office",
     blurb: "Wi-Fi where people work",
-    test: /access point|fortiap|wi-?fi|\bap\b/i,
+    test: /access point|wi-?fi|wlan|\bap\b/i,
     icon: (
       <>
         <rect x="3" y="10" width="10" height="3.5" rx="1" />

@@ -1,5 +1,5 @@
 /**
- * The Systems page: how SMB systems relate, in a way that holds for any
+ * The Systems page: how the catalogue's systems relate, in a way that holds for any
  * product. Two views. Interfaces (the default): who calls whom, each distinct
  * interface counted once whatever journey or product uses it. Capabilities
  * (`?view=capabilities`): which systems deliver which kind of bundle part
@@ -59,7 +59,7 @@ export function SystemsPage() {
           </span>
           <div className="lx-title">
             <h1>Systems</h1>
-            <p className="lx-lede">{view === "interfaces" ? "Who calls whom across SMB systems, for any product" : "Which systems deliver which kind of bundle part, across every product"}</p>
+            <p className="lx-lede">{view === "interfaces" ? "Who calls whom across the catalogue's systems, for any product" : "Which systems deliver which kind of bundle part, across every product"}</p>
           </div>
           <div className="lx-tools">
             <div className="cl-seg" role="group" aria-label="View">
