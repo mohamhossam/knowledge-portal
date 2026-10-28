@@ -161,24 +161,27 @@ class StructuredArchitectureReasoner:
             raise ArchitectureEvidenceError("Architecture reasoning failed.") from exc
         if not {item.system_id for item in result.impacts} <= allowed_systems:
             raise ArchitectureEvidenceError("Architecture reasoning invented a system id.")
-        citations = tuple(citation for item in result.impacts for citation in item.citations)
-        citation_ids = tuple(item.id for item in citations)
         if any(not item.citations for item in result.impacts):
             raise ArchitectureEvidenceError(
                 "Architecture reasoning selected a system without evidence."
             )
-        if not set(citation_ids) <= set(evidence_by_id):
-            raise ArchitectureEvidenceError("Architecture reasoning invented a citation id.")
-        # A quote not in its passage is set aside, and a system left with none with it:
-        # one misquoted system no longer costs the whole match.
+        # A citation of a passage not supplied, or a quote not in its passage, is set aside,
+        # and a system left with none with it: one system no longer costs the whole match.
         kept: list[ArchitectureCitation] = []
         for impact in result.impacts:
             for citation in impact.citations:
-                quote = verbatim(citation.quote, evidence_by_id[citation.id].text)
+                cited = evidence_by_id.get(citation.id)
+                quote = verbatim(citation.quote, cited.text) if cited is not None else None
                 if quote is not None:
                     kept.append(ArchitectureCitation(impact.system_id, citation.id, quote))
         quoted = {item.system_id for item in kept}
-        unquoted = sorted({item.system_id for item in result.impacts} - quoted)
+        supplied = {
+            impact.system_id
+            for impact in result.impacts
+            if any(citation.id in evidence_by_id for citation in impact.citations)
+        }
+        unquoted = sorted(supplied - quoted)
+        unsupplied = sorted({item.system_id for item in result.impacts} - quoted - supplied)
         limited = len(selected_evidence) < len(evidence)
         uncertainty = result.uncertainty.strip() if result.uncertainty else None
         if not result.impacts and not uncertainty:
@@ -193,6 +196,10 @@ class StructuredArchitectureReasoner:
         if unquoted:
             uncertainty = (f"{uncertainty} " if uncertainty else "") + (
                 f"Set aside {', '.join(unquoted)}: no quote was found in the passage it cited."
+            )
+        if unsupplied:
+            uncertainty = (f"{uncertainty} " if uncertainty else "") + (
+                f"Set aside {', '.join(unsupplied)}: the passage it cited was not one supplied."
             )
         if limited:
             uncertainty = (

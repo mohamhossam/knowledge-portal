@@ -584,42 +584,10 @@ def test_reviewed_retrieval_fixture_reaches_top_eight_and_resolves_citations() -
     )
 
 
-def test_local_reasoner_rejects_an_invented_citation(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    citation_id, quote = "invented", "GIS coverage"
-    client = LocalStructuredOutputClient(
-        base_url="http://localhost:1234/v1",
-        http_client=httpx.Client(),
-        model="test",
-        timeout_seconds=1,
-        reasoning_effort=None,
-    )
-    monkeypatch.setattr(
-        client,
-        "parse",
-        lambda **kwargs: SimpleNamespace(
-            impacts=[
-                SimpleNamespace(
-                    system_id="gis", citations=[SimpleNamespace(id=citation_id, quote=quote)]
-                )
-            ],
-            uncertainty=None,
-            conflicts=[],
-        ),
-    )
-    reasoner = StructuredArchitectureReasoner(client, max_input_tokens=4096)
-    with pytest.raises(ArchitectureEvidenceError, match="invented a citation id"):
-        reasoner.select(
-            ArchitectureQuery(("GIS coverage",)),
-            seed_knowledge(),
-            (EvidenceChunk("evidence-1", "GIS", "system gis", "GIS coverage evidence"),),
-        )
-
-
 def _selecting(
-    monkeypatch: pytest.MonkeyPatch, *impacts: tuple[str, str]
+    monkeypatch: pytest.MonkeyPatch, *impacts: tuple[str, list[tuple[str, str]]]
 ) -> StructuredArchitectureReasoner:
+    """A reasoner whose model answers each system with its (passage id, quote) citations."""
     client = LocalStructuredOutputClient(
         base_url="http://localhost:1234/v1",
         http_client=httpx.Client(),
@@ -633,9 +601,10 @@ def _selecting(
         lambda **kwargs: SimpleNamespace(
             impacts=[
                 SimpleNamespace(
-                    system_id=system, citations=[SimpleNamespace(id="shared", quote=quote)]
+                    system_id=system,
+                    citations=[SimpleNamespace(id=id, quote=quote) for id, quote in citations],
                 )
-                for system, quote in impacts
+                for system, citations in impacts
             ],
             uncertainty=None,
             conflicts=[],
@@ -647,10 +616,21 @@ def _selecting(
 SHARED = (EvidenceChunk("shared", "Document", "line 1", "GIS coverage  enables BCRM sales"),)
 
 
+def test_local_reasoner_rejects_an_invented_system(monkeypatch: pytest.MonkeyPatch) -> None:
+    reasoner = _selecting(monkeypatch, ("gis-2", [("shared", "GIS coverage")]))
+
+    with pytest.raises(ArchitectureEvidenceError, match="invented a system id"):
+        reasoner.select(ArchitectureQuery(("sales coverage",)), seed_knowledge(), SHARED)
+
+
 def test_a_misquoted_system_is_set_aside_and_the_rest_of_the_match_kept(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    reasoner = _selecting(monkeypatch, ("gis", "GIS coverage"), ("bcrm", "fabricated passage"))
+    reasoner = _selecting(
+        monkeypatch,
+        ("gis", [("shared", "GIS coverage")]),
+        ("bcrm", [("shared", "fabricated passage")]),
+    )
 
     selected = reasoner.select(ArchitectureQuery(("sales coverage",)), seed_knowledge(), SHARED)
 
@@ -662,10 +642,45 @@ def test_a_misquoted_system_is_set_aside_and_the_rest_of_the_match_kept(
     assert "Set aside bcrm" in selected.uncertainty
 
 
+def test_a_citation_of_a_passage_not_supplied_is_dropped_and_its_system_kept(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reasoner = _selecting(
+        monkeypatch, ("gis", [("invented", "GIS coverage"), ("shared", "GIS coverage")])
+    )
+
+    selected = reasoner.select(ArchitectureQuery(("sales coverage",)), seed_knowledge(), SHARED)
+
+    assert selected.system_ids == ("gis",)
+    assert selected.citation_ids == ("shared",)
+    assert [(item.chunk_id, item.quote) for item in selected.citations] == [
+        ("shared", "GIS coverage")
+    ]
+    assert selected.uncertainty is None
+
+
+def test_a_system_citing_only_passages_not_supplied_is_set_aside(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reasoner = _selecting(
+        monkeypatch,
+        ("gis", [("shared", "GIS coverage")]),
+        ("bcrm", [("invented", "BCRM sales")]),
+    )
+
+    selected = reasoner.select(ArchitectureQuery(("sales coverage",)), seed_knowledge(), SHARED)
+
+    assert selected.system_ids == ("gis",)
+    assert selected.citation_ids == ("shared",)
+    assert selected.uncertainty is not None
+    assert "Set aside bcrm: the passage it cited was not one supplied." in selected.uncertainty
+    assert "no quote was found" not in selected.uncertainty
+
+
 def test_a_quote_re_spaced_by_the_model_keeps_the_passage_s_words(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    reasoner = _selecting(monkeypatch, ("gis", "coverage enables"))
+    reasoner = _selecting(monkeypatch, ("gis", [("shared", "coverage enables")]))
 
     selected = reasoner.select(ArchitectureQuery(("sales coverage",)), seed_knowledge(), SHARED)
 

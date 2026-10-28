@@ -553,7 +553,6 @@ def _decision(chunk: EvidenceChunk, **changes: Any) -> Any:
     [
         ({"system": {"system_id": "cwom-2"}}, "invented a system id"),
         ({"system": {"citations": []}}, "uncited"),
-        ({"system": {"citations": [{"id": "nowhere", "quote": "x"}]}}, "invented a citation"),
         ({"offering_id": "business-pro"}, "outside the release"),
     ],
 )
@@ -606,6 +605,46 @@ def test_a_misquoted_system_is_set_aside_and_the_verdict_kept(world: _World) -> 
     assert decision.systems == ()
     assert decision.uncertainty is not None
     assert "Set aside cwom" in decision.uncertainty
+
+
+def test_a_citation_of_a_passage_not_supplied_is_dropped_and_its_system_kept(
+    world: _World,
+) -> None:
+    context = _context(world)
+    chunk = context.evidence[0]
+    citations = [
+        {"id": "nowhere", "quote": chunk.text[:20]},
+        {"id": chunk.id, "quote": chunk.text[:20]},
+    ]
+    reasoner = StructuredVerdictReasoner(
+        _Client(_decision(chunk, system={"citations": citations})),
+        max_input_tokens=None,
+    )
+
+    decision = reasoner.decide(context)
+
+    ((citation,),) = [item.citations for item in decision.systems]
+    assert (citation.system_id, citation.chunk_id) == ("cwom", chunk.id)
+    assert decision.uncertainty is None
+
+
+def test_a_system_citing_only_passages_not_supplied_is_set_aside(world: _World) -> None:
+    context = _context(world)
+    chunk = context.evidence[0]
+    invented = [{"id": "nowhere", "quote": chunk.text[:20]}]
+    reasoner = StructuredVerdictReasoner(
+        _Client(_decision(chunk, system={"citations": invented})),
+        max_input_tokens=None,
+    )
+
+    decision = reasoner.decide(context)
+
+    assert decision.verdict is ProductVerdict.CHANGE_EXISTING_OFFERING
+    assert decision.offering_id == BPP
+    assert decision.systems == ()
+    assert decision.uncertainty is not None
+    assert "Set aside cwom: the passage it cited was not one supplied." in decision.uncertainty
+    assert "no quote was found" not in decision.uncertainty
 
 
 def test_a_quote_re_spaced_by_the_model_keeps_the_passage_s_own_words(world: _World) -> None:

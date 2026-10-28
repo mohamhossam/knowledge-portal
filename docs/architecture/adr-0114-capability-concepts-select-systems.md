@@ -96,3 +96,20 @@ Proposed 2026-10-11 with ontology plan Phase 5
   worked examples, and every quote still comes from the release's evidence.
 - **A requirement never sees its own decision.** The assessment names the requirement, and its
   own precedents are left out.
+
+## Amendment 2 — one system's bad citation sets that system aside (2026-10-28)
+
+Proposed 2026-10-28, for the owner's acceptance in review. It narrows the Decision's "an answer
+… quoting text not in its evidence, is rejected" for both architecture reasoning (the match) and
+weighing the verdict.
+
+- **A citation that cannot be checked is dropped, not the answer.** A quote not found in the
+  passage it cites (#154, #155), or a citation naming a passage the model was not given, is left
+  out. The system keeps its other citations.
+- **A system left with no checked citation is set aside** and named in the uncertainty, which
+  says which: "no quote was found in the passage it cited" or "the passage it cited was not one
+  supplied". The verdict and the other systems stand, so requirement work still gets product
+  impact.
+- **These still fail the whole answer (502):** a system or offering outside the release, a
+  system selected with no citation at all, and a model answer that does not parse. Nothing set
+  aside is ever kept as evidence.
