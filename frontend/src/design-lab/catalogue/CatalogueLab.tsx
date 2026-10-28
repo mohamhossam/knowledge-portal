@@ -15,6 +15,7 @@ import { errorMessage } from "../../api/errors";
 import { Button, EmptyState, Skeleton } from "../../design/components";
 import { type CatalogueSource, catalogueSource, LabSource, useLabCatalogue } from "./catalogueSource";
 import { ProductsIndex } from "./CatalogueIndexes";
+import { GovernancePage } from "./GovernancePage";
 import { JourneyFlow } from "./JourneyFlow";
 import { JourneysIndex } from "./JourneysIndex";
 import { AreaTabs, SourceSwitch } from "./labChrome";
@@ -26,6 +27,7 @@ import { ProductOverview } from "./ProductPage";
 import { ProductComponents } from "./ProductComponents";
 import { ProductHierarchy, ProductPlans, ProductRules } from "./ProductTabs";
 import { SystemsPage } from "./SystemsPage";
+import { VersionsPage } from "./VersionsPage";
 
 /**
  * The catalogue's frame inside the portal's shell: the portal draws the
@@ -107,6 +109,8 @@ function LabPages({ inShell, source }: { inShell: boolean; source: CatalogueSour
           <Route path="products" element={<ProductsIndex />} />
           <Route path="journeys" element={<JourneysIndex />} />
           <Route path="systems" element={<SystemsPage />} />
+          <Route path="governance" element={<GovernancePage />} />
+          <Route path="versions" element={<VersionsPage />} />
           <Route path="products/:offeringId" element={<ProductOverview />} />
           <Route path="products/:offeringId/hierarchy" element={<ProductHierarchy />} />
           <Route path="products/:offeringId/plans" element={<ProductPlans />} />

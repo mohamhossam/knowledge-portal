@@ -28,6 +28,10 @@ export type Source = {
   owner?: string;
   file?: string;
   scope?: string;
+  /** What the source cannot tell, in its owner's words. */
+  boundary?: string;
+  /** False when the source is registered but its file was never supplied. */
+  supplied: boolean;
 };
 
 export type TamDomain = {
@@ -302,13 +306,47 @@ export type Finding = {
   sources: Evidence[];
 };
 
+/** What one source says, on one side of a conflict. */
+export type ConflictSide = { sourceId: string; reference?: string; statement: string };
+
+/** Two sources that disagree: what each says, the decision it needs, and the products it affects. */
+export type Conflict = {
+  id: string;
+  title: string;
+  difference?: string;
+  decision?: string;
+  /** What holds until it is decided. */
+  impact?: string;
+  sides: [ConflictSide, ConflictSide];
+  scope: { offeringId: string; orderTypes: string[]; questionId?: string }[];
+};
+
+/** A change request applied to the version: who asked, why, and what it changed. */
+export type ChangeRequest = {
+  id: string;
+  title: string;
+  origin: "requirement-ai" | "explorer";
+  reason?: string;
+  requester?: string;
+  priority?: string;
+  targetDate?: string;
+  appliedAt?: string;
+  offeringId?: string;
+  items: { featureId?: string; summary: string; status: "recorded" | "inferred" | "gap" | "conflict" }[];
+  /** What it asked for that could not be mapped. */
+  gaps: string[];
+};
+
 /** A catalogue version as the views read it. */
 export type Catalogue = {
   releaseId: string;
   revision: number;
   status: "draft" | "published";
   name: string;
+  publishedAt?: string;
   sources: Source[];
+  conflicts: Conflict[];
+  changes: ChangeRequest[];
   domains: TamDomain[];
   systems: System[];
   portfolio: PortfolioNode[];

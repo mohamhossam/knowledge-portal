@@ -1488,3 +1488,26 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 @media (min-width: 1101px) and (min-height: 600px) {
   .lx-board > .cm-panel { max-height: calc(100dvh - var(--sticky-top, 0px) - var(--cl-area) - 170px); }
 }
+
+/* ---------- Governance and Versions: a register table with the chosen record beside it ---------- */
+.gv-board { margin-top: 16px; }
+.gv-table td, .gv-table th { font-size: 0.875rem; }
+.gv-table a { color: var(--cl-ink); font-weight: 600; text-decoration-color: var(--cl-rule-strong); text-underline-offset: 3px; }
+.gv-table a:hover { color: var(--cl-maroon); text-decoration-color: currentColor; }
+.gv-table tbody th { color: var(--cl-ink); }
+.gv-table tr[aria-current] > * { background: var(--cl-maroon-mist); }
+.gv-table tr[aria-current] > :first-child { box-shadow: inset 3px 0 0 var(--cl-maroon); }
+.gv-table td:last-child { white-space: nowrap; }
+.gv-id { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--cl-ink-2); }
+.gv-id small { margin-left: 4px; font-size: 0.75rem; }
+.gv-sides, .gv-facts, .gv-levels { display: flex; flex-direction: column; gap: 10px; margin: 0; }
+.gv-sides div { padding: 8px 10px; border: 1px solid var(--cl-hairline); border-radius: 4px; background: var(--cl-paper); }
+.gv-sides dt, .gv-levels dt { font-size: 0.8125rem; font-weight: 600; color: var(--cl-ink); }
+.gv-sides dd, .gv-levels dd { margin: 2px 0 0; color: var(--cl-ink-2); line-height: 1.5; }
+.gv-facts { gap: 6px; }
+.gv-facts div { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 8px; }
+.gv-facts dt { font-size: 0.8125rem; color: var(--cl-ink-2); }
+.gv-facts dd { margin: 0; overflow-wrap: anywhere; }
+.gv-lines { display: flex; flex-direction: column; gap: 6px; margin: 0; padding-left: 18px; color: var(--cl-ink); line-height: 1.5; }
+.gv-lines a { color: var(--cl-maroon); }
+.gap { color: var(--cl-ink-2); font-style: italic; }

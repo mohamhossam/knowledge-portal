@@ -59,13 +59,13 @@ describe("the lab's words for the model's kinds", () => {
 
   it("measures a product's gaps against its primary source, else the version's first", () => {
     const sources = [
-      { id: "ref", short: "SMB reference v1.0", title: "Reference", level: "L1" },
-      { id: "sdd", short: "SDD v2.3", title: "Solution design", level: "L2" },
+      { id: "ref", short: "SMB reference v1.0", title: "Reference", level: "L1", supplied: true },
+      { id: "sdd", short: "SDD v2.3", title: "Solution design", level: "L2", supplied: true },
     ];
     expect(gapSource({ sources }, { primarySource: "sdd" })).toBe("SDD v2.3");
     expect(gapSource({ sources }, { primarySource: "gone" })).toBe("SMB reference v1.0");
     expect(gapSource({ sources }, {})).toBe("SMB reference v1.0");
-    expect(gapSource({ sources: [{ id: "x", short: "", title: "Untitled brief", level: "L2" }] }, {})).toBe("Untitled brief");
+    expect(gapSource({ sources: [{ id: "x", short: "", title: "Untitled brief", level: "L2", supplied: true }] }, {})).toBe("Untitled brief");
     expect(gapSource({ sources: [] }, {})).toBe("the sources");
   });
 });

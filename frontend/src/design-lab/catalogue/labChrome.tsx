@@ -72,10 +72,9 @@ const ICONS: Record<string, ReactNode> = {
 /**
  * The catalogue's own bar, the same on every screen: which catalogue this is,
  * then its sections, each with an icon and no count (counts belong to the
- * pages, not the navigation). Governance and Versions open the portal's
- * catalogue pages, on the live API, until the lab draws its own.
+ * pages, not the navigation).
  */
-export function AreaTabs({ current }: { current?: "landscape" | "products" | "journeys" | "systems" }) {
+export function AreaTabs({ current }: { current?: "landscape" | "products" | "journeys" | "systems" | "governance" | "versions" }) {
   // The bar also heads the loading and not-found pages, before any catalogue is read.
   const data = useContext(LabData);
   const items: { id: string; label: string; to: string }[] = [
@@ -83,8 +82,8 @@ export function AreaTabs({ current }: { current?: "landscape" | "products" | "jo
     { id: "products", label: "Products", to: `${LAB}/products` },
     { id: "journeys", label: "Journeys", to: `${LAB}/journeys` },
     { id: "systems", label: "Systems", to: `${LAB}/systems` },
-    { id: "governance", label: "Governance", to: "/architecture/governance" },
-    { id: "versions", label: "Versions", to: "/architecture/versions" },
+    { id: "governance", label: "Governance", to: `${LAB}/governance` },
+    { id: "versions", label: "Versions", to: `${LAB}/versions` },
   ];
   const icon = (id: string) => (
     <svg className="cl-area-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">

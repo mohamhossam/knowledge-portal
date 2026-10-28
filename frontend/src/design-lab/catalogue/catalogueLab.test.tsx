@@ -340,4 +340,41 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
     expect(within(register).getAllByRole("row").length).toBeLessThan(all);
     expect(await axe(container)).toHaveNoViolations();
   });
+
+  it("keeps Governance and Versions inside the lab, on the catalogue's own bar", async () => {
+    await open("");
+    const bar = screen.getByRole("navigation", { name: "Catalogue sections" });
+    expect(within(bar).getByRole("link", { name: "Governance" })).toHaveAttribute("href", "/design-lab/catalogue/governance");
+    expect(within(bar).getByRole("link", { name: "Versions" })).toHaveAttribute("href", "/design-lab/catalogue/versions");
+  });
+
+  it("reads the conflicts between sources, then a chosen one beside them, and the sources by level", async () => {
+    const { container } = await open("/governance");
+    expect(screen.getByRole("heading", { level: 1, name: "Governance" })).toBeInTheDocument();
+    expect(within(screen.getByRole("navigation", { name: "Catalogue sections" })).getByRole("link", { name: "Governance" })).toHaveAttribute("aria-current", "page");
+    const table = screen.getByRole("table", { name: /^Conflicts between sources/ });
+    expect(within(table).getAllByRole("row")).toHaveLength((sample.conflicts ?? []).length + 1);
+    await userEvent.click(within(table).getByRole("link", { name: "IBM BPM and Felix overlap" }));
+    const record = screen.getByRole("complementary", { name: "IBM BPM and Felix overlap" });
+    expect(within(record).getByRole("heading", { name: "What each source says" })).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
+
+    await userEvent.click(within(record).getByRole("button", { name: "Close IBM BPM and Felix overlap" }));
+    expect(screen.queryByRole("complementary", { name: "IBM BPM and Felix overlap" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Sources" }));
+    const sources = screen.getByRole("table", { name: /^Sources/ });
+    expect(within(sources).getAllByRole("row")).toHaveLength((sample.sources ?? []).length + 1);
+    await userEvent.type(screen.getByRole("searchbox", { name: "Find in the sources" }), "no such source");
+    expect(screen.getByText("Nothing here is known by “no such source”.")).toBeInTheDocument();
+  });
+
+  it("lists the versions with the one in service, and with the sample says it is one version", async () => {
+    const releases = vi.spyOn(api, "releases");
+    const { container } = await open("/versions");
+    expect(screen.getByRole("heading", { level: 1, name: "Versions" })).toBeInTheDocument();
+    expect(within(screen.getByRole("table")).getByText("In service")).toBeInTheDocument();
+    expect(screen.getByText(/The bundled sample is one version/)).toBeInTheDocument();
+    expect(releases).not.toHaveBeenCalled();
+    expect(await axe(container)).toHaveNoViolations();
+  });
 });

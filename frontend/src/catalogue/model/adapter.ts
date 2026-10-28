@@ -14,7 +14,10 @@ import {
   type ActivityCall,
   type ActivityStep,
   type Catalogue,
+  type ChangeRequest,
   type Channel,
+  type Conflict,
+  type ConflictSide,
   type Evidence,
   type Finding,
   type FlowEdge,
@@ -136,6 +139,43 @@ function sourcesOf(release: Release): Source[] {
     owner: item.authority ?? undefined,
     file: item.file ?? undefined,
     scope: item.scope ?? undefined,
+    boundary: item.boundary ?? undefined,
+    supplied: item.supplied !== false,
+  }));
+}
+
+/** Where the version's sources disagree, each side as its source says it. */
+function conflictsOf(release: Release): Conflict[] {
+  const side = (item: NonNullable<Release["conflicts"]>[number]["a"]): ConflictSide => ({
+    sourceId: item.source_id,
+    statement: item.statement,
+    ...(item.reference ? { reference: item.reference } : {}),
+  });
+  return (release.conflicts ?? []).map((conflict) => ({
+    id: conflict.id,
+    title: conflict.title,
+    difference: conflict.difference ?? undefined,
+    decision: conflict.decision ?? undefined,
+    impact: conflict.impact ?? undefined,
+    sides: [side(conflict.a), side(conflict.b)],
+    scope: conflict.scope.map((scope) => ({ offeringId: scope.product_id, orderTypes: scope.order_types ?? [], questionId: scope.question_id ?? undefined })),
+  }));
+}
+
+/** The change requests applied to the version, as its history records them. */
+function changesOf(release: Release): ChangeRequest[] {
+  return (release.change_history ?? []).map((record) => ({
+    id: record.id,
+    title: record.title,
+    origin: record.origin ?? "requirement-ai",
+    reason: record.reason ?? undefined,
+    requester: record.requester ?? undefined,
+    priority: record.priority ?? undefined,
+    targetDate: record.target_date ?? undefined,
+    appliedAt: record.applied_at ?? undefined,
+    offeringId: record.product_id ?? undefined,
+    items: record.items.map((item) => ({ featureId: item.feature_id ?? undefined, summary: item.summary, status: item.status ?? "recorded" })),
+    gaps: record.gaps,
   }));
 }
 
@@ -299,7 +339,10 @@ export function fromRelease(release: Release): Catalogue {
     revision: release.revision,
     status: release.status,
     name: release.name ?? release.id,
+    publishedAt: release.published_at ?? undefined,
     sources,
+    conflicts: conflictsOf(release),
+    changes: changesOf(release),
     domains: domainsOf(release.landscape_domains ?? []),
     systems: systemsOf(release, evidence),
     portfolio: portfolioOf(release),
