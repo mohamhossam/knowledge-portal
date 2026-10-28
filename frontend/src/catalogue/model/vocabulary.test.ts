@@ -25,11 +25,10 @@ describe("roles and the vocabulary", () => {
     expect(terms.orchestrate).toBe("Orchestrate");
   });
 
-  it("keeps the lab's words for the roles it knows, long and short", () => {
+  it("names a role by the version's vocabulary, with no words of the lab's own", () => {
     const data = { roleTerms: { capture: "Capture" } };
-    expect(roleName(data, "capture")).toBe("Captures the order");
-    expect(roleName(data, "capture", "short")).toBe("Captures");
-    expect(roleName(data, "field")).toBe("Field work");
+    expect(roleName(data, "capture")).toBe("Capture");
+    expect(roleName(data, "field")).toBe("Field");
   });
 
   it("names a role it doesn't know from another vocabulary, or as written, never leaving it unnamed", () => {
@@ -49,6 +48,7 @@ describe("roles and the vocabulary", () => {
     const impact = impactOf(data, { offeringId: "business-pro-plus", orderType: view.orderType, channel: "bcrm" });
     const roles = [...impact.systems.values()].find((item) => item.roles.includes("payment"))?.roles ?? [];
     expect(roles.at(-1)).toBe("payment");
-    expect(["payment", "record", "orchestrate"].sort(byRank)).toEqual(["orchestrate", "record", "payment"]);
+    expect(["payment", "record", "orchestrate"].sort(byRank(data.roleOrder))).toEqual(["orchestrate", "record", "payment"]);
+    expect(data.roleOrder.slice(0, 2)).toEqual(["orchestrate", "capture"]);
   });
 });

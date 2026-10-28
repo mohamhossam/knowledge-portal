@@ -38,6 +38,7 @@ _OFFERING_FIELDS = (
     "decisions",
     "boundaries",
     "not_used",
+    "contract_terms",
     "portfolio_node_id",
     "plans",
     "business_rules",
@@ -54,6 +55,7 @@ _CHANNEL_FIELDS = (
     ("description", "description"),
     ("confidence", "confidence"),
     ("source", "source"),
+    ("selling", "selling"),
 )
 
 
@@ -559,7 +561,7 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
 
     def domains(
         release: ArchitectureKnowledge, landscape: bool
-    ) -> dict[str, tuple[str, tuple[str, str, str, str, str]]]:
+    ) -> dict[str, tuple[str, tuple[str, str, str, str, str, str]]]:
         tree = release.landscape_domains if landscape else release.capability_domains
         path = release.landscape_path if landscape else release.domain_path
         return {
@@ -571,6 +573,7 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                     item.parent_id or "",
                     item.description or "",
                     "yes" if isinstance(item, LandscapeDomain) and item.cross_cutting else "",
+                    item.placement.value if isinstance(item, LandscapeDomain) else "",
                 ),
             )
             for item in tree
@@ -592,7 +595,14 @@ def diff_releases(base: ArchitectureKnowledge, draft: ArchitectureKnowledge) -> 
                     tuple(
                         field
                         for field, before, after in zip(
-                            ("name", "name_ar", "parent", "description", "cross_cutting"),
+                            (
+                                "name",
+                                "name_ar",
+                                "parent",
+                                "description",
+                                "cross_cutting",
+                                "placement",
+                            ),
                             previous_domain[1],
                             value,
                             strict=True,

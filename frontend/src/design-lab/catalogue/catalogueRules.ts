@@ -1,21 +1,15 @@
 /**
- * The catalogue lab's business rules, each in one place for every page that needs it:
- * which part is a bundle's hub, what a channel kind is called, which question an
- * eligibility point answers, a product's contract periods, when a system is core to a
- * product, and whether plans state a price. Agreed with Shady (phase 11, 2026-10-14).
+ * The catalogue lab's business rules, each in one place for every page that needs it.
+ * Every fact comes from the version: which part is a bundle's hub, what a channel kind is
+ * called, which question an eligibility point answers, a product's contract terms and
+ * whether a plan states a price. The one rule kept here is when a system is core to a
+ * product (agreed with Shady, phase 11, 2026-10-14).
  */
-import type { Catalogue, Offering } from "../../catalogue/model/model";
+import type { Catalogue, Offering, Point } from "../../catalogue/model/model";
 
-/**
- * The device a bundle is built on: the part the version marks as its hub. A version that
- * marks none is read by name, as before: a device or router, else a part named CPE (as a word).
- */
+/** The device a bundle is built on: the part the version marks as its hub, if it marks one. */
 export function hubOf(offering: Offering): Offering["components"][number] | undefined {
-  return (
-    offering.components.find((item) => item.hub)
-    ?? offering.components.find((item) => /device|router/i.test(item.name))
-    ?? offering.components.find((item) => /\bcpe\b/i.test(item.name))
-  );
+  return offering.components.find((item) => item.hub);
 }
 
 /** A channel kind's name: the version's vocabulary label, else the kind as written. */
@@ -23,24 +17,11 @@ export function channelKindName(data: Pick<Catalogue, "channelKindTerms">, kind:
   return data.channelKindTerms[kind] ?? kind;
 }
 
-/** The kinds through which people buy: a product is "sold through" these, not through system-to-system channels. */
-export const SELLING_KINDS = ["assisted", "self-service"] as const;
-
 export type EligibilityGroup = "who" | "where" | "terms" | "how" | "other";
 
-/** Which question an eligibility point answers, by its title: who may buy, where, on what terms, through which route. */
-export function eligibilityGroup(title: string): EligibilityGroup {
-  if (/segment|customer|audience|business/i.test(title)) return "who";
-  if (/location|area|site|coverage/i.test(title)) return "where";
-  if (/commitment|contract|term|portal|account/i.test(title)) return "terms";
-  if (/activation|migration|port|channel|order/i.test(title)) return "how";
-  return "other";
-}
-
-/** The contract periods a customer can choose: the commitment point's headline, one period each. */
-export function contractPeriods(offering: Offering, headline: (text: string) => string): string[] {
-  const commitment = offering.eligibility.find((point) => /commitment|contract|term/i.test(point.title));
-  return commitment ? headline(commitment.detail).split(/\s*,\s*|\s+or\s+/).filter(Boolean) : [];
+/** Which question an eligibility point answers, as the version sorts it; "other" when it doesn't. */
+export function eligibilityGroup(point: Pick<Point, "aspect">): EligibilityGroup {
+  return point.aspect ?? "other";
 }
 
 /** A system is core to a product when at least half its journeys reach it, and never fewer than two. */
@@ -48,18 +29,21 @@ export function coreThreshold(journeys: number): number {
   return Math.max(2, Math.ceil(journeys / 2));
 }
 
-/** Every ISO 4217 currency code the runtime knows ("AED", "EUR", "USD"…), upper case. */
+/** Every ISO 4217 currency code the runtime knows ("AED", "EUR", "USD"…). */
 const CURRENCIES = new Set(Intl.supportedValuesOf("currency"));
 
-/**
- * A characteristic name that states a price: a price word, or a currency code written in capitals as a
- * word ("Monthly (EUR)"). Capitals only, so ordinary words that spell a code ("All", "Top") don't count.
- */
-function namesPrice(name: string): boolean {
-  return /price|fee|cost|charge|tariff|rental/i.test(name) || (name.match(/\b[A-Z]{3}\b/g) ?? []).some((word) => CURRENCIES.has(word));
+/** Whether the plans state a price: a characteristic whose unit is a currency. Otherwise the price is a gap. */
+export function isPriced(offering: Offering): boolean {
+  return offering.plans.some((plan) => plan.characteristics.some((item) => !!item.unit && CURRENCIES.has(item.unit.trim().toUpperCase())));
 }
 
-/** Whether the plans state a price: a characteristic named as one, in any currency. Otherwise the price is a gap. */
-export function isPriced(offering: Offering): boolean {
-  return offering.plans.some((plan) => plan.characteristics.some((item) => namesPrice(item.name)));
+/** A plan characteristic the version gives an amount, with that amount as a number. */
+export type PlanFigure = { name: string; value: string; amount: number; unit?: string | null };
+
+/** A plan's figures: the characteristics the version states an amount for, in its order; the first is the plan's headline. */
+export function planFigures(plan: Offering["plans"][number]): PlanFigure[] {
+  return plan.characteristics.flatMap((item) => {
+    const amount = item.amount === null || item.amount === undefined ? NaN : Number(item.amount);
+    return Number.isFinite(amount) ? [{ name: item.name, value: item.value, amount, unit: item.unit }] : [];
+  });
 }

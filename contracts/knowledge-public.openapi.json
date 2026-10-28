@@ -2863,6 +2863,11 @@
             "title": "Name",
             "type": "string"
           },
+          "selling": {
+            "default": false,
+            "title": "Selling",
+            "type": "boolean"
+          },
           "source": {
             "anyOf": [
               {
@@ -7173,6 +7178,10 @@
               }
             ],
             "title": "Parent Id"
+          },
+          "placement": {
+            "$ref": "#/components/schemas/LandscapePlacement",
+            "default": "layer"
           }
         },
         "required": [
@@ -7181,6 +7190,16 @@
         ],
         "title": "LandscapeDomainSchema",
         "type": "object"
+      },
+      "LandscapePlacement": {
+        "description": "Where the landscape map draws a top-level domain.",
+        "enum": [
+          "layer",
+          "bus",
+          "side"
+        ],
+        "title": "LandscapePlacement",
+        "type": "string"
       },
       "LibraryAdminAction": {
         "enum": [
@@ -8354,6 +8373,17 @@
         "title": "NudgeResponse",
         "type": "object"
       },
+      "OfferingAspect": {
+        "description": "Which question about buying an offering one of its audience points answers.",
+        "enum": [
+          "who",
+          "where",
+          "terms",
+          "how"
+        ],
+        "title": "OfferingAspect",
+        "type": "string"
+      },
       "OfferingComponentSchema": {
         "properties": {
           "capability_ids": {
@@ -8737,6 +8767,16 @@
       "OfferingPointSchema": {
         "description": "A customer value, or a kind of customer an offering is for.",
         "properties": {
+          "aspect": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OfferingAspect"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "confidence": {
             "anyOf": [
               {
@@ -9839,6 +9879,16 @@
                 "type": "null"
               }
             ]
+          },
+          "contract_terms": {
+            "default": [],
+            "items": {
+              "maxLength": 300,
+              "type": "string"
+            },
+            "maxItems": 5000,
+            "title": "Contract Terms",
+            "type": "array"
           },
           "decisions": {
             "default": [],

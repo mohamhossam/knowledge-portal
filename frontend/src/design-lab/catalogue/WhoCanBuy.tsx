@@ -6,7 +6,7 @@ import type { Offering } from "../../catalogue/model/model";
 import { EvidenceTag } from "./labChrome";
 import { LabIcon } from "./labIcon";
 import { channelKindName, type EligibilityGroup, eligibilityGroup } from "./catalogueRules";
-import { journeyHref, useLabData } from "./labData";
+import { journeyHref, toneOf, useLabData } from "./labData";
 import { plural } from "./labUtil";
 import { STAGES, stageOf } from "./stages";
 import { SystemMonogram } from "./SystemMonogram";
@@ -68,7 +68,7 @@ export function WhoCanBuy({ offering }: { offering: Offering }) {
   const data = useLabData();
   const grouped = new Map<string, Offering["eligibility"]>();
   for (const point of offering.eligibility) {
-    const group = eligibilityGroup(point.title);
+    const group = eligibilityGroup(point);
     grouped.set(group, [...(grouped.get(group) ?? []), point]);
   }
   const groups = [...ELIGIBILITY_GROUPS, { id: "other" as const, label: "Also", question: "Other conditions", icon: <path d="M3 8h.01M8 8h.01M13 8h.01" /> }].filter((group) => grouped.has(group.id));
@@ -79,7 +79,7 @@ export function WhoCanBuy({ offering }: { offering: Offering }) {
   const kinds = [...new Set(channels.map((channel) => channel.kind))].map((kind) => ({ kind, channels: channels.filter((channel) => channel.kind === kind) }));
   const ordered = kinds.flatMap((item) => item.channels);
   const takes = (channelId: string) => offering.orderTypes.filter((type) => type.channels.includes(channelId)).length;
-  const tone = (systemId: string) => data.systems.find((system) => system.id === systemId)?.domain ?? "customer";
+  const tone = (systemId: string) => toneOf(data, data.systems.find((system) => system.id === systemId)?.domain);
   const stages = STAGES.map((stage) => ({ ...stage, types: offering.orderTypes.filter((type) => stageOf(type) === stage.id) })).filter((stage) => stage.types.length);
   const journeyFor = (code: string) => data.journeys.find((journey) => journey.offeringId === offering.id && journey.orderType === code);
 

@@ -8,7 +8,6 @@
  * kinds, never English: the lab's words.ts names them.
  */
 import type { Release } from "../../api/client";
-import { BAND_DOMAINS, parseDrop, parseProposition, parseQuestion } from "./conventions";
 import {
   type Activity,
   type ActivityCall,
@@ -32,7 +31,7 @@ import {
   type Source,
   type Step,
 } from "./model";
-import { channelKindTerms, roleTerms, stepRole } from "./vocabulary";
+import { channelKindTerms, componentKinds, roleOrder, roleTerms, stepRole } from "./vocabulary";
 
 type ApiJourney = NonNullable<Release["journeys"]>[number];
 type ApiOrderType = NonNullable<Release["products"]>[number]["order_types"][number];
@@ -49,9 +48,9 @@ export function parseEvidence(confidence: string | null | undefined, source: str
   return { status, source: named.id, ...(where ? { where } : {}), ...(rest.length ? { note: rest.join(" · ") } : {}) };
 }
 
-/** An order type's delivery drop and the rest of its description; read from the prose for a version saved before the service sent the drop. */
+/** An order type's delivery drop, when the version states one, and its description. */
 function delivery(type: ApiOrderType): { drop?: string; note: string } {
-  return type.delivery_drop ? { drop: type.delivery_drop, note: type.description ?? "" } : parseDrop(type.description);
+  return { ...(type.delivery_drop ? { drop: type.delivery_drop } : {}), note: type.description ?? "" };
 }
 
 /** Whether a call waits for its answer, as the source's timing says (any case). */
@@ -179,18 +178,29 @@ function changesOf(release: Release): ChangeRequest[] {
   }));
 }
 
-/** The TAM domains, each with its groups, and whether it is a cross-cutting band. */
+/** How many layer colours the map has; a version with more layers starts them again. */
+export const LAYER_TONES = 7;
+
+/**
+ * The TAM domains in the version's order, each with its groups, whether it is a cross-cutting
+ * band, where the map draws it, and its colour: the bus has its own, every other layer takes the
+ * next of the map's layer colours in order.
+ */
 function domainsOf(landscape: NonNullable<Release["landscape_domains"]>): Catalogue["domains"] {
   const tops = landscape.filter((item) => !item.parent_id);
-  // A version saved before the service marked cross-cutting domains marks none: then they are known by id.
-  const marked = landscape.some((item) => item.cross_cutting);
-  return tops.map((top) => ({
-    id: top.id,
-    name: top.name,
-    scope: top.description ?? "",
-    groups: landscape.filter((item) => item.parent_id === top.id).map((item) => ({ id: item.id, name: item.name })),
-    band: marked ? top.cross_cutting : BAND_DOMAINS.includes(top.id),
-  }));
+  let layer = 0;
+  return tops.map((top) => {
+    const placement = top.placement ?? "layer";
+    return {
+      id: top.id,
+      name: top.name,
+      scope: top.description ?? "",
+      groups: landscape.filter((item) => item.parent_id === top.id).map((item) => ({ id: item.id, name: item.name })),
+      band: top.cross_cutting,
+      placement,
+      tone: placement === "bus" ? "bus" : String((layer++ % LAYER_TONES) + 1),
+    };
+  });
 }
 
 /** The systems, each placed in its domain and group. */
@@ -216,19 +226,16 @@ function systemsOf(release: Release, evidence: EvidenceOf): Catalogue["systems"]
 }
 
 function channelsOf(release: Release): Channel[] {
-  return (release.channels ?? []).map((channel) => ({ id: channel.id, name: channel.name, systemId: channel.entry_system_id ?? "", kind: channel.kind ?? "" }));
+  return (release.channels ?? []).map((channel) => ({ id: channel.id, name: channel.name, systemId: channel.entry_system_id ?? "", kind: channel.kind ?? "", selling: channel.selling ?? false }));
 }
 
 /** One product as an offering: its proposition, plans, rules, parts, order types and tracking. */
 function offeringOf(product: NonNullable<Release["products"]>[number], channels: Channel[], evidence: EvidenceOf): Offering {
-  // A version saved before offerings carried a purpose says it after the proposition's first paragraph.
-  const { summary, purpose } = product.purpose
-    ? { summary: product.proposition ?? "", purpose: product.purpose }
-    : parseProposition(product.proposition);
-  const point = (item: { name: string; description?: string | null; confidence?: string | null; source?: string | null }): Point => ({
+  const point = (item: { name: string; description?: string | null; confidence?: string | null; source?: string | null; aspect?: Point["aspect"] | null }): Point => ({
     title: item.name,
     detail: item.description ?? "",
     evidence: evidence(item),
+    ...(item.aspect ? { aspect: item.aspect } : {}),
   });
   const tracking = product.tracking;
   return {
@@ -237,10 +244,11 @@ function offeringOf(product: NonNullable<Release["products"]>[number], channels:
     name: product.name,
     shortName: product.code ?? undefined,
     primarySource: product.primary_source ?? undefined,
-    summary,
-    purpose,
+    summary: product.proposition ?? "",
+    purpose: product.purpose ?? "",
     values: product.values.map(point),
     eligibility: product.audiences.map(point),
+    contractTerms: product.contract_terms ?? [],
     plans: product.plans.map((plan) => ({ name: plan.name, characteristics: plan.characteristics, evidence: evidence(plan) })),
     rules: product.business_rules.map((rule) => ({ id: rule.id, kind: rule.kind ?? undefined, statement: rule.statement, evidence: evidence(rule) })),
     components: product.components.map((part) => ({
@@ -250,6 +258,7 @@ function offeringOf(product: NonNullable<Release["products"]>[number], channels:
       specCode: part.technical_spec ?? undefined,
       mandatory: part.mandatory ?? null,
       ...(part.hub ? { hub: true } : {}),
+      ...(part.kind_id ? { kind: part.kind_id } : {}),
       description: part.description ?? "",
       systems: part.responsibilities.map((duty) => ({ systemId: duty.system_id, responsibility: duty.description })),
       evidence: evidence(part),
@@ -316,7 +325,7 @@ function findingsOf(release: Release, products: NonNullable<Release["products"]>
     ...products.flatMap((product) =>
       product.questions.map((question) => {
         // A version saved before questions carried a title writes it as "title: detail".
-        const { title, detail } = question.title ? { title: question.title, detail: question.text } : parseQuestion(question.text);
+        const { title, detail } = question.title ? { title: question.title, detail: question.text } : { title: question.text, detail: "" };
         return { id: question.id, kind: "gap" as const, title, detail, sources: [evidence(question)] };
       }),
     ),
@@ -353,6 +362,8 @@ export function fromRelease(release: Release): Catalogue {
     findings: findingsOf(release, products, evidence),
     roleTerms: roleTerms(release),
     channelKindTerms: channelKindTerms(release),
+    roleOrder: roleOrder(release),
+    componentKinds: componentKinds(release),
   };
 }
 

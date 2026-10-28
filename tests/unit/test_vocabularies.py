@@ -374,7 +374,7 @@ def test_a_file_term_names_a_known_scheme_and_where_it_is() -> None:
 def test_every_value_in_the_smb_catalogue_is_mapped_or_flagged() -> None:
     release = knowledge_from_yaml(CATALOGUE.read_text(encoding="utf-8"))
     schemes = {item.scheme for item in release.vocabulary}
-    assert schemes == set(VocabularyScheme) - {VocabularyScheme.COMPONENT_KIND}
+    assert schemes == set(VocabularyScheme)
 
     proposals = propose_terms(release)
     for proposal in proposals:

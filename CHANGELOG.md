@@ -7,6 +7,15 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- The catalogue states what the redesigned catalogue used to guess from names and keywords:
+  an audience point's `aspect` (who, where, terms or how), an offering's `contract_terms`, a
+  channel's `selling` flag, and a top-level landscape domain's `placement` (layer, bus or side).
+  YAML, JSON and the workbook read and write them, the editors set them, and the version diff
+  names them. `smb-architecture.yaml` states them, adds the `component_kind` vocabulary with
+  each part's kind, and lists its roles strongest first. The lab now reads only the version: no
+  order-type code table, keyword grouping, name-guessed hub, keyword price check, speed parsing,
+  role words or layer ids; a version that doesn't state a fact shows it as not stated. Layer and
+  rule-kind colours follow their order, not their ids. Contracts, additive (public and internal).
 - Every link between systems is worked out by the service (`domain/architecture/links.py`):
   from the stated connections, the interfaces systems expose and the calls journey steps make.
   The map, a system's record and the explorer read it as `connections` on the release, and

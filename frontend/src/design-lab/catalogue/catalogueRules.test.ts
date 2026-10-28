@@ -1,27 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import type { Offering } from "../../catalogue/model/model";
-import { channelKindName, contractPeriods, coreThreshold, eligibilityGroup, hubOf, isPriced } from "./catalogueRules";
+import { channelKindName, coreThreshold, eligibilityGroup, hubOf, isPriced, planFigures } from "./catalogueRules";
 
 const offering = (parts: Partial<Offering>): Offering => ({ components: [], eligibility: [], plans: [], ...parts }) as unknown as Offering;
-const part = (name: string) => ({ id: name, name }) as unknown as Offering["components"][number];
+const part = (name: string, hub = false) => ({ id: name, name, ...(hub ? { hub } : {}) }) as unknown as Offering["components"][number];
 
-describe("the catalogue lab's shared rules", () => {
-  it.each([
-    [["Fibre line", "CPE device (Fortinet 90G / 120G)"], "CPE device (Fortinet 90G / 120G)"],
-    [["Fibre line", "Business router"], "Business router"],
-    [["Fibre line", "CPE"], "CPE"],
-    // "cpe" inside another word isn't a CPE, and with no device the bundle has no hub.
-    [["Fibre line", "SCPE licence"], undefined],
-    [["Fibre line", "Backup 5G"], undefined],
-  ])("takes the hub of %j as %j", (names, hub) => {
-    expect(hubOf(offering({ components: names.map(part) }))?.name).toBe(hub);
-  });
-
-  it("takes the part the version marks as its hub over any name", () => {
-    const parts = ["Business router", "Managed switch"].map(part);
-    parts[1] = { ...parts[1]!, hub: true };
-    expect(hubOf(offering({ components: parts }))?.name).toBe("Managed switch");
+describe("the catalogue lab's shared rules, read from the version", () => {
+  it("takes the part the version marks as its hub, and never guesses one from a name", () => {
+    expect(hubOf(offering({ components: [part("Business router"), part("Managed switch", true)] }))?.name).toBe("Managed switch");
+    expect(hubOf(offering({ components: [part("Fibre line"), part("CPE device (Fortinet 90G / 120G)")] }))).toBeUndefined();
   });
 
   it.each([
@@ -33,24 +21,10 @@ describe("the catalogue lab's shared rules", () => {
     expect(channelKindName({ channelKindTerms: terms }, kind)).toBe(name);
   });
 
-  it.each([
-    ["Segment", "who"],
-    ["Business customers", "who"],
-    ["Location", "where"],
-    ["Commitment", "terms"],
-    ["FortiPortal account", "terms"],
-    ["New activation", "how"],
-    ["Port in", "how"],
-    ["Credit check", "other"],
-  ])("puts the eligibility point %s under %s", (title, group) => {
-    expect(eligibilityGroup(title)).toBe(group);
-  });
-
-  it("reads the contract periods from the commitment point only", () => {
-    const headline = (text: string) => text.split(/[.;(]/)[0]!.trim();
-    const point = (title: string, detail: string) => ({ title, detail }) as unknown as Offering["eligibility"][number];
-    expect(contractPeriods(offering({ eligibility: [point("FortiPortal", "An account per customer"), point("Commitment", "No contract, 12 or 24 months. Renewable")] }), headline)).toEqual(["No contract", "12", "24 months"]);
-    expect(contractPeriods(offering({ eligibility: [point("Segment", "SMB")] }), headline)).toEqual([]);
+  it("puts an eligibility point under the aspect the version gives it, and under other when it gives none", () => {
+    expect(eligibilityGroup({ aspect: "who" })).toBe("who");
+    expect(eligibilityGroup({ aspect: "terms" })).toBe("terms");
+    expect(eligibilityGroup({})).toBe("other");
   });
 
   it.each([
@@ -63,12 +37,28 @@ describe("the catalogue lab's shared rules", () => {
     expect(coreThreshold(journeys)).toBe(threshold);
   });
 
-  it("says plans are priced only when a characteristic names a price", () => {
-    const plan = (...names: string[]) => ({ name: "Plan", characteristics: names.map((name) => ({ name, value: "1" })) });
-    expect(isPriced(offering({ plans: [plan("Download", "Upload")] } as Partial<Offering>))).toBe(false);
-    expect(isPriced(offering({ plans: [plan("Download"), plan("Monthly fee")] } as Partial<Offering>))).toBe(true);
-    expect(isPriced(offering({ plans: [plan("Price (AED)")] } as Partial<Offering>))).toBe(true);
-    expect(isPriced(offering({ plans: [plan("Monthly (EUR)")] } as Partial<Offering>))).toBe(true);
-    expect(isPriced(offering({ plans: [plan("SLA", "Static IP", "All sites", "Top speed")] } as Partial<Offering>))).toBe(false);
+  it("says plans are priced only when a characteristic's unit is a currency", () => {
+    const plan = (...facts: [string, string | null][]) => ({ name: "Plan", characteristics: facts.map(([name, unit]) => ({ name, value: "1", amount: "1", unit })) });
+    expect(isPriced(offering({ plans: [plan(["Download", "Mbps"], ["Upload", "Mbps"])] } as Partial<Offering>))).toBe(false);
+    expect(isPriced(offering({ plans: [plan(["Download", "Mbps"]), plan(["Monthly", "AED"])] } as Partial<Offering>))).toBe(true);
+    expect(isPriced(offering({ plans: [plan(["Monthly", "eur"])] } as Partial<Offering>))).toBe(true);
+    // A price word with no currency is not a stated price.
+    expect(isPriced(offering({ plans: [plan(["Monthly fee", null])] } as Partial<Offering>))).toBe(false);
+  });
+
+  it("takes a plan's figures from the characteristics the version gives an amount, in order", () => {
+    const plan = {
+      name: "Plan",
+      characteristics: [
+        { name: "CPE", value: "Fortinet 90G" },
+        { name: "Download", value: "200 Mbps", amount: "200", unit: "Mbps" },
+        { name: "Upload", value: "100 Mbps", amount: "100", unit: "Mbps" },
+      ],
+      evidence: { status: "confirmed" as const },
+    };
+    expect(planFigures(plan).map((item) => [item.name, item.amount])).toEqual([
+      ["Download", 200],
+      ["Upload", 100],
+    ]);
   });
 });

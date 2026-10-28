@@ -3152,6 +3152,11 @@ export interface components {
             kind_id?: string | null;
             /** Name */
             name: string;
+            /**
+             * Selling
+             * @default false
+             */
+            selling: boolean;
             /** Source */
             source?: string | null;
         };
@@ -4539,7 +4544,15 @@ export interface components {
             name_ar?: string | null;
             /** Parent Id */
             parent_id?: string | null;
+            /** @default layer */
+            placement: components["schemas"]["LandscapePlacement"];
         };
+        /**
+         * LandscapePlacement
+         * @description Where the landscape map draws a top-level domain.
+         * @enum {string}
+         */
+        LandscapePlacement: "layer" | "bus" | "side";
         /**
          * LibraryAdminAction
          * @enum {string}
@@ -4951,6 +4964,12 @@ export interface components {
             /** Recipients */
             recipients: string[];
         };
+        /**
+         * OfferingAspect
+         * @description Which question about buying an offering one of its audience points answers.
+         * @enum {string}
+         */
+        OfferingAspect: "who" | "where" | "terms" | "how";
         /** OfferingComponentSchema */
         OfferingComponentSchema: {
             /**
@@ -5060,6 +5079,7 @@ export interface components {
          * @description A customer value, or a kind of customer an offering is for.
          */
         OfferingPointSchema: {
+            aspect?: components["schemas"]["OfferingAspect"] | null;
             confidence?: components["schemas"]["SourceConfidence"] | null;
             /** Description */
             description?: string | null;
@@ -5437,6 +5457,11 @@ export interface components {
              */
             components: components["schemas"]["OfferingComponentSchema"][];
             confidence?: components["schemas"]["SourceConfidence"] | null;
+            /**
+             * Contract Terms
+             * @default []
+             */
+            contract_terms: string[];
             /**
              * Decisions
              * @default []

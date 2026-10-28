@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { PortfolioNode } from "../../catalogue/model/model";
-import { firstSentence, leadingNumber, listOf, monogram, pathTo, plural, shortFunction } from "./labUtil";
+import { firstSentence, listOf, monogram, pathTo, plural, shortFunction } from "./labUtil";
 
 const node = (id: string, parentId: string | null = null): PortfolioNode => ({ id, level: "Level", name: id, parentId });
 
@@ -26,17 +26,6 @@ describe("the lab's small helpers", () => {
     ["  Spaced out.  Next.", "Spaced out."],
   ])("takes the first sentence of %j", (text, first) => {
     expect(firstSentence(text)).toBe(first);
-  });
-
-  it.each([
-    ["200 Mbps", 200],
-    ["1 Gbps", 1000],
-    ["2.5 gbps", 2500],
-    [" 50", 50],
-    ["Unlimited", null],
-    ["", null],
-  ])("reads %j as %j", (value, number) => {
-    expect(leadingNumber(value)).toBe(number);
   });
 
   it("cuts a purpose to a few words", () => {

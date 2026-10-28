@@ -31,6 +31,8 @@ class Channel:
     description: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # Customers buy through it (a shop, an agent, a web store), unlike a system-to-system channel.
+    selling: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Channel id"))
@@ -94,6 +96,7 @@ def merge_channels(first: Channel, second: Channel) -> Channel:
         first,
         kind=first.kind or second.kind,
         kind_id=first.kind_id or second.kind_id,
+        selling=first.selling or second.selling,
         entry_system_id=first.entry_system_id or second.entry_system_id,
         description=first.description or second.description,
         confidence=first.confidence or second.confidence,

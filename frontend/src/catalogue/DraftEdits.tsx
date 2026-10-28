@@ -6,7 +6,7 @@ import { ApiError, errorMessage } from "../api/errors";
 import { blankSystem, channelUses, draftBody, systemUses } from "./drafting";
 import { finishedOffering, finishedSystem, journeyOrderProblem, journeyProblem, offeringProblem, slug, systemProblem } from "./editing";
 import { ActionGroup, Button, Status } from "../design/components";
-import { AreaField, Rows, SelectField, SystemField, TextField } from "./forms";
+import { AreaField, CheckField, Rows, SelectField, SystemField, TextField } from "./forms";
 import { JourneyEditor } from "./JourneyEditor";
 import { OfferingFacts } from "./OfferingEditor";
 import { questionProblem } from "./governance";
@@ -229,8 +229,16 @@ export function ConnectionRemove({ connection, onDone }: { connection: Relations
   );
 }
 
-/** A domain as edited; a landscape domain keeps whether it is cross-cutting, which the panel doesn't change. */
-type Domain = { id: string; name: string; name_ar?: string | null; parent_id?: string | null; description?: string | null; cross_cutting?: boolean };
+/** A domain as edited; a landscape domain keeps whether it is cross-cutting, which the panel doesn't change, and where the map draws it. */
+type Domain = { id: string; name: string; name_ar?: string | null; parent_id?: string | null; description?: string | null; cross_cutting?: boolean; placement?: Placement };
+type Placement = "layer" | "bus" | "side";
+
+/** Where the landscape map draws a top-level domain. */
+const PLACEMENT_OPTIONS = [
+  { value: "layer", label: "A layer, in this order" },
+  { value: "bus", label: "The integration bus, in this order" },
+  { value: "side", label: "Beside the layers" },
+];
 
 /** One domain tree edited whole: the landscape, or the business areas. */
 export function DomainsEdit({ tree, onDone }: { tree: "landscape" | "areas"; onDone: () => void }) {
@@ -274,7 +282,7 @@ export function DomainsEdit({ tree, onDone }: { tree: "landscape" | "areas"; onD
       error={saveDraft.error}
       onCancel={onDone}
       onSubmit={() =>
-        saveDraft.mutate(draftBody(release, tree === "landscape" ? { landscape_domains: finished.map((item) => ({ ...item, cross_cutting: item.cross_cutting ?? false })) } : { capability_domains: finished }), {
+        saveDraft.mutate(draftBody(release, tree === "landscape" ? { landscape_domains: finished.map((item) => ({ ...item, cross_cutting: item.cross_cutting ?? false, placement: item.parent_id ? "layer" : (item.placement ?? "layer") })) } : { capability_domains: finished }), {
           onSuccess: onDone,
         })
       }
@@ -296,6 +304,14 @@ export function DomainsEdit({ tree, onDone }: { tree: "landscape" | "areas"; onD
               options={parents(finished[index]?.id ?? "")}
               onChange={(parent) => update({ parent_id: parent || null })}
             />
+            {tree === "landscape" && !item.parent_id && (
+              <SelectField
+                label="On the landscape map"
+                value={item.placement ?? "layer"}
+                options={PLACEMENT_OPTIONS}
+                onChange={(placement) => update({ placement: placement as Placement })}
+              />
+            )}
             <AreaField label="What it covers" value={item.description} onChange={(description) => update({ description: description || null })} />
           </>
         )}
@@ -347,7 +363,7 @@ export function ChannelsEdit({ onDone }: { onDone: () => void }) {
         one="channel"
         items={items}
         onChange={setItems}
-        blank={() => ({ id: "", name: "" })}
+        blank={() => ({ id: "", name: "", selling: false })}
         itemLabel={(item, index) => `channel ${item.name || index + 1}`}
         render={(item, update) => (
           <>
@@ -360,6 +376,7 @@ export function ChannelsEdit({ onDone }: { onDone: () => void }) {
               allowNone
               onChange={(id) => update({ entry_system_id: id || null })}
             />
+            <CheckField label="Customers buy through it" checked={item.selling ?? false} onChange={(selling) => update({ selling })} />
             <AreaField label="What it is" value={item.description} onChange={(description) => update({ description: description || null })} />
           </>
         )}
@@ -376,7 +393,7 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
   const [value, setValue] = useState<Offering>(
     () => ({
       id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [],
-      sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], former_ids: [],
+      sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], former_ids: [], contract_terms: [],
     }),
   );
   const products = release.products ?? [];

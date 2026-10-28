@@ -48,6 +48,26 @@ from knowledge_portal.domain.architecture.sources import (
 from knowledge_portal.domain.architecture.tracking import OrderTracking, check_tracking
 
 
+class OfferingAspect(StrEnum):
+    """Which question about buying an offering one of its audience points answers."""
+
+    WHO = "who"
+    WHERE = "where"
+    TERMS = "terms"
+    HOW = "how"
+
+
+def offering_aspect(value: OfferingAspect | str | None) -> OfferingAspect | None:
+    if value is None:
+        return None
+    try:
+        return OfferingAspect(str(value).strip().casefold())
+    except ValueError as exc:
+        raise InvalidKnowledgeError(
+            f"An audience aspect is who, where, terms or how, not {value!r}."
+        ) from exc
+
+
 @dataclass(frozen=True)
 class OfferingPoint:
     """One thing an offering gives its customers, or one kind of customer it is for."""
@@ -56,8 +76,11 @@ class OfferingPoint:
     description: str | None = None
     confidence: SourceConfidence | None = None
     source: str | None = None
+    # For an audience point: who may buy, where, on what terms or how; None while unsorted.
+    aspect: OfferingAspect | None = None
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "aspect", offering_aspect(self.aspect))
         object.__setattr__(self, "name", required(self.name, "Name"))
         object.__setattr__(self, "description", optional(self.description, "Description"))
         check_source(self)
@@ -455,6 +478,8 @@ class ProductOffering:
     former_ids: tuple[str, ...] = ()
     # Why a customer buys it, beside the proposition that says what it is.
     purpose: str | None = None
+    # The contract periods a customer can choose, as the offering states them ("1 year").
+    contract_terms: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", required(self.id, "Offering id"))
@@ -475,6 +500,7 @@ class ProductOffering:
             ("sources", "Source"),
             ("boundaries", "Boundary"),
             ("not_used", "What it no longer uses"),
+            ("contract_terms", "Contract term"),
         ):
             object.__setattr__(
                 self,
@@ -681,6 +707,7 @@ def merge_offerings(first: ProductOffering, second: ProductOffering) -> ProductO
         ),
         boundaries=tuple(dict.fromkeys((*first.boundaries, *second.boundaries))),
         not_used=tuple(dict.fromkeys((*first.not_used, *second.not_used))),
+        contract_terms=first.contract_terms or second.contract_terms,
         portfolio_node_id=first_known(first.portfolio_node_id, second.portfolio_node_id),
         plans=(
             *first.plans,

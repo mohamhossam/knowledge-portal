@@ -12,6 +12,7 @@
 import { Fragment, useMemo, useState } from "react";
 
 import { type Catalogue, type Integration, systemOf } from "../../catalogue/model/model";
+import { toneOf } from "./labData";
 import { plural } from "./labUtil";
 import { layerRank } from "./posterModel";
 import { NOT_STATED, operationName } from "./words";
@@ -81,7 +82,7 @@ export function IntegrationMatrix({ data, interfaces, selected, onSelect }: { da
                 </span>
               </td>
               {linked.map((system) => (
-                <th key={system.id} scope="col" className={[`tone--${system.domain}`, firstOfDomain.has(system.id) ? "cl-split" : "", focus?.col === system.id ? "on" : ""].join(" ")} title={system.name}>
+                <th key={system.id} scope="col" className={[`tone--${toneOf(data, system.domain)}`, firstOfDomain.has(system.id) ? "cl-split" : "", focus?.col === system.id ? "on" : ""].join(" ")} title={system.name}>
                   <span translate="no">{system.name}</span>
                 </th>
               ))}
@@ -91,7 +92,7 @@ export function IntegrationMatrix({ data, interfaces, selected, onSelect }: { da
             {linked.map((row) => (
               <Fragment key={row.id}>
                 {firstOfDomain.has(row.id) && (
-                  <tr className={`cl-matrix-domain tone--${row.domain}`}>
+                  <tr className={`cl-matrix-domain tone--${toneOf(data, row.domain)}`}>
                     <th scope="rowgroup" colSpan={linked.length + 1}>
                       <span>{domainName(row.domain)}</span>
                     </th>

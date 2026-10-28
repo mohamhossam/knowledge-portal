@@ -213,7 +213,7 @@ function ProductMap({ offering, journeys, switcher }: { offering: Offering; jour
               <p className="cl-body">Every system {offering.name}'s journeys reach. Pick one to see its role and the journeys behind it.</p>
               <ul className="cl-footlayers">
                 {layers.map(({ domain, all, used }) => (
-                  <li key={domain.id} className={`cl-linked--${domain.id}`}>
+                  <li key={domain.id} className={`cl-linked--${domain.tone}`}>
                     <span>{domain.name}</span>
                     <span className="am-meter" aria-label={`${used.length} of ${all.length} used`}>
                       <span aria-hidden="true">

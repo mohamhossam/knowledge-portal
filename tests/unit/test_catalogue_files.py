@@ -58,7 +58,7 @@ def test_every_format_keeps_delivery_drops_and_cross_cutting_domains(
     assert orders["UPDOWNGRD"].delivery_drop == "P2 / P3"
     assert "Delivered in drop" not in (orders["UPDOWNGRD"].description or "")
     crossing = [item.id for item in catalogue.landscape_domains if item.cross_cutting]
-    assert crossing == ["enterprise", "integration"]
+    assert sorted(crossing) == ["enterprise", "integration"]
 
     content = ADAPTER.read(file_format, ADAPTER.write(file_format, catalogue))
 

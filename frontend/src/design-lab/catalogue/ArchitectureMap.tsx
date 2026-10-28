@@ -15,7 +15,6 @@
  */
 import { type CSSProperties, type KeyboardEvent, type ReactNode, memo, useCallback, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import { BUS_DOMAIN, SIDE_DOMAINS } from "../../catalogue/model/conventions";
 import { type Catalogue, type Integration, type StepRole, type System, systemOf, type TamDomain } from "../../catalogue/model/model";
 import { monogram, plural, shortFunction } from "./labUtil";
 import { mapRows, type SystemLink } from "./posterModel";
@@ -23,7 +22,10 @@ import { roleName } from "./words";
 
 /** Which layers share a row, top to bottom; the integration layer runs between them as a bus. */
 
-/** One line icon per TAM layer, on a 16px grid in the layer's ink. */
+/**
+ * A line icon for each standard TM Forum (TAM) layer, on a 16px grid in the layer's ink:
+ * decoration only. Any other layer has the plain stacked-layers icon.
+ */
 const LAYER_ICON: Record<string, ReactNode> = {
   "market-sales": <path d="M2 12.5 6 8.5l3 3 5-6M10.5 5.5H14V9" />,
   product: <path d="M2.5 4.5 8 2l5.5 2.5v7L8 14l-5.5-2.5zM2.5 4.5 8 7l5.5-2.5M8 7v7" />,
@@ -70,7 +72,7 @@ export function LayerIcon({ id }: { id: string }) {
   return (
     <span className="am-icon" aria-hidden="true">
       <svg viewBox="0 0 16 16" width="16" height="16">
-        {LAYER_ICON[id] ?? LAYER_ICON.enterprise}
+        {LAYER_ICON[id] ?? <path d="M8 2 14 5 8 8 2 5zM2 8l6 3 6-3M2 11l6 3 6-3" />}
       </svg>
     </span>
   );
@@ -166,7 +168,8 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
   const rows = useMemo(() => {
     return mapRows(data.domains, (id) => bySystem.has(id));
   }, [bySystem, data]);
-  const numbers = useMemo(() => new Map(rows.flat().filter((id) => id !== BUS_DOMAIN).map((id, index) => [id, String(index + 1).padStart(2, "0")])), [rows]);
+  const isBus = (id: string) => domains.get(id)?.placement === "bus";
+  const numbers = useMemo(() => new Map(rows.flat().filter((id) => domains.get(id)?.placement !== "bus").map((id, index) => [id, String(index + 1).padStart(2, "0")])), [rows, domains]);
   const order = useMemo(() => rows.flat().flatMap((id) => bySystem.get(id) ?? []), [rows, bySystem]);
 
   // Measure every card against the map, so curves meet the cards wherever the layout put them.
@@ -289,7 +292,7 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
       .filter(Boolean)
       .join(" ");
     const group = domain?.groups.find((item) => item.id === system.group);
-    const caption = foot && foot.roles.length ? foot.roles.slice(0, 2).map((role) => roleName(data, role, "short")).join(" · ") : foot?.tier === "carries" ? "Carries calls" : shortFunction(system.function || group?.name || "");
+    const caption = foot && foot.roles.length ? foot.roles.slice(0, 2).map((role) => roleName(data, role)).join(" · ") : foot?.tier === "carries" ? "Carries calls" : shortFunction(system.function || group?.name || "");
     const facts = [
       domain?.name,
       group?.name,
@@ -358,7 +361,7 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
     const share = (group: { name: string; systems: System[] }) => Math.max(cols(group) * 18, group.name.length);
     const span = groups.reduce((sum, group) => sum + share(group), 0);
     return (
-      <div key={id} className={`am-layer am-layer--${id}${half ? " am-layer--half" : ""}${dim ? " is-dim" : ""}`} style={{ "--am-span": span } as CSSProperties}>
+      <div key={id} className={`am-layer am-layer--${domains.get(id)?.tone}${half ? " am-layer--half" : ""}${dim ? " is-dim" : ""}`} style={{ "--am-span": span } as CSSProperties}>
         <div className="am-layer-head">
           <LayerIcon id={id} />
           <span className="am-layer-no" aria-hidden="true">
@@ -399,12 +402,12 @@ export const ArchitectureMap = memo(function ArchitectureMap({ data, label, link
   };
 
   // Compact (presentation) layout: the side layers leave the stack for a column of their own, so the map is four bands, not five.
-  const sideIds = compact ? SIDE_DOMAINS.filter((id) => bySystem.has(id)) : [];
+  const sideIds = compact ? data.domains.filter((domain) => domain.placement === "side" && bySystem.has(domain.id)).map((domain) => domain.id) : [];
   const stackRows = rows.map((row) => row.filter((id) => !sideIds.includes(id))).filter((row) => row.length);
   const renderRows = (list: string[][]) =>
     list.map((row) =>
-      row.length === 1 && row[0] === BUS_DOMAIN ? (
-        bus(BUS_DOMAIN)
+      row.length === 1 && row[0] && isBus(row[0]) ? (
+        bus(row[0])
       ) : (
         <div key={row.join("+")} className={`am-row${row.length > 1 ? " am-row--split" : ""}`}>
           {row.map((id) => layer(id, row.length > 1))}

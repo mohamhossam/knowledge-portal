@@ -10,16 +10,19 @@ const data = fromRelease(asRelease(release));
 const evidence: Evidence = { status: "inferred" };
 const system = (systemId: string): Lane => ({ kind: "system", systemId });
 const call = (from: string, to: string, extra: Partial<Integration> = {}): Integration => ({ id: `${from}-${to}`, step: "1", from: system(from), to: system(to), purpose: "", mode: "not-stated", evidence, ...extra });
-const domain = (id: string, groups = 1): Pick<TamDomain, "id" | "groups"> => ({ id, groups: Array.from({ length: groups }, (_, index) => ({ id: `${id}.${index}`, name: `${id} ${index}` })) });
+const domain = (id: string, groups = 1, placement: TamDomain["placement"] = "layer"): Pick<TamDomain, "id" | "groups" | "placement"> => ({
+  id,
+  groups: Array.from({ length: groups }, (_, index) => ({ id: `${id}.${index}`, name: `${id} ${index}` })),
+  placement,
+});
 
 describe("the poster's model", () => {
-  it("reads the layers in the version's order, with the bus under the customer layer", () => {
-    // The sample lists both cross-cutting layers last.
-    expect(data.domains.map((item) => item.id).slice(-2)).toEqual(["enterprise", "integration"]);
+  it("reads the layers in the version's order, the bus where the version puts it", () => {
     expect(layerOrder(data.domains)).toEqual(["market-sales", "product", "customer", "integration", "service", "resource", "engaged-party", "enterprise"]);
-    // With no customer layer, or no bus, the version's order stands.
     expect(layerOrder([domain("b"), domain("customer"), domain("a")])).toEqual(["b", "customer", "a"]);
-    expect(layerOrder([domain("a"), domain("integration"), domain("b")])).toEqual(["a", "integration", "b"]);
+    expect(data.domains.filter((item) => item.placement === "bus").map((item) => item.id)).toEqual(["integration"]);
+    // Each layer takes the next colour in order; the bus has its own.
+    expect(data.domains.map((item) => item.tone)).toEqual(["1", "2", "3", "bus", "4", "5", "6", "7"]);
     const rank = layerRank(data.domains);
     expect(rank("customer")).toBeLessThan(rank("integration"));
     expect(rank("integration")).toBeLessThan(rank("service"));
@@ -32,6 +35,8 @@ describe("the poster's model", () => {
     // A layer with no systems leaves its partner to pair with the next; no pair crosses the bus.
     expect(mapRows(data.domains, (id) => has(id) && id !== "product")).toEqual([["market-sales"], ["customer"], ["integration"], ["service", "resource"], ["engaged-party", "enterprise"]]);
     expect(mapRows([domain("a"), domain("b"), domain("c"), domain("d", 5), domain("e")], () => true)).toEqual([["a", "b"], ["c"], ["d"], ["e"]]);
+    // Any layer the version places as the bus or beside: none is known by its id.
+    expect(mapRows([domain("a"), domain("pipe", 1, "bus"), domain("b"), domain("x", 1, "side"), domain("c")], () => true)).toEqual([["a"], ["pipe"], ["b", "c"], ["x"]]);
   });
 
   it("sees every journey through every channel it serves, and keeps each call once", () => {

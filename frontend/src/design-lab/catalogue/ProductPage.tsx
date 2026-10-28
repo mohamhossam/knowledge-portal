@@ -9,10 +9,10 @@ import type { Component, Offering } from "../../catalogue/model/model";
 import { EvidenceTag } from "./labChrome";
 import { LabIcon } from "./labIcon";
 import { Missing, ProductHeader } from "./productParts";
-import { hubOf } from "./catalogueRules";
-import { firstJourneyHref, LAB, useLabData, useOffering } from "./labData";
-import { leadingNumber, listOf, plural, useTitle } from "./labUtil";
-import { CAPABILITIES, DEVICE_ICON } from "./capabilities";
+import { hubOf, isPriced, planFigures } from "./catalogueRules";
+import { firstJourneyHref, LAB, toneOf, useLabData, useOffering } from "./labData";
+import { listOf, plural, useTitle } from "./labUtil";
+import { DEVICE_ICON, kindOf, partKinds } from "./capabilities";
 import { SystemMonogram } from "./SystemMonogram";
 
 import { WhoCanBuy } from "./WhoCanBuy";
@@ -27,7 +27,7 @@ function SystemTiles({ component, max = 3 }: { component: Component; max?: numbe
     <span className="cl-systiles">
       <span className="ds-visually-hidden">Delivered by {listOf(systems.map((system) => system.name))}</span>
       {shown.map((system) => (
-        <SystemMonogram key={system.id} name={system.name} tone={system.domain} title={system.name} />
+        <SystemMonogram key={system.id} name={system.name} tone={toneOf(data, system.domain)} title={system.name} />
       ))}
       {systems.length > max && (
         <span className="cl-systile-more" aria-hidden="true">
@@ -39,25 +39,12 @@ function SystemTiles({ component, max = 3 }: { component: Component; max?: numbe
 }
 
 function Bundle({ offering }: { offering: Offering }) {
+  const data = useLabData();
   const hub = hubOf(offering);
   const rest = offering.components.filter((item) => item !== hub);
-  const hubName = hub ? hub.name.replace(/\s*\(.*\)\s*$/, "") : "";
-  const hubModels = hub ? (/\((.*)\)/.exec(hub.name)?.[1] ?? "").split(/\s*\/\s*/).filter(Boolean) : [];
-  // "Fortinet 90G / 120G": the second model takes the first one's maker.
-  const maker = hubModels[0]?.split(/\s+/).slice(0, -1).join(" ") ?? "";
-  const models = hubModels.map((model, index) => (index && maker && !model.includes(" ") ? `${maker} ${model}` : model));
-  // The rule that says which model goes with which speed, when the offering has one.
-  const modelRule = hub ? offering.rules.find((rule) => models.length > 1 && models.every((model) => rule.statement.includes(model.split(" ").at(-1) ?? model))) : undefined;
-  const groups = [
-    ...CAPABILITIES.map((capability) => ({
-      ...capability,
-      items: rest.filter((component) => {
-        const first = CAPABILITIES.find((item) => item.test.test(component.name));
-        return first?.id === capability.id;
-      }),
-    })),
-    { id: "more", name: "More", blurb: "Other parts of the bundle", test: /$^/, icon: <path d="M3 8h.01M8 8h.01M13 8h.01" />, items: rest.filter((component) => !CAPABILITIES.some((item) => item.test.test(component.name))) },
-  ].filter((group) => group.items.length);
+  const groups = partKinds(data)
+    .map((kind) => ({ ...kind, items: rest.filter((component) => kindOf(data, component).id === kind.id) }))
+    .filter((group) => group.items.length);
   const always = offering.components.filter((item) => item.mandatory !== false).length;
   const optional = offering.components.length - always;
 
@@ -77,17 +64,8 @@ function Bundle({ offering }: { offering: Offering }) {
             </span>
             <div className="cl-device-text">
               <small>At the heart of the bundle</small>
-              <strong>{hubName}</strong>
-              {models.length > 0 && (
-                <ul className="cl-models" aria-label="Models">
-                  {models.map((model) => (
-                    <li key={model} translate="no">
-                      {model}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {modelRule && <p className="cl-device-rule">{modelRule.statement}</p>}
+              <strong>{hub.name}</strong>
+              {hub.description && <p className="cl-device-rule">{hub.description}</p>}
             </div>
             <SystemTiles component={hub} />
           </div>
@@ -96,7 +74,7 @@ function Bundle({ offering }: { offering: Offering }) {
           {groups.map((group) => {
             const optionalOnly = group.items.every((item) => item.mandatory === false);
             return (
-              <section key={group.id} className={`cl-cap${group.id === "resilience" ? " cl-cap--wide" : ""}${optionalOnly ? " is-optional" : ""}`} aria-labelledby={`cl-cap-${group.id}`}>
+              <section key={group.id} className={`cl-cap${groups.length % 2 && group === groups.at(-1) ? " cl-cap--wide" : ""}${optionalOnly ? " is-optional" : ""}`} aria-labelledby={`cl-cap-${group.id}`}>
                 <header>
                   <span className="cl-cap-icon">
                     <LabIcon>{group.icon}</LabIcon>
@@ -121,7 +99,7 @@ function Bundle({ offering }: { offering: Offering }) {
             );
           })}
         </div>
-        <p className="cl-sub">Grouped by what each part does for the customer: this catalogue's reading. The tiles are the systems that deliver each part.</p>
+        <p className="cl-sub">Grouped by each part's kind, as the catalogue states it. The tiles are the systems that deliver each part.</p>
         <details className="cl-codes">
           <summary>
             Offer and service codes <small>{offering.components.length}</small>
@@ -150,29 +128,35 @@ function Bundle({ offering }: { offering: Offering }) {
   );
 }
 
-/** Each plan's speeds, at a glance; the full comparison is on the Plans tab. */
+/** Each plan's headline figures, at a glance; the full comparison is on the Plans tab. */
 function PlansAtAGlance({ offering }: { offering: Offering }) {
   const data = useLabData();
-  const speed = (plan: Offering["plans"][number], name: RegExp) => plan.characteristics.find((item) => name.test(item.name))?.value;
-  const max = Math.max(1, ...offering.plans.map((plan) => leadingNumber(speed(plan, /download/i) ?? "") ?? 0));
+  const max = Math.max(1, ...offering.plans.map((plan) => planFigures(plan)[0]?.amount ?? 0));
+  const priced = isPriced(offering);
   return (
     <section className="cl-card cl-span-12 pv-sec" aria-labelledby="cl-glance-h">
       <h2 id="cl-glance-h">
-        Plans at a glance <small>Prices are a gap: {gapSource(data, offering)} states none</small>
+        Plans at a glance {!priced && <small>Prices are a gap: {gapSource(data, offering)} states none</small>}
         <Link className="cl-h2-link" to={`${LAB}/products/${offering.id}/plans`}>
           Compare every characteristic
         </Link>
       </h2>
       <ul className="cl-glance">
         {offering.plans.map((plan) => {
-          const down = speed(plan, /download/i);
-          const up = speed(plan, /upload/i);
-          const n = leadingNumber(down ?? "") ?? 0;
+          const [first, second] = planFigures(plan);
+          const n = first?.amount ?? 0;
           return (
             <li key={plan.name}>
               <span className="cl-glance-name">{plan.name.replace(offering.name, "").trim() || plan.name}</span>
               <span className="cl-glance-speed">
-                <b>{down ?? "Not stated"}</b> down{up ? ` · ${up} up` : ""}
+                {first ? (
+                  <>
+                    <b>{first.value}</b> {first.name.toLocaleLowerCase()}
+                    {second ? ` · ${second.value} ${second.name.toLocaleLowerCase()}` : ""}
+                  </>
+                ) : (
+                  "No figures stated"
+                )}
               </span>
               <i className="cl-spark wide" aria-hidden="true">
                 <i style={{ width: `${(n / max) * 100}%` }} />

@@ -6,12 +6,8 @@
  */
 
 import type { JourneyDef } from "../../catalogue/model/model";
-import { STAGES, stageOf as typeStage } from "./stages";
+import { STAGES, stageOf } from "./stages";
 import { useDismissableDetails } from "./labUtil";
-
-/** Where a journey sits; one without an order type (order tracking) supports every order. */
-// The stage its order type has in the version, else the one its code has here.
-const stageOf = (journey: JourneyDef) => typeStage({ code: journey.orderType ?? "", stage: journey.stage });
 
 export function JourneyPicker({ journeys, current, onPick }: { journeys: JourneyDef[]; current: JourneyDef; onPick: (journey: JourneyDef) => void }) {
   const { ref: menu, close, onKeyDown } = useDismissableDetails();

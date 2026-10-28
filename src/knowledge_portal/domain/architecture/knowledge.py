@@ -92,6 +92,17 @@ class CapabilityDomain:
         _check_node(self, "Domain")
 
 
+class LandscapePlacement(StrEnum):
+    """Where the landscape map draws a top-level domain."""
+
+    # One of the stacked layers, in the version's order.
+    LAYER = "layer"
+    # The integration bus: a band of its own, where it stands in the version's order.
+    BUS = "bus"
+    # Beside the layers, in a column of its own (partners, the enterprise).
+    SIDE = "side"
+
+
 @dataclass(frozen=True)
 class LandscapeDomain:
     """Where a system sits in the architecture landscape, such as "Customer › Assisted" (ADR-0094).
@@ -109,9 +120,19 @@ class LandscapeDomain:
     # It serves every other domain (TAM's enterprise domain, the integration layer), so the
     # landscape runs it across the domains rather than beside them.
     cross_cutting: bool = False
+    # Where the landscape map draws it, for a top-level domain.
+    placement: LandscapePlacement = LandscapePlacement.LAYER
 
     def __post_init__(self) -> None:
         _check_node(self, "Landscape domain")
+        try:
+            object.__setattr__(
+                self, "placement", LandscapePlacement(str(self.placement).strip().casefold())
+            )
+        except ValueError as exc:
+            raise InvalidKnowledgeError(
+                f"A landscape placement is layer, bus or side, not {self.placement!r}."
+            ) from exc
 
 
 class _Node(Protocol):

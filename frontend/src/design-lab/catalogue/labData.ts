@@ -36,3 +36,8 @@ export function useOffering(): Offering | null {
 
 /** True when the lab renders inside the portal's shell, which already provides the page's <main>. */
 export const InShell = createContext(false);
+
+/** A layer's colour on the map (its `tone`), by the layer's id; undefined for a system placed in no known layer. */
+export function toneOf(data: Pick<Catalogue, "domains">, domainId: string | undefined): string | undefined {
+  return data.domains.find((domain) => domain.id === domainId)?.tone;
+}

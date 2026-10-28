@@ -1,21 +1,21 @@
 /**
  * Systems × capabilities: which systems deliver which kind of bundle part,
  * across every product. Components belong to a product, but what they do for
- * the customer doesn't: the device at the heart, connectivity, security, in
- * the office, run and manage, resilience (this catalogue's reading,
- * capabilities.tsx). A row is a system, in layer order; a cell marks the
+ * the customer doesn't: each part's kind, as the version's vocabulary states
+ * it (capabilities.tsx). A row is a system, in layer order; a cell marks the
  * components of that kind it delivers, with how many, and names them (and
  * their product, when more than one product is catalogued).
  */
 import type { Catalogue } from "../../catalogue/model/model";
-import { PART_KINDS, type Part, systemParts } from "./capabilities";
+import { type Part, partKinds, systemParts } from "./capabilities";
+import { toneOf } from "./labData";
 import { plural } from "./labUtil";
 import { layerRank } from "./posterModel";
 import { SystemMonogram } from "./SystemMonogram";
 
 export function CapabilityMatrix({ data, selected, onSelect }: { data: Catalogue; selected: string | null; onSelect: (id: string | null) => void }) {
   const parts = systemParts(data);
-  const kinds = PART_KINDS.filter((kind) => [...parts.values()].some((byKind) => byKind.has(kind.id)));
+  const kinds = partKinds(data).filter((kind) => [...parts.values()].some((byKind) => byKind.has(kind.id)));
   const rank = layerRank(data.domains);
   const systems = data.systems.filter((system) => parts.has(system.id)).sort((a, b) => rank(a.domain) - rank(b.domain) || (parts.get(b.id)?.size ?? 0) - (parts.get(a.id)?.size ?? 0));
   const many = data.offerings.length > 1;
@@ -47,7 +47,7 @@ export function CapabilityMatrix({ data, selected, onSelect }: { data: Catalogue
               <tr key={system.id} className={`${index === 0 || systems[index - 1]?.domain !== system.domain ? "cm-first" : ""}${selected === system.id ? " is-picked" : ""}`.trim() || undefined}>
                 <th scope="row">
                   <button type="button" className="cm-sys" aria-pressed={selected === system.id} onClick={() => onSelect(selected === system.id ? null : system.id)}>
-                    <SystemMonogram name={system.name} tone={system.domain} />
+                    <SystemMonogram name={system.name} tone={toneOf(data, system.domain)} />
                     <span>
                       <b translate="no">{system.name}</b>
                       <small>{domainName(system.domain)}</small>

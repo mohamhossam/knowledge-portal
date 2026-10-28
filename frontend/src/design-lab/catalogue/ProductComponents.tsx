@@ -5,8 +5,8 @@ import type { Offering } from "../../catalogue/model/model";
 import { EvidenceTag } from "./labChrome";
 import { LabIcon } from "./labIcon";
 import { hubOf } from "./catalogueRules";
-import { useLabData, useOffering } from "./labData";
-import { CAPABILITIES, capabilityOf, DEVICE_ICON } from "./capabilities";
+import { toneOf, useLabData, useOffering } from "./labData";
+import { DEVICE_ICON, kindOf, partKinds } from "./capabilities";
 import { plural, scrollBehavior, useTitle } from "./labUtil";
 import { layerRank } from "./posterModel";
 import { Missing, ProductHeader } from "./productParts";
@@ -15,7 +15,7 @@ import { SystemMonogram } from "./SystemMonogram";
 /**
  * The components, in two views of the same bundle. First the components
  * themselves: one card each, labelled with what it does for the customer (the
- * device at the heart, then the capabilities: this catalogue's reading,
+ * device at the heart, then each part's kind as the version states it,
  * capabilities.tsx), whether it is always included, its codes, the systems
  * that deliver it and their part, and its source. They can be narrowed by
  * group or by the system that delivers them. Then who delivers what: every
@@ -36,8 +36,7 @@ export function ProductComponents() {
   const hub = hubOf(offering);
   const groups = [
     ...(hub ? [{ id: "device", name: "At the heart", blurb: "The device the bundle is built on", icon: DEVICE_ICON, items: [hub] }] : []),
-    ...CAPABILITIES.map((capability) => ({ ...capability, items: offering.components.filter((item) => item !== hub && capabilityOf(item.name)?.id === capability.id) })),
-    { id: "more", name: "More", blurb: "Other parts of the bundle", icon: <path d="M3 8h.01M8 8h.01M13 8h.01" />, items: offering.components.filter((item) => item !== hub && !capabilityOf(item.name)) },
+    ...partKinds(data).map((kind) => ({ ...kind, items: offering.components.filter((item) => item !== hub && kindOf(data, item).id === kind.id) })),
   ].filter((group) => group.items.length);
   // The systems that deliver any component, in map order (layer by layer), the busiest first within a layer.
   const parts = new Map<string, number>();
@@ -48,7 +47,7 @@ export function ProductComponents() {
   const shown = (groupId: string, component: Offering["components"][number]) => (!kind || kind === groupId) && (!by || component.systems.some((item) => item.systemId === by));
   const cards = groups.flatMap((group) => group.items.filter((component) => shown(group.id, component)).map((component) => ({ group, component })));
   const tile = (id: string) => (
-    <SystemMonogram name={name(id)} tone={system(id)?.domain ?? "customer"} />
+    <SystemMonogram name={name(id)} tone={toneOf(data, system(id)?.domain)} />
   );
   const glyph = (icon: ReactNode, size = 16) => <LabIcon size={size}>{icon}</LabIcon>;
   // A system's heading narrows the cards to what it delivers and brings them into view.

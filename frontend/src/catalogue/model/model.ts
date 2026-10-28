@@ -43,6 +43,10 @@ export type TamDomain = {
   groups: { id: string; name: string }[];
   /** Drawn as a band beneath the domain columns (cross-cutting). */
   band?: boolean;
+  /** Where the landscape map draws it: one of the layers, the integration bus, or beside the layers. */
+  placement: "layer" | "bus" | "side";
+  /** Its colour on the map: the bus's own, or the next layer colour in the version's order. */
+  tone: string;
 };
 
 export type System = {
@@ -74,16 +78,22 @@ export type Channel = {
   name: string;
   systemId: string;
   kind: string;
+  /** Customers buy through it (a shop, an agent, a web store), unlike a system-to-system channel. */
+  selling: boolean;
 };
 
 export type OrderType = { code: string; name: string; description: string };
 
-export type Point = { title: string; detail: string; evidence: Evidence };
+/** Which question about buying an offering an eligibility point answers, when the version says. */
+export type Aspect = "who" | "where" | "terms" | "how";
+
+export type Point = { title: string; detail: string; evidence: Evidence; aspect?: Aspect };
 
 /** A plan as its sources describe it: named characteristics, so any product's plans fit. */
 export type Plan = {
   name: string;
-  characteristics: { name: string; value: string }[];
+  /** A characteristic's amount and unit, when the version states them ("200", "Mbps"; "99", "AED"). */
+  characteristics: { name: string; value: string; amount?: string | null; unit?: string | null }[];
   evidence: Evidence;
 };
 
@@ -99,6 +109,8 @@ export type Component = {
   mandatory: boolean | null;
   /** The device the bundle is built on, when the version says so. */
   hub?: boolean;
+  /** Its kind: a component_kind term of the version's vocabulary, when it names one. */
+  kind?: string;
   description: string;
   systems: { systemId: string; responsibility: string }[];
   evidence: Evidence;
@@ -128,6 +140,8 @@ export type Offering = {
   purpose: string;
   values: Point[];
   eligibility: Point[];
+  /** The contract periods a customer can choose, as the version states them. */
+  contractTerms: string[];
   plans: Plan[];
   rules: Rule[];
   components: Component[];
@@ -359,7 +373,14 @@ export type Catalogue = {
   roleTerms: Record<string, string>;
   /** The channel kind terms of the version's vocabulary: each kind's preferred label. */
   channelKindTerms: Record<string, string>;
+  /** The roles of the version's vocabulary, strongest first: the order it lists them in. */
+  roleOrder: string[];
+  /** The component kinds of the version's vocabulary, in its order: what bundle parts are grouped by. */
+  componentKinds: ComponentKind[];
 };
+
+/** A kind of bundle part: its term id, its name, what it does for the customer, and its code. */
+export type ComponentKind = { id: string; name: string; blurb: string; code?: string };
 
 export const EVIDENCE_WORDS: Record<Evidence["status"], string> = {
   confirmed: "Confirmed",
@@ -368,26 +389,10 @@ export const EVIDENCE_WORDS: Record<Evidence["status"], string> = {
 };
 
 /**
- * When a system plays several roles, the impact lens names the strongest: a business rule,
- * kept here. A role not listed (one the source adds) ranks after these, by code.
+ * When a system plays several roles, the impact lens names the strongest: the version's
+ * vocabulary lists its roles strongest first. A role it doesn't list ranks after these, by code.
  */
-export const ROLE_RANK: readonly StepRole[] = [
-  "orchestrate",
-  "capture",
-  "activate",
-  "field",
-  "validate",
-  "customer-data",
-  "catalog",
-  "logistics",
-  "bill",
-  "track",
-  "notify",
-  "record",
-];
-
-/** Roles from strongest to weakest (ROLE_RANK, then any other by code). */
-export function byRank(a: StepRole, b: StepRole): number {
-  const rank = (role: StepRole) => (ROLE_RANK.includes(role) ? ROLE_RANK.indexOf(role) : ROLE_RANK.length);
-  return rank(a) - rank(b) || a.localeCompare(b);
+export function byRank(order: readonly StepRole[]): (a: StepRole, b: StepRole) => number {
+  const rank = (role: StepRole) => (order.includes(role) ? order.indexOf(role) : order.length);
+  return (a, b) => rank(a) - rank(b) || a.localeCompare(b);
 }

@@ -257,7 +257,7 @@ describe("the catalogue direction mock-ups, on the seeded Business Pro Plus cata
 
   it("lists the plans with prices left as a gap, and filters business rules by kind", async () => {
     await open("/products/business-pro-plus/plans");
-    expect(screen.getByRole("rowheader", { name: "Monthly price" })).toBeInTheDocument();
+    expect(screen.getByRole("rowheader", { name: "Price" })).toBeInTheDocument();
   });
 
   it("filters business rules by what they govern", async () => {

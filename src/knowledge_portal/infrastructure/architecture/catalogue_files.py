@@ -69,6 +69,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     InvalidKnowledgeError,
     KnowledgeCapability,
     LandscapeDomain,
+    LandscapePlacement,
     RelationshipKind,
     SystemComponent,
     SystemDefinition,
@@ -189,7 +190,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
     CONSTRAINTS: ("system_id", "constraint"),
     RELATIONSHIPS: ("source_system_id", "target_system_id", "description", "kind"),
     DOMAINS: _DOMAIN_HEADERS,
-    LANDSCAPE: (*_DOMAIN_HEADERS, "cross_cutting"),
+    LANDSCAPE: (*_DOMAIN_HEADERS, "cross_cutting", "placement"),
     PRODUCTS: (
         "product_id",
         "name",
@@ -207,6 +208,8 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         # Ids it was known by before a rename, by ;.
         "former_ids",
         "purpose",
+        # The contract periods a customer can choose, by ;.
+        "contract_terms",
     ),
     ORDER_TYPES: (
         "product_id",
@@ -250,7 +253,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "source",
         "role_term",
     ),
-    PRODUCT_POINTS: ("product_id", "kind", "name", "description", "confidence", "source"),
+    PRODUCT_POINTS: ("product_id", "kind", "name", "description", "confidence", "source", "aspect"),
     JOURNEYS: (
         "journey_id",
         "name",
@@ -328,6 +331,7 @@ _HEADERS: dict[str, tuple[str, ...]] = {
         "confidence",
         "source",
         "kind_term",
+        "selling",
     ),
     REALISATION: (
         "product_id",
@@ -585,12 +589,14 @@ _INSTRUCTIONS = (
     (
         "LandscapeDomains (optional): where systems sit, such as Customer; parent_id makes a "
         "sub-domain such as Customer > Assisted; cross_cutting yes for one that serves every "
-        "other domain, such as the integration layer.",
+        "other domain, such as the integration layer; placement (optional) is layer, bus or side, "
+        "where the landscape map draws a top-level domain.",
     ),
     ("Systems description and landscape_domain_id (optional): what it is for, and where.",),
     (
         "Products (optional): product offerings such as Business Pro Plus; rules separated by ;; "
-        "purpose (optional) is why a customer buys it, beside the proposition.",
+        "purpose (optional) is why a customer buys it, beside the proposition; contract_terms "
+        "(optional) the contract periods a customer can choose, separated by ;.",
     ),
     (
         "OrderTypes: how each offering is ordered; enabled is yes or no; delivery_drop (optional) "
@@ -605,7 +611,10 @@ _INSTRUCTIONS = (
         "Responsibilities: which system does what for a component, in which role; order_types "
         "names order type codes separated by ;.",
     ),
-    ("ProductPoints: kind value (what it gives customers) or audience (who it is for).",),
+    (
+        "ProductPoints: kind value (what it gives customers) or audience (who it is for); aspect "
+        "(optional, for an audience) is who, where, terms or how.",
+    ),
     ("confidence (optional): confirmed, inferred or gap, as the source says.",),
     ("Journeys (optional): the activities that fulfil an offering's order type.",),
     (
@@ -616,7 +625,8 @@ _INSTRUCTIONS = (
     ("ActivityIntegrations: how one activity hands over to another.",),
     (
         "Channels (optional): where orders are placed, such as B2B Web or a shop; "
-        "entry_system_id is the system that takes the order in.",
+        "entry_system_id is the system that takes the order in; selling yes when customers buy "
+        "through it.",
     ),
     ("OrderTypes channels (optional): the channel ids it can be ordered through, by ;.",),
     (
@@ -1368,6 +1378,7 @@ def _point(item: dict[str, Any], where: str) -> OfferingPoint:
         _optional_text(item.get("description"), where, "description"),
         _trust(item.get("confidence"), where),
         _optional_text(item.get("source"), where, "source"),
+        _optional_text(item.get("aspect"), where, "aspect"),  # type: ignore[arg-type]
     )
 
 
@@ -1509,6 +1520,7 @@ def _offerings(entries: list[dict[str, Any]]) -> list[ProductOffering]:
                     ),
                     former_ids=_text_list(item.get("former_ids"), where, "former_ids"),
                     purpose=_optional_text(item.get("purpose"), where, "purpose"),
+                    contract_terms=_text_list(item.get("contract_terms"), where, "contract_terms"),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -1752,6 +1764,7 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
             lifecycle=offering.lifecycle,
             proposition=offering.proposition,
             purpose=offering.purpose,
+            contract_terms=list(offering.contract_terms),
             rules=list(offering.rules),
         ),
         **_sourced(offering),
@@ -1817,11 +1830,21 @@ def _offering_mapping(offering: ProductOffering) -> dict[str, Any]:
                 for part in offering.components
             ],
             values=[
-                {"name": point.name, **_present(description=point.description), **_sourced(point)}
+                {
+                    "name": point.name,
+                    **_present(description=point.description),
+                    **_sourced(point),
+                    **_present(aspect=point.aspect and point.aspect.value),
+                }
                 for point in offering.values
             ],
             audiences=[
-                {"name": point.name, **_present(description=point.description), **_sourced(point)}
+                {
+                    "name": point.name,
+                    **_present(description=point.description),
+                    **_sourced(point),
+                    **_present(aspect=point.aspect and point.aspect.value),
+                }
                 for point in offering.audiences
             ],
             nfrs=[
@@ -2062,6 +2085,7 @@ def _channels(entries: list[dict[str, Any]]) -> list[Channel]:
                     description=_optional_text(item.get("description"), where, "description"),
                     confidence=_trust(item.get("confidence"), where),
                     source=_optional_text(item.get("source"), where, "source"),
+                    selling=bool(_flag(item.get("selling"), where, "selling", False)),
                 )
             )
         except InvalidKnowledgeError as exc:
@@ -2080,6 +2104,7 @@ def _channel_mapping(channel: Channel) -> dict[str, Any]:
             description=channel.description,
         ),
         **_sourced(channel),
+        **({"selling": True} if channel.selling else {}),
     }
 
 
@@ -2199,6 +2224,11 @@ def _domain_mapping(item: CapabilityDomain | LandscapeDomain) -> dict[str, Any]:
         **(
             {"cross_cutting": True}
             if isinstance(item, LandscapeDomain) and item.cross_cutting
+            else {}
+        ),
+        **(
+            {"placement": item.placement.value}
+            if isinstance(item, LandscapeDomain) and item.placement != LandscapePlacement.LAYER
             else {}
         ),
     }
@@ -2683,13 +2713,14 @@ def _sheet_offerings(workbook: Any) -> list[dict[str, Any]]:
             **{
                 key: cells.get(key)
                 for key in _HEADERS[PRODUCTS][1:]
-                if key not in {"rules", "sources", "former_ids"}
+                if key not in {"rules", "sources", "former_ids", "contract_terms"}
             },
             "_where": where,
             "id": product_id,
             "rules": list(_split(cells.get("rules"), where, "rules")),
             "sources": list(_split(cells.get("sources"), where, "sources")),
             "former_ids": list(_split(cells.get("former_ids"), where, "former_ids")),
+            "contract_terms": list(_split(cells.get("contract_terms"), where, "contract_terms")),
             "questions": [],
             "decisions": [],
             "boundaries": [],
@@ -2986,11 +3017,23 @@ def _sheet_domains[DomainT: (CapabilityDomain, LandscapeDomain)](
 def _cross_cutting(
     domains: list[LandscapeDomain], entries: Iterator[tuple[int, dict[str, Any]]], where: str
 ) -> list[LandscapeDomain]:
-    """The landscape domains, each marked cross-cutting when its entry says so (no by default)."""
+    """The landscape domains, each marked cross-cutting (no by default) and placed (a layer by
+    default) as its entry says."""
     marked = []
     for domain, (number, cells) in zip(domains, entries, strict=True):
-        crossing = _flag(cells.get("cross_cutting"), f"{where} {number}", "cross_cutting", False)
-        marked.append(replace(domain, cross_cutting=True) if crossing else domain)
+        place = f"{where} {number}"
+        crossing = _flag(cells.get("cross_cutting"), place, "cross_cutting", False)
+        placement = _optional_text(cells.get("placement"), place, "placement")
+        try:
+            marked.append(
+                replace(
+                    domain,
+                    cross_cutting=bool(crossing),
+                    placement=placement or LandscapePlacement.LAYER,  # type: ignore[arg-type]
+                )
+            )
+        except InvalidKnowledgeError as exc:
+            raise _located(place, exc) from exc
     return marked
 
 
@@ -3033,6 +3076,7 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
             product.portfolio_node_id,
             f"{_LIST_SEPARATOR} ".join(product.former_ids),
             product.purpose,
+            f"{_LIST_SEPARATOR} ".join(product.contract_terms),
         ),
     )
     for plan in product.plans:
@@ -3163,7 +3207,15 @@ def _write_offering(sheets: dict[str, Any], product: ProductOffering) -> None:
         for point in points:
             _append(
                 sheets[PRODUCT_POINTS],
-                (product.id, kind, point.name, point.description, _confidence(point), point.source),
+                (
+                    product.id,
+                    kind,
+                    point.name,
+                    point.description,
+                    _confidence(point),
+                    point.source,
+                    point.aspect and point.aspect.value,
+                ),
             )
 
 
@@ -3458,7 +3510,12 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
     ):
         for domain in tree:
             crossing = (
-                (_yes(domain.cross_cutting) if domain.cross_cutting else None,)
+                (
+                    _yes(domain.cross_cutting) if domain.cross_cutting else None,
+                    domain.placement.value
+                    if domain.placement != LandscapePlacement.LAYER
+                    else None,
+                )
                 if isinstance(domain, LandscapeDomain)
                 else ()
             )
@@ -3565,6 +3622,7 @@ def _workbook(release: ArchitectureKnowledge | None) -> bytes:
                 _confidence(channel),
                 channel.source,
                 channel.kind_id,
+                _yes(channel.selling) if channel.selling else None,
             ),
         )
     for source in release.sources if release is not None else ():

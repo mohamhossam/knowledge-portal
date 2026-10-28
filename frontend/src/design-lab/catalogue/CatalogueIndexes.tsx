@@ -11,10 +11,10 @@ import { Link } from "react-router-dom";
 import type { Offering } from "../../catalogue/model/model";
 import { AreaTabs } from "./labChrome";
 import { LabIcon } from "./labIcon";
-import { channelKindName, contractPeriods, eligibilityGroup, hubOf, SELLING_KINDS } from "./catalogueRules";
-import { journeyHref, LAB, useLabData } from "./labData";
+import { channelKindName, eligibilityGroup, hubOf } from "./catalogueRules";
+import { journeyHref, LAB, toneOf, useLabData } from "./labData";
 import { firstSentence, listOf, pathTo, plural, useTitle } from "./labUtil";
-import { capabilityOf, DEVICE_ICON, shortComponentName } from "./capabilities";
+import { DEVICE_ICON, kindOf, MORE, shortComponentName } from "./capabilities";
 import { stageOf } from "./stages";
 import { SystemMonogram } from "./SystemMonogram";
 
@@ -67,14 +67,12 @@ function ProductCard({ offering }: { offering: Offering }) {
   const journeys = data.journeys.filter((journey) => journey.offeringId === offering.id);
   const base = `${LAB}/products/${offering.id}`;
 
-  // Sold through: the channels its joining order types (new sale, migration, port in) arrive by, people-facing ones only.
+  // Sold through: the channels its joining order types (new sale, migration, port in) arrive by, the ones customers buy through.
   const joining = offering.orderTypes.filter((type) => stageOf(type) === "join");
   const sellingIds = new Set((joining.length ? joining : offering.orderTypes).flatMap((type) => type.channels));
-  const selling = data.channels.filter((channel) => sellingIds.has(channel.id) && (SELLING_KINDS as readonly string[]).includes(channel.kind));
-  const kinds = [...SELLING_KINDS]
-    .map((kind) => ({ kind, channels: selling.filter((channel) => channel.kind === kind) }))
-    .filter((item) => item.channels.length);
-  const tone = (systemId: string) => data.systems.find((system) => system.id === systemId)?.domain ?? "customer";
+  const selling = data.channels.filter((channel) => sellingIds.has(channel.id) && channel.selling);
+  const kinds = [...new Set(selling.map((channel) => channel.kind))].map((kind) => ({ kind, channels: selling.filter((channel) => channel.kind === kind) }));
+  const tone = (systemId: string) => toneOf(data, data.systems.find((system) => system.id === systemId)?.domain);
   // Not every channel takes every way to join: the ones a channel takes, when it isn't all of them.
   const ways = joining.length ? joining : offering.orderTypes;
   const onlyFor = (channelId: string) => {
@@ -84,10 +82,10 @@ function ProductCard({ offering }: { offering: Offering }) {
   const partial = selling.some((channel) => onlyFor(channel.id));
 
   // Who can buy: the customer type, cut to its headline.
-  const who = offering.eligibility.filter((point) => eligibilityGroup(point.title) === "who");
+  const who = offering.eligibility.filter((point) => eligibilityGroup(point) === "who");
 
   // Commercial terms: the contract periods a customer can choose, one stop each.
-  const periods = contractPeriods(offering, headline);
+  const periods = offering.contractTerms;
 
   // In the bundle: the device first, then the rest, optional parts last.
   const hub = hubOf(offering);
@@ -196,11 +194,11 @@ function ProductCard({ offering }: { offering: Offering }) {
           </dt>
           <dd className="cl-chips-wrap">
             {parts.map((component) => {
-              const capability = capabilityOf(component.name);
+              const kind = kindOf(data, component);
               const isHub = component === hub;
               return (
                 <span key={component.id} className={`cl-part-chip${isHub ? " is-hub" : ""}${component.mandatory === false ? " is-optional" : ""}`} title={component.name}>
-                  <LabIcon kind="view">{isHub ? DEVICE_ICON : (capability?.icon ?? <path d="M4 8h8" />)}</LabIcon>
+                  <LabIcon kind="view">{isHub ? DEVICE_ICON : kind === MORE ? <path d="M4 8h8" /> : kind.icon}</LabIcon>
                   {shortComponentName(component.name)}
                   {component.mandatory === false && <small>optional</small>}
                 </span>

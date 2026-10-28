@@ -1,30 +1,19 @@
 /**
  * Where an order type sits in the customer's life with a product: joining,
- * changing a live account, getting support, or leaving. The journey switcher
- * and the order-type matrix group by the same stages.
+ * changing a live account, getting support, or leaving, as the version states
+ * it (the service's customer stages). An order type or journey whose version
+ * states none is shown as not staged, never guessed. The journey switcher and
+ * the order-type matrix group by the same stages.
  */
-export const STAGES: { id: string; name: string; blurb: string; orderTypes: string[] }[] = [
-  { id: "join", name: "Join", blurb: "Becoming a customer", orderTypes: ["NEW", "MIGRATE", "PORTIN"] },
-  {
-    id: "change",
-    name: "Change",
-    blurb: "Changing a live account",
-    orderTypes: ["UPDOWNGRD", "ADDDELETE", "MODSUBS", "RENEWAL", "EXTSHIFTSITE", "CHNUMBER", "CHINTUSRN", "CHGPSWD", "CHGDOMN", "CHGSUBDOMN", "FLEXIMINMOV"],
-  },
-  { id: "support", name: "Support", blurb: "Tracking, repairs and visits", orderTypes: ["DVCREP", "TECHVISIT"] },
-  { id: "leave", name: "Leave", blurb: "Ending or suspending the service", orderTypes: ["CESSREQ", "PORTOUT", "DUNNING"] },
+export const STAGES: { id: string; name: string; blurb: string }[] = [
+  { id: "join", name: "Join", blurb: "Becoming a customer" },
+  { id: "change", name: "Change", blurb: "Changing a live account" },
+  { id: "support", name: "Support", blurb: "Tracking, repairs and visits" },
+  { id: "leave", name: "Leave", blurb: "Ending or suspending the service" },
+  { id: "unstaged", name: "Not staged", blurb: "The version doesn't say" },
 ];
 
-/** An order type's stage: the one the version gives it, else the one its code has here. */
-export function stageOf(type: { code: string; stage?: string }): string {
-  return type.stage && STAGES.some((stage) => stage.id === type.stage) ? type.stage : stageOfCode(type.code);
-}
-
-/**
- * The stage of an order type by its code, for a version that gives none (and for journeys,
- * which name only the code); an unknown code is a change, no code (order tracking) is support.
- */
-export function stageOfCode(code: string | null | undefined): string {
-  const upper = code?.toUpperCase();
-  return STAGES.find((stage) => upper && stage.orderTypes.includes(upper))?.id ?? (upper ? "change" : "support");
+/** An order type's or a journey's stage, as the version states it; "unstaged" when it states none. */
+export function stageOf(item: { stage?: string | null }): string {
+  return item.stage && STAGES.some((stage) => stage.id === item.stage) ? item.stage : "unstaged";
 }

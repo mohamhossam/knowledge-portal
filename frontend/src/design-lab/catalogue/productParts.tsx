@@ -11,7 +11,7 @@ import { isPriced } from "./catalogueRules";
 import { AreaTabs, EvidenceTag, PathBar } from "./labChrome";
 import { LabIcon } from "./labIcon";
 import { firstJourneyHref, LAB, useLabData } from "./labData";
-import { leadingNumber, plural } from "./labUtil";
+import { plural } from "./labUtil";
 import { allViews } from "./posterModel";
 import { catalogueName, gapSource } from "./words";
 
@@ -150,8 +150,8 @@ export function ProductHeader({ offering, current, actions, compact = false }: {
  * for the customer, joined to the device by one spine. Each component names
  * the systems that deliver it as the same monogram tiles the architecture map
  * uses, so the bundle reads straight into the architecture. Optional parts are
- * dashed. The grouping is this catalogue's reading, by keyword, so it works
- * for any product; anything it can't place falls under "More".
+ * dashed. The grouping is each part's kind, as the version states it; a part
+ * it gives no kind falls under "More".
  */
 
 /** Plans side by side, differences first; what every plan shares is said once. */
@@ -162,7 +162,8 @@ export function Plans({ offering }: { offering: Offering }) {
   const rows = names.map((name) => {
     const values = offering.plans.map((plan) => value(plan, name));
     const same = values.every((item) => item !== undefined && item === values[0]);
-    const numbers = values.map((item) => (item ? leadingNumber(item) : null));
+    const amounts = offering.plans.map((plan) => plan.characteristics.find((item) => item.name === name)?.amount);
+    const numbers = amounts.map((item) => (item === null || item === undefined || !Number.isFinite(Number(item)) ? null : Number(item)));
     const max = Math.max(0, ...numbers.map((n) => n ?? 0));
     return { name, values, same, numbers, max };
   });
@@ -221,7 +222,7 @@ export function Plans({ offering }: { offering: Offering }) {
             ))}
             {!priced && (
               <tr>
-                <th scope="row">Monthly price</th>
+                <th scope="row">Price</th>
                 <td colSpan={offering.plans.length} className="gap">
                   Gap: {gapSource(data, offering)} states no prices
                 </td>

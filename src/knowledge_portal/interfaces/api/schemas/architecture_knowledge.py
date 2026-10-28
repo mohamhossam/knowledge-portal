@@ -95,6 +95,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     KnowledgeDocumentVersion,
     KnowledgeReleaseStatus,
     LandscapeDomain,
+    LandscapePlacement,
     RelationshipKind,
     SystemComponent,
     SystemDefinition,
@@ -114,6 +115,7 @@ from knowledge_portal.domain.architecture.products import (
     ComponentResponsibility,
     CustomerStage,
     NfrCoverage,
+    OfferingAspect,
     OfferingComponent,
     OfferingNfr,
     OfferingPlan,
@@ -407,6 +409,8 @@ class LandscapeDomainSchema(BaseModel):
     description: Text | None = None
     # It serves every other domain (the enterprise domain, the integration layer).
     cross_cutting: bool = False
+    # Where the landscape map draws it: a layer, the integration bus, or beside the layers.
+    placement: LandscapePlacement = LandscapePlacement.LAYER
 
     @classmethod
     def from_domain(cls, domain: LandscapeDomain) -> LandscapeDomainSchema:
@@ -417,6 +421,7 @@ class LandscapeDomainSchema(BaseModel):
             parent_id=domain.parent_id,
             description=domain.description,
             cross_cutting=domain.cross_cutting,
+            placement=domain.placement,
         )
 
     def to_domain(self) -> LandscapeDomain:
@@ -427,6 +432,7 @@ class LandscapeDomainSchema(BaseModel):
             self.parent_id,
             self.description,
             cross_cutting=self.cross_cutting,
+            placement=self.placement,
         )
 
 
@@ -477,6 +483,8 @@ class ChannelSchema(BaseModel):
     source: Text | None = None
     # The channel kind term the kind means.
     kind_id: Identifier | None = None
+    # Customers buy through it, unlike a system-to-system channel.
+    selling: bool = False
 
     @classmethod
     def from_domain(cls, channel: Channel) -> ChannelSchema:
@@ -489,6 +497,7 @@ class ChannelSchema(BaseModel):
             description=channel.description,
             confidence=channel.confidence,
             source=channel.source,
+            selling=channel.selling,
         )
 
     def to_domain(self) -> Channel:
@@ -501,6 +510,7 @@ class ChannelSchema(BaseModel):
             description=self.description,
             confidence=self.confidence,
             source=self.source,
+            selling=self.selling,
         )
 
 
@@ -811,6 +821,8 @@ class OfferingPointSchema(BaseModel):
     description: Text | None = None
     confidence: SourceConfidence | None = None
     source: Text | None = None
+    # For an audience point: who may buy, where, on what terms or how.
+    aspect: OfferingAspect | None = None
 
     @classmethod
     def from_domain(cls, point: OfferingPoint) -> OfferingPointSchema:
@@ -819,10 +831,11 @@ class OfferingPointSchema(BaseModel):
             description=point.description,
             confidence=point.confidence,
             source=point.source,
+            aspect=point.aspect,
         )
 
     def to_domain(self) -> OfferingPoint:
-        return OfferingPoint(self.name, self.description, self.confidence, self.source)
+        return OfferingPoint(self.name, self.description, self.confidence, self.source, self.aspect)
 
 
 class RealisationSchema(BaseModel):
@@ -1439,6 +1452,8 @@ class ProductOfferingSchema(BaseModel):
     former_ids: list[Identifier] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
     # Why a customer buys it, beside the proposition that says what it is.
     purpose: Text | None = None
+    # The contract periods a customer can choose ("No contract", "1 year").
+    contract_terms: list[Name] = Field(default=[], max_length=MAX_CATALOGUE_ITEMS)
 
     @classmethod
     def from_domain(cls, offering: ProductOffering) -> ProductOfferingSchema:
@@ -1477,6 +1492,7 @@ class ProductOfferingSchema(BaseModel):
             ],
             former_ids=list(offering.former_ids),
             purpose=offering.purpose,
+            contract_terms=list(offering.contract_terms),
         )
 
     def to_domain(self) -> ProductOffering:
@@ -1509,6 +1525,7 @@ class ProductOfferingSchema(BaseModel):
             business_rules=tuple(item.to_domain() for item in self.business_rules),
             former_ids=tuple(self.former_ids),
             purpose=self.purpose,
+            contract_terms=tuple(self.contract_terms),
         )
 
 

@@ -18,16 +18,8 @@ import { ProductHeader } from "./productParts";
 import { catalogueName, channelMissingText, laneKindName, laneName, MODE_WORDS, operationName, roleName, styleName, systemName, viewTitle } from "./words";
 
 import { IntegrationRegister } from "./IntegrationRegister";
-const LAYER: Record<string, string> = {
-  "market-sales": "market",
-  product: "product",
-  customer: "customer",
-  service: "service",
-  resource: "resource",
-  "engaged-party": "party",
-  enterprise: "enterprise",
-  integration: "spine",
-};
+/** Each layer tone's lane colour: the map's layer colours in order, and the bus's own. */
+const LANE_TINT: Record<string, string> = { 1: "market", 2: "product", 3: "customer", 4: "service", 5: "resource", 6: "party", 7: "enterprise", bus: "spine" };
 const LANE = 72;
 const TASK_H = 58;
 const LABEL_W = 176;
@@ -155,7 +147,7 @@ export function JourneyFlow() {
   };
   const tint = (lane: Lane) => {
     const domain = laneDomain(lane);
-    return domain ? `var(--cl-${LAYER[domain.id] ?? "enterprise"})` : "var(--cl-sand)";
+    return domain ? `var(--cl-${LANE_TINT[domain.tone] ?? "enterprise"})` : "var(--cl-sand)";
   };
   const file = `${def.id}${channel ? `-${channel}` : ""}`;
   const laneY = (y: number) => Math.floor(y / GEOMETRY.laneHeight) * LANE + LANE / 2;

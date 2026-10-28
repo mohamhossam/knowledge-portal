@@ -13,7 +13,7 @@ import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { CapabilityMatrix } from "./CapabilityMatrix";
-import { PART_KINDS, systemParts } from "./capabilities";
+import { partKinds, systemParts } from "./capabilities";
 import { AreaTabs } from "./labChrome";
 import { IntegrationMatrix } from "./IntegrationMatrix";
 import { useLabData } from "./labData";
@@ -44,7 +44,7 @@ export function SystemsPage() {
   const delivery = useMemo(() => {
     const parts = systemParts(data);
     const kinds = new Set([...parts.values()].flatMap((byKind) => [...byKind.keys()]));
-    return { systems: parts.size, kinds: PART_KINDS.filter((kind) => kinds.has(kind.id)).length, components: data.offerings.reduce((sum, offering) => sum + offering.components.length, 0) };
+    return { systems: parts.size, kinds: partKinds(data).filter((kind) => kinds.has(kind.id)).length, components: data.offerings.reduce((sum, offering) => sum + offering.components.length, 0) };
   }, [data]);
 
   return (
@@ -124,7 +124,7 @@ export function SystemsPage() {
           <p className="sy-source">
             {view === "interfaces"
               ? "Read from the modelled journeys, each interface once, whatever uses it. The catalogue has no interface list of its own yet."
-              : "Read from the products' components, grouped by what each does for the customer: this catalogue's reading."}
+              : "Read from the products' components, grouped by each part's kind as the catalogue states it."}
           </p>
         </div>
       </header>

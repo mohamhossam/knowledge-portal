@@ -46,7 +46,7 @@ export function impactOf(data: Catalogue, scope: ImpactScope): { journeys: Journ
     }
   }
   for (const item of systems.values()) {
-    item.roles.sort(byRank);
+    item.roles.sort(byRank(data.roleOrder));
     item.carriesOnly = item.steps.length === 0 && item.integrations.every(({ integration }) => integration.via === item.systemId);
   }
   return { journeys, systems };

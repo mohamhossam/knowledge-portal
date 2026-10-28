@@ -28,9 +28,9 @@ import { type Catalogue, type JourneyView, type Lane, laneKey, systemOf } from "
 import { AreaTabs } from "./labChrome";
 import { LabIcon } from "./labIcon";
 import { channelKindName } from "./catalogueRules";
-import { journeyHref, LAB, useLabData } from "./labData";
+import { journeyHref, LAB, toneOf, useLabData } from "./labData";
 import { pathTo, plural, useTitle } from "./labUtil";
-import { STAGES, stageOf, stageOfCode } from "./stages";
+import { STAGES, stageOf } from "./stages";
 import { laneName } from "./words";
 import { SystemMonogram } from "./SystemMonogram";
 
@@ -109,7 +109,7 @@ export function JourneysIndex() {
   const stepsOf = (journeyId: string, channel: string | null) => journeyView(data, journeyId, channel)?.steps.filter((step) => step.kind === "task").length ?? 0;
   const names = new Map((product?.orderTypes ?? []).map((type) => [type.code, type.name]));
   const stageByCode = new Map((product?.orderTypes ?? []).map((type) => [type.code, stageOf(type)]));
-  const stageOfType = (code: string) => stageByCode.get(code) ?? stageOfCode(code);
+  const stageOfType = (code: string) => stageByCode.get(code) ?? "unstaged";
   const stages = STAGES.map((stage) => ({ ...stage, codes: [...names.keys()].filter((code) => stageOfType(code) === stage.id) })).filter((stage) => stage.codes.length);
   const shared = product ? data.journeys.filter((journey) => !journey.orderType && journey.offeringId === product.id) : [];
 
@@ -137,7 +137,7 @@ export function JourneysIndex() {
   const viaLens = lens ? (product?.orderTypes ?? []).filter((type) => type.channels.includes(lens.id)).length : 0;
   const laneTitle = (lane: Lane) => laneName(data, lane);
   const laneTone = (lane: Lane) => systemTone(systemOf(lane) ?? "");
-  const systemTone = (id: string) => data.systems.find((system) => system.id === id)?.domain;
+  const systemTone = (id: string) => toneOf(data, data.systems.find((system) => system.id === id)?.domain);
 
   const tile = (key: string, name: string, steps: number | undefined) => {
     const off = lens && !through(key) ? `Not through ${shortName(lens.name)}` : null;
@@ -175,7 +175,7 @@ export function JourneysIndex() {
     const channel = data.channels.find((item) => item.id === id);
     return channel ? (
       <span key={id} className={`cl-chanchip${muted ? " is-off" : ""}`}>
-        <SystemMonogram name={channel.name} tone={systemTone(channel.systemId) ?? "customer"} />
+        <SystemMonogram name={channel.name} tone={systemTone(channel.systemId)} />
         {shortName(channel.name)}
         <small>{channelKindName(data, channel.kind)}</small>
       </span>

@@ -273,7 +273,7 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
           />
         ) : null;
       case "channel": {
-        const channel = content.channel ?? { id: content.system_id, name: content.name };
+        const channel: Channel = content.channel ?? { id: content.system_id, name: content.name, selling: false };
         const change = (patch: Partial<Channel>) => set({ channel: { ...channel, ...patch } });
         return (
           <>

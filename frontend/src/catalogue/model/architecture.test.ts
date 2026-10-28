@@ -16,9 +16,14 @@ const data = fromRelease(asRelease(release));
 const tasks = (view: JourneyView) => view.steps.filter((step): step is ActivityStep => step.kind === "task");
 
 describe("a catalogue version as the views read it", () => {
-  it("places every system in a TAM domain and group, with the bands below the columns", () => {
-    expect(data.domains.map((domain) => domain.id)).toEqual(["market-sales", "product", "customer", "service", "resource", "engaged-party", "enterprise", "integration"]);
-    expect(data.domains.filter((domain) => domain.band).map((domain) => domain.id)).toEqual(["enterprise", "integration"]);
+  it("places every system in a TAM domain and group, each layer where the version draws it", () => {
+    expect(data.domains.map((domain) => domain.id)).toEqual(["market-sales", "product", "customer", "integration", "service", "resource", "engaged-party", "enterprise"]);
+    expect(data.domains.filter((domain) => domain.band).map((domain) => domain.id)).toEqual(["integration", "enterprise"]);
+    expect(data.domains.filter((domain) => domain.placement !== "layer").map((domain) => [domain.id, domain.placement])).toEqual([
+      ["integration", "bus"],
+      ["engaged-party", "side"],
+      ["enterprise", "side"],
+    ]);
     for (const system of data.systems) {
       const domain = data.domains.find((item) => item.id === system.domain);
       expect(domain, system.id).toBeDefined();
@@ -59,21 +64,31 @@ describe("a catalogue version as the views read it", () => {
     expect(data.orderTypes.every((type) => !type.description.includes("Delivered in drop"))).toBe(true);
   });
 
-  it("reads them from the prose of a version saved before the service sent them", () => {
+  it("reads what the version states, and leaves unstated what it doesn't, never reading it from prose", () => {
     const older = structuredClone(asRelease(release));
     for (const product of older.products ?? [])
       for (const type of product.order_types) {
         if (type.delivery_drop) type.description = `${type.description ?? ""} Delivered in drop ${type.delivery_drop}.`.trim();
         type.delivery_drop = null;
+        type.stage = null;
       }
     for (const domain of older.landscape_domains ?? []) domain.cross_cutting = false;
     const read = fromRelease(older);
-    expect(read.offerings).toEqual(data.offerings);
-    expect(read.orderTypes).toEqual(data.orderTypes);
-    expect(read.domains).toEqual(data.domains);
+    const types = read.offerings[0]!.orderTypes;
+    expect(types.every((type) => type.priority === undefined && type.stage === undefined)).toBe(true);
+    expect(read.domains.some((domain) => domain.band)).toBe(false);
   });
 
-  it("reads the purpose, question titles, hub and stages the service sends, and the prose of an older version alike", () => {
+  it("reads each audience point's aspect, the contract terms, the selling channels and the part kinds", () => {
+    const offering = data.offerings[0]!;
+    expect(offering.contractTerms).toEqual(["No contract", "1 year", "2 years"]);
+    expect(offering.eligibility.find((point) => point.title === "Location")?.aspect).toBe("where");
+    expect(data.channels.filter((channel) => channel.selling).map((channel) => channel.id)).toEqual(["bcrm", "b2b-web", "smb-app", "cim"]);
+    expect(data.componentKinds.map((kind) => kind.code)).toEqual(["DEV", "CONN", "SEC", "WIFI", "MGMT", "RESIL"]);
+    expect(offering.components.find((part) => part.id === "firewall")?.kind).toBe("kind-security");
+  });
+
+  it("reads the purpose, question titles, hub and stages the service sends, and never splits an older version's prose", () => {
     const offering = data.offerings[0]!;
     expect(offering.purpose).toMatch(/^Gives a small or medium business/);
     expect(offering.components.filter((part) => part.hub).map((part) => part.id)).toEqual(["cpe"]);
@@ -88,11 +103,13 @@ describe("a catalogue version as the views read it", () => {
       }
     }
     const read = fromRelease(older);
-    expect(read.offerings.map(({ summary, purpose }) => ({ summary, purpose }))).toEqual(data.offerings.map(({ summary, purpose }) => ({ summary, purpose })));
-    expect(read.findings).toEqual(data.findings);
+    expect(read.offerings[0]!.purpose).toBe("");
+    expect(read.offerings[0]!.summary).toBe(older.products![0]!.proposition);
+    const question = read.findings.find((item) => item.kind === "gap")!;
+    expect(question.detail).toBe("");
   });
 
-  it("takes the domains the service marks cross-cutting, not their ids, once any is marked", () => {
+  it("takes the domains the service marks cross-cutting, not their ids", () => {
     const marked = structuredClone(asRelease(release));
     for (const domain of marked.landscape_domains ?? []) domain.cross_cutting = domain.id === "customer";
     expect(fromRelease(marked).domains.filter((domain) => domain.band).map((domain) => domain.id)).toEqual(["customer"]);

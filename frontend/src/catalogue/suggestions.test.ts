@@ -180,10 +180,10 @@ describe("in words", () => {
 
 describe("channel suggestions", () => {
   const web = suggestion(
-    { kind: "channel", system_id: "business-web", name: "Business Web", channel: { id: "business-web", name: "Business Web", entry_system_id: "bcrm" } },
+    { kind: "channel", system_id: "business-web", name: "Business Web", channel: { id: "business-web", name: "Business Web", entry_system_id: "bcrm", selling: false } },
   );
   const till = suggestion(
-    { kind: "channel", system_id: "shop", name: "Shop", channel: { id: "shop", name: "Shop", entry_system_id: "shop-till" } },
+    { kind: "channel", system_id: "shop", name: "Shop", channel: { id: "shop", name: "Shop", entry_system_id: "shop-till", selling: false } },
     { match: "needs_system" },
   );
   const office = suggestion(
@@ -191,7 +191,7 @@ describe("channel suggestions", () => {
       kind: "product", system_id: "office", name: "Office Connect",
       product: {
         id: "office", name: "Office Connect", rules: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [],
-        sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], former_ids: [],
+        sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], former_ids: [], contract_terms: [],
         order_types: [{ code: "NEW", name: "New", enabled: true, channels: ["business-web", "Partner Feed"] }],
       },
     },
@@ -238,7 +238,7 @@ describe("offering detail suggestions", () => {
         kind: "product", system_id: "office", name: "Office Connect",
         product: {
           id: "office", name: "Office Connect", rules: [], values: [], audiences: [],
-          sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], former_ids: [],
+          sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], former_ids: [], contract_terms: [],
           order_types: [{ code: "NEW", name: "New", enabled: true, channels: [] }],
           components: [{ id: "fibre", name: "Fibre", responsibilities: [], realisation: [{ layer: "cfs", name: "Fibre CFS" }], capability_ids: [], hub: false }],
           nfrs: [{ quality: "Availability", coverage: "defined" }, { quality: "Security", coverage: "missing" }],
@@ -300,8 +300,8 @@ describe("offering detail suggestions", () => {
     const portal = suggestion({ kind: "system", system_id: "Order Portal", name: "Order Portal" });
     const offering = detailed("needs_system");
     const channels = [
-      suggestion({ kind: "channel", system_id: "Business Web", name: "Business Web", channel: { id: "Business Web", name: "Business Web" } }),
-      suggestion({ kind: "channel", system_id: "Shop", name: "Shop", channel: { id: "Shop", name: "Shop" } }),
+      suggestion({ kind: "channel", system_id: "Business Web", name: "Business Web", channel: { id: "Business Web", name: "Business Web", selling: false } }),
+      suggestion({ kind: "channel", system_id: "Shop", name: "Shop", channel: { id: "Shop", name: "Shop", selling: false } }),
     ];
     expect(bulkAcceptable(release, [store, ...channels, offering]).lifted).toEqual([]);
     expect(bulkAcceptable(release, [store, portal, ...channels, offering]).lifted).toEqual([offering]);

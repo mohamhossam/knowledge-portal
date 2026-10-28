@@ -920,6 +920,14 @@ landscape_domains:
 - id: customer.bill
   name: Billing
   parent_id: customer
+- id: integration
+  name: Integration layer
+  description: The bus and gateways every domain talks through.
+  cross_cutting: true
+  placement: bus
+- id: integration.bus
+  name: Integration
+  parent_id: integration
 - id: service
   name: Service
   description: Service order management, service activation and service quality.
@@ -947,6 +955,7 @@ landscape_domains:
 - id: engaged-party
   name: Engaged Party
   description: Government bodies, identity and document services, partners and vendors.
+  placement: side
 - id: engaged-party.government
   name: Government & identity
   parent_id: engaged-party
@@ -957,16 +966,10 @@ landscape_domains:
   name: Enterprise
   description: 'Cross-cutting: notification, documents, IT service management, single sign-on.'
   cross_cutting: true
+  placement: side
 - id: enterprise.common
   name: Common services
   parent_id: enterprise
-- id: integration
-  name: Integration layer
-  description: The bus and gateways every domain talks through.
-  cross_cutting: true
-- id: integration.bus
-  name: Integration
-  parent_id: integration
 products:
 - id: business-pro-plus
   name: Business Pro Plus
@@ -978,6 +981,10 @@ products:
   purpose: 'Gives a small or medium business a secure, managed business connection it can run itself:
     one premium bundle instead of separate internet, security and Wi-Fi products, delivered through the
     Summary Order Fulfillment of the SMB Framework (Order to Delivery).'
+  contract_terms:
+  - No contract
+  - 1 year
+  - 2 years
   confidence: confirmed
   source: SDD v2.3 · §Solution Overview P1
   order_types:
@@ -1198,6 +1205,8 @@ products:
   components:
   - id: gpon
     name: Fibre internet (GPON) on the CPE
+    type: Connectivity
+    type_term: kind-connectivity
     code: PO_VCPE_ONPREM_GPON_HE
     mandatory: true
     description: The broadband access, at the plan's speed profile.
@@ -1227,6 +1236,8 @@ products:
       description: Installation work order
   - id: cpe
     name: CPE device (Fortinet 90G / 120G)
+    type: Device
+    type_term: kind-device
     code: PO_ADDON_BFM_ONPREM_CPE
     mandatory: true
     hub: true
@@ -1258,6 +1269,8 @@ products:
       description: Provisions in the ADOM cluster
   - id: firewall
     name: Firewall
+    type: Security
+    type_term: kind-security
     code: PO_ADDON_BFM_ONPREM_FIREWALL_HE
     mandatory: true
     description: Default or non-default configuration from the bundle; UTP licence per the existing SMB
@@ -1284,6 +1297,8 @@ products:
       description: Applies on the CPE
   - id: selfservice
     name: Self-service portal (FortiPortal)
+    type: Run and manage
+    type_term: kind-manage
     code: PO_SELFSERVICE_PORTAL_ACCESS
     mandatory: true
     description: FortiPortal access; shown in B2B as “Security & Services Portal” (rate plan RP_SELFSERVICE_PORTAL_ACCESS,
@@ -1314,6 +1329,8 @@ products:
       description: SAML single sign-on
   - id: sdwan
     name: SD-WAN
+    type: Security
+    type_term: kind-security
     code: PO_SDWAN_NEW
     mandatory: true
     description: 'SD-WAN service; its configuration is Day-N by MSS. MSS team: Day-N configuration.'
@@ -1334,6 +1351,8 @@ products:
       description: Passes SD-WAN in the onboarding ticket
   - id: ap
     name: Access point (FortiAP)
+    type: In the office
+    type_term: kind-office
     code: PO_ACCESS_POINT
     mandatory: true
     description: Generic AP offer with SIC_CODE, MODEL, DEVICE_RECOVERY, LIST_OF_MODELS and CAPTURE_REQUIRED.
@@ -1363,6 +1382,8 @@ products:
       description: Provisions like the generic CPE
   - id: static-ip
     name: Static IP
+    type: Connectivity
+    type_term: kind-connectivity
     mandatory: true
     description: Mandatory in Business Pro Plus bundles.
     confidence: confirmed
@@ -1376,6 +1397,8 @@ products:
       description: Provisions
   - id: monitoring
     name: Proactive monitoring
+    type: Run and manage
+    type_term: kind-manage
     mandatory: true
     description: Proactive monitoring for the Fortinet 90G/120G CPEs.
     confidence: confirmed
@@ -1389,6 +1412,8 @@ products:
       description: Enables on the CPE
   - id: backup-5g
     name: Backup 5G
+    type: Resilience
+    type_term: kind-resilience
     mandatory: false
     description: Failover over a Forti Extender or GSM SIM, with HSS profile 5GNSA_BPRO5GBKP; the SIM
       is geo-locked to cell IDs and the dongle's IMEI.
@@ -1437,27 +1462,33 @@ products:
     source: SDD v2.3 · Feasibility matrix, User Story 81220 · Feasibility is TBD in the SDD.
   audiences:
   - name: Segment
+    aspect: who
     description: SMB customers (Enterprise › Fixed › SMB).
     confidence: inferred
     source: SMB reference v1.0 · Title and scope · The SDD doesn't state a customer-type rule.
   - name: New activation
+    aspect: how
     description: Sold through BCRM, B2B Web and the SMB App.
     confidence: confirmed
     source: SDD v2.3 · §P1 Applicable Channels
   - name: Migration
+    aspect: how
     description: Existing customers on legacy products (DEL, PBX, BQS…) migrate through BCRM; Business
       Edge (BFV2) customers through BCRM or the SMB App.
     confidence: confirmed
     source: SDD v2.3 · Scope; §P3 ADO 202824
   - name: Location
+    aspect: where
     description: External shift only within the Etisalat area. Bitstream is out of scope.
     confidence: confirmed
     source: SDD v2.3 · Scope; Feasibility matrix
   - name: Commitment
+    aspect: terms
     description: No contract, 1 year or 2 years; the CPE rate plan follows the contract period chosen.
     confidence: confirmed
     source: SDD v2.3 · §ADO 438907, US 438909
   - name: FortiPortal
+    aspect: terms
     description: Provisioned only for Business Pro Plus accounts (self-service CFSS). The organisation
       is created with the first site and removed with the last branch's cessation.
     confidence: confirmed
@@ -6513,21 +6544,25 @@ channels:
   kind: assisted
   kind_term: channel-assisted
   entry_system: bcrm
+  selling: true
 - id: b2b-web
   name: B2B Web
   kind: self-service
   kind_term: channel-self-service
   entry_system: b2b-web
+  selling: true
 - id: smb-app
   name: SMB App
   kind: self-service
   kind_term: channel-self-service
   entry_system: smb-app
+  selling: true
 - id: cim
   name: CIM / UCMS
   kind: assisted
   kind_term: channel-assisted
   entry_system: cim
+  selling: true
 - id: nps
   name: NPS (portability)
   kind: system
@@ -7162,38 +7197,62 @@ vocabulary:
   definition: An order another system raises, such as a portability or contract event.
   confidence: inferred
   source: Ontology plan Phase 6 · the catalogue's own channel kinds
-- id: role-capture
-  scheme: responsibility_role
-  pref_label: Capture
-  alt_labels:
-  - Captures
-  definition: Takes in the order, or facts the order needs, from the customer or the field.
+- id: kind-device
+  scheme: component_kind
+  pref_label: Device
+  notation: DEV
+  definition: The device the bundle is built on, such as the router or CPE.
   confidence: inferred
-  source: Ontology plan Phase 6 · the catalogue's own activity roles
-- id: role-catalog
-  scheme: responsibility_role
-  pref_label: Catalog
-  definition: Supplies the offer, its rules and its eligibility from the product catalogue.
+  source: Catalogue curation · the bundle's parts by what they do for the customer
+- id: kind-connectivity
+  scheme: component_kind
+  pref_label: Connectivity
+  notation: CONN
+  definition: Getting the site online.
   confidence: inferred
-  source: Ontology plan Phase 6 · the catalogue's own activity roles
-- id: role-customer-data
-  scheme: responsibility_role
-  pref_label: Customer data
-  definition: Keeps the customer's account and party record.
+  source: Catalogue curation · the bundle's parts by what they do for the customer
+- id: kind-security
+  scheme: component_kind
+  pref_label: Security
+  notation: SEC
+  definition: Protecting the network.
   confidence: inferred
-  source: Ontology plan Phase 6 · the catalogue's own activity roles
-- id: role-validate
-  scheme: responsibility_role
-  pref_label: Validate
-  definition: Checks that the order, the customer or the site qualifies.
+  source: Catalogue curation · the bundle's parts by what they do for the customer
+- id: kind-office
+  scheme: component_kind
+  pref_label: In the office
+  notation: WIFI
+  definition: Wi-Fi where people work.
   confidence: inferred
-  source: Ontology plan Phase 6 · the catalogue's own activity roles
+  source: Catalogue curation · the bundle's parts by what they do for the customer
+- id: kind-manage
+  scheme: component_kind
+  pref_label: Run and manage
+  notation: MGMT
+  definition: Seeing and running the service.
+  confidence: inferred
+  source: Catalogue curation · the bundle's parts by what they do for the customer
+- id: kind-resilience
+  scheme: component_kind
+  pref_label: Resilience
+  notation: RESIL
+  definition: Staying online when the main access is down.
+  confidence: inferred
+  source: Catalogue curation · the bundle's parts by what they do for the customer
 - id: role-orchestrate
   scheme: responsibility_role
   pref_label: Orchestrate
   alt_labels:
   - Orchestrates
   definition: Splits the order into sub-orders and drives each to completion.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-capture
+  scheme: responsibility_role
+  pref_label: Capture
+  alt_labels:
+  - Captures
+  definition: Takes in the order, or facts the order needs, from the customer or the field.
   confidence: inferred
   source: Ontology plan Phase 6 · the catalogue's own activity roles
 - id: role-activate
@@ -7212,6 +7271,24 @@ vocabulary:
   alt_labels:
   - Installation
   definition: Schedules and records the work done at the customer's site.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-validate
+  scheme: responsibility_role
+  pref_label: Validate
+  definition: Checks that the order, the customer or the site qualifies.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-customer-data
+  scheme: responsibility_role
+  pref_label: Customer data
+  definition: Keeps the customer's account and party record.
+  confidence: inferred
+  source: Ontology plan Phase 6 · the catalogue's own activity roles
+- id: role-catalog
+  scheme: responsibility_role
+  pref_label: Catalog
+  definition: Supplies the offer, its rules and its eligibility from the product catalogue.
   confidence: inferred
   source: Ontology plan Phase 6 · the catalogue's own activity roles
 - id: role-logistics

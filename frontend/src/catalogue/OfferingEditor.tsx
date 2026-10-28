@@ -11,6 +11,16 @@ type Point = Offering["values"][number];
 type Realised = Part["realisation"][number];
 type Nfr = Offering["nfrs"][number];
 type OrderTypeStage = Offering["order_types"][number]["stage"];
+type Aspect = Point["aspect"];
+
+/** Which question about buying it an audience point answers; left empty when unsorted. */
+const ASPECT_OPTIONS = [
+  { value: "", label: "Not sorted" },
+  { value: "who", label: "Who may buy it" },
+  { value: "where", label: "Where it is sold" },
+  { value: "terms", label: "On what terms" },
+  { value: "how", label: "How it is ordered" },
+];
 
 /** Where an order type sits in the customer's life; left empty when its source does not say. */
 const STAGE_OPTIONS = [
@@ -86,6 +96,28 @@ export function OfferingFacts({ value, onChange }: SectionProps) {
         value={pointLines(value.audiences)}
         hint="One audience per line; add “ — ” and a description if the source gives one."
         onChange={(items) => set({ audiences: linePoints(items, value.audiences) })}
+      />
+      {value.audiences.length > 0 && (
+        <fieldset className="cat-form__grid">
+          <legend>What each audience line answers</legend>
+          {value.audiences.map((point, index) => (
+            <SelectField
+              key={`${point.name}-${index}`}
+              label={point.name}
+              value={point.aspect ?? ""}
+              options={ASPECT_OPTIONS}
+              onChange={(aspect) =>
+                set({ audiences: value.audiences.map((item, at) => (at === index ? { ...item, aspect: (aspect || null) as Aspect } : item)) })
+              }
+            />
+          ))}
+        </fieldset>
+      )}
+      <LinesField
+        label="Contract terms"
+        value={value.contract_terms ?? []}
+        hint="One contract period a customer can choose per line, such as “1 year”."
+        onChange={(items) => set({ contract_terms: lines(items) })}
       />
       <LinesField
         label="Promises"

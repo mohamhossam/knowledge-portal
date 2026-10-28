@@ -5,11 +5,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
-import type { Offering } from "../../catalogue/model/model";
 import { EvidenceTag } from "./labChrome";
-import { isPriced } from "./catalogueRules";
+import { isPriced, planFigures } from "./catalogueRules";
 import { firstJourneyHref, journeyHref, LAB, useLabData, useOffering } from "./labData";
-import { leadingNumber, plural, useTitle } from "./labUtil";
+import { plural, useTitle } from "./labUtil";
 import { Missing, Plans, ProductHeader } from "./productParts";
 
 /** The portfolio from the business unit down to this offering, then what the offering is made of. */
@@ -68,7 +67,7 @@ export function ProductHierarchy() {
               {offering.plans.map((plan) => (
                 <li key={plan.name}>
                   <strong>{short(plan.name)}</strong>
-                  <span>{plan.characteristics.find((item) => /upload/i.test(item.name))?.value ? `${plan.characteristics.find((item) => /upload/i.test(item.name))?.value} up` : ""}</span>
+                  <span>{planFigures(plan)[0] ? `${planFigures(plan)[0]?.value} ${planFigures(plan)[0]?.name.toLocaleLowerCase()}` : ""}</span>
                 </li>
               ))}
             </ul>
@@ -113,29 +112,30 @@ export function ProductPlans() {
   const offering = useOffering();
   useTitle(offering ? `${offering.name} plans` : "Plans");
   if (!offering) return <Missing what="No such product" />;
-  const value = (plan: Offering["plans"][number], name: RegExp) => plan.characteristics.find((item) => name.test(item.name))?.value;
-  const max = Math.max(1, ...offering.plans.map((plan) => leadingNumber(value(plan, /download/i) ?? "") ?? 0));
+  const max = Math.max(1, ...offering.plans.map((plan) => planFigures(plan)[0]?.amount ?? 0));
   const priced = isPriced(offering);
   return (
     <>
       <ProductHeader offering={offering} current="plans" />
       <ul className="cl-plancards">
         {offering.plans.map((plan) => {
-          const down = value(plan, /download/i);
-          const up = value(plan, /upload/i);
+          const [first, second] = planFigures(plan);
           return (
             <li key={plan.name}>
               <h2>{plan.name.replace(offering.name, "").trim() || plan.name}</h2>
               <p className="cl-plan-speed">
-                <b>{down ?? "Not stated"}</b>
-                <span>down{up ? ` · ${up} up` : ""}</span>
+                <b>{first?.value ?? "No figures stated"}</b>
+                <span>
+                  {first?.name.toLocaleLowerCase()}
+                  {second ? ` · ${second.value} ${second.name.toLocaleLowerCase()}` : ""}
+                </span>
               </p>
               <i className="cl-spark wide" aria-hidden="true">
-                <i style={{ width: `${((leadingNumber(down ?? "") ?? 0) / max) * 100}%` }} />
+                <i style={{ width: `${((first?.amount ?? 0) / max) * 100}%` }} />
               </i>
               <dl className="cl-pairs">
                 {plan.characteristics
-                  .filter((item) => !/download|upload/i.test(item.name))
+                  .filter((item) => item.name !== first?.name && item.name !== second?.name)
                   .map((item) => (
                     <div key={item.name}>
                       <dt>{item.name}</dt>
@@ -144,7 +144,7 @@ export function ProductPlans() {
                   ))}
                 {!priced && (
                   <div>
-                    <dt>Monthly price</dt>
+                    <dt>Price</dt>
                     <dd className="gap">Gap</dd>
                   </div>
                 )}
@@ -161,13 +161,8 @@ export function ProductPlans() {
   );
 }
 
-const KIND_WORDS: Record<string, string> = {
-  composition: "Composition",
-  fulfilment: "Fulfilment",
-  dependency: "Dependency",
-  lifecycle: "Lifecycle",
-  billing: "Billing",
-};
+/** How many rule-kind colours there are; a product with more kinds starts them again. */
+const KIND_HUES = 6;
 
 /** The business rules, filterable by what they govern. */
 export function ProductRules() {
@@ -177,7 +172,9 @@ export function ProductRules() {
   if (!offering) return <Missing what="No such product" />;
   const kinds = [...new Set(offering.rules.map((rule) => rule.kind ?? "other"))];
   const shown = offering.rules.filter((rule) => !kind || (rule.kind ?? "other") === kind);
-  const word = (value: string) => KIND_WORDS[value] ?? value.charAt(0).toUpperCase() + value.slice(1);
+  // A kind as the version writes it, and its colour by its place among this product's kinds.
+  const word = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+  const hue = (value: string) => (kinds.indexOf(value) % KIND_HUES) + 1;
   return (
     <>
       <ProductHeader offering={offering} current="rules" />
@@ -200,7 +197,7 @@ export function ProductRules() {
               {rule.id}
             </span>
             <div>
-              <span className={`cl-kind cl-kind--${rule.kind ?? "other"}`}>{word(rule.kind ?? "other")}</span>
+              <span className={`cl-kind cl-kind--${hue(rule.kind ?? "other")}`}>{word(rule.kind ?? "other")}</span>
               <p>{rule.statement}</p>
               <EvidenceTag evidence={rule.evidence} />
             </div>

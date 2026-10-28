@@ -3204,7 +3204,8 @@
    "name_ar": null,
    "parent_id": null,
    "description": "Leads, opportunities, quotes, discounts and sales recommendations.",
-   "cross_cutting": false
+   "cross_cutting": false,
+   "placement": "layer"
   },
   {
    "id": "market-sales.sales",
@@ -3212,7 +3213,8 @@
    "name_ar": null,
    "parent_id": "market-sales",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "placement": "layer"
   },
   {
    "id": "market-sales.recommendation",
@@ -3220,7 +3222,8 @@
    "name_ar": null,
    "parent_id": "market-sales",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "placement": "layer"
   },
   {
    "id": "product",
@@ -3228,7 +3231,8 @@
    "name_ar": null,
    "parent_id": null,
    "description": "Product catalogues, offer design and catalogue automation.",
-   "cross_cutting": false
+   "cross_cutting": false,
+   "placement": "layer"
   },
   {
    "id": "product.catalogue",
@@ -3236,7 +3240,8 @@
    "name_ar": null,
    "parent_id": "product",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "placement": "layer"
   },
   {
    "id": "product.design",
@@ -3244,7 +3249,8 @@
    "name_ar": null,
    "parent_id": "product",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "placement": "layer"
   },
   {
    "id": "customer",
@@ -3252,7 +3258,8 @@
    "name_ar": null,
    "parent_id": null,
    "description": "Engagement channels, customer data, customer orders, order tracking, problems and bills.",
-   "cross_cutting": false
+   "cross_cutting": false,
+   "placement": "layer"
   },
   {
    "id": "customer.self-service",
@@ -3260,7 +3267,8 @@
    "name_ar": null,
    "parent_id": "customer",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "placement": "layer"
   },
   {
    "id": "customer.assisted",
@@ -3268,7 +3276,8 @@
    "name_ar": null,
    "parent_id": "customer",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "placement": "layer"
   },
   {
    "id": "customer.customer-data",
@@ -3276,7 +3285,8 @@
    "name_ar": null,
    "parent_id": "customer",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "placement": "layer"
   },
   {
    "id": "customer.order",
@@ -3284,7 +3294,8 @@
    "name_ar": null,
    "parent_id": "customer",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "placement": "layer"
   },
   {
    "id": "customer.problem",
@@ -3292,7 +3303,8 @@
    "name_ar": null,
    "parent_id": "customer",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "placement": "layer"
   },
   {
    "id": "customer.bill",
@@ -3300,111 +3312,8 @@
    "name_ar": null,
    "parent_id": "customer",
    "description": null,
-   "cross_cutting": false
-  },
-  {
-   "id": "service",
-   "name": "Service",
-   "name_ar": null,
-   "parent_id": null,
-   "description": "Service order management, service activation and service quality.",
-   "cross_cutting": false
-  },
-  {
-   "id": "service.order",
-   "name": "Service order management",
-   "name_ar": null,
-   "parent_id": "service",
-   "description": null,
-   "cross_cutting": false
-  },
-  {
-   "id": "service.activation",
-   "name": "Service activation",
-   "name_ar": null,
-   "parent_id": "service",
-   "description": null,
-   "cross_cutting": false
-  },
-  {
-   "id": "service.quality",
-   "name": "Service quality & SLA",
-   "name_ar": null,
-   "parent_id": "service",
-   "description": null,
-   "cross_cutting": false
-  },
-  {
-   "id": "resource",
-   "name": "Resource",
-   "name_ar": null,
-   "parent_id": null,
-   "description": "Network activation, inventory, numbers, feasibility and field work.",
-   "cross_cutting": false
-  },
-  {
-   "id": "resource.activation",
-   "name": "Resource activation",
-   "name_ar": null,
-   "parent_id": "resource",
-   "description": null,
-   "cross_cutting": false
-  },
-  {
-   "id": "resource.inventory",
-   "name": "Inventory & numbers",
-   "name_ar": null,
-   "parent_id": "resource",
-   "description": null,
-   "cross_cutting": false
-  },
-  {
-   "id": "resource.field",
-   "name": "Workforce & trouble",
-   "name_ar": null,
-   "parent_id": "resource",
-   "description": null,
-   "cross_cutting": false
-  },
-  {
-   "id": "engaged-party",
-   "name": "Engaged Party",
-   "name_ar": null,
-   "parent_id": null,
-   "description": "Government bodies, identity and document services, partners and vendors.",
-   "cross_cutting": false
-  },
-  {
-   "id": "engaged-party.government",
-   "name": "Government & identity",
-   "name_ar": null,
-   "parent_id": "engaged-party",
-   "description": null,
-   "cross_cutting": false
-  },
-  {
-   "id": "engaged-party.partner",
-   "name": "Partners & vendors",
-   "name_ar": null,
-   "parent_id": "engaged-party",
-   "description": null,
-   "cross_cutting": false
-  },
-  {
-   "id": "enterprise",
-   "name": "Enterprise",
-   "name_ar": null,
-   "parent_id": null,
-   "description": "Cross-cutting: notification, documents, IT service management, single sign-on.",
-   "cross_cutting": true
-  },
-  {
-   "id": "enterprise.common",
-   "name": "Common services",
-   "name_ar": null,
-   "parent_id": "enterprise",
-   "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "placement": "layer"
   },
   {
    "id": "integration",
@@ -3412,7 +3321,8 @@
    "name_ar": null,
    "parent_id": null,
    "description": "The bus and gateways every domain talks through.",
-   "cross_cutting": true
+   "cross_cutting": true,
+   "placement": "bus"
   },
   {
    "id": "integration.bus",
@@ -3420,7 +3330,125 @@
    "name_ar": null,
    "parent_id": "integration",
    "description": null,
-   "cross_cutting": false
+   "cross_cutting": false,
+   "placement": "layer"
+  },
+  {
+   "id": "service",
+   "name": "Service",
+   "name_ar": null,
+   "parent_id": null,
+   "description": "Service order management, service activation and service quality.",
+   "cross_cutting": false,
+   "placement": "layer"
+  },
+  {
+   "id": "service.order",
+   "name": "Service order management",
+   "name_ar": null,
+   "parent_id": "service",
+   "description": null,
+   "cross_cutting": false,
+   "placement": "layer"
+  },
+  {
+   "id": "service.activation",
+   "name": "Service activation",
+   "name_ar": null,
+   "parent_id": "service",
+   "description": null,
+   "cross_cutting": false,
+   "placement": "layer"
+  },
+  {
+   "id": "service.quality",
+   "name": "Service quality & SLA",
+   "name_ar": null,
+   "parent_id": "service",
+   "description": null,
+   "cross_cutting": false,
+   "placement": "layer"
+  },
+  {
+   "id": "resource",
+   "name": "Resource",
+   "name_ar": null,
+   "parent_id": null,
+   "description": "Network activation, inventory, numbers, feasibility and field work.",
+   "cross_cutting": false,
+   "placement": "layer"
+  },
+  {
+   "id": "resource.activation",
+   "name": "Resource activation",
+   "name_ar": null,
+   "parent_id": "resource",
+   "description": null,
+   "cross_cutting": false,
+   "placement": "layer"
+  },
+  {
+   "id": "resource.inventory",
+   "name": "Inventory & numbers",
+   "name_ar": null,
+   "parent_id": "resource",
+   "description": null,
+   "cross_cutting": false,
+   "placement": "layer"
+  },
+  {
+   "id": "resource.field",
+   "name": "Workforce & trouble",
+   "name_ar": null,
+   "parent_id": "resource",
+   "description": null,
+   "cross_cutting": false,
+   "placement": "layer"
+  },
+  {
+   "id": "engaged-party",
+   "name": "Engaged Party",
+   "name_ar": null,
+   "parent_id": null,
+   "description": "Government bodies, identity and document services, partners and vendors.",
+   "cross_cutting": false,
+   "placement": "side"
+  },
+  {
+   "id": "engaged-party.government",
+   "name": "Government & identity",
+   "name_ar": null,
+   "parent_id": "engaged-party",
+   "description": null,
+   "cross_cutting": false,
+   "placement": "layer"
+  },
+  {
+   "id": "engaged-party.partner",
+   "name": "Partners & vendors",
+   "name_ar": null,
+   "parent_id": "engaged-party",
+   "description": null,
+   "cross_cutting": false,
+   "placement": "layer"
+  },
+  {
+   "id": "enterprise",
+   "name": "Enterprise",
+   "name_ar": null,
+   "parent_id": null,
+   "description": "Cross-cutting: notification, documents, IT service management, single sign-on.",
+   "cross_cutting": true,
+   "placement": "side"
+  },
+  {
+   "id": "enterprise.common",
+   "name": "Common services",
+   "name_ar": null,
+   "parent_id": "enterprise",
+   "description": null,
+   "cross_cutting": false,
+   "placement": "layer"
   }
  ],
  "products": [
@@ -3713,7 +3741,7 @@
      "id": "gpon",
      "name": "Fibre internet (GPON) on the CPE",
      "code": "PO_VCPE_ONPREM_GPON_HE",
-     "kind": null,
+     "kind": "Connectivity",
      "mandatory": true,
      "customer_visible": null,
      "description": "The broadband access, at the plan's speed profile.",
@@ -3764,14 +3792,14 @@
       "cap-fibre-access"
      ],
      "unlinked_reason": null,
-     "kind_id": null,
+     "kind_id": "kind-connectivity",
      "hub": false
     },
     {
      "id": "cpe",
      "name": "CPE device (Fortinet 90G / 120G)",
      "code": "PO_ADDON_BFM_ONPREM_CPE",
-     "kind": null,
+     "kind": "Device",
      "mandatory": true,
      "customer_visible": null,
      "description": "Generic CPE offer with CPE_PLATFORM_TYPE “Fortinet HE”, SIC_CODE, MODEL and LIST_OF_MODELS; a new generic CPE rate plan for B. Pro+ (ADO 438907).",
@@ -3822,14 +3850,14 @@
       "cap-cpe-provisioning"
      ],
      "unlinked_reason": null,
-     "kind_id": null,
+     "kind_id": "kind-device",
      "hub": true
     },
     {
      "id": "firewall",
      "name": "Firewall",
      "code": "PO_ADDON_BFM_ONPREM_FIREWALL_HE",
-     "kind": null,
+     "kind": "Security",
      "mandatory": true,
      "customer_visible": null,
      "description": "Default or non-default configuration from the bundle; UTP licence per the existing SMB FW implementation.",
@@ -3871,14 +3899,14 @@
       "cap-firewall"
      ],
      "unlinked_reason": null,
-     "kind_id": null,
+     "kind_id": "kind-security",
      "hub": false
     },
     {
      "id": "selfservice",
      "name": "Self-service portal (FortiPortal)",
      "code": "PO_SELFSERVICE_PORTAL_ACCESS",
-     "kind": null,
+     "kind": "Run and manage",
      "mandatory": true,
      "customer_visible": null,
      "description": "FortiPortal access; shown in B2B as “Security & Services Portal” (rate plan RP_SELFSERVICE_PORTAL_ACCESS, component type SSPRTL).",
@@ -3929,14 +3957,14 @@
       "cap-customer-self-management"
      ],
      "unlinked_reason": null,
-     "kind_id": null,
+     "kind_id": "kind-manage",
      "hub": false
     },
     {
      "id": "sdwan",
      "name": "SD-WAN",
      "code": "PO_SDWAN_NEW",
-     "kind": null,
+     "kind": "Security",
      "mandatory": true,
      "customer_visible": null,
      "description": "SD-WAN service; its configuration is Day-N by MSS. MSS team: Day-N configuration.",
@@ -3969,14 +3997,14 @@
       "cap-sdwan"
      ],
      "unlinked_reason": null,
-     "kind_id": null,
+     "kind_id": "kind-security",
      "hub": false
     },
     {
      "id": "ap",
      "name": "Access point (FortiAP)",
      "code": "PO_ACCESS_POINT",
-     "kind": null,
+     "kind": "In the office",
      "mandatory": true,
      "customer_visible": null,
      "description": "Generic AP offer with SIC_CODE, MODEL, DEVICE_RECOVERY, LIST_OF_MODELS and CAPTURE_REQUIRED.",
@@ -4027,14 +4055,14 @@
       "cap-wifi-access"
      ],
      "unlinked_reason": null,
-     "kind_id": null,
+     "kind_id": "kind-office",
      "hub": false
     },
     {
      "id": "static-ip",
      "name": "Static IP",
      "code": null,
-     "kind": null,
+     "kind": "Connectivity",
      "mandatory": true,
      "customer_visible": null,
      "description": "Mandatory in Business Pro Plus bundles.",
@@ -4059,14 +4087,14 @@
       "cap-static-ip"
      ],
      "unlinked_reason": null,
-     "kind_id": null,
+     "kind_id": "kind-connectivity",
      "hub": false
     },
     {
      "id": "monitoring",
      "name": "Proactive monitoring",
      "code": null,
-     "kind": null,
+     "kind": "Run and manage",
      "mandatory": true,
      "customer_visible": null,
      "description": "Proactive monitoring for the Fortinet 90G/120G CPEs.",
@@ -4091,14 +4119,14 @@
       "cap-proactive-monitoring"
      ],
      "unlinked_reason": null,
-     "kind_id": null,
+     "kind_id": "kind-manage",
      "hub": false
     },
     {
      "id": "backup-5g",
      "name": "Backup 5G",
      "code": null,
-     "kind": null,
+     "kind": "Resilience",
      "mandatory": false,
      "customer_visible": null,
      "description": "Failover over a Forti Extender or GSM SIM, with HSS profile 5GNSA_BPRO5GBKP; the SIM is geo-locked to cell IDs and the dongle's IMEI.",
@@ -4132,7 +4160,7 @@
       "cap-mobile-backup-access"
      ],
      "unlinked_reason": null,
-     "kind_id": null,
+     "kind_id": "kind-resilience",
      "hub": false
     }
    ],
@@ -4141,37 +4169,43 @@
      "name": "Secure by default",
      "description": "Firewall, static IP, SD-WAN/FortiPortal and proactive monitoring are mandatory in every Business Pro Plus bundle, on Fortinet 90G or 120G CPEs.",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P1.1 Mandating Bundling Components; General Highlights"
+     "source": "SDD v2.3 · §P1.1 Mandating Bundling Components; General Highlights",
+     "aspect": null
     },
     {
      "name": "Multi-branch networking",
      "description": "SD-WAN with IPSec tunnels between branches and hub/spoke set-up, managed from FortiPortal. Overlay and routing configuration is a Day-N service by the MSS team.",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · Feasibility matrix, User Story 57539; General Highlights"
+     "source": "SDD v2.3 · Feasibility matrix, User Story 57539; General Highlights",
+     "aspect": null
     },
     {
      "name": "Business continuity",
      "description": "Optional Backup 5G: traffic fails over to the 5G network when the fibre link goes down, and back when it returns.",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · Feasibility matrix, User Story 80255 (existing implementation)"
+     "source": "SDD v2.3 · Feasibility matrix, User Story 80255 (existing implementation)",
+     "aspect": null
     },
     {
      "name": "Self-management",
      "description": "The customer opens FortiPortal from B2B Web or the SMB App by single sign-on, with a role that follows their B2B role.",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P3 ADO 194831"
+     "source": "SDD v2.3 · §P3 ADO 194831",
+     "aspect": null
     },
     {
      "name": "Managed Wi-Fi",
      "description": "A managed FortiAP access point, boxed and serialised, delivered with the CPE.",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · Feasibility matrix, User Story 81960"
+     "source": "SDD v2.3 · Feasibility matrix, User Story 81960",
+     "aspect": null
     },
     {
      "name": "Network visibility",
      "description": "Bandwidth, latency and tunnel dashboards and reports in FortiPortal. Subject to Fortinet feasibility (TBD in the SDD).",
      "confidence": "inferred",
-     "source": "SDD v2.3 · Feasibility matrix, User Story 81220 · Feasibility is TBD in the SDD."
+     "source": "SDD v2.3 · Feasibility matrix, User Story 81220 · Feasibility is TBD in the SDD.",
+     "aspect": null
     }
    ],
    "audiences": [
@@ -4179,37 +4213,43 @@
      "name": "Segment",
      "description": "SMB customers (Enterprise › Fixed › SMB).",
      "confidence": "inferred",
-     "source": "SMB reference v1.0 · Title and scope · The SDD doesn't state a customer-type rule."
+     "source": "SMB reference v1.0 · Title and scope · The SDD doesn't state a customer-type rule.",
+     "aspect": "who"
     },
     {
      "name": "New activation",
      "description": "Sold through BCRM, B2B Web and the SMB App.",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P1 Applicable Channels"
+     "source": "SDD v2.3 · §P1 Applicable Channels",
+     "aspect": "how"
     },
     {
      "name": "Migration",
      "description": "Existing customers on legacy products (DEL, PBX, BQS…) migrate through BCRM; Business Edge (BFV2) customers through BCRM or the SMB App.",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · Scope; §P3 ADO 202824"
+     "source": "SDD v2.3 · Scope; §P3 ADO 202824",
+     "aspect": "how"
     },
     {
      "name": "Location",
      "description": "External shift only within the Etisalat area. Bitstream is out of scope.",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · Scope; Feasibility matrix"
+     "source": "SDD v2.3 · Scope; Feasibility matrix",
+     "aspect": "where"
     },
     {
      "name": "Commitment",
      "description": "No contract, 1 year or 2 years; the CPE rate plan follows the contract period chosen.",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §ADO 438907, US 438909"
+     "source": "SDD v2.3 · §ADO 438907, US 438909",
+     "aspect": "terms"
     },
     {
      "name": "FortiPortal",
      "description": "Provisioned only for Business Pro Plus accounts (self-service CFSS). The organisation is created with the first site and removed with the last branch's cessation.",
      "confidence": "confirmed",
-     "source": "SDD v2.3 · §P1 FortiPortal Access"
+     "source": "SDD v2.3 · §P1 FortiPortal Access",
+     "aspect": "terms"
     }
    ],
    "confidence": "confirmed",
@@ -4791,7 +4831,12 @@
     }
    ],
    "former_ids": [],
-   "purpose": "Gives a small or medium business a secure, managed business connection it can run itself: one premium bundle instead of separate internet, security and Wi-Fi products, delivered through the Summary Order Fulfillment of the SMB Framework (Order to Delivery)."
+   "purpose": "Gives a small or medium business a secure, managed business connection it can run itself: one premium bundle instead of separate internet, security and Wi-Fi products, delivered through the Summary Order Fulfillment of the SMB Framework (Order to Delivery).",
+   "contract_terms": [
+    "No contract",
+    "1 year",
+    "2 years"
+   ]
   }
  ],
  "journeys": [
@@ -19273,7 +19318,8 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": "channel-assisted"
+   "kind_id": "channel-assisted",
+   "selling": true
   },
   {
    "id": "b2b-web",
@@ -19283,7 +19329,8 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": "channel-self-service"
+   "kind_id": "channel-self-service",
+   "selling": true
   },
   {
    "id": "smb-app",
@@ -19293,7 +19340,8 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": "channel-self-service"
+   "kind_id": "channel-self-service",
+   "selling": true
   },
   {
    "id": "cim",
@@ -19303,7 +19351,8 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": "channel-assisted"
+   "kind_id": "channel-assisted",
+   "selling": true
   },
   {
    "id": "nps",
@@ -19313,7 +19362,8 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": "channel-system"
+   "kind_id": "channel-system",
+   "selling": false
   },
   {
    "id": "ehs",
@@ -19323,7 +19373,8 @@
    "description": null,
    "confidence": null,
    "source": null,
-   "kind_id": "channel-system"
+   "kind_id": "channel-system",
+   "selling": false
   }
  ],
  "sources": [
@@ -20279,54 +20330,76 @@
    "source": "Ontology plan Phase 6 · the catalogue's own channel kinds"
   },
   {
-   "id": "role-capture",
-   "scheme": "responsibility_role",
-   "pref_label": "Capture",
-   "alt_labels": [
-    "Captures"
-   ],
-   "notation": null,
-   "definition": "Takes in the order, or facts the order needs, from the customer or the field.",
+   "id": "kind-device",
+   "scheme": "component_kind",
+   "pref_label": "Device",
+   "alt_labels": [],
+   "notation": "DEV",
+   "definition": "The device the bundle is built on, such as the router or CPE.",
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+   "source": "Catalogue curation · the bundle's parts by what they do for the customer"
   },
   {
-   "id": "role-catalog",
-   "scheme": "responsibility_role",
-   "pref_label": "Catalog",
+   "id": "kind-connectivity",
+   "scheme": "component_kind",
+   "pref_label": "Connectivity",
    "alt_labels": [],
-   "notation": null,
-   "definition": "Supplies the offer, its rules and its eligibility from the product catalogue.",
+   "notation": "CONN",
+   "definition": "Getting the site online.",
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+   "source": "Catalogue curation · the bundle's parts by what they do for the customer"
   },
   {
-   "id": "role-customer-data",
-   "scheme": "responsibility_role",
-   "pref_label": "Customer data",
+   "id": "kind-security",
+   "scheme": "component_kind",
+   "pref_label": "Security",
    "alt_labels": [],
-   "notation": null,
-   "definition": "Keeps the customer's account and party record.",
+   "notation": "SEC",
+   "definition": "Protecting the network.",
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+   "source": "Catalogue curation · the bundle's parts by what they do for the customer"
   },
   {
-   "id": "role-validate",
-   "scheme": "responsibility_role",
-   "pref_label": "Validate",
+   "id": "kind-office",
+   "scheme": "component_kind",
+   "pref_label": "In the office",
    "alt_labels": [],
-   "notation": null,
-   "definition": "Checks that the order, the customer or the site qualifies.",
+   "notation": "WIFI",
+   "definition": "Wi-Fi where people work.",
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
-   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+   "source": "Catalogue curation · the bundle's parts by what they do for the customer"
+  },
+  {
+   "id": "kind-manage",
+   "scheme": "component_kind",
+   "pref_label": "Run and manage",
+   "alt_labels": [],
+   "notation": "MGMT",
+   "definition": "Seeing and running the service.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "Catalogue curation · the bundle's parts by what they do for the customer"
+  },
+  {
+   "id": "kind-resilience",
+   "scheme": "component_kind",
+   "pref_label": "Resilience",
+   "alt_labels": [],
+   "notation": "RESIL",
+   "definition": "Staying online when the main access is down.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "Catalogue curation · the bundle's parts by what they do for the customer"
   },
   {
    "id": "role-orchestrate",
@@ -20337,6 +20410,20 @@
    ],
    "notation": null,
    "definition": "Splits the order into sub-orders and drives each to completion.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+  },
+  {
+   "id": "role-capture",
+   "scheme": "responsibility_role",
+   "pref_label": "Capture",
+   "alt_labels": [
+    "Captures"
+   ],
+   "notation": null,
+   "definition": "Takes in the order, or facts the order needs, from the customer or the field.",
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",
@@ -20367,6 +20454,42 @@
    ],
    "notation": null,
    "definition": "Schedules and records the work done at the customer's site.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+  },
+  {
+   "id": "role-validate",
+   "scheme": "responsibility_role",
+   "pref_label": "Validate",
+   "alt_labels": [],
+   "notation": null,
+   "definition": "Checks that the order, the customer or the site qualifies.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+  },
+  {
+   "id": "role-customer-data",
+   "scheme": "responsibility_role",
+   "pref_label": "Customer data",
+   "alt_labels": [],
+   "notation": null,
+   "definition": "Keeps the customer's account and party record.",
+   "broader_id": null,
+   "exact_match": null,
+   "confidence": "inferred",
+   "source": "Ontology plan Phase 6 · the catalogue's own activity roles"
+  },
+  {
+   "id": "role-catalog",
+   "scheme": "responsibility_role",
+   "pref_label": "Catalog",
+   "alt_labels": [],
+   "notation": null,
+   "definition": "Supplies the offer, its rules and its eligibility from the product catalogue.",
    "broader_id": null,
    "exact_match": null,
    "confidence": "inferred",

@@ -5,6 +5,7 @@
  * naming ("role-orchestrate", "role-customer-data").
  */
 import type { Release } from "../../api/client";
+import type { ComponentKind } from "./model";
 
 const ROLE_SCHEME = "responsibility_role";
 
@@ -31,6 +32,18 @@ export function roleTerms(release: Release): Record<string, string> {
 /** A step's role: its code as the source wrote it, or, without one, the code of the term it names. */
 export function stepRole(role: string | null | undefined, roleId: string | null | undefined): string | undefined {
   return roleCode(role) ?? (roleId ? codeOfTerm(roleId) : undefined);
+}
+
+/** The roles the vocabulary names, by code, in the order it lists them: strongest first. */
+export function roleOrder(release: Release): string[] {
+  return (release.vocabulary ?? []).filter((term) => term.scheme === ROLE_SCHEME).map((term) => codeOfTerm(term.id));
+}
+
+/** The component kinds the vocabulary names, in its order: each kind's term, label, what it does and its code. */
+export function componentKinds(release: Release): ComponentKind[] {
+  return (release.vocabulary ?? [])
+    .filter((term) => term.scheme === "component_kind")
+    .map((term) => ({ id: term.id, name: term.pref_label, blurb: term.definition ?? "", ...(term.notation ? { code: term.notation } : {}) }));
 }
 
 /** Each channel kind the vocabulary names ("channel-system" is "system"), with its preferred label. */

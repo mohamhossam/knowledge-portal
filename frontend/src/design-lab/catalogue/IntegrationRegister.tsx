@@ -3,7 +3,7 @@ import { type CSSProperties, useMemo, useState } from "react";
 
 import { type ActivityStep, type Integration, type JourneyView, type Lane, laneKey, type Step, systemOf } from "../../catalogue/model/model";
 import { EvidenceTag } from "./labChrome";
-import { useLabData } from "./labData";
+import { toneOf, useLabData } from "./labData";
 import { SystemMonogram } from "./SystemMonogram";
 import { laneName, MODE_WORDS, NOT_STATED, operationName, styleName, systemName } from "./words";
 
@@ -39,7 +39,7 @@ export function IntegrationRegister({ view }: { view: JourneyView }) {
   const name = (end?: End) => (end === undefined ? "" : typeof end === "string" ? systemName(data, end) : laneName(data, end));
   const tone = (end: End) => {
     const id = typeof end === "string" ? end : systemOf(end);
-    return data.systems.find((item) => item.id === id)?.domain;
+    return toneOf(data, data.systems.find((item) => item.id === id)?.domain);
   };
   const step = (id: string) => view.steps.find((item) => item.id === id);
   const activityName = (id: string) => {

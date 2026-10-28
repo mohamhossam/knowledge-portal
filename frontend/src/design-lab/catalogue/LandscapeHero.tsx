@@ -96,7 +96,7 @@ export function LandscapeHero() {
             All layers
           </button>
           {layers.map((layer) => (
-            <button key={layer.id} type="button" className={`lx-layer tone--${layer.id}`} aria-pressed={focus === layer.id} onClick={() => showLayer(focus === layer.id ? null : layer.id)}>
+            <button key={layer.id} type="button" className={`lx-layer tone--${layer.tone}`} aria-pressed={focus === layer.id} onClick={() => showLayer(focus === layer.id ? null : layer.id)}>
               <LayerIcon id={layer.id} />
               {layer.name}
             </button>

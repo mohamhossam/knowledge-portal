@@ -286,14 +286,14 @@
 .cl-systile { width: 26px; height: 26px; border-radius: 6px; font-size: 0.625rem; }
 .cl-systile.am-mono--4 { font-size: 0.5625rem; }
 .cl-systile-more { font-size: 0.75rem; font-weight: 600; color: var(--cl-ink-2); }
-.tone--market-sales { --am-tint: var(--cl-market); --am-ink: var(--cl-market-ink); --am-edge: var(--cl-market-edge); }
-.tone--product { --am-tint: var(--cl-product); --am-ink: var(--cl-product-ink); --am-edge: var(--cl-product-edge); }
-.tone--customer { --am-tint: var(--cl-customer); --am-ink: var(--cl-customer-ink); --am-edge: var(--cl-customer-edge); }
-.tone--service { --am-tint: var(--cl-service); --am-ink: var(--cl-service-ink); --am-edge: var(--cl-service-edge); }
-.tone--resource { --am-tint: var(--cl-resource); --am-ink: var(--cl-resource-ink); --am-edge: var(--cl-resource-edge); }
-.tone--engaged-party { --am-tint: var(--cl-party); --am-ink: var(--cl-party-ink); --am-edge: var(--cl-party-edge); }
-.tone--enterprise { --am-tint: var(--cl-enterprise); --am-ink: var(--cl-enterprise-ink); --am-edge: var(--cl-enterprise-edge); }
-.tone--integration { --am-tint: var(--cl-spine); --am-ink: var(--cl-maroon); --am-edge: var(--cl-m2); }
+.tone--1 { --am-tint: var(--cl-market); --am-ink: var(--cl-market-ink); --am-edge: var(--cl-market-edge); }
+.tone--2 { --am-tint: var(--cl-product); --am-ink: var(--cl-product-ink); --am-edge: var(--cl-product-edge); }
+.tone--3 { --am-tint: var(--cl-customer); --am-ink: var(--cl-customer-ink); --am-edge: var(--cl-customer-edge); }
+.tone--4 { --am-tint: var(--cl-service); --am-ink: var(--cl-service-ink); --am-edge: var(--cl-service-edge); }
+.tone--5 { --am-tint: var(--cl-resource); --am-ink: var(--cl-resource-ink); --am-edge: var(--cl-resource-edge); }
+.tone--6 { --am-tint: var(--cl-party); --am-ink: var(--cl-party-ink); --am-edge: var(--cl-party-edge); }
+.tone--7 { --am-tint: var(--cl-enterprise); --am-ink: var(--cl-enterprise-ink); --am-edge: var(--cl-enterprise-edge); }
+.tone--bus { --am-tint: var(--cl-spine); --am-ink: var(--cl-maroon); --am-edge: var(--cl-m2); }
 /* Offer and service codes: a real disclosure. */
 .cl-codes { border-top: 1px solid var(--cl-hairline); }
 .cl-codes summary { list-style: none; display: flex; align-items: center; gap: 8px; min-height: 40px; cursor: pointer; font-weight: 600; color: var(--cl-ink); }
@@ -455,12 +455,12 @@
 .cl-rules p { font-size: 1rem; line-height: 1.55; max-width: 90ch; }
 .cl-rule-id { width: 44px; height: 32px; display: grid; place-items: center; border-radius: 4px; background: var(--cl-maroon); color: var(--cl-on-maroon); font-weight: 700; font-stretch: 80%; }
 .cl-kind { font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.04em; }
-.cl-kind--composition { background: var(--cl-market); color: var(--cl-market-ink); }
-.cl-kind--fulfilment { background: var(--cl-service); color: var(--cl-service-ink); }
-.cl-kind--dependency { background: var(--cl-customer); color: var(--cl-customer-ink); }
-.cl-kind--lifecycle { background: var(--cl-party); color: var(--cl-party-ink); }
-.cl-kind--billing { background: var(--cl-resource); color: var(--cl-resource-ink); }
-.cl-kind--other { background: var(--cl-enterprise); color: var(--cl-enterprise-ink); }
+.cl-kind--1 { background: var(--cl-market); color: var(--cl-market-ink); }
+.cl-kind--2 { background: var(--cl-service); color: var(--cl-service-ink); }
+.cl-kind--3 { background: var(--cl-customer); color: var(--cl-customer-ink); }
+.cl-kind--4 { background: var(--cl-party); color: var(--cl-party-ink); }
+.cl-kind--5 { background: var(--cl-resource); color: var(--cl-resource-ink); }
+.cl-kind--6 { background: var(--cl-enterprise); color: var(--cl-enterprise-ink); }
 .cl-chip small { font-size: 0.8125rem; opacity: 0.85; }
 
 /* ---------- Journey page ---------- */
@@ -536,13 +536,13 @@
 .am-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 .am-row--split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .am-layer { --am-tint: var(--cl-sand); --am-ink: var(--cl-ink-2); --am-edge: var(--cl-rule); min-width: 0; background: var(--am-tint); border: 1px solid color-mix(in srgb, var(--am-edge) 45%, transparent); border-radius: 8px; padding: 14px 16px 16px; box-shadow: inset 0 3px 0 var(--am-edge); }
-.am-layer--market-sales { --am-tint: var(--cl-market); --am-ink: var(--cl-market-ink); --am-edge: var(--cl-market-edge); }
-.am-layer--product { --am-tint: var(--cl-product); --am-ink: var(--cl-product-ink); --am-edge: var(--cl-product-edge); }
-.am-layer--customer { --am-tint: var(--cl-customer); --am-ink: var(--cl-customer-ink); --am-edge: var(--cl-customer-edge); }
-.am-layer--service { --am-tint: var(--cl-service); --am-ink: var(--cl-service-ink); --am-edge: var(--cl-service-edge); }
-.am-layer--resource { --am-tint: var(--cl-resource); --am-ink: var(--cl-resource-ink); --am-edge: var(--cl-resource-edge); }
-.am-layer--engaged-party { --am-tint: var(--cl-party); --am-ink: var(--cl-party-ink); --am-edge: var(--cl-party-edge); }
-.am-layer--enterprise { --am-tint: var(--cl-enterprise); --am-ink: var(--cl-enterprise-ink); --am-edge: var(--cl-enterprise-edge); }
+.am-layer--1 { --am-tint: var(--cl-market); --am-ink: var(--cl-market-ink); --am-edge: var(--cl-market-edge); }
+.am-layer--2 { --am-tint: var(--cl-product); --am-ink: var(--cl-product-ink); --am-edge: var(--cl-product-edge); }
+.am-layer--3 { --am-tint: var(--cl-customer); --am-ink: var(--cl-customer-ink); --am-edge: var(--cl-customer-edge); }
+.am-layer--4 { --am-tint: var(--cl-service); --am-ink: var(--cl-service-ink); --am-edge: var(--cl-service-edge); }
+.am-layer--5 { --am-tint: var(--cl-resource); --am-ink: var(--cl-resource-ink); --am-edge: var(--cl-resource-edge); }
+.am-layer--6 { --am-tint: var(--cl-party); --am-ink: var(--cl-party-ink); --am-edge: var(--cl-party-edge); }
+.am-layer--7 { --am-tint: var(--cl-enterprise); --am-ink: var(--cl-enterprise-ink); --am-edge: var(--cl-enterprise-edge); }
 .am-layer.is-dim { background: var(--cl-paper); box-shadow: inset 0 3px 0 var(--cl-hairline); border-color: var(--cl-hairline); }
 .am-layer-head { display: flex; flex-wrap: wrap; min-height: 24px; gap: 4px 10px; align-items: center; margin-bottom: 12px; }
 .am-layer-no { font-weight: 700; font-stretch: 80%; letter-spacing: 0.04em; color: var(--am-ink); padding: 1px 6px; border-radius: 4px; background: color-mix(in srgb, var(--am-edge) 35%, transparent); font-size: 0.6875rem; }
@@ -617,14 +617,14 @@
 .cl-stats--3 { grid-template-columns: repeat(3, 1fr); }
 .cl-legend .sel { width: 18px; height: 12px; border-radius: 2px; background: var(--cl-maroon-mist); box-shadow: inset 0 0 0 1.5px var(--cl-m3); }
 .cl-legend .lnk { width: 18px; height: 12px; border-radius: 2px; border: 0; box-shadow: inset 0 0 0 1.5px var(--cl-m2); }
-.cl-linked--market-sales { --cl-layer-tint: var(--cl-market); --cl-layer-edge: var(--cl-market-edge); }
-.cl-linked--product { --cl-layer-tint: var(--cl-product); --cl-layer-edge: var(--cl-product-edge); }
-.cl-linked--customer { --cl-layer-tint: var(--cl-customer); --cl-layer-edge: var(--cl-customer-edge); }
-.cl-linked--service { --cl-layer-tint: var(--cl-service); --cl-layer-edge: var(--cl-service-edge); }
-.cl-linked--resource { --cl-layer-tint: var(--cl-resource); --cl-layer-edge: var(--cl-resource-edge); }
-.cl-linked--engaged-party { --cl-layer-tint: var(--cl-party); --cl-layer-edge: var(--cl-party-edge); }
-.cl-linked--enterprise { --cl-layer-tint: var(--cl-enterprise); --cl-layer-edge: var(--cl-enterprise-edge); }
-.cl-linked--integration { --cl-layer-tint: var(--cl-spine); --cl-layer-edge: var(--cl-maroon); }
+.cl-linked--1 { --cl-layer-tint: var(--cl-market); --cl-layer-edge: var(--cl-market-edge); }
+.cl-linked--2 { --cl-layer-tint: var(--cl-product); --cl-layer-edge: var(--cl-product-edge); }
+.cl-linked--3 { --cl-layer-tint: var(--cl-customer); --cl-layer-edge: var(--cl-customer-edge); }
+.cl-linked--4 { --cl-layer-tint: var(--cl-service); --cl-layer-edge: var(--cl-service-edge); }
+.cl-linked--5 { --cl-layer-tint: var(--cl-resource); --cl-layer-edge: var(--cl-resource-edge); }
+.cl-linked--6 { --cl-layer-tint: var(--cl-party); --cl-layer-edge: var(--cl-party-edge); }
+.cl-linked--7 { --cl-layer-tint: var(--cl-enterprise); --cl-layer-edge: var(--cl-enterprise-edge); }
+.cl-linked--bus { --cl-layer-tint: var(--cl-spine); --cl-layer-edge: var(--cl-maroon); }
 .cl-pill { min-height: 28px; padding: 0 10px; border: 1px solid var(--cl-rule); border-radius: 999px; background: var(--cl-page); font-size: 0.8125rem; font-weight: 600; cursor: pointer; }
 .cl-pill:hover { border-color: var(--cl-maroon); }
 
@@ -1131,7 +1131,7 @@ a.cl-pill:hover { color: var(--cl-maroon); }
 .lx-layers button { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 24px; padding: 0 11px 0 9px; border: 0; border-radius: 999px; background: var(--am-tint, var(--cl-page)); color: var(--am-ink, var(--cl-ink)); font: inherit; font-size: 0.78125rem; font-weight: 600; white-space: nowrap; cursor: pointer; }
 .lx-layers button:hover { box-shadow: inset 0 0 0 1px var(--am-edge, var(--cl-rule-strong)); }
 .lx-layers .lx-layer-all { padding-left: 11px; background: var(--cl-page); color: var(--cl-ink-2); box-shadow: inset 0 0 0 1px var(--cl-hairline); }
-.lx-layers .tone--integration { color: var(--cl-maroon); }
+.lx-layers .tone--bus { color: var(--cl-maroon); }
 .lx-layers button[aria-pressed="true"] { background: var(--cl-page); color: var(--cl-maroon); box-shadow: inset 0 0 0 1.5px var(--cl-maroon); }
 .lx-layers .am-icon { width: auto; height: auto; background: none; box-shadow: none; color: inherit; }
 .lx-layers .am-icon svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }

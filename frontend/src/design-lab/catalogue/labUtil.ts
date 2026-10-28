@@ -33,14 +33,6 @@ export function firstSentence(text: string): string {
   return (first ?? text).trim().replace(/\.*$/, ".");
 }
 
-/** "200 Mbps" → 200; anything without a leading number → null. */
-export function leadingNumber(value: string): number | null {
-  const match = /^\s*(\d+(?:\.\d+)?)\s*(gbps|mbps)?/i.exec(value);
-  if (!match) return null;
-  const n = Number(match[1]);
-  return match[2]?.toLowerCase() === "gbps" ? n * 1000 : n;
-}
-
 /** A system's purpose in a few words: the text before the first colon or full stop, cut at a word. */
 export function shortFunction(text: string): string {
   const head = (text.split(/[:.;]|\s[—–]\s/)[0] ?? "").trim();
