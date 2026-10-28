@@ -55,6 +55,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Changed
 
+- Precedents are compared by the needs they were assessed with, not by their first 4,000
+  characters. A successful assessment for a requirement now keeps its need facets (the new
+  `architecture_requirement_needs` table, one row per requirement, replaced by the next one).
+  When that requirement's verdict is decided, its precedent is embedded by one text built from
+  those needs, kept apart from precedents embedded by their text. The assessment's precedent
+  lane compares its own need facets the same way. It falls back to the text only while no
+  precedent has needs. Precedents kept before stay as they are. The internal contract is
+  unchanged, and requirement-portal needs no change. ADR-0129. Upgrade: the migration
+  `202610281000_requirement_needs` adds the table.
+
 - One architecture catalogue: the catalogue redesign lab's views move into `/architecture`, on
   the design system and in both themes, and the lab is removed (with `VITE_CATALOGUE_LAB`,
   `VITE_CATALOGUE_SOURCE` and its sample switch). The Landscape tab draws where systems sit as

@@ -1,10 +1,12 @@
 """Keeping decided verdicts, and counting them per release (ontology plan Phase 5).
 
 requirement-portal sends each verdict decision to `POST /internal/architecture/precedents`.
-`RecordPrecedent` checks it against the release it was assessed on, embeds its text with
-the model the evidence index searches with, and keeps it; a later decision on the same
-analysis replaces it. `ReadPrecedentSummaries` counts, per release, how often reviewers
-accepted, overrode or left unknown the suggested verdict, and for which concepts.
+`RecordPrecedent` checks it against the release it was assessed on, embeds it with the
+model the evidence index searches with, and keeps it; a later decision on the same
+analysis replaces it. It is embedded by the needs its requirement was last assessed with on
+that release, or by its text when none were kept (ADR-0129). `ReadPrecedentSummaries`
+counts, per release, how often reviewers accepted, overrode or left unknown the suggested
+verdict, and for which concepts.
 """
 
 from __future__ import annotations
@@ -30,6 +32,8 @@ from knowledge_portal.domain.architecture.precedents import (
     Precedent,
     PrecedentSummary,
     PrecedentSystem,
+    needs_space,
+    needs_text,
     precedent_text,
 )
 
@@ -61,7 +65,7 @@ class RecordPrecedent:
         dropped = tuple(
             sorted({item.id for item in request.systems if item.id.strip() not in systems})
         )
-        # The text is what the lane compares, cut as the lane cuts its own.
+        # The text is what the lane compares when no needs came, cut as the lane cuts its own.
         text = precedent_text(request.text)
         precedent = Precedent(
             id=request.precedent_id,
@@ -78,10 +82,31 @@ class RecordPrecedent:
             systems=kept,
             decided_at=request.decided_at,
             received_at=self._clock.now(),
+            needs=_assessed_needs(self._store, request.requirement_id, release.id),
         )
-        vector = self._index.vectors((precedent.text,))[0]
-        recorded = self._store.record(precedent, self._index.embedding_model, vector)
+        # Compared by its needs when they were kept, in their own space (ADR-0129).
+        model = self._index.embedding_model
+        space, compared = (
+            (needs_space(model), needs_text(precedent.needs))
+            if precedent.needs
+            else (model, precedent.text)
+        )
+        vector = self._index.vectors((compared,))[0]
+        recorded = self._store.record(precedent, space, vector)
         return PrecedentReceipt(precedent.id, recorded, dropped)
+
+
+def _assessed_needs(
+    store: PrecedentStorePort, requirement_id: str, release_id: str
+) -> tuple[str, ...]:
+    """The needs the requirement was last assessed with, if on the release decided on.
+
+    requirement work decides on its current analysis round, whose product impact is its last
+    successful assessment, and only successful assessments keep needs: so the latest kept are
+    the decided round's. Needs from another release are another assessment's (ADR-0129).
+    """
+    kept = store.assessed_needs(requirement_id)
+    return kept.needs if kept is not None and kept.release_id == release_id else ()
 
 
 @dataclass(frozen=True)

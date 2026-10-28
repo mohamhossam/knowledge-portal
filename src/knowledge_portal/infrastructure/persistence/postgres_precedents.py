@@ -8,6 +8,7 @@ from pydantic import TypeAdapter, ValidationError
 from knowledge_portal.application.errors import PersistenceError
 from knowledge_portal.application.ports.precedents import PrecedentMatch
 from knowledge_portal.domain.architecture.precedents import (
+    AssessedNeeds,
     Precedent,
     PrecedentSummary,
     summarise,
@@ -16,6 +17,7 @@ from knowledge_portal.infrastructure.persistence.in_memory_precedents import new
 from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
 
 _ITEM: TypeAdapter[Precedent] = TypeAdapter(Precedent)
+_NEEDS: TypeAdapter[AssessedNeeds] = TypeAdapter(AssessedNeeds)
 
 
 def _item(raw: object) -> Precedent:
@@ -100,6 +102,39 @@ class PostgresPrecedents:
                 (literal, embedding_model, exclude_requirement, literal, limit),
             ).fetchall()
         return tuple(PrecedentMatch(_item(row[0]), _similarity(row[1])) for row in rows)
+
+    def keep_needs(self, needs: AssessedNeeds) -> None:
+        with self._store.connection() as connection:
+            connection.execute(
+                "INSERT INTO architecture_requirement_needs "
+                "(requirement_id, release_id, reader_model, needs, assessed_at) "
+                "VALUES (%s, %s, %s, %s, now()) "
+                "ON CONFLICT (requirement_id) DO UPDATE SET "
+                "release_id = excluded.release_id, reader_model = excluded.reader_model, "
+                "needs = excluded.needs, assessed_at = excluded.assessed_at",
+                (needs.requirement_id, needs.release_id, needs.reader_model, Jsonb(needs.needs)),
+            )
+
+    def assessed_needs(self, requirement_id: str) -> AssessedNeeds | None:
+        with self._store.connection() as connection:
+            row = connection.execute(
+                "SELECT requirement_id, release_id, reader_model, needs "
+                "FROM architecture_requirement_needs WHERE requirement_id = %s",
+                (requirement_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        try:
+            return _NEEDS.validate_python(
+                {
+                    "requirement_id": row[0],
+                    "release_id": row[1],
+                    "reader_model": row[2],
+                    "needs": row[3],
+                }
+            )
+        except (ValidationError, ValueError) as exc:
+            raise PersistenceError("Stored assessed needs are invalid.") from exc
 
     def summaries(self) -> tuple[PrecedentSummary, ...]:
         with self._store.connection() as connection:

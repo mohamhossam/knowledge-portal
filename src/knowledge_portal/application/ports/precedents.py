@@ -1,8 +1,10 @@
 """Where decided verdicts are kept and searched (ontology plan Phase 5).
 
 `POST /internal/architecture/precedents` receives a decision as a `PrecedentRequest`; the
-store keeps it with the embedding of its text, so the assessment's precedent lane finds
-the nearest decided requirements without embedding them again.
+store keeps it with the embedding of its needs or text, so the assessment's precedent lane
+finds the nearest decided requirements without embedding them again. The store also keeps
+the needs each requirement was last assessed with, which its precedent is compared by
+(ADR-0129).
 """
 
 from __future__ import annotations
@@ -12,6 +14,7 @@ from datetime import datetime
 from typing import Protocol
 
 from knowledge_portal.domain.architecture.precedents import (
+    AssessedNeeds,
     Precedent,
     PrecedentDecision,
     PrecedentSummary,
@@ -82,4 +85,12 @@ class PrecedentStorePort(Protocol):
 
     def summaries(self) -> tuple[PrecedentSummary, ...]:
         """Per release, newest decision first."""
+        ...
+
+    def keep_needs(self, needs: AssessedNeeds) -> None:
+        """Keep the needs a requirement was assessed with, replacing any kept before."""
+        ...
+
+    def assessed_needs(self, requirement_id: str) -> AssessedNeeds | None:
+        """The needs the requirement was last assessed with, if any were kept."""
         ...

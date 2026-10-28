@@ -32,6 +32,11 @@ from knowledge_portal.domain.architecture.verdicts import ProductVerdict
 TEXT_LIMIT = 4000
 SYSTEM_LIMIT = 60
 CONCEPT_LIMIT = 40
+# As many as the reader gives an assessment (MAX_FACETS).
+NEED_LIMIT = 24
+# The text version of a precedent compared by its needs (ADR-0129). A precedent compared by
+# its text is kept under the embedding model's name alone, as before.
+NEEDS_VERSION = "needs-v1"
 
 
 def precedent_text(parts: Iterable[str]) -> str:
@@ -41,6 +46,53 @@ def precedent_text(parts: Iterable[str]) -> str:
     little more, and the embedding model refuses a text much longer than this.
     """
     return "\n".join(part.strip() for part in parts if part.strip())[:TEXT_LIMIT]
+
+
+def needs_text(needs: Iterable[str]) -> str:
+    """A requirement's needs as a precedent and the precedent lane compare them (ADR-0129).
+
+    The same whatever the reader's order, case or spacing: each need with its spacing made
+    single and lowercased, once, in alphabetical order, one per line, cut at `TEXT_LIMIT`.
+    """
+    kept = {" ".join(need.split()).casefold() for need in needs}
+    return "\n".join(sorted(need for need in kept if need))[:TEXT_LIMIT]
+
+
+def needs_space(embedding_model: str) -> str:
+    """Where precedents compared by their needs are embedded: never beside those compared
+    by their text, whose space is `embedding_model` alone."""
+    return f"{embedding_model}#{NEEDS_VERSION}"
+
+
+def _needs(values: tuple[str, ...]) -> tuple[str, ...]:
+    needs = tuple(required(item, "Precedent need") for item in values)
+    if len(needs) > NEED_LIMIT:
+        raise InvalidKnowledgeError(f"A requirement keeps at most {NEED_LIMIT} needs.")
+    return needs
+
+
+@dataclass(frozen=True)
+class AssessedNeeds:
+    """The need facets a requirement was last assessed with, successfully (ADR-0129).
+
+    The assessment keeps them by requirement; when the requirement's verdict is decided,
+    its precedent is compared by them. Kept like a precedent: replaced, never pruned.
+    """
+
+    requirement_id: str
+    # The release and reader model of the assessment that read them.
+    release_id: str
+    reader_model: str
+    needs: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        for name, label in (
+            ("requirement_id", "Assessed requirement"),
+            ("release_id", "Assessed release"),
+            ("reader_model", "Assessed reader model"),
+        ):
+            object.__setattr__(self, name, required(getattr(self, name), label))
+        object.__setattr__(self, "needs", _needs(self.needs))
 
 
 class PrecedentDecision(StrEnum):
@@ -92,6 +144,9 @@ class Precedent:
     systems: tuple[PrecedentSystem, ...]
     decided_at: datetime
     received_at: datetime
+    # The needs its requirement was last assessed with on its release, when they were kept;
+    # it is then compared by them rather than by its text (ADR-0129).
+    needs: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         for name, label in (
@@ -120,6 +175,7 @@ class Precedent:
         if len(concepts) > CONCEPT_LIMIT or len(self.systems) > SYSTEM_LIMIT:
             raise InvalidKnowledgeError("A precedent names too many concepts or systems.")
         object.__setattr__(self, "concept_ids", concepts)
+        object.__setattr__(self, "needs", _needs(self.needs))
         seen: set[str] = set()
         for system in self.systems:
             if system.system_id in seen:

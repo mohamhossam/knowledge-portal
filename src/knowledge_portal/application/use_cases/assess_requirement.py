@@ -82,7 +82,11 @@ from knowledge_portal.domain.architecture.knowledge import (
     KnowledgeReleaseStatus,
 )
 from knowledge_portal.domain.architecture.offering_drafts import draft_name, draft_offering
-from knowledge_portal.domain.architecture.precedents import precedent_text
+from knowledge_portal.domain.architecture.precedents import (
+    NEED_LIMIT,
+    AssessedNeeds,
+    precedent_text,
+)
 from knowledge_portal.domain.architecture.products import ProductOffering
 from knowledge_portal.domain.architecture.verdicts import (
     OfferingFit,
@@ -117,10 +121,24 @@ class AssessRequirement(RequirementAssessmentPort):
         self._precedents = precedents
 
     def assess(self, query: AssessmentQuery) -> ArchitectureAssessment:
+        assessment, needs = self._assessed(query)
+        # Kept only once the whole assessment stands: requirement work keeps its earlier
+        # product impact when one fails, and decides on that one (ADR-0129).
+        if query.requirement_id and query.requirement_id.strip():
+            self._precedents.keep_needs(
+                AssessedNeeds(
+                    query.requirement_id, assessment.knowledge_version, self._reader.model, needs
+                )
+            )
+        return assessment
+
+    def _assessed(self, query: AssessmentQuery) -> tuple[ArchitectureAssessment, tuple[str, ...]]:
+        """The assessment, and the needs it was read with."""
         release = self._release(query.release_id)
         index_id = release.index_id or release.id
         text = "\n".join(item.strip() for item in query.text if item.strip())
         facets = self._reader.facets(text, catalogue_terms(release)) if text else ()
+        needs = tuple(facet.text for facet in facets if facet.kind is FacetKind.NEED)[:NEED_LIMIT]
         linked = self._link(release, index_id, facets)
         excluded = excluded_concepts(release, facets)
         needed = frozenset(
@@ -150,6 +168,7 @@ class AssessRequirement(RequirementAssessmentPort):
             needed,
             query.requirement_id,
             release.business_capabilities,
+            needs=needs,
         )
         common = {
             "precedents": tuple(
@@ -176,7 +195,7 @@ class AssessRequirement(RequirementAssessmentPort):
                 gaps=capability_gaps,
                 questions=self._questions(release, index_id, text, linked, fit),
                 **common,  # type: ignore[arg-type]
-            )
+            ), needs
         candidates = graph_lane(
             release,
             tuple(
@@ -268,7 +287,7 @@ class AssessRequirement(RequirementAssessmentPort):
             uncertainty=decision.uncertainty,
             model=self._reasoner.model,
             **common,  # type: ignore[arg-type]
-        )
+        ), needs
 
     def _release(self, release_id: str | None) -> ArchitectureKnowledge:
         release = (
