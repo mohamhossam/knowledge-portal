@@ -277,7 +277,9 @@ def _event(event: KnowledgeEvent) -> dict[str, Any]:
 # first version that means something: until then the file carried FastAPI's default, 0.1.0.
 # 1.1.0: with no catalogue version in service, matching and assessing answer 409 with the code
 # `architecture_catalogue_not_in_service` (ADR-0126).
-INTERNAL_CONTRACT_VERSION = "1.1.0"
+# 1.2.0: a precedent may carry the needs it was assessed with (`needs`), and is then compared
+# by them (ADR-0129).
+INTERNAL_CONTRACT_VERSION = "1.2.0"
 
 
 def contract_openapi() -> dict[str, Any]:

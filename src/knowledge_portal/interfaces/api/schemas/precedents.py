@@ -18,6 +18,7 @@ from knowledge_portal.application.ports.precedents import (
 from knowledge_portal.application.use_cases.precedents import ReleasePrecedents
 from knowledge_portal.domain.architecture.precedents import (
     CONCEPT_LIMIT,
+    NEED_LIMIT,
     SYSTEM_LIMIT,
     PrecedentDecision,
 )
@@ -26,6 +27,7 @@ from knowledge_portal.interfaces.api.schemas.bounds import (
     MAX_ITEMS,
     Identifier,
     RequiredIdentifier,
+    Sentence,
     Text,
 )
 
@@ -56,6 +58,9 @@ class PrecedentBody(BaseModel):
     offering_id: Identifier | None = None
     concept_ids: list[RequiredIdentifier] = Field(default=[], max_length=CONCEPT_LIMIT)
     systems: list[PrecedentSystemBody] = Field(default=[], max_length=SYSTEM_LIMIT)
+    # The need facets of the assessment the decision was on (ADR-0129). With them the
+    # precedent is compared by its needs; without them, by its text, as before 1.2.0.
+    needs: list[Sentence] = Field(default=[], max_length=NEED_LIMIT)
 
     def to_request(self) -> PrecedentRequest:
         return PrecedentRequest(
@@ -74,6 +79,7 @@ class PrecedentBody(BaseModel):
                 PrecedentSystemRequest(item.id, item.role or None, item.change_type or None)
                 for item in self.systems
             ),
+            needs=tuple(self.needs),
         )
 
 

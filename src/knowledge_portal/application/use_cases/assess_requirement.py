@@ -150,6 +150,7 @@ class AssessRequirement(RequirementAssessmentPort):
             needed,
             query.requirement_id,
             release.business_capabilities,
+            needs=tuple(facet.text for facet in facets if facet.kind is FacetKind.NEED),
         )
         common = {
             "precedents": tuple(

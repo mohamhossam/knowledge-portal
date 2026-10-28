@@ -42,6 +42,8 @@ class PrecedentRequest:
     offering_id: str | None = None
     concept_ids: tuple[str, ...] = ()
     systems: tuple[PrecedentSystemRequest, ...] = ()
+    # The need facets the requirement was assessed with (ADR-0129); none from an older sender.
+    needs: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

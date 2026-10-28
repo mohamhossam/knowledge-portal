@@ -83,6 +83,7 @@ from knowledge_portal.domain.architecture.precedents import (
     Precedent,
     PrecedentDecision,
     PrecedentSystem,
+    needs_text,
     precedent_text,
 )
 from knowledge_portal.domain.architecture.products import (
@@ -304,10 +305,11 @@ def test_an_assessment_embeds_its_needs_together_and_its_facets_together() -> No
     needs = tuple(item.text for item in result.facets if item.kind is FacetKind.NEED)
     searched = tuple(item.text for item in result.facets if item.kind in SEARCHED_FACETS)
     assert len(needs) > 1 and len(searched) > 1
-    # The needs, the requirement for its precedents, then the facets for their passages.
+    # The needs, the requirement's needs and text for its precedents, then the facets for
+    # their passages.
     assert embeddings.calls == [
         tuple(dict.fromkeys(needs)),
-        (text,),
+        (needs_text(needs), text),
         tuple(dict.fromkeys(searched)),
     ]
 

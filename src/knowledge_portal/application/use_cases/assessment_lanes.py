@@ -53,7 +53,11 @@ from knowledge_portal.domain.architecture.impact_graph import (
     serves,
 )
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
-from knowledge_portal.domain.architecture.precedents import precedent_text
+from knowledge_portal.domain.architecture.precedents import (
+    needs_space,
+    needs_text,
+    precedent_text,
+)
 from knowledge_portal.domain.architecture.products import OfferingComponent, ProductOffering
 from knowledge_portal.domain.architecture.ripple import (
     data_owners,
@@ -577,26 +581,38 @@ def precedent_lane(
     needed: frozenset[str],
     requirement_id: str | None,
     concepts: Sequence[BusinessCapability] = (),
+    *,
+    needs: tuple[str, ...] = (),
 ) -> tuple[tuple[PrecedentMatch, float], ...]:
-    """The nearest decided requirements, by text similarity and the concepts both need.
+    """The nearest decided requirements, by similarity and the concepts both need.
 
-    Each is scored by its text's similarity, plus `CONCEPT_WEIGHT` times the overlap of the
-    concepts both needed; those under `MIN_PRECEDENT_SCORE` are left out. The requirement's
-    own decisions never come back to it.
+    Requirements are compared by the needs they were read with, once any other decided
+    precedent was kept with its needs, and by their text until then (ADR-0129). Each is
+    scored by that similarity, plus `CONCEPT_WEIGHT` times the overlap of the concepts both
+    needed; those under `MIN_PRECEDENT_SCORE` are left out. The requirement's own decisions
+    never come back to it.
     """
     if not text.strip():
         return ()
+    model = index.embedding_model
+    compared = needs_text(needs)
+    # Compared as a precedent keeps its own needs or text, so the two are alike.
+    searches: tuple[tuple[str, str], ...] = ((needs_space(model), compared),) if compared else ()
+    searches += ((model, precedent_text((text,))),)
     try:
-        # Compared as a precedent keeps its own text, so the two are alike.
-        vector = index.vectors((precedent_text((text,)),))[0]
+        vectors = index.vectors(tuple(query for _, query in searches))
     except ArchitectureEvidenceError as exc:
         # Precedents only lend examples and supporting candidates (ADR-0114, Amendment 1):
         # an assessment without them still stands. The text never reaches the log.
         LOGGER.warning("The assessment goes on without precedents: %s", exc)
         return ()
-    pool = store.nearest(
-        index.embedding_model, vector, PRECEDENT_POOL, exclude_requirement=requirement_id
-    )
+    pool: tuple[PrecedentMatch, ...] = ()
+    for (space, _), vector in zip(searches, vectors, strict=True):
+        # The first space holding another decided precedent answers alone: precedents of
+        # two text versions are never ranked together.
+        pool = store.nearest(space, vector, PRECEDENT_POOL, exclude_requirement=requirement_id)
+        if pool:
+            break
     scored = [
         (
             match,

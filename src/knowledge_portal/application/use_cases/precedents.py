@@ -30,6 +30,8 @@ from knowledge_portal.domain.architecture.precedents import (
     Precedent,
     PrecedentSummary,
     PrecedentSystem,
+    needs_space,
+    needs_text,
     precedent_text,
 )
 
@@ -61,7 +63,7 @@ class RecordPrecedent:
         dropped = tuple(
             sorted({item.id for item in request.systems if item.id.strip() not in systems})
         )
-        # The text is what the lane compares, cut as the lane cuts its own.
+        # The text is what the lane compares when no needs came, cut as the lane cuts its own.
         text = precedent_text(request.text)
         precedent = Precedent(
             id=request.precedent_id,
@@ -78,9 +80,17 @@ class RecordPrecedent:
             systems=kept,
             decided_at=request.decided_at,
             received_at=self._clock.now(),
+            needs=tuple(item.strip() for item in request.needs if item.strip()),
         )
-        vector = self._index.vectors((precedent.text,))[0]
-        recorded = self._store.record(precedent, self._index.embedding_model, vector)
+        # Compared by its needs when it came with them, in their own space (ADR-0129).
+        model = self._index.embedding_model
+        space, compared = (
+            (needs_space(model), needs_text(precedent.needs))
+            if precedent.needs
+            else (model, precedent.text)
+        )
+        vector = self._index.vectors((compared,))[0]
+        recorded = self._store.record(precedent, space, vector)
         return PrecedentReceipt(precedent.id, recorded, dropped)
 
 
