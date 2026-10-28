@@ -7,6 +7,14 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- A citation of a passage the model was not given no longer fails a requirement's assessment or
+  an architecture match. Weighing the verdict refused the whole answer (502, "Weighing the
+  verdict invented a citation id"), and requirement work showed "Product impact was not
+  assessed"; architecture reasoning did the same ("Architecture reasoning invented a citation
+  id"). Such a citation is now dropped. A system left with no checked citation is set aside and
+  named in the uncertainty ("the passage it cited was not one supplied"); the verdict and the
+  other systems stand. An invented system or offering, or a system with no citation, still
+  fails. ADR-0114 Amendment 2. No upgrade step.
 - One misquoted system no longer fails an architecture match. Architecture reasoning refused the
   whole selection (502, "Architecture reasoning invented a quoted passage") when any quote was
   not found word for word in its passage, and requirement work's feature generation failed with
