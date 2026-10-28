@@ -9,6 +9,7 @@ model answer passes before it is used.
 from __future__ import annotations
 
 import json
+import logging
 from collections.abc import Iterator
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
@@ -482,6 +483,73 @@ def test_the_reader_keeps_to_the_requirement_s_words_and_the_release_s_ids(
 
     with pytest.raises(ArchitectureEvidenceError, match=message):
         reader.facets(TEXT, TERMS)
+
+
+LINES = "\n".join(
+    (
+        "Let Business Pro Plus customers add a FortiAP.",
+        "Keep the current monthly price.",
+        "Each FortiAP is billed  per site.",
+    )
+)
+
+
+def _reading(*facets: dict[str, Any]) -> Any:
+    from knowledge_portal.infrastructure.architecture import requirement_reading
+
+    item = {"kind": "need", "text": "add a FortiAP", "quote": "add a FortiAP", "ref_id": None}
+    return requirement_reading._Facets.model_validate(
+        {"facets": [{**item, **facet} for facet in facets]}
+    )
+
+
+def test_a_quote_stitched_from_separate_lines_of_the_requirement_is_kept() -> None:
+    # Observed 2026-10-28: GPT-5.1 joined two real sentences from non-adjacent items.
+    stitched = "Let Business Pro Plus customers add a FortiAP.\n\nEach FortiAP is billed per site."
+    reader = StructuredRequirementReader(
+        _Client(_reading({}, {"kind": "characteristic", "text": "per site", "quote": stitched}))
+    )
+
+    need, characteristic = reader.facets(LINES, TERMS)
+
+    assert need.kind is FacetKind.NEED
+    assert characteristic.quote == stitched
+
+
+def test_a_facet_whose_quote_is_not_in_the_requirement_is_set_aside(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    invented = "Keep the current monthly price.\nBill it weekly."
+    reader = StructuredRequirementReader(
+        _Client(
+            _reading(
+                {},
+                {"kind": "characteristic", "text": "weekly", "quote": invented},
+                {"kind": "excluded", "text": "a new price", "quote": "\n\nKeep the current price"},
+            )
+        )
+    )
+
+    with caplog.at_level(logging.WARNING):
+        (need,) = reader.facets(LINES, TERMS)
+
+    assert need.kind is FacetKind.NEED
+    assert "set aside 2 facets" in caplog.text
+    assert "weekly" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "facets",
+    [
+        ({"quote": "add two FortiAPs"},),
+        ({"quote": "add two FortiAPs"}, {"kind": "offering", "ref_id": BPP, "quote": "pro plus"}),
+    ],
+)
+def test_a_reading_left_with_no_need_still_fails(facets: tuple[dict[str, Any], ...]) -> None:
+    reader = StructuredRequirementReader(_Client(_reading(*facets)))
+
+    with pytest.raises(ArchitectureEvidenceError, match="invented a quote"):
+        reader.facets(LINES, TERMS)
 
 
 def test_the_reader_s_facets_and_picks_pass_when_they_keep_to_the_lists() -> None:

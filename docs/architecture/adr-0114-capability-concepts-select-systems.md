@@ -113,3 +113,24 @@ weighing the verdict.
 - **These still fail the whole answer (502):** a system or offering outside the release, a
   system selected with no citation at all, and a model answer that does not parse. Nothing set
   aside is ever kept as evidence.
+
+## Amendment 3 — a reading's facets are checked one by one (2026-10-28)
+
+Proposed 2026-10-28, for the owner's acceptance in review. It does for the requirement reader
+what Amendment 2 does for the match and the verdict.
+
+- **A quote may join lines from separate items.** On a requirement of 292 items, GPT-5.1 gave
+  one facet in about eight runs a quote made of two real sentences from items that are not
+  next to each other, joined by a new line. Each line is the requirement's own words, but the
+  whole is not one span, so the assessment failed (502, "Requirement reading invented a
+  quote"). Such a quote now counts as the requirement's when each of its non-empty lines is
+  found in it (spacing and case folded, as before). Any line that is not found means the quote
+  is not the requirement's. The quote is kept as the model gave it: nothing downstream reads it
+  as one span.
+- **A facet whose quote is not the requirement's is set aside,** and the rest of the reading
+  stands. The assessment has no field the reader can name it in on every path, so the reader
+  logs how many facets were set aside and how many were kept, never their text.
+- **These still fail the reading (502):** a reading left with no need once facets are set aside
+  (with today's message), a catalogue id or change type outside the lists the reader was given
+  (an id outside the release fails the answer, as in Amendment 2), a blank facet, and a model
+  answer that does not parse.
