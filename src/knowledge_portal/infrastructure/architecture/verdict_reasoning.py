@@ -3,8 +3,8 @@
 The fake keeps the rules' verdict and selects every candidate its own catalogue record
 backs. The structured reasoner asks the configured `knowledge` model, and keeps today's
 checks: ids only from the release, every selected system cited, every quote found in the
-passage it cites. A system whose quotes are not found is set aside and named in the
-uncertainty, rather than failing the assessment.
+passage it cites. A system whose quotes are not found, or whose citations name no passage
+it was given, is set aside and named in the uncertainty, rather than failing the assessment.
 """
 
 from __future__ import annotations
@@ -213,6 +213,7 @@ class StructuredVerdictReasoner:
         by_id = {item.id: item for item in kept}
         decisions: list[SystemDecision] = []
         unquoted: set[str] = set()
+        unsupplied: set[str] = set()
         for item in result.systems:
             if item.system_id not in systems_known:
                 raise ArchitectureEvidenceError("Weighing the verdict invented a system id.")
@@ -221,15 +222,17 @@ class StructuredVerdictReasoner:
             citations: list[ArchitectureCitation] = []
             for citation in item.citations:
                 cited = by_id.get(citation.id)
-                if cited is None:
-                    raise ArchitectureEvidenceError("Weighing the verdict invented a citation id.")
-                quote = verbatim(citation.quote, cited.text)
+                quote = verbatim(citation.quote, cited.text) if cited is not None else None
                 if quote is not None:
                     citations.append(ArchitectureCitation(item.system_id, citation.id, quote))
-            # A quote not in its passage is set aside, and a system left with none with it:
-            # one misquoted system no longer costs the whole assessment.
+            # A citation of a passage not supplied, or a quote not in its passage, is set
+            # aside, and a system left with none with it: one system no longer costs the
+            # whole assessment.
             if not citations:
-                unquoted.add(item.system_id)
+                if any(citation.id in by_id for citation in item.citations):
+                    unquoted.add(item.system_id)
+                else:
+                    unsupplied.add(item.system_id)
                 continue
             decisions.append(
                 SystemDecision(item.system_id, ChangeType(item.change_type), tuple(citations))
@@ -240,10 +243,16 @@ class StructuredVerdictReasoner:
                 f"{uncertainty} " if uncertainty else ""
             ) + f"Evidence context budget omitted {len(context.evidence) - len(kept)} passages."
         unquoted -= {decision.system_id for decision in decisions}
+        unsupplied -= {decision.system_id for decision in decisions} | unquoted
         if unquoted:
             uncertainty = (f"{uncertainty} " if uncertainty else "") + (
                 f"Set aside {', '.join(sorted(unquoted))}: no quote was found in the passage "
                 "it cited."
+            )
+        if unsupplied:
+            uncertainty = (f"{uncertainty} " if uncertainty else "") + (
+                f"Set aside {', '.join(sorted(unsupplied))}: the passage it cited was not "
+                "one supplied."
             )
         reason = result.reason.strip() or context.rule.reason
         unique: dict[str, SystemDecision] = {}
