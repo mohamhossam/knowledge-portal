@@ -10,6 +10,7 @@ from typing import Any
 
 from knowledge_portal.application.ports.precedents import PrecedentMatch
 from knowledge_portal.domain.architecture.precedents import (
+    AssessedNeeds,
     Precedent,
     PrecedentSummary,
     summarise,
@@ -27,12 +28,21 @@ class InMemoryPrecedents:
     def __init__(self) -> None:
         self._lock = RLock()
         self._items: dict[str, tuple[Precedent, str, tuple[float, ...]]] = {}
+        self._needs: dict[str, AssessedNeeds] = {}
 
     def snapshot_state(self) -> Any:
-        return deepcopy((self._items,))
+        return deepcopy((self._items, self._needs))
 
     def restore_state(self, state: Any) -> None:
-        (self._items,) = deepcopy(state)
+        self._items, self._needs = deepcopy(state)
+
+    def keep_needs(self, needs: AssessedNeeds) -> None:
+        with self._lock:
+            self._needs[needs.requirement_id] = needs
+
+    def assessed_needs(self, requirement_id: str) -> AssessedNeeds | None:
+        with self._lock:
+            return self._needs.get(requirement_id)
 
     def record(self, precedent: Precedent, embedding_model: str, vector: tuple[float, ...]) -> bool:
         with self._lock:

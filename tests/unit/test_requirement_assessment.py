@@ -80,6 +80,7 @@ from knowledge_portal.domain.architecture.offering_drafts import (
 )
 from knowledge_portal.domain.architecture.precedents import (
     TEXT_LIMIT,
+    AssessedNeeds,
     Precedent,
     PrecedentDecision,
     PrecedentSystem,
@@ -312,6 +313,64 @@ def test_an_assessment_embeds_its_needs_together_and_its_facets_together() -> No
         (needs_text(needs), text),
         tuple(dict.fromkeys(searched)),
     ]
+
+
+ADD_ON = (
+    "Let Business Pro Plus customers add a second FortiAP as an add-on from B2B Web. "
+    "A technician visit installs it."
+)
+CAMERAS = "Cloud video surveillance for shops, with cameras installed on site."
+
+
+def _needs(assessment: ArchitectureAssessment) -> tuple[str, ...]:
+    return tuple(item.text for item in assessment.facets if item.kind is FacetKind.NEED)
+
+
+def test_an_assessment_keeps_the_needs_it_read_for_its_requirement(world: _World) -> None:
+    store = InMemoryPrecedents()
+    assessor = world.assessor(precedents=store)
+
+    first = assessor.assess(
+        AssessmentQuery((ADD_ON,), release_id=world.release.id, requirement_id="REQ-7")
+    )
+
+    assert _needs(first)
+    assert store.assessed_needs("REQ-7") == AssessedNeeds(
+        "REQ-7", world.release.id, FakeRequirementReader().model, _needs(first)
+    )
+
+    # Assessed again, the requirement keeps only its latest needs.
+    second = assessor.assess(
+        AssessmentQuery((CAMERAS,), release_id=world.release.id, requirement_id="REQ-7")
+    )
+    kept = store.assessed_needs("REQ-7")
+    assert kept is not None and kept.needs == _needs(second) != _needs(first)
+
+    # An assessment for no requirement keeps nothing.
+    assessor.assess(AssessmentQuery((ADD_ON,), release_id=world.release.id))
+    assert store.assessed_needs("REQ-7") == kept
+
+
+class _Failing:
+    model = "failing"
+
+    def decide(self, context: VerdictContext) -> VerdictDecision:
+        raise ArchitectureEvidenceError("Weighing the verdict failed.")
+
+
+def test_an_assessment_that_fails_after_reading_keeps_no_needs(world: _World) -> None:
+    # requirement work keeps the earlier product impact when an assessment fails, and its
+    # decision is on that one: the needs of the failed one must not replace its needs.
+    store = InMemoryPrecedents()
+    store.keep_needs(AssessedNeeds("REQ-8", world.release.id, "reader", ("add a phone",)))
+
+    with pytest.raises(ArchitectureEvidenceError):
+        world.assessor(_Failing(), store).assess(
+            AssessmentQuery((ADD_ON,), release_id=world.release.id, requirement_id="REQ-8")
+        )
+
+    kept = store.assessed_needs("REQ-8")
+    assert kept is not None and kept.needs == ("add a phone",)
 
 
 class _Untouched:

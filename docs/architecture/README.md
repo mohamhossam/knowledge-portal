@@ -29,4 +29,4 @@ the same platform-wide series.
 | [0126](adr-0126-the-service-starts-with-no-catalogue.md) | The service starts with no catalogue |
 | [0127](adr-0127-cfss-and-rfss-rules.md) | CFSS and RFSS keep their own rules |
 | [0128](adr-0128-capabilities-read-under-a-business-area.md) | A capability read under a business area is filed there |
-| [0129](adr-0129-precedents-compared-by-their-needs.md) | Precedents are compared by the needs they were read with |
+| [0129](adr-0129-precedents-compared-by-their-needs.md) | Precedents are compared by the needs they were assessed with |

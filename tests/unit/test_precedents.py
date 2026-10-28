@@ -36,6 +36,7 @@ from knowledge_portal.domain.architecture.knowledge import InvalidKnowledgeError
 from knowledge_portal.domain.architecture.precedents import (
     NEED_LIMIT,
     TEXT_LIMIT,
+    AssessedNeeds,
     ConceptOverrides,
     Precedent,
     PrecedentDecision,
@@ -52,6 +53,7 @@ from knowledge_portal.infrastructure.architecture.tokenizer import FakeWordToken
 from knowledge_portal.infrastructure.persistence.in_memory_precedents import InMemoryPrecedents
 from knowledge_portal.interfaces.api.container import Container, build_container
 from knowledge_portal.interfaces.api.main import create_app
+from knowledge_portal.interfaces.api.schemas.precedents import PrecedentBody
 from tests.catalogue_seed import seed_knowledge, seeded_repository
 from tests.conftest import FAKE_PROVIDER_SETTINGS
 
@@ -354,21 +356,78 @@ def test_a_precedent_keeps_a_bounded_list_of_needs(needs: tuple[str, ...], messa
         _precedent(needs=needs)
 
 
-def test_a_decision_with_needs_is_kept_in_the_needs_space(
+@pytest.mark.parametrize(
+    ("changes", "message"),
+    [
+        ({"requirement_id": " "}, "requirement"),
+        ({"needs": (" ",)}, "Precedent need"),
+        ({"needs": tuple(f"need {i}" for i in range(NEED_LIMIT + 1))}, "needs"),
+    ],
+)
+def test_assessed_needs_name_their_requirement_and_are_bounded(
+    changes: dict[str, Any], message: str
+) -> None:
+    item = {"requirement_id": "REQ-1", "release_id": SEED, "reader_model": "reader"}
+    with pytest.raises(InvalidKnowledgeError, match=message):
+        AssessedNeeds(**{**item, "needs": ("x",), **changes})
+
+
+def test_the_latest_assessment_s_needs_replace_the_earlier() -> None:
+    store = InMemoryPrecedents()
+    store.keep_needs(AssessedNeeds("REQ-1", "r1", "reader", ("add a phone",)))
+    store.keep_needs(AssessedNeeds("REQ-1", "r2", "reader", ("bill per site",)))
+
+    assert store.assessed_needs("REQ-1") == AssessedNeeds(
+        "REQ-1", "r2", "reader", ("bill per site",)
+    )
+    assert store.assessed_needs("REQ-2") is None
+
+
+def test_a_decision_is_compared_by_the_needs_its_requirement_was_last_assessed_with(
     recording: tuple[RecordPrecedent, InMemoryPrecedents, InMemoryEvidenceIndex],
 ) -> None:
     record, store, index = recording
-    needs = ("See their orders", " ", "Show them in the app")
+    needs = ("See their orders", "Show them in the app")
+    store.keep_needs(AssessedNeeds("REQ-1", SEED, "reader", needs))
 
-    record.execute(_request(needs=needs))
+    record.execute(_request())
 
     kept = store.get("ana-1")
-    assert kept is not None and kept.needs == ("See their orders", "Show them in the app")
-    vector = index.vectors((needs_text(kept.needs),))[0]
+    assert kept is not None and kept.needs == needs
+    vector = index.vectors((needs_text(needs),))[0]
     space = needs_space(index.embedding_model)
     assert [item.precedent.id for item in store.nearest(space, vector, 3)] == ["ana-1"]
     # Never beside precedents compared by their text.
     assert store.nearest(index.embedding_model, vector, 3) == ()
+
+
+@pytest.mark.parametrize(
+    "assessed",
+    [
+        # Assessed before needs were kept.
+        None,
+        # Last assessed on another release than the one decided on.
+        AssessedNeeds("REQ-1", "another-release", "reader", ("see their orders",)),
+        # Read without needs.
+        AssessedNeeds("REQ-1", SEED, "reader", ()),
+    ],
+)
+def test_a_decision_with_no_needs_from_its_release_is_compared_by_its_text(
+    recording: tuple[RecordPrecedent, InMemoryPrecedents, InMemoryEvidenceIndex],
+    assessed: AssessedNeeds | None,
+) -> None:
+    record, store, index = recording
+    if assessed is not None:
+        store.keep_needs(assessed)
+
+    record.execute(_request())
+
+    kept = store.get("ana-1")
+    assert kept is not None and kept.needs == ()
+    vector = index.vectors((kept.text,))[0]
+    assert [item.precedent.id for item in store.nearest(index.embedding_model, vector, 3)] == [
+        "ana-1"
+    ]
 
 
 def _lane(store: InMemoryPrecedents, needs: tuple[str, ...]) -> tuple[list[str], _Index]:
@@ -418,22 +477,13 @@ def test_a_requirement_read_without_needs_is_compared_by_its_text() -> None:
     assert len(index.texts) == 1
 
 
-def test_requirement_work_may_send_the_needs_it_was_assessed_with(served: TestClient) -> None:
-    sent = served.post(
-        ROUTE, json={**BODY, "needs": ["See their orders", "In the app"]}, headers=REQUIREMENTS
-    )
-    too_many = served.post(
-        ROUTE,
-        json={
-            **BODY,
-            "precedent_id": "ana-2",
-            "needs": [f"need {i}" for i in range(NEED_LIMIT + 1)],
-        },
-        headers=REQUIREMENTS,
-    )
+def test_requirement_work_sends_no_needs_and_any_it_sends_are_ignored(served: TestClient) -> None:
+    # The needs come from this service's own assessment: the contract is unchanged.
+    assert "needs" not in PrecedentBody.model_json_schema()["properties"]
+
+    sent = served.post(ROUTE, json={**BODY, "needs": ["See their orders"]}, headers=REQUIREMENTS)
 
     assert sent.status_code == 201, sent.text
-    assert too_many.status_code == 422
 
 
 def test_summaries_name_their_release_and_need_a_maintainer() -> None:

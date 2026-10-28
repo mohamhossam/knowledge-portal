@@ -13,6 +13,7 @@ import pytest
 from smb_kernel.persistence.connector import DirectPostgresConnector
 
 from knowledge_portal.domain.architecture.precedents import (
+    AssessedNeeds,
     Precedent,
     PrecedentDecision,
     PrecedentSystem,
@@ -90,3 +91,23 @@ def test_precedents_are_kept_once_and_searched_by_their_model() -> None:
 
     (summary,) = [item for item in store.summaries() if item.release_id == release]
     assert (summary.accepted, summary.overridden, summary.unknown) == (2, 1, 1)
+
+
+def test_a_requirement_keeps_the_needs_it_was_last_assessed_with() -> None:
+    assert DATABASE_URL is not None
+    run_migrations(DATABASE_URL)
+    store = PostgresPrecedents(PostgresStore(DirectPostgresConnector(DATABASE_URL)))
+    requirement = f"REQ-{uuid4().hex}"
+
+    assert store.assessed_needs(requirement) is None
+    store.keep_needs(AssessedNeeds(requirement, "r1", "reader", ("add a phone", "bill per site")))
+    store.keep_needs(AssessedNeeds(requirement, "r2", "reader", ("add a phone",)))
+
+    assert store.assessed_needs(requirement) == AssessedNeeds(
+        requirement, "r2", "reader", ("add a phone",)
+    )
+    # A precedent with needs loads them again; one kept before needs existed loads none.
+    release = f"r-{uuid4().hex}"
+    store.record(_precedent(release, 1, needs=("add a phone",)), "m#needs-v1", _vector(1.0))
+    kept = store.get(f"{release}-ana-1")
+    assert kept is not None and kept.needs == ("add a phone",)

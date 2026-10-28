@@ -64,6 +64,37 @@ def needs_space(embedding_model: str) -> str:
     return f"{embedding_model}#{NEEDS_VERSION}"
 
 
+def _needs(values: tuple[str, ...]) -> tuple[str, ...]:
+    needs = tuple(required(item, "Precedent need") for item in values)
+    if len(needs) > NEED_LIMIT:
+        raise InvalidKnowledgeError(f"A requirement keeps at most {NEED_LIMIT} needs.")
+    return needs
+
+
+@dataclass(frozen=True)
+class AssessedNeeds:
+    """The need facets a requirement was last assessed with, successfully (ADR-0129).
+
+    The assessment keeps them by requirement; when the requirement's verdict is decided,
+    its precedent is compared by them. Kept like a precedent: replaced, never pruned.
+    """
+
+    requirement_id: str
+    # The release and reader model of the assessment that read them.
+    release_id: str
+    reader_model: str
+    needs: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        for name, label in (
+            ("requirement_id", "Assessed requirement"),
+            ("release_id", "Assessed release"),
+            ("reader_model", "Assessed reader model"),
+        ):
+            object.__setattr__(self, name, required(getattr(self, name), label))
+        object.__setattr__(self, "needs", _needs(self.needs))
+
+
 class PrecedentDecision(StrEnum):
     """What the reviewer did with the suggested verdict (requirement-portal ADR-0115)."""
 
@@ -113,8 +144,8 @@ class Precedent:
     systems: tuple[PrecedentSystem, ...]
     decided_at: datetime
     received_at: datetime
-    # The needs the requirement was assessed with, when requirement work sent them; it is
-    # then compared by them rather than by its text (ADR-0129).
+    # The needs its requirement was last assessed with on its release, when they were kept;
+    # it is then compared by them rather than by its text (ADR-0129).
     needs: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -144,10 +175,7 @@ class Precedent:
         if len(concepts) > CONCEPT_LIMIT or len(self.systems) > SYSTEM_LIMIT:
             raise InvalidKnowledgeError("A precedent names too many concepts or systems.")
         object.__setattr__(self, "concept_ids", concepts)
-        needs = tuple(required(item, "Precedent need") for item in self.needs)
-        if len(needs) > NEED_LIMIT:
-            raise InvalidKnowledgeError(f"A precedent keeps at most {NEED_LIMIT} needs.")
-        object.__setattr__(self, "needs", needs)
+        object.__setattr__(self, "needs", _needs(self.needs))
         seen: set[str] = set()
         for system in self.systems:
             if system.system_id in seen:
