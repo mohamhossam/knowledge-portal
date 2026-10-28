@@ -79,9 +79,11 @@ from knowledge_portal.domain.architecture.offering_drafts import (
     draft_offering,
 )
 from knowledge_portal.domain.architecture.precedents import (
+    TEXT_LIMIT,
     Precedent,
     PrecedentDecision,
     PrecedentSystem,
+    precedent_text,
 )
 from knowledge_portal.domain.architecture.products import (
     ComponentResponsibility,
@@ -315,6 +317,24 @@ class _Untouched:
 
     def decide(self, context: VerdictContext) -> VerdictDecision:
         raise AssertionError("A vague requirement is never weighed.")
+
+
+def test_a_long_requirement_is_embedded_whole_only_as_far_as_a_precedent_keeps() -> None:
+    # Observed 2026-10-28: a 45,189-character requirement went whole to the embedding model,
+    # which refused it (8,192 tokens at most), and the assessment failed with a 502.
+    embeddings = _Counted()
+    world = _built(embeddings)
+    text = "Add a new device.\n" + "The device stays on site for every user line. " * 120
+    assert len(text) > TEXT_LIMIT
+    embeddings.calls.clear()
+
+    result = world.assess(text, reasoner=_Untouched())
+
+    assert result.questions
+    embedded = [item for call in embeddings.calls for item in call]
+    # The precedents' query and the suggested concepts' query are the same cut text.
+    assert embedded.count(precedent_text((text,))) == 2
+    assert max(len(item) for item in embedded) == TEXT_LIMIT
 
 
 def test_add_a_new_device_returns_questions_not_a_verdict(world: _World) -> None:

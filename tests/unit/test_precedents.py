@@ -8,20 +8,26 @@ knowledge admin.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from fastapi.testclient import TestClient
 from smb_kernel.time.fixed import FixedClock
 
+from knowledge_portal.application.ports.architecture_rag import (
+    ArchitectureEvidenceError,
+    ArchitectureEvidenceIndexPort,
+)
 from knowledge_portal.application.ports.identity import Actor
 from knowledge_portal.application.ports.precedents import (
     PrecedentRequest,
     PrecedentSystemRequest,
 )
 from knowledge_portal.application.use_cases.architecture_knowledge import KnowledgeNotFoundError
+from knowledge_portal.application.use_cases.assessment_lanes import precedent_lane
 from knowledge_portal.application.use_cases.precedents import (
     ReadPrecedentSummaries,
     RecordPrecedent,
@@ -33,6 +39,7 @@ from knowledge_portal.domain.architecture.precedents import (
     Precedent,
     PrecedentDecision,
     PrecedentSystem,
+    precedent_text,
     summarise,
 )
 from knowledge_portal.domain.architecture.verdicts import ProductVerdict
@@ -255,6 +262,71 @@ def test_the_nearest_precedents_are_decided_and_never_the_requirement_s_own() ->
 
     assert [(item.precedent.id, round(item.similarity, 2)) for item in found] == [("other", 0.8)]
     assert [item.precedent.id for item in store.nearest("m", near, 5)] == ["mine", "other"]
+
+
+class _Index:
+    """An evidence index that records the texts the lane embeds, or fails to embed."""
+
+    embedding_model = "m"
+
+    def __init__(self, *, fails: bool = False) -> None:
+        self.texts: list[str] = []
+        self._fails = fails
+
+    def vectors(self, texts: tuple[str, ...]) -> tuple[tuple[float, ...], ...]:
+        if self._fails:
+            raise ArchitectureEvidenceError("The embedding service returned unusable output.")
+        self.texts.extend(texts)
+        return tuple((1.0, 0.0) for _ in texts)
+
+
+def test_the_lane_compares_the_text_a_precedent_keeps() -> None:
+    # Observed 2026-10-28: the lane embedded all 45,189 characters of a requirement, which
+    # the embedding model refused, while a precedent keeps only its first TEXT_LIMIT.
+    store = InMemoryPrecedents()
+    store.record(_precedent(requirement_id="REQ-2"), "m", (1.0, 0.0))
+    parts = ("Let Business Pro Plus customers add a second access point.", "line " * TEXT_LIMIT)
+    index = _Index()
+
+    found = precedent_lane(
+        store, cast(ArchitectureEvidenceIndexPort, index), "\n".join(parts), frozenset(), "REQ-1"
+    )
+
+    assert index.texts == [precedent_text(parts)]
+    assert len(index.texts[0]) == TEXT_LIMIT
+    assert [match.precedent.id for match, _ in found] == ["ana-1"]
+
+
+def test_a_precedent_is_recorded_with_the_same_text_the_lane_compares(
+    recording: tuple[RecordPrecedent, InMemoryPrecedents, InMemoryEvidenceIndex],
+) -> None:
+    record, store, _ = recording
+    parts = ("  Let Business Pro Plus customers add a second access point.  ", "", "line " * 900)
+
+    record.execute(_request(text=parts))
+
+    kept = store.get("ana-1")
+    assert kept is not None and kept.text == precedent_text(parts)
+
+
+def test_an_assessment_whose_precedents_cannot_be_embedded_has_none(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    store = InMemoryPrecedents()
+    store.record(_precedent(requirement_id="REQ-2"), "m", (1.0, 0.0))
+
+    with caplog.at_level(logging.WARNING):
+        found = precedent_lane(
+            store,
+            cast(ArchitectureEvidenceIndexPort, _Index(fails=True)),
+            "Let Business Pro Plus customers add a second access point.",
+            frozenset(),
+            "REQ-1",
+        )
+
+    assert found == ()
+    assert "without precedents" in caplog.text
+    assert "access point" not in caplog.text
 
 
 def test_summaries_name_their_release_and_need_a_maintainer() -> None:

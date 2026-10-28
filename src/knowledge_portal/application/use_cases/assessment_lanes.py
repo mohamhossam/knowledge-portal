@@ -6,11 +6,13 @@ checked before it reaches here; what leaves here carries release ids alone.
 
 from __future__ import annotations
 
+import logging
 import re
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 
 from knowledge_portal.application.ports.architecture_rag import (
+    ArchitectureEvidenceError,
     ArchitectureEvidenceIndexPort,
     EntityRole,
     EvidenceChunk,
@@ -51,6 +53,7 @@ from knowledge_portal.domain.architecture.impact_graph import (
     serves,
 )
 from knowledge_portal.domain.architecture.knowledge import ArchitectureKnowledge
+from knowledge_portal.domain.architecture.precedents import precedent_text
 from knowledge_portal.domain.architecture.products import OfferingComponent, ProductOffering
 from knowledge_portal.domain.architecture.ripple import (
     data_owners,
@@ -61,6 +64,8 @@ from knowledge_portal.domain.architecture.ripple import (
 )
 from knowledge_portal.domain.architecture.verdicts import OfferingFit, ProductVerdict
 from knowledge_portal.domain.architecture.vocabularies import VocabularyScheme
+
+LOGGER = logging.getLogger(__name__)
 
 SHORTLIST_LIMIT = 10
 # The passage lane's budgets (ontology plan Phase 5): passages fetched per facet before
@@ -581,7 +586,14 @@ def precedent_lane(
     """
     if not text.strip():
         return ()
-    vector = index.vectors((text,))[0]
+    try:
+        # Compared as a precedent keeps its own text, so the two are alike.
+        vector = index.vectors((precedent_text((text,)),))[0]
+    except ArchitectureEvidenceError as exc:
+        # Precedents only lend examples and supporting candidates (ADR-0114, Amendment 1):
+        # an assessment without them still stands. The text never reaches the log.
+        LOGGER.warning("The assessment goes on without precedents: %s", exc)
+        return ()
     pool = store.nearest(
         index.embedding_model, vector, PRECEDENT_POOL, exclude_requirement=requirement_id
     )
