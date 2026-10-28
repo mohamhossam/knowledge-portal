@@ -280,14 +280,19 @@ def test_requirements_are_matched_against_the_concept_scheme() -> None:
     index, built = _build(_release())
     assert built.index_id is not None
 
-    matches = index.match_concepts(built.index_id, "Open a static IP range", 3)
+    matches = index.match_concepts(built.index_id, index.queries(("Open a static IP range",))[0], 3)
     assert matches[0].concept_id == "cap-static-ip"
     assert matches[0].score > matches[-1].score
 
-    linked = index.concept_chunks(built.index_id, "branch overlay policy", ("cap-sdwan",), 5)
+    linked = index.concept_chunks(
+        built.index_id, index.queries(("branch overlay policy",))[0], ("cap-sdwan",), 5
+    )
     # The overlay passage, then the offering whose component realises SD-WAN.
     assert [item.location for item in linked] == ["line 3", "product bpp"]
-    assert index.concept_chunks(built.index_id, "anything", ("cap-wifi",), 5) == ()
+    assert (
+        index.concept_chunks(built.index_id, index.queries(("anything",))[0], ("cap-wifi",), 5)
+        == ()
+    )
 
 
 def test_a_release_without_concepts_still_builds_with_entity_links() -> None:
@@ -312,7 +317,7 @@ def test_a_release_without_concepts_still_builds_with_entity_links() -> None:
 
     assert coverage is not None and coverage.concepts == 0
     assert coverage.chunks_without_concept == coverage.chunks
-    assert index.match_concepts(built.index_id, "billing", 3) == ()
+    assert index.match_concepts(built.index_id, index.queries(("billing",))[0], 3) == ()
     entities, _ = index.links(built.index_id, (_chunk(index, "system bscs").id,))
     assert [item.role for item in entities] == [EntityRole.RECORD]
 

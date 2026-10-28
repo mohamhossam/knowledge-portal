@@ -95,7 +95,7 @@ def test_pgvector_index_release_and_job_survive_repository_restart() -> None:
         FakeWordTokenizer(),
     ).execute(draft.id, draft.revision, actor.id, fence=lambda: None)
     assert built.index_profile and built.index_hash and built.index_id
-    indexed = index.retrieve(built.index_id, "BCRM assisted sales", 8)
+    indexed = index.retrieve(built.index_id, index.queries(("BCRM assisted sales",))[0], 8)
     assert indexed and any(chunk.location == "system bcrm" for chunk in indexed)
     assert all(index.get(built.index_id, item.id) == item for item in indexed)
     own = index.system_chunk(built.index_id, "oracle-atg-bcc")

@@ -71,7 +71,9 @@ def gather_evidence(
     )
     searched = tuple(
         chunk
-        for chunk in index.retrieve(index_id, text, EVIDENCE_LIMIT + len(named))
+        for chunk in index.retrieve(
+            index_id, index.queries((text,))[0], EVIDENCE_LIMIT + len(named)
+        )
         if chunk.id not in {item.id for item in named}
     )
     room = max(MIN_SEARCH_RESULTS, EVIDENCE_LIMIT - len(named))

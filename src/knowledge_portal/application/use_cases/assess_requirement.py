@@ -62,7 +62,7 @@ from knowledge_portal.application.use_cases.assessment_lanes import (
     passage_lane,
     precedent_candidates,
     precedent_lane,
-    shortlist,
+    shortlists,
 )
 from knowledge_portal.application.use_cases.index_links import concept_path
 from knowledge_portal.domain.architecture.assessment import (
@@ -287,12 +287,12 @@ class AssessRequirement(RequirementAssessmentPort):
         self, release: ArchitectureKnowledge, index_id: str, facets: tuple[Facet, ...]
     ) -> tuple[LinkedFacet, ...]:
         needs = tuple(item for item in facets if item.kind is FacetKind.NEED)
-        shortlists = tuple(shortlist(release, self._index, index_id, item) for item in needs)
-        picks = self._reader.pick(needs, shortlists) if any(shortlists) else ()
+        listed = shortlists(release, self._index, index_id, needs)
+        picks = self._reader.pick(needs, listed) if any(listed) else ()
         chosen: dict[int, list[LinkedConcept]] = {}
         for pick in picks:
             options: tuple[ConceptOption, ...] = (
-                shortlists[pick.need] if 0 <= pick.need < len(needs) else ()
+                listed[pick.need] if 0 <= pick.need < len(needs) else ()
             )
             option = next((item for item in options if item.concept_id == pick.concept_id), None)
             if option is None:
@@ -343,7 +343,9 @@ class AssessRequirement(RequirementAssessmentPort):
             suggested = (
                 [
                     item.concept_id
-                    for item in self._index.match_concepts(index_id, text, MAX_OPTIONS)
+                    for item in self._index.match_concepts(
+                        index_id, self._index.queries((text,))[0], MAX_OPTIONS
+                    )
                 ]
                 if text
                 else []

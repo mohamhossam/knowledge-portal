@@ -128,9 +128,11 @@ def test_a_built_draft_is_compared_with_the_version_in_use(client: TestClient) -
 class _Counting(FakeEmbeddings):
     def __init__(self) -> None:
         self.embedded: list[str] = []
+        self.calls = 0
 
     def embed(self, texts: tuple[str, ...]) -> tuple[tuple[float, ...], ...]:
         self.embedded.extend(texts)
+        self.calls += 1
         return super().embed(texts)
 
 
@@ -144,4 +146,23 @@ def test_a_rebuild_embeds_only_passages_that_changed() -> None:
     index.store("draft", "second", (*chunks[:4], EvidenceChunk("c9", "Doc", "line 9", "new")))
 
     assert embeddings.embedded[5:] == ["new"]
-    assert [chunk.id for chunk in index.retrieve("second", "passage 3", 2)][0] == "c3"
+    assert [chunk.id for chunk in index.retrieve("second", index.queries(("passage 3",))[0], 2)][
+        0
+    ] == "c3"
+
+
+def test_search_queries_are_embedded_together_and_never_cached() -> None:
+    embeddings = _Counting()
+    index = InMemoryEvidenceIndex(embeddings, FakeWordTokenizer())
+
+    queries = index.queries(("billing", "wi-fi", "billing"))
+
+    # One call, each distinct text once, every query in the order asked.
+    assert embeddings.calls == 1 and embeddings.embedded == ["billing", "wi-fi"]
+    assert [item.text for item in queries] == ["billing", "wi-fi", "billing"]
+    assert queries[0] == queries[2]
+    assert queries[1].vector == FakeEmbeddings().embed(("wi-fi",))[0]
+    # A query is embedded again when asked again; nothing to embed is no call.
+    index.queries(("billing",))
+    assert index.queries(()) == ()
+    assert embeddings.calls == 2 and embeddings.embedded[2:] == ["billing"]

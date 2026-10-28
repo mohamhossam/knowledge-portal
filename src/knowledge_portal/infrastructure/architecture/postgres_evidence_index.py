@@ -16,9 +16,14 @@ from knowledge_portal.application.ports.architecture_rag import (
     IndexCoverage,
     IndexLinks,
     LinkedEntity,
+    SearchQuery,
 )
 from knowledge_portal.application.ports.architecture_tokenizer import ArchitectureTokenizerPort
-from knowledge_portal.infrastructure.architecture.evidence_index import INDEX_VERSION, readable
+from knowledge_portal.infrastructure.architecture.evidence_index import (
+    INDEX_VERSION,
+    readable,
+    search_queries,
+)
 from knowledge_portal.infrastructure.persistence.postgres_store import PostgresStore
 
 
@@ -93,6 +98,9 @@ class PostgresEvidenceIndex:
             for text in texts
         )
 
+    def queries(self, texts: tuple[str, ...]) -> tuple[SearchQuery, ...]:
+        return search_queries(self._embeddings, texts)
+
     def store(self, release_id: str, index_id: str, chunks: tuple[EvidenceChunk, ...]) -> None:
         """Store an index, embedding only passage texts this model has not embedded before."""
         vectors = self._cached(tuple(chunk.text for chunk in chunks))
@@ -117,8 +125,8 @@ class PostgresEvidenceIndex:
                     ),
                 )
 
-    def retrieve(self, index_id: str, query: str, limit: int) -> tuple[EvidenceChunk, ...]:
-        vector = self._vector(self._embeddings.embed((query,))[0])
+    def retrieve(self, index_id: str, query: SearchQuery, limit: int) -> tuple[EvidenceChunk, ...]:
+        vector = self._vector(query.vector)
         with self._store.connection() as connection:
             rows = connection.execute(
                 """
@@ -149,10 +157,10 @@ class PostgresEvidenceIndex:
                 ORDER BY r.score DESC LIMIT %s
                 """,
                 (
-                    query,
+                    query.text,
                     index_id,
-                    query,
-                    query,
+                    query.text,
+                    query.text,
                     vector,
                     index_id,
                     vector,
@@ -280,8 +288,10 @@ class PostgresEvidenceIndex:
             ),
         )
 
-    def match_concepts(self, index_id: str, query: str, limit: int) -> tuple[ConceptMatch, ...]:
-        vector = self._vector(self._embeddings.embed((query,))[0])
+    def match_concepts(
+        self, index_id: str, query: SearchQuery, limit: int
+    ) -> tuple[ConceptMatch, ...]:
+        vector = self._vector(query.vector)
         with self._store.connection() as connection:
             rows = connection.execute(
                 """
@@ -310,14 +320,14 @@ class PostgresEvidenceIndex:
                   SELECT concept_id, rank FROM semantic
                 ) results GROUP BY concept_id ORDER BY score DESC, concept_id LIMIT %s
                 """,
-                (query, index_id, vector, index_id, vector, limit),
+                (query.text, index_id, vector, index_id, vector, limit),
             ).fetchall()
         return tuple(ConceptMatch(str(row[0]), round(float(str(row[1])), 6)) for row in rows)
 
     def concept_chunks(
-        self, index_id: str, query: str, concept_ids: tuple[str, ...], limit: int
+        self, index_id: str, query: SearchQuery, concept_ids: tuple[str, ...], limit: int
     ) -> tuple[EvidenceChunk, ...]:
-        vector = self._vector(self._embeddings.embed((query,))[0])
+        vector = self._vector(query.vector)
         with self._store.connection() as connection:
             rows = connection.execute(
                 """
@@ -353,9 +363,9 @@ class PostgresEvidenceIndex:
                 (
                     index_id,
                     list(concept_ids),
-                    query,
-                    query,
-                    query,
+                    query.text,
+                    query.text,
+                    query.text,
                     vector,
                     vector,
                     index_id,
