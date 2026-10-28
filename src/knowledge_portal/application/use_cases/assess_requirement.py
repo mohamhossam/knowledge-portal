@@ -82,6 +82,7 @@ from knowledge_portal.domain.architecture.knowledge import (
     KnowledgeReleaseStatus,
 )
 from knowledge_portal.domain.architecture.offering_drafts import draft_name, draft_offering
+from knowledge_portal.domain.architecture.precedents import precedent_text
 from knowledge_portal.domain.architecture.products import ProductOffering
 from knowledge_portal.domain.architecture.verdicts import (
     OfferingFit,
@@ -343,8 +344,10 @@ class AssessRequirement(RequirementAssessmentPort):
             suggested = (
                 [
                     item.concept_id
+                    # The text cut as a precedent's is: whole, the embedding model refuses
+                    # a long requirement.
                     for item in self._index.match_concepts(
-                        index_id, self._index.queries((text,))[0], MAX_OPTIONS
+                        index_id, self._index.queries((precedent_text((text,)),))[0], MAX_OPTIONS
                     )
                 ]
                 if text

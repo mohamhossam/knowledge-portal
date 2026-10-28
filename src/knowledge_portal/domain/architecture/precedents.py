@@ -34,6 +34,15 @@ SYSTEM_LIMIT = 60
 CONCEPT_LIMIT = 40
 
 
+def precedent_text(parts: Iterable[str]) -> str:
+    """A requirement's text as a precedent keeps it and the precedent lane compares it.
+
+    Its non-blank parts one per line, cut at `TEXT_LIMIT`: what lies past the limit says
+    little more, and the embedding model refuses a text much longer than this.
+    """
+    return "\n".join(part.strip() for part in parts if part.strip())[:TEXT_LIMIT]
+
+
 class PrecedentDecision(StrEnum):
     """What the reviewer did with the suggested verdict (requirement-portal ADR-0115)."""
 

@@ -27,10 +27,10 @@ from knowledge_portal.application.use_cases.architecture_knowledge import Knowle
 from knowledge_portal.domain.architecture.identity import current_id
 from knowledge_portal.domain.architecture.knowledge import KnowledgeReleaseStatus
 from knowledge_portal.domain.architecture.precedents import (
-    TEXT_LIMIT,
     Precedent,
     PrecedentSummary,
     PrecedentSystem,
+    precedent_text,
 )
 
 
@@ -61,8 +61,8 @@ class RecordPrecedent:
         dropped = tuple(
             sorted({item.id for item in request.systems if item.id.strip() not in systems})
         )
-        # The text is what the lane compares; what lies past the limit says little more.
-        text = "\n".join(part.strip() for part in request.text if part.strip())[:TEXT_LIMIT]
+        # The text is what the lane compares, cut as the lane cuts its own.
+        text = precedent_text(request.text)
         precedent = Precedent(
             id=request.precedent_id,
             requirement_id=request.requirement_id,

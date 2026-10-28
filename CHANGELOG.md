@@ -7,6 +7,13 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- A long requirement no longer fails its assessment in the precedent lane. The lane embedded
+  the whole requirement (45,189 characters on 2026-10-28), which the embedding model refuses,
+  and the assessment answered 502 ("The embedding service returned unusable output"). It now
+  embeds the text cut as a precedent keeps its own (its first 4,000 characters), so the two
+  are compared alike; the concepts suggested to a vague requirement use the same text. If
+  precedents still cannot be embedded, the assessment goes on without them, and the failure is
+  logged without requirement text. ADR-0114 Amendment 4. No upgrade step.
 - A quote stitched from separate lines of a requirement no longer fails its assessment.
   Requirement reading refused the whole answer (502, "Requirement reading invented a quote")
   when the model joined real sentences from items that are not next to each other, and

@@ -134,3 +134,20 @@ what Amendment 2 does for the match and the verdict.
   (with today's message), a catalogue id or change type outside the lists the reader was given
   (an id outside the release fails the answer, as in Amendment 2), a blank facet, and a model
   answer that does not parse.
+
+## Amendment 4 — precedents compare the text they keep, and are never fatal (2026-10-28)
+
+Proposed 2026-10-28, for the owner's acceptance in review. It corrects Amendment 1.
+
+- **The lane compares a requirement as a precedent keeps it.** A precedent keeps its
+  requirement's first `TEXT_LIMIT` (4,000) characters, but the lane embedded the whole of the
+  requirement being assessed. On 2026-10-28 that was 45,189 characters, which
+  `openai/text-embedding-3-small` refuses (8,192 tokens at most), and the assessment failed
+  (502, "The embedding service returned unusable output"). One function, `precedent_text`, now
+  builds the text on both sides: the non-blank parts one per line, cut at `TEXT_LIMIT`. The
+  concepts suggested to a vague requirement are found with the same text, since that was the
+  only other place the whole requirement was embedded.
+- **Precedents that cannot be embedded leave the assessment without them.** They lend worked
+  examples and supporting candidates, never a selected system, so a failure to embed the
+  query is logged (with no requirement text) and the assessment goes on with none, as it does
+  for a reranker that fails. Searching the store and every other lane still fail as before.
