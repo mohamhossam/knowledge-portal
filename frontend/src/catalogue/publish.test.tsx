@@ -86,12 +86,25 @@ describe("hand edits on a system's sheet", () => {
     expect(within(form).getByText("Nothing changed yet.")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("What it is"), { target: { value: "Orchestrates fixed-line orders." } });
     expect(within(form).getByText("Changed: What it is.")).toBeInTheDocument();
+    screen.getByLabelText("What it is").focus();
     fireEvent.keyDown(screen.getByLabelText("What it is"), { key: "Escape" });
     expect(within(form).getByText("Discard your changes to What it is?")).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole("button", { name: "Keep editing" })).toHaveFocus());
-    // Escape again, or Keep editing, goes back to the edit as it was.
+    // Escape again, or Keep editing, goes back to the edit as it was, and to the field it left.
     fireEvent.keyDown(screen.getByRole("button", { name: "Keep editing" }), { key: "Escape" });
     expect(screen.getByLabelText("What it is")).toHaveValue("Orchestrates fixed-line orders.");
+    await waitFor(() => expect(screen.getByLabelText("What it is")).toHaveFocus());
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    // A browser focuses a button it clicks; jsdom does not.
+    cancel.focus();
+    fireEvent.click(cancel);
+    // The question's buttons are new ones: a reused <button> turned into Save mid-click and saved the form.
+    const keep = screen.getByRole("button", { name: "Keep editing" });
+    expect(keep).not.toBe(cancel);
+    expect(keep).toHaveAttribute("type", "button");
+    fireEvent.click(keep);
+    expect(screen.getByRole("button", { name: "Save the system" })).not.toBe(keep);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Cancel" })).toHaveFocus());
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     fireEvent.click(screen.getByRole("button", { name: "Discard the changes" }));
     expect(screen.queryByRole("form", { name: "Edit CWOM" })).not.toBeInTheDocument();
@@ -184,13 +197,18 @@ describe("hand edits on a system's sheet", () => {
     const crm = within(panel).getByRole("group", { name: "dependency of CRM" });
     expect(within(crm).getByLabelText("How")).toHaveDisplayValue("Orchestrates CWOM");
     fireEvent.click(within(panel).getByRole("button", { name: "Remove dependency of CRM" }));
+    // Focus never falls to the page: with no row left, it goes to the list's add button.
+    await waitFor(() => expect(within(panel).getByRole("button", { name: "Add a system that depends on it" })).toHaveFocus());
     fireEvent.click(within(panel).getByRole("button", { name: "Add another system it depends on" }));
     const added = within(panel).getByRole("group", { name: "dependency 2" });
+    await waitFor(() => expect(within(added).getByLabelText("Depends on")).toHaveFocus());
     fireEvent.change(within(added).getByLabelText("Depends on"), { target: { value: "crm" } });
     const button = within(panel).getByRole("button", { name: "Save the connections" });
     expect(button).toHaveAttribute("aria-disabled", "true");
     fireEvent.change(within(panel).getByRole("group", { name: "dependency on CRM" }).querySelector("textarea")!, { target: { value: "Looks up the customer." } });
-    expect(within(panel).getByText("Changed: what it depends on, what depends on it.")).toBeInTheDocument();
+    expect(within(panel).getByText("Changed: what depends on it and what it depends on.")).toBeInTheDocument();
+    // The map above draws the edit before it is saved.
+    expect(screen.getByText(/with your changes, not yet saved/)).toBeInTheDocument();
     fireEvent.click(button);
     await waitFor(() => expect(save).toHaveBeenCalled());
     expect(save.mock.calls[0]![1].relationships).toEqual([
@@ -199,6 +217,22 @@ describe("hand edits on a system's sheet", () => {
       { source_system_id: "crm", target_system_id: "bscs", kind: "calls_api", description: "Reads balances.", accepted: [] },
       { source_system_id: "cwom", target_system_id: "crm", kind: "calls_api", description: "Looks up the customer.", accepted: [] },
     ]);
+  });
+
+  it("lists the connections in the map's order, what depends on it first, under the map's names", () => {
+    renderAt(connected(), "/architecture/versions/d/systems/cwom", systemRoutes);
+    fireEvent.click(screen.getByRole("button", { name: "Edit the connections" }));
+    const panel = screen.getByRole("form", { name: "Edit the connections of CWOM" });
+    const legends = [...panel.querySelectorAll("legend.cat-form__legend")].map((item) => item.textContent);
+    expect(legends).toEqual(["Depend on it", "It depends on"]);
+  });
+
+  it("closes a single change open in the table when the connections are edited", () => {
+    renderAt(connected(), "/architecture/versions/d/systems/cwom", systemRoutes);
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    expect(screen.getByRole("form", { name: "Change the dependency" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Edit the connections" }));
+    expect(screen.queryByRole("form", { name: "Change the dependency" })).not.toBeInTheDocument();
   });
 
   it("edits the connections while the system itself is being edited", () => {

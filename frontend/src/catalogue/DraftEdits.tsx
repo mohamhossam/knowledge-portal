@@ -1,4 +1,4 @@
-import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { type FormEvent, Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import type { CatalogueSystem, Channel, Journey, Offering, Relationship, RelationshipKind } from "../api/client";
@@ -10,6 +10,7 @@ import {
   relationshipsWith, slug, systemChanges, systemProblem,
 } from "./editing";
 import { ActionGroup, Button, Status } from "../design/components";
+import { useFocusAfterRender } from "../design/hooks";
 import { AreaField, Rows, SelectField, SystemField, TextField } from "./forms";
 import { JourneyEditor } from "./JourneyEditor";
 import { OfferingFacts } from "./OfferingEditor";
@@ -18,6 +19,11 @@ import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
 import { SystemEditor } from "./SystemEditor";
 import { useCatalogueContext } from "./useCatalogue";
 import { useEditing } from "./useEditing";
+
+/** Names in a sentence: "Name", "Name and Roadmap", "Name, Roadmap and Information". */
+function listed(names: string[]): string {
+  return names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+}
 
 /**
  * An edit opened in place where the thing is read, never a modal: its fields,
@@ -52,6 +58,9 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
   const heading = useRef<HTMLHeadingElement>(null);
   const Heading = level === 2 ? "h2" : "h3";
   const [asking, setAsking] = useState(false);
+  const focusAfter = useFocusAfterRender();
+  // Where the person was when the panel asked, so keeping on editing goes back there.
+  const was = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (focusOnOpen) heading.current?.focus();
   }, [focusOnOpen]);
@@ -59,8 +68,17 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
     if (asking) document.getElementById(`${id}-keep`)?.focus();
   }, [asking, id]);
   const changed = changes ?? [];
+  const ask = () => {
+    was.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setAsking(true);
+  };
+  const keepEditing = () => {
+    setAsking(false);
+    // The Cancel pressed to ask is a new button by now; a field is still the one it was.
+    focusAfter(() => (was.current?.isConnected && was.current !== document.body ? was.current : document.getElementById(`${id}-cancel`)));
+  };
   // A changed form is not thrown away by one press: Cancel or Escape asks first, and Escape again keeps editing.
-  const leave = () => (changed.length && !asking ? setAsking(true) : asking ? setAsking(false) : onCancel());
+  const leave = () => (changed.length && !asking ? ask() : asking ? keepEditing() : onCancel());
   const conflict = error instanceof ApiError && error.status === 409;
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -92,28 +110,32 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
         ) : null}
       </p>
       <div className="cat-edit__foot">
+        {/*
+          Keyed apart: without the keys React keeps one <button> across the two states and turns
+          "Keep editing" into the submit button during its own click, which then saves the form.
+        */}
         {asking ? (
-          <>
-            <p id={`${id}-discard`} className="cat-edit__changes">Discard your changes to {changed.join(", ")}?</p>
+          <Fragment key="asking">
+            <p id={`${id}-discard`} className="cat-edit__changes">Discard your changes to {listed(changed)}?</p>
             <ActionGroup>
-              <Button id={`${id}-keep`} variant="primary" aria-describedby={`${id}-discard`} onClick={() => setAsking(false)}>Keep editing</Button>
+              <Button id={`${id}-keep`} variant="primary" aria-describedby={`${id}-discard`} onClick={keepEditing}>Keep editing</Button>
               <Button variant="tertiary" onClick={onCancel}>Discard the changes</Button>
             </ActionGroup>
-          </>
+          </Fragment>
         ) : (
-          <>
+          <Fragment key="editing">
             {changes && (
               <p className="cat-edit__changes" aria-live="polite">
-                {changed.length ? `Changed: ${changed.join(", ")}.` : "Nothing changed yet."}
+                {changed.length ? `Changed: ${listed(changed)}.` : "Nothing changed yet."}
               </p>
             )}
             <ActionGroup>
               <Button type="submit" variant={danger ? "danger" : "primary"} busy={busy} unavailableReason={busy ? null : problem}>
                 {busy ? "Saving…" : action}
               </Button>
-              <Button variant="tertiary" onClick={leave}>Cancel</Button>
+              <Button id={`${id}-cancel`} variant="tertiary" onClick={leave}>Cancel</Button>
             </ActionGroup>
-          </>
+          </Fragment>
         )}
       </div>
     </form>
@@ -264,13 +286,27 @@ export function ConnectionRemove({ connection, onDone }: { connection: Relations
  * A system's connections edited where they are drawn: both columns of "In context", what it
  * depends on and what depends on it, saved together with the draft.
  */
-export function ConnectionsEdit({ system, onDone }: { system: CatalogueSystem; onDone: () => void }) {
+export function ConnectionsEdit({ system, onDone, onPreview }: {
+  system: CatalogueSystem;
+  onDone: () => void;
+  /** Hears the draft's connections as this edit would save them, at every change, for the map to draw. */
+  onPreview?: (relationships: Relationship[]) => void;
+}) {
   const { book } = useCatalogueContext();
   const release = book.release;
   const { saveDraft } = useEditing(release);
   const [links] = useState(() => linksOf(release, system.id));
   const [dependsOn, setDependsOn] = useState<Link[]>(links.dependsOn);
   const [usedBy, setUsedBy] = useState<Link[]>(links.usedBy);
+  // Every change is drawn on the map above at once, before it is saved.
+  const changeDependsOn = (next: Link[]) => {
+    setDependsOn(next);
+    onPreview?.(relationshipsWith(release, system.id, next, usedBy));
+  };
+  const changeUsedBy = (next: Link[]) => {
+    setUsedBy(next);
+    onPreview?.(relationshipsWith(release, system.id, dependsOn, next));
+  };
   const others = release.systems.filter((item) => item.id !== system.id);
   const name = (id: string) => book.systems.get(id)?.name ?? "another system";
   // The other end's side of it, in its own words: "Calls the API of B2B Web".
@@ -301,25 +337,28 @@ export function ConnectionsEdit({ system, onDone }: { system: CatalogueSystem; o
         saveDraft.mutate(draftBody(release, { relationships: relationshipsWith(release, system.id, dependsOn, usedBy) }), { onSuccess: onDone })
       }
     >
-      <p className="cat-edit__lead">Both columns of the map. A connection between two systems belongs to both, so it can be edited from either.</p>
+      <p className="cat-edit__lead">
+        The map's two columns, left to right, in its order. A connection between two systems belongs to both, so it can be edited from
+        either. The map shows your changes before you save them.
+      </p>
       <div className="cat-form">
         <Rows<Link>
-          legend={`What ${system.name} depends on`}
-          one="system it depends on"
-          items={dependsOn}
-          onChange={setDependsOn}
-          blank={() => ({ other: "", kind: "calls_api", description: "" })}
-          itemLabel={(link, index) => (link.other ? `dependency on ${name(link.other)}` : `dependency ${index + 1}`)}
-          render={fields("dependsOn")}
-        />
-        <Rows<Link>
-          legend={`What depends on ${system.name}`}
+          legend="Depend on it"
           one="system that depends on it"
           items={usedBy}
-          onChange={setUsedBy}
+          onChange={changeUsedBy}
           blank={() => ({ other: "", kind: "calls_api", description: "" })}
           itemLabel={(link, index) => (link.other ? `dependency of ${name(link.other)}` : `dependent ${index + 1}`)}
           render={fields("usedBy")}
+        />
+        <Rows<Link>
+          legend="It depends on"
+          one="system it depends on"
+          items={dependsOn}
+          onChange={changeDependsOn}
+          blank={() => ({ other: "", kind: "calls_api", description: "" })}
+          itemLabel={(link, index) => (link.other ? `dependency on ${name(link.other)}` : `dependency ${index + 1}`)}
+          render={fields("dependsOn")}
         />
       </div>
     </EditPanel>

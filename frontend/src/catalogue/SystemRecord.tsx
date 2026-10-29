@@ -33,6 +33,8 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
   const [editing, setEditing] = useState<"system" | "remove" | null>(null);
   // Its connections are edited where the map draws them, beside the system's own edit if that is open.
   const [connecting, setConnecting] = useState(false);
+  // What that edit would save, drawn on the map until it is saved or cancelled.
+  const [preview, setPreview] = useState<Relationship[] | null>(null);
   // Closing an edit gives focus back to the button that opened it.
   const focusLater = useFocusAfterRender();
   const close = (key: "system" | "remove") => () => {
@@ -42,6 +44,7 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
   const closeConnections = () => {
     focusLater(() => document.getElementById("system-edit-connections"));
     setConnecting(false);
+    setPreview(null);
   };
   const location = useLocation();
   const navigate = useNavigate();
@@ -106,8 +109,8 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
           </>
         }
       >
-        <SystemContextDiagram systemId={system.id} />
-        {connecting && <ConnectionsEdit system={system} onDone={closeConnections} />}
+        <SystemContextDiagram systemId={system.id} pending={connecting ? preview : null} />
+        {connecting && <ConnectionsEdit system={system} onDone={closeConnections} onPreview={setPreview} />}
       </Section>
       {editing !== "system" && <Capabilities system={system} index={index} />}
       <Interfaces system={system} />
@@ -238,6 +241,8 @@ function Connections({ system, from, locked }: { system: CatalogueSystem; from?:
   return (
     <>
       <ConnectionTable
+        // Locking starts the table afresh, so a single change or removal open in it closes rather than sits beside the other edit.
+        key={editable ? "open" : "locked"}
         title="Depends on"
         rows={dependsOn}
         other={(row) => row.target_system_id}

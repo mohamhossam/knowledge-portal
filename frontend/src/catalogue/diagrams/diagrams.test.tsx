@@ -83,6 +83,25 @@ describe("systemContext", () => {
     });
     expect(systemContext(one, "cwom").nodes.find((node) => node.lane === "callers")).toMatchObject({ label: "Nothing depends on it", tone: "muted" });
   });
+
+  it("draws an unsaved edit of its connections, saying what each change is", () => {
+    const saved = release().relationships;
+    const edited = [
+      saved[0]!,
+      // WFM: the same pair, another way of depending.
+      { ...saved[1]!, kind: "calls_api" },
+      // EDMS: new. BSCS: gone.
+      { source_system_id: "cwom", target_system_id: "edms", kind: "calls_api", description: "Stores order documents", accepted: [] },
+    ] as Release["relationships"];
+    const { nodes, edges } = systemContext({ ...release(), relationships: edited }, "cwom", { saved });
+    expect(nodes.find((node) => node.id === "in:rtf")).not.toHaveProperty("status");
+    expect(nodes.find((node) => node.id === "out:wfm")).toMatchObject({ tone: "decide", status: "Changed, not saved" });
+    expect(nodes.find((node) => node.id === "out:edms")).toMatchObject({ tone: "decide", status: "New, not saved" });
+    // A removed connection stays drawn, dotted, on a dashed line whose words say so.
+    expect(nodes.find((node) => node.id === "out:bscs")).toMatchObject({ tone: "muted", status: "Removed, not saved" });
+    expect(edges).toContainEqual({ from: "cwom", to: "out:wfm", label: "orchestrates, removed", dashed: true });
+    expect(edges).toContainEqual({ from: "cwom", to: "out:bscs", label: "depends on, removed", dashed: true });
+  });
 });
 
 describe("capabilityMap", () => {

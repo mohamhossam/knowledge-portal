@@ -6,10 +6,11 @@
 import "./frame/forms.css";
 
 import { Plus, X } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useRef } from "react";
 
 import type { CatalogueSystem } from "../api/client";
 import { Button, Checkbox, Field } from "../design/components";
+import { useFocusAfterRender } from "../design/hooks";
 
 export function TextField({ label, value, onChange, required, dir = "auto", wide, hint, error }: {
   label: string;
@@ -170,8 +171,23 @@ export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel
   /** Show each row's name as its heading, for rows long enough to lose one's place in. */
   labelled?: boolean;
 }) {
+  const group = useRef<HTMLFieldSetElement>(null);
+  const focusLater = useFocusAfterRender();
+  // Focus never falls to the page: a new row takes it, and a removed row hands it on.
+  const rowAt = (index: number) => group.current?.querySelectorAll<HTMLElement>(":scope > .cat-form__row")[index];
+  const firstControl = (row: HTMLElement | undefined) => row?.querySelector<HTMLElement>("input, select, textarea, button");
+  const add = () => {
+    onChange([...items, blank()]);
+    focusLater(() => firstControl(rowAt(items.length)));
+  };
+  const remove = (index: number) => {
+    onChange(items.filter((_, at) => at !== index));
+    focusLater(() =>
+      firstControl(rowAt(Math.min(index, items.length - 2))) ?? group.current?.querySelector<HTMLElement>(":scope > .cat-form__remove button"),
+    );
+  };
   return (
-    <fieldset className="cat-form__rows">
+    <fieldset ref={group} className="cat-form__rows">
       <legend className="cat-form__legend">{legend}</legend>
       {items.length === 0 && <p className="ds-field__hint">None yet.</p>}
       {items.map((item, index) => (
@@ -183,14 +199,14 @@ export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel
             {render(item, (patch) => onChange(items.map((current, at) => (at === index ? { ...current, ...patch } : current))), index)}
           </div>
           <div className="cat-form__remove">
-            <Button variant="tertiary" icon={<X size={14} />} onClick={() => onChange(items.filter((_, at) => at !== index))}>
+            <Button variant="tertiary" icon={<X size={14} />} onClick={() => remove(index)}>
               Remove {itemLabel(item, index)}
             </Button>
           </div>
         </fieldset>
       ))}
       <div className="cat-form__remove">
-        <Button variant="tertiary" icon={<Plus size={14} />} onClick={() => onChange([...items, blank()])}>
+        <Button variant="tertiary" icon={<Plus size={14} />} onClick={add}>
           Add {items.length ? "another" : "a"} {one}
         </Button>
       </div>

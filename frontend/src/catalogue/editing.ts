@@ -262,12 +262,14 @@ export function systemChanges(before: CatalogueSystem, after: CatalogueSystem, r
  */
 export type Link = { other: string; kind: RelationshipKind; description: string; original?: Relationship };
 
-/** A system's connections as links: what it depends on, and what depends on it. */
+/** A system's connections as links, what it depends on and what depends on it, each in the map's order: by the other system's name. */
 export function linksOf(release: Release, systemId: string): { dependsOn: Link[]; usedBy: Link[] } {
+  const names = new Map(release.systems.map((item) => [item.id, item.name]));
   const link = (item: Relationship, other: string): Link => ({ other, kind: item.kind, description: item.description, original: item });
+  const inOrder = (links: Link[]) => links.sort((a, b) => (names.get(a.other) ?? a.other).localeCompare(names.get(b.other) ?? b.other));
   return {
-    dependsOn: release.relationships.filter((item) => item.source_system_id === systemId && item.target_system_id !== systemId).map((item) => link(item, item.target_system_id)),
-    usedBy: release.relationships.filter((item) => item.target_system_id === systemId && item.source_system_id !== systemId).map((item) => link(item, item.source_system_id)),
+    dependsOn: inOrder(release.relationships.filter((item) => item.source_system_id === systemId && item.target_system_id !== systemId).map((item) => link(item, item.target_system_id))),
+    usedBy: inOrder(release.relationships.filter((item) => item.target_system_id === systemId && item.source_system_id !== systemId).map((item) => link(item, item.source_system_id))),
   };
 }
 
@@ -325,7 +327,8 @@ export function linksChanges(release: Release, systemId: string, dependsOn: Link
   const was = linksOf(release, systemId);
   const read = (links: Link[]) => JSON.stringify(links.map((link) => [link.other, link.kind, link.description.trim()]));
   return [
-    ...(read(was.dependsOn) !== read(dependsOn) ? ["what it depends on"] : []),
+    // In the map's order, left to right.
     ...(read(was.usedBy) !== read(usedBy) ? ["what depends on it"] : []),
+    ...(read(was.dependsOn) !== read(dependsOn) ? ["what it depends on"] : []),
   ];
 }
