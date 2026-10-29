@@ -161,6 +161,14 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   in its order), and the map draws the edit before it is saved: each new, changed or removed
   connection marked in words. Opening it closes a single change or removal open in the tables
   below. No upgrade step.
+- A system's interfaces are edited by hand where its record reads them; before, they came only
+  from accepted suggestions and catalogue files. "Edit the interfaces" holds what it exposes (each
+  interface's name, style, users, the information it carries, what it is for and its source) and
+  the interfaces of other systems it uses, where using one makes it one of that interface's users.
+  The service's rules are checked before saving: a name per interface of a system, never its own
+  user, and no interface dropped while a journey's hand-over, an offering's order tracking or
+  another interface still goes through it. What the panel does not show (an interface's Open API
+  terms and relays) is kept. No upgrade step.
 - The Check step lists what nothing in the draft links to (review recommendation 17):
   capabilities with no concept and no "none fits" reason, systems outside the landscape,
   interfaces no system consumes and no journey step or tracking flow goes through, and terms

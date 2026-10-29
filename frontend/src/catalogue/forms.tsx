@@ -156,6 +156,56 @@ export function SystemField({ label, value, onChange, systems, writtenAs, allowN
   return <SelectField label={label} value={value} onChange={onChange} options={options} />;
 }
 
+/**
+ * Several chosen from a list: the chosen ones as words, each with its own remove, and one select
+ * to add another. One chosen that the list no longer has stays shown, as written.
+ */
+export function PickField({ label, hint, chosen, options, onChange }: {
+  label: string;
+  hint?: string;
+  chosen: string[];
+  /** Options with a group are set under it, in the order given. */
+  options: { value: string; label: string; group?: string }[];
+  onChange: (chosen: string[]) => void;
+}) {
+  const name = (value: string) => options.find((option) => option.value === value)?.label ?? value;
+  const left = options.filter((option) => !chosen.includes(option.value));
+  const cell = useRef<HTMLDivElement>(null);
+  const focusLater = useFocusAfterRender();
+  return (
+    <div ref={cell} className="cat-form__cell cat-form__wide">
+      <SelectField
+        label={label}
+        hint={hint}
+        value=""
+        options={[{ value: "", label: chosen.length ? "Add another…" : "Add one…" }, ...left]}
+        onChange={(value) => value && onChange([...chosen, value])}
+      />
+      {chosen.length > 0 && (
+        <ul className="cat-form__chosen" aria-label={`${label}: chosen`}>
+          {chosen.map((value) => (
+            <li key={value}>
+              <span dir="auto">{name(value)}</span>
+              <Button
+                variant="tertiary"
+                icon={<X size={14} />}
+                aria-label={`Remove ${name(value)} from ${label.toLocaleLowerCase()}`}
+                onClick={() => {
+                  onChange(chosen.filter((item) => item !== value));
+                  // The removed one's button goes with it: focus goes back to the select, never the page.
+                  focusLater(() => cell.current?.querySelector("select"));
+                }}
+              >
+                {null}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 const sentence = (text: string) => text.charAt(0).toLocaleUpperCase() + text.slice(1);
 
 /** Repeating rows: each a ruled fieldset with its own remove, and one add at the foot. */
@@ -207,7 +257,7 @@ export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel
       ))}
       <div className="cat-form__remove">
         <Button variant="tertiary" icon={<Plus size={14} />} onClick={add}>
-          Add {items.length ? "another" : "a"} {one}
+          Add {items.length ? "another" : /^[aeiou]/i.test(one) ? "an" : "a"} {one}
         </Button>
       </div>
     </fieldset>

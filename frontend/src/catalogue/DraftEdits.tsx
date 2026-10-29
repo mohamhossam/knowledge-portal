@@ -1,21 +1,22 @@
 import { type FormEvent, Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import type { CatalogueSystem, Channel, Journey, Offering, Relationship, RelationshipKind } from "../api/client";
+import type { CatalogueSystem, Channel, Journey, Offering, Relationship, RelationshipKind, Release, SourceConfidence } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { blankSystem, channelUses, draftBody, systemUses } from "./drafting";
-import { usedHow } from "./catalogue";
+import { CONFIDENCE_OPTIONS, usedHow } from "./catalogue";
 import {
-  finishedOffering, finishedSystem, journeyOrderProblem, journeyProblem, type Link, linksChanges, linksOf, linksProblem, offeringProblem,
-  relationshipsWith, slug, systemChanges, systemProblem,
+  finishedOffering, finishedSystem, interfacesChanges, interfacesOfSystem, interfacesProblem, interfacesWith, journeyOrderProblem, journeyProblem,
+  type Link, linksChanges, linksOf, linksProblem, offeringProblem, relationshipsWith, slug, systemChanges, systemProblem,
 } from "./editing";
 import { ActionGroup, Button, Status } from "../design/components";
 import { useFocusAfterRender } from "../design/hooks";
-import { AreaField, Rows, SelectField, SystemField, TextField } from "./forms";
+import { AreaField, PickField, Rows, SelectField, SystemField, TextField } from "./forms";
 import { JourneyEditor } from "./JourneyEditor";
 import { OfferingFacts } from "./OfferingEditor";
 import { questionProblem } from "./governance";
 import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
+import { entityNames, INTERFACE_STYLE } from "./ontology";
 import { SystemEditor } from "./SystemEditor";
 import { useCatalogueContext } from "./useCatalogue";
 import { useEditing } from "./useEditing";
@@ -360,6 +361,95 @@ export function ConnectionsEdit({ system, onDone, onPreview }: {
           itemLabel={(link, index) => (link.other ? `dependency on ${name(link.other)}` : `dependency ${index + 1}`)}
           render={fields("dependsOn")}
         />
+      </div>
+    </EditPanel>
+  );
+}
+
+type Interface = NonNullable<Release["interfaces"]>[number];
+
+const STYLES = (Object.keys(INTERFACE_STYLE) as Interface["style"][]).map((value) => ({ value, label: INTERFACE_STYLE[value] }));
+
+/**
+ * A system's interfaces edited where its record reads them: those it exposes, each with who uses
+ * it and what it carries, and those of other systems it uses, saved together with the draft.
+ */
+export function InterfacesEdit({ system, onDone }: { system: CatalogueSystem; onDone: () => void }) {
+  const { book } = useCatalogueContext();
+  const release = book.release;
+  const { saveDraft } = useEditing(release);
+  const [start] = useState(() => interfacesOfSystem(release, system.id));
+  const [exposed, setExposed] = useState<Interface[]>(start.exposed);
+  const [used, setUsed] = useState<string[]>(start.used);
+  const name = (id: string) => book.systems.get(id)?.name ?? id;
+  const systems = release.systems
+    .filter((item) => item.id !== system.id)
+    .map((item) => ({ value: item.id, label: item.name }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+  const entities = [...entityNames(release)].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
+  // Another system's interfaces, under the system that exposes each.
+  const theirs = (release.interfaces ?? [])
+    .filter((item) => item.system_id !== system.id)
+    .map((item) => ({ value: item.id, label: item.name, group: name(item.system_id) }))
+    .sort((a, b) => a.group.localeCompare(b.group) || a.label.localeCompare(b.label));
+  const usedOptions = theirs.map((item) => ({ ...item, label: `${item.label} (${item.group})` }));
+  return (
+    <EditPanel
+      title={`Edit the interfaces of ${system.name}`}
+      focusOnOpen
+      action="Save the interfaces"
+      busy={saveDraft.isPending}
+      problem={interfacesProblem(release, system.id, exposed, used)}
+      changes={interfacesChanges(release, system.id, exposed, used)}
+      error={saveDraft.error}
+      onCancel={onDone}
+      onSubmit={() =>
+        saveDraft.mutate(draftBody(release, { interfaces: interfacesWith(release, system.id, exposed, used) }), { onSuccess: onDone })
+      }
+    >
+      <p className="cat-edit__lead">
+        The contracts it offers others, and those of other systems it calls. Using an interface makes {system.name} one of its users.
+      </p>
+      <div className="cat-form">
+        <Rows<Interface>
+          legend="It exposes"
+          one="interface it exposes"
+          labelled
+          items={exposed}
+          onChange={setExposed}
+          blank={() => ({ id: "", name: "", system_id: system.id, style: "api", consumer_ids: [], entity_ids: [], open_api_ids: [], relays: [], accepted: [] })}
+          itemLabel={(item, index) => `interface ${item.name.trim() || index + 1}`}
+          render={(item, update) => (
+            <>
+              <TextField label="Interface" value={item.name} required onChange={(value) => update({ name: value })} />
+              <SelectField label="Style" value={item.style} options={STYLES} onChange={(style) => update({ style: style as Interface["style"] })} />
+              <PickField label="Used by" chosen={item.consumer_ids} options={systems} onChange={(consumer_ids) => update({ consumer_ids })} />
+              <PickField
+                label="Carries"
+                hint="The information it carries, from this version's vocabulary."
+                chosen={item.entity_ids}
+                options={entities}
+                onChange={(entity_ids) => update({ entity_ids })}
+              />
+              <AreaField label="What it is for" value={item.description} onChange={(description) => update({ description: description || null })} />
+              <SelectField
+                label="How sure its source is"
+                value={item.confidence ?? ""}
+                options={CONFIDENCE_OPTIONS}
+                onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
+              />
+              <TextField label="Source" value={item.source} hint="The document and where in it, such as SDD v2.3 · §4.1." onChange={(source) => update({ source: source || null })} />
+            </>
+          )}
+        />
+        <fieldset className="cat-form__rows">
+          <legend className="cat-form__legend">It uses</legend>
+          {theirs.length ? (
+            <PickField label="Interfaces of other systems it calls" chosen={used} options={usedOptions} onChange={setUsed} />
+          ) : (
+            <p className="ds-field__hint">No other system in this version exposes an interface yet.</p>
+          )}
+        </fieldset>
       </div>
     </EditPanel>
   );

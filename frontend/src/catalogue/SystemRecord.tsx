@@ -15,7 +15,7 @@ import { acceptances } from "./accepted";
 import { AcceptedFrom } from "./AcceptedFrom";
 import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRoles, usedHow } from "./catalogue";
 import { SystemContextDiagram } from "./diagrams/CatalogueDiagrams";
-import { ConnectionEdit, ConnectionRemove, ConnectionsEdit, SystemEdit, SystemRemove } from "./DraftEdits";
+import { ConnectionEdit, ConnectionRemove, ConnectionsEdit, InterfacesEdit, SystemEdit, SystemRemove } from "./DraftEdits";
 import { type ConceptIndex, entityNames, INTERFACE_STYLE, type Interface, interfacesOf, SOURCE_TONE, SOURCE_WORD } from "./ontology";
 import { SourceName } from "./provenance/Provenance";
 import { useCatalogueContext } from "./useCatalogue";
@@ -182,8 +182,18 @@ function Capabilities({ system, index }: { system: CatalogueSystem; index: Conce
 }
 
 function Interfaces({ system }: { system: CatalogueSystem }) {
-  const { book, base } = useCatalogueContext();
+  const { book, base, editable } = useCatalogueContext();
   const { exposes, uses } = interfacesOf(book.release, system.id);
+  // Edited in place of the two tables: the panel holds both, and closing gives focus back to its button.
+  const [editing, setEditing] = useState(false);
+  const focusLater = useFocusAfterRender();
+  const close = () => {
+    focusLater(() => document.getElementById("system-edit-interfaces"));
+    setEditing(false);
+  };
+  const edit = editable ? (
+    <Button id="system-edit-interfaces" variant="quiet" onClick={() => setEditing(true)}>Edit the interfaces</Button>
+  ) : undefined;
   const entities = entityNames(book.release);
   const sys = (systemId: string) => <Link key={systemId} to={`${base}/systems/${encodeURIComponent(systemId)}`} dir="auto">{systemName(book, systemId)}</Link>;
   const list = (ids: string[]) => ids.map((systemId, position) => <span key={systemId}>{position > 0 && ", "}{sys(systemId)}</span>);
@@ -207,16 +217,23 @@ function Interfaces({ system }: { system: CatalogueSystem }) {
       : { id: "who", header: "Exposed by", cell: (item) => sys(item.system_id) },
     { id: "style", header: "Style", cell: (item) => INTERFACE_STYLE[item.style] },
   ];
-  if (!exposes.length && !uses.length) {
+  if (editing) {
     return (
       <Section title="Interfaces" headingLevel={3}>
+        <InterfacesEdit system={system} onDone={close} />
+      </Section>
+    );
+  }
+  if (!exposes.length && !uses.length) {
+    return (
+      <Section title="Interfaces" headingLevel={3} actions={edit}>
         <p className="cat-quiet">No interface it exposes or uses is recorded.</p>
       </Section>
     );
   }
   return (
     <>
-      <Section title="Exposes" count={exposes.length} headingLevel={3}>
+      <Section title="Exposes" count={exposes.length} headingLevel={3} actions={edit}>
         {exposes.length ? (
           <DataTable caption={`Interfaces ${system.name} exposes`} captionHidden columns={columns("exposes")} rows={exposes} rowId={(item) => item.id} />
         ) : (

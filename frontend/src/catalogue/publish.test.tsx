@@ -243,6 +243,60 @@ describe("hand edits on a system's sheet", () => {
     expect(screen.getByRole("form", { name: "Edit the connections of CWOM" })).toBeInTheDocument();
   });
 
+  const interfaced = (extra: Partial<Release> = {}) =>
+    draft({
+      systems: [system("cwom", "CWOM"), system("bscs", "BSCS"), system("crm", "CRM")],
+      vocabulary: [{ id: "ent-order", scheme: "information_entity", pref_label: "Order", alt_labels: [], close_match: [], deprecated: false, accepted: [] }],
+      interfaces: [
+        { id: "cwom-orders", name: "Orders API", system_id: "cwom", style: "api", consumer_ids: ["crm"], entity_ids: ["ent-order"], open_api_ids: ["tmf622"], relays: [], accepted: [] },
+        { id: "bscs-billing", name: "Billing API", system_id: "bscs", style: "api", consumer_ids: [], entity_ids: [], open_api_ids: [], relays: [], accepted: [] },
+        { id: "crm-customer", name: "Customer API", system_id: "crm", style: "api", consumer_ids: ["cwom"], entity_ids: [], open_api_ids: [], relays: [], accepted: [] },
+      ],
+      ...extra,
+    } as unknown as Partial<Release>);
+
+  it("edits the interfaces it exposes and uses where the record reads them, and saves them together", async () => {
+    const save = vi.spyOn(api, "saveDraft").mockResolvedValue(interfaced());
+    renderAt(interfaced(), "/architecture/versions/d/systems/cwom", systemRoutes);
+    fireEvent.click(screen.getByRole("button", { name: "Edit the interfaces" }));
+    const panel = screen.getByRole("form", { name: "Edit the interfaces of CWOM" });
+    // The panel holds both tables, so they give way to it.
+    expect(screen.queryByRole("heading", { name: /^Exposes/ })).not.toBeInTheDocument();
+    const orders = within(panel).getByRole("group", { name: "Interface Orders API" });
+    fireEvent.change(within(orders).getByLabelText("Style"), { target: { value: "event" } });
+    fireEvent.change(within(orders).getByLabelText("Used by"), { target: { value: "bscs" } });
+    fireEvent.click(within(panel).getByRole("button", { name: "Add another interface it exposes" }));
+    const added = within(panel).getByRole("group", { name: "Interface 2" });
+    fireEvent.change(within(added).getByLabelText(/^Interface/), { target: { value: " Status feed " } });
+    const uses = within(panel).getByLabelText("Interfaces of other systems it calls");
+    fireEvent.change(uses, { target: { value: "bscs-billing" } });
+    fireEvent.click(within(panel).getByRole("button", { name: "Remove Customer API (CRM) from interfaces of other systems it calls" }));
+    expect(within(panel).getByText("Changed: what it exposes and what it uses.")).toBeInTheDocument();
+    fireEvent.click(within(panel).getByRole("button", { name: "Save the interfaces" }));
+    await waitFor(() => expect(save).toHaveBeenCalled());
+    expect(save.mock.calls[0]![1].interfaces).toEqual([
+      // Kept in its place with what the panel does not show (its Open API terms); another system's gain or lose CWOM as a user.
+      expect.objectContaining({ id: "cwom-orders", style: "event", consumer_ids: ["crm", "bscs"], entity_ids: ["ent-order"], open_api_ids: ["tmf622"] }),
+      expect.objectContaining({ id: "bscs-billing", consumer_ids: ["cwom"] }),
+      expect.objectContaining({ id: "crm-customer", consumer_ids: [] }),
+      expect.objectContaining({ id: "cwom-status-feed", name: "Status feed", system_id: "cwom", style: "api" }),
+    ]);
+  });
+
+  it("will not drop an interface a journey still goes through", () => {
+    const journey = {
+      id: "j", name: "Fixed order", activities: [], flow_rules: [], edges: [], channel_edges: [], shared_edges: [], accepted: [], former_ids: [],
+      integrations: [{ from_activity: "1", to_activity: "2", interface_id: "cwom-orders", open_api_ids: [] }],
+    };
+    renderAt(interfaced({ journeys: [journey] } as unknown as Partial<Release>), "/architecture/versions/d/systems/cwom", systemRoutes);
+    fireEvent.click(screen.getByRole("button", { name: "Edit the interfaces" }));
+    const panel = screen.getByRole("form", { name: "Edit the interfaces of CWOM" });
+    fireEvent.click(within(panel).getByRole("button", { name: "Remove interface Orders API" }));
+    const button = within(panel).getByRole("button", { name: "Save the interfaces" });
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    expect(within(panel).getByText("The journey Fixed order still goes through Orders API; change its hand-over first.")).toBeInTheDocument();
+  });
+
   it("adds a dependency to the whole draft", async () => {
     const save = vi.spyOn(api, "saveDraft").mockResolvedValue(draft({ revision: 6 }));
     renderAt(draft(), "/architecture/versions/d/systems/cwom", systemRoutes);

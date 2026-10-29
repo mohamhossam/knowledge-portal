@@ -332,3 +332,83 @@ export function linksChanges(release: Release, systemId: string, dependsOn: Link
     ...(read(was.dependsOn) !== read(dependsOn) ? ["what it depends on"] : []),
   ];
 }
+
+type Interface = NonNullable<Release["interfaces"]>[number];
+
+/** A name as interfaces compare them: no case, no spaces or punctuation ("CRM GW API" is "crm-gw api"). */
+const nameKey = (name: string) => name.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+
+/** A system's interfaces as its record edits them: those it exposes, and the ids of those it uses. */
+export function interfacesOfSystem(release: Release, systemId: string): { exposed: Interface[]; used: string[] } {
+  const all = release.interfaces ?? [];
+  return {
+    exposed: all.filter((item) => item.system_id === systemId),
+    used: all.filter((item) => item.system_id !== systemId && item.consumer_ids.includes(systemId)).map((item) => item.id),
+  };
+}
+
+/**
+ * The draft's interfaces once a system's are saved: those it exposes as edited (a new one gets an
+ * id from its system and name), and every other system's with this one added to or taken off its
+ * users. The rest stay as they were, in their places.
+ */
+export function interfacesWith(release: Release, systemId: string, exposed: Interface[], used: string[]): Interface[] {
+  const all = release.interfaces ?? [];
+  const taken = new Set(all.map((item) => item.id));
+  const tidy = (item: Interface): Interface => ({
+    ...item,
+    name: item.name.trim(),
+    description: item.description?.trim() || null,
+    source: item.source?.trim() || null,
+    system_id: systemId,
+  });
+  const edited = new Map(exposed.filter((item) => item.id).map((item) => [item.id, tidy(item)]));
+  const kept = all.flatMap((item): Interface[] => {
+    if (item.system_id === systemId) return edited.has(item.id) ? [edited.get(item.id)!] : [];
+    const uses = used.includes(item.id);
+    const listed = item.consumer_ids.includes(systemId);
+    if (uses === listed) return [item];
+    return [{ ...item, consumer_ids: uses ? [...item.consumer_ids, systemId] : item.consumer_ids.filter((id) => id !== systemId) }];
+  });
+  const added = exposed.filter((item) => !item.id).map((item) => ({ ...tidy(item), id: freeId(`${systemId}-${item.name}`, taken) }));
+  return [...kept, ...added];
+}
+
+/** Why a system's interfaces cannot be saved yet, if anything: the service's rules, and what still goes through one removed. */
+export function interfacesProblem(release: Release, systemId: string, exposed: Interface[], used: string[]): string | null {
+  const all = release.interfaces ?? [];
+  if (exposed.some((item) => !item.name.trim())) return "Every interface it exposes needs a name.";
+  const names = new Set<string>();
+  for (const item of exposed) {
+    const key = nameKey(item.name);
+    if (names.has(key)) return `Two interfaces it exposes are called ${item.name.trim()}; give each its own name.`;
+    names.add(key);
+  }
+  // What goes through an interface it no longer exposes must let go of it first.
+  const kept = new Set(exposed.map((item) => item.id).filter(Boolean));
+  for (const gone of all.filter((item) => item.system_id === systemId && !kept.has(item.id))) {
+    const journey = (release.journeys ?? []).find((item) => item.integrations.some((link) => link.interface_id === gone.id));
+    if (journey) return `The journey ${journey.name} still goes through ${gone.name}; change its hand-over first.`;
+    const tracked = (release.products ?? []).find((item) => (item.tracking?.flows ?? []).some((flow) => flow.interface_id === gone.id));
+    if (tracked) return `The order tracking of ${tracked.name} still goes through ${gone.name}; change it first.`;
+    const relay = all.find((item) => item.system_id !== systemId && item.relays.includes(gone.id));
+    if (relay) return `${relay.name} still relays ${gone.name}; change that interface first.`;
+  }
+  // An interface it exposes that relays another needs it to use that one.
+  for (const item of exposed) {
+    const relayed = all.find((other) => item.relays.includes(other.id) && other.system_id !== systemId && !used.includes(other.id));
+    if (relayed) return `${item.name.trim()} relays ${relayed.name}, so it keeps using ${relayed.name}.`;
+  }
+  return null;
+}
+
+/** Which of a system's interfaces an edit has changed, by the panel's names for them. */
+export function interfacesChanges(release: Release, systemId: string, exposed: Interface[], used: string[]): string[] {
+  const was = interfacesOfSystem(release, systemId);
+  const read = (items: Interface[]) =>
+    JSON.stringify(items.map((item) => [item.id, item.name.trim(), item.style, item.consumer_ids, item.entity_ids, item.description?.trim() || null, item.confidence ?? null, item.source?.trim() || null]));
+  return [
+    ...(read(was.exposed) !== read(exposed) ? ["what it exposes"] : []),
+    ...(JSON.stringify([...was.used].sort()) !== JSON.stringify([...used].sort()) ? ["what it uses"] : []),
+  ];
+}
