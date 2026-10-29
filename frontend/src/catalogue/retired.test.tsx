@@ -82,10 +82,10 @@ describe("saying where a capability and a component come from (review recommenda
     } as CatalogueSystem;
     render(<Editing start={start} />);
 
-    const capability = screen.getByRole("group", { name: "capability Tracking" });
+    const capability = screen.getByRole("group", { name: "Capability Tracking" });
     fireEvent.change(within(capability).getByLabelText("How sure its source is"), { target: { value: "confirmed" } });
     fireEvent.change(within(capability).getByLabelText("Source"), { target: { value: "SDD v2.3 · §4.1" } });
-    const component = screen.getByRole("group", { name: "component Milestones" });
+    const component = screen.getByRole("group", { name: "Component Milestones" });
     fireEvent.change(within(component).getByLabelText("How sure its source is"), { target: { value: "gap" } });
 
     expect(screen.getByTestId("value")).toHaveTextContent(JSON.stringify({ capability: ["confirmed", "SDD v2.3 · §4.1"], component: ["gap", null] }));

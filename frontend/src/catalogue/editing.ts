@@ -179,7 +179,30 @@ export function finishedSystem(value: CatalogueSystem, release: Release): Catalo
     // A component chosen before it was saved is named by its name until it has an id.
     component_id: item.component_id ? renamed.get(item.component_id) ?? item.component_id : null,
   }));
-  return { ...value, id, aliases: lines(value.aliases), constraints: lines(value.constraints), components, capabilities };
+  // A note says its share of something it masters; an empty one, or one on data it no longer masters, goes.
+  const mastery_notes = (value.mastery_notes ?? [])
+    .map((item) => ({ ...item, note: item.note.trim() }))
+    .filter((item) => item.note && (value.masters ?? []).includes(item.entity_id));
+  return {
+    ...value,
+    id,
+    aliases: lines(value.aliases),
+    constraints: lines(value.constraints),
+    components,
+    capabilities: capabilities.map((item) => ({ ...item, unlinked_reason: item.unlinked_reason?.trim() ?? null })),
+    mastery_notes,
+  };
+}
+
+/** The business area a concept sits in: its own, or the nearest broader concept's. */
+export function conceptDomain(release: Release, conceptId: string): string | null {
+  const concepts = new Map((release.business_capabilities ?? []).map((concept) => [concept.id, concept]));
+  const seen = new Set<string>();
+  for (let concept = concepts.get(conceptId); concept && !seen.has(concept.id); concept = concept.broader_id ? concepts.get(concept.broader_id) : undefined) {
+    if (concept.domain_id) return concept.domain_id;
+    seen.add(concept.id);
+  }
+  return null;
 }
 
 /** Why a system cannot be saved yet, if anything. */
@@ -192,6 +215,43 @@ export function systemProblem(value: CatalogueSystem, release: Release): string 
   if (clash) return `${clash.name} already goes by one of these names; every name and alias must be unique.`;
   if (value.capabilities.some((item) => !item.name.trim())) return "Every capability needs a name.";
   if (value.capabilities.some((item) => !lines(item.triggers).length)) return "Every capability needs at least one matching phrase.";
+  const concepts = new Map((release.business_capabilities ?? []).map((concept) => [concept.id, concept]));
+  for (const item of value.capabilities) {
+    if (item.unlinked_reason != null && !item.unlinked_reason.trim()) return `${item.name}: say why no concept fits.`;
+    if (!item.concept_id) continue;
+    if (!concepts.has(item.concept_id)) return `${item.name}: its concept is not in this version; choose another.`;
+    const held = conceptDomain(release, item.concept_id);
+    if (item.domain_id && held && held !== item.domain_id) {
+      const area = release.capability_domains?.find((domain) => domain.id === held)?.name ?? held;
+      return `${item.name}: its concept sits in ${area}, so the capability does too; change its business area or its concept.`;
+    }
+  }
+  const reads = value.reads ?? [];
+  const both = (value.masters ?? []).find((entity) => reads.includes(entity));
+  if (both) return "A system does not read information it masters; take it off one of the two.";
   if (value.components.some((item) => !item.name.trim())) return "Every component needs a name.";
   return null;
+}
+
+/** A system's parts as its form names them, each read the way it is saved. */
+const SYSTEM_PARTS: [string, (system: CatalogueSystem) => unknown][] = [
+  ["Name", (system) => system.name.trim()],
+  ["Sits in", (system) => system.landscape_domain_id ?? null],
+  ["Also called", (system) => system.aliases],
+  ["What it is", (system) => system.description ?? null],
+  ["Outside the operator", (system) => system.external],
+  ["Owner in the source", (system) => system.owner ?? null],
+  ["Its source", (system) => [system.confidence ?? null, system.source ?? null]],
+  ["Roadmap", (system) => system.roadmap ?? null],
+  ["Retired", (system) => [system.deprecated, system.replaced_by ?? null]],
+  ["What it does", (system) => system.capabilities],
+  ["Information", (system) => [system.masters ?? [], system.reads ?? [], system.mastery_notes ?? []]],
+  ["Components", (system) => system.components],
+  ["Constraints", (system) => system.constraints],
+];
+
+/** Which parts of a system an edit has changed, by the form's names for them; none when it would save the same. */
+export function systemChanges(before: CatalogueSystem, after: CatalogueSystem, release: Release): string[] {
+  const [was, is] = [finishedSystem(before, release), finishedSystem(after, release)];
+  return SYSTEM_PARTS.filter(([, read]) => JSON.stringify(read(was)) !== JSON.stringify(read(is))).map(([name]) => name);
 }

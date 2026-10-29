@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import type { CatalogueSystem, Channel, Journey, Offering, Relationship, RelationshipKind } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { blankSystem, channelUses, draftBody, systemUses } from "./drafting";
-import { finishedOffering, finishedSystem, journeyOrderProblem, journeyProblem, offeringProblem, slug, systemProblem } from "./editing";
+import { finishedOffering, finishedSystem, journeyOrderProblem, journeyProblem, offeringProblem, slug, systemChanges, systemProblem } from "./editing";
 import { ActionGroup, Button, Status } from "../design/components";
 import { AreaField, Rows, SelectField, SystemField, TextField } from "./forms";
 import { JourneyEditor } from "./JourneyEditor";
@@ -21,8 +21,14 @@ import { useEditing } from "./useEditing";
  * scrolls. The verb stays focusable while it can't be sent, with the reason
  * beside it (§1.2); a failure is said in a line mounted from the start.
  */
-export function EditPanel({ title, children, action, busy, problem, error, onSubmit, onCancel, danger, conflictMessage, focusOnOpen, level = 3 }: {
+export function EditPanel({ title, children, action, busy, problem, error, onSubmit, onCancel, danger, conflictMessage, focusOnOpen, level = 3, changes }: {
   title: string;
+  /**
+   * What the edit has changed so far, by the names of its fields: said beside the verb, and
+   * while there is any, Cancel and Escape ask before throwing it away. Left out, the panel
+   * cancels at once.
+   */
+  changes?: string[];
   /** Its title's heading level: 2 where it takes the place of a page's own section. */
   level?: 2 | 3;
   /** Take focus on its title when it opens, for a panel that replaces the button that opened it. */
@@ -41,9 +47,16 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
   const id = useId();
   const heading = useRef<HTMLHeadingElement>(null);
   const Heading = level === 2 ? "h2" : "h3";
+  const [asking, setAsking] = useState(false);
   useEffect(() => {
     if (focusOnOpen) heading.current?.focus();
   }, [focusOnOpen]);
+  useEffect(() => {
+    if (asking) document.getElementById(`${id}-keep`)?.focus();
+  }, [asking, id]);
+  const changed = changes ?? [];
+  // A changed form is not thrown away by one press: Cancel or Escape asks first, and Escape again keeps editing.
+  const leave = () => (changed.length && !asking ? setAsking(true) : asking ? setAsking(false) : onCancel());
   const conflict = error instanceof ApiError && error.status === 409;
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -58,7 +71,7 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
       onKeyDown={(event) => {
         if (event.key === "Escape") {
           event.stopPropagation();
-          onCancel();
+          leave();
         }
       }}
     >
@@ -75,12 +88,29 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
         ) : null}
       </p>
       <div className="cat-edit__foot">
-        <ActionGroup>
-          <Button type="submit" variant={danger ? "danger" : "primary"} busy={busy} unavailableReason={busy ? null : problem}>
-            {busy ? "Saving…" : action}
-          </Button>
-          <Button variant="tertiary" onClick={onCancel}>Cancel</Button>
-        </ActionGroup>
+        {asking ? (
+          <>
+            <p id={`${id}-discard`} className="cat-edit__changes">Discard your changes to {changed.join(", ")}?</p>
+            <ActionGroup>
+              <Button id={`${id}-keep`} variant="primary" aria-describedby={`${id}-discard`} onClick={() => setAsking(false)}>Keep editing</Button>
+              <Button variant="tertiary" onClick={onCancel}>Discard the changes</Button>
+            </ActionGroup>
+          </>
+        ) : (
+          <>
+            {changes && (
+              <p className="cat-edit__changes" aria-live="polite">
+                {changed.length ? `Changed: ${changed.join(", ")}.` : "Nothing changed yet."}
+              </p>
+            )}
+            <ActionGroup>
+              <Button type="submit" variant={danger ? "danger" : "primary"} busy={busy} unavailableReason={busy ? null : problem}>
+                {busy ? "Saving…" : action}
+              </Button>
+              <Button variant="tertiary" onClick={leave}>Cancel</Button>
+            </ActionGroup>
+          </>
+        )}
       </div>
     </form>
   );
@@ -92,10 +122,12 @@ export function SystemEdit({ system, onDone }: { system?: CatalogueSystem; onDon
   const release = book.release;
   const navigate = useNavigate();
   const { saveSystem } = useEditing(release);
-  const [value, setValue] = useState<CatalogueSystem>(() => system ?? blankSystem());
+  const [original] = useState<CatalogueSystem>(() => system ?? blankSystem());
+  const [value, setValue] = useState<CatalogueSystem>(original);
   return (
     <EditPanel
       title={system ? `Edit ${system.name}` : "Add a system"}
+      changes={systemChanges(original, value, release)}
       action={system ? "Save the system" : "Add the system"}
       busy={saveSystem.isPending}
       problem={systemProblem(value, release)}

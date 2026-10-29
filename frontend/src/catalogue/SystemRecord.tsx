@@ -6,6 +6,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api, type CatalogueSystem, type Relationship, type SourceConfidence } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { ActionGroup, Button, type Column, DataTable, Facts, Lines, RecordView, Section, Skeleton, Status } from "../design/components";
+import { useFocusAfterRender } from "../design/hooks";
 import { RouterLink } from "../shell/links";
 import { SystemReview } from "../reviews/SystemReview";
 import { seatsLine, seatsOn } from "../squads/organisation";
@@ -30,6 +31,12 @@ type Trail = { from?: string };
 export function SystemRecord({ system, index }: { system: CatalogueSystem; index: ConceptIndex }) {
   const { book, base, editable } = useCatalogueContext();
   const [editing, setEditing] = useState<"system" | "remove" | null>(null);
+  // Closing an edit gives focus back to the button that opened it.
+  const focusLater = useFocusAfterRender();
+  const close = (key: "system" | "remove") => () => {
+    focusLater(() => document.getElementById(`system-edit-${key}`));
+    setEditing(null);
+  };
   const location = useLocation();
   const navigate = useNavigate();
   const from = (location.state as Trail | null)?.from;
@@ -50,8 +57,8 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
       actions={
         editable ? (
           <ActionGroup label={`Edit ${system.name}`}>
-            <Button aria-expanded={editing === "system"} onClick={() => setEditing(editing === "system" ? null : "system")}>Edit this system</Button>
-            <Button variant="tertiary" aria-expanded={editing === "remove"} onClick={() => setEditing(editing === "remove" ? null : "remove")}>Remove this system…</Button>
+            <Button id="system-edit-system" aria-expanded={editing === "system"} onClick={() => setEditing(editing === "system" ? null : "system")}>Edit this system</Button>
+            <Button id="system-edit-remove" variant="tertiary" aria-expanded={editing === "remove"} onClick={() => setEditing(editing === "remove" ? null : "remove")}>Remove this system…</Button>
           </ActionGroup>
         ) : undefined
       }
@@ -68,6 +75,7 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
             ...(system.aliases.length ? [["Also called", <bdi key="aliases">{system.aliases.join(", ")}</bdi>] as [string, ReactNode]] : []),
             ["Sits in", place.length ? <RouterLink href={`${base}/domains`}><bdi>{place.join(" › ")}</bdi></RouterLink> : <span className="cat-quiet">Not placed in the landscape</span>],
             ["Run by", <RunBy key="run-by" system={system} />],
+            ...(system.external ? [["Run by another party", "Outside the operator"] as [string, ReactNode]] : []),
             // The catalogue's own owner field, kept when its source names one: Ownership decides who runs it.
             ...(system.owner ? [["Owner in the source", <bdi key="owner">{system.owner}</bdi>] as [string, ReactNode]] : []),
             ...(system.roadmap ? [["Roadmap", <bdi key="roadmap">{system.roadmap}</bdi>] as [string, ReactNode]] : []),
@@ -77,22 +85,24 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
         />
       </div>
 
-      {editing === "system" && <SystemEdit system={system} onDone={() => setEditing(null)} />}
-      {editing === "remove" && <SystemRemove system={system} onDone={() => setEditing(null)} />}
+      {editing === "system" && <SystemEdit system={system} onDone={close("system")} />}
+      {editing === "remove" && <SystemRemove system={system} onDone={close("remove")} />}
+      {/* While the system is edited, the sections its form holds give way to it; the rest of the record stays. */}
+      <Section
+        title="In context"
+        headingLevel={3}
+        actions={<RouterLink href={`${base}/map?system=${encodeURIComponent(system.id)}`}>Open it full width</RouterLink>}
+      >
+        <SystemContextDiagram systemId={system.id} />
+      </Section>
+      {editing !== "system" && <Capabilities system={system} index={index} />}
+      <Interfaces system={system} />
+      {/* One edit at a time: its dependencies are changed once the system's own edit is saved or cancelled. */}
+      <Connections system={system} from={from} locked={editing === "system"} />
+      <Owners system={system} />
+      <Roles system={system} />
       {editing !== "system" && (
         <>
-          <Section
-            title="In context"
-            headingLevel={3}
-            actions={<RouterLink href={`${base}/map?system=${encodeURIComponent(system.id)}`}>Open it full width</RouterLink>}
-          >
-            <SystemContextDiagram systemId={system.id} />
-          </Section>
-          <Capabilities system={system} index={index} />
-          <Interfaces system={system} />
-          <Connections system={system} from={from} />
-          <Owners system={system} />
-          <Roles system={system} />
           <Data system={system} />
           <Components system={system} />
           <Section title="Constraints" count={system.constraints.length} headingLevel={3}>
@@ -207,8 +217,9 @@ function Interfaces({ system }: { system: CatalogueSystem }) {
   );
 }
 
-function Connections({ system, from }: { system: CatalogueSystem; from?: string }) {
-  const { book, editable } = useCatalogueContext();
+function Connections({ system, from, locked }: { system: CatalogueSystem; from?: string; locked?: boolean }) {
+  const { book, editable: draft } = useCatalogueContext();
+  const editable = draft && !locked;
   const { dependsOn, usedBy } = connections(book, system.id);
   return (
     <>

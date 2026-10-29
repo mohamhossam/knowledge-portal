@@ -133,6 +133,19 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- A system's edit form now covers everything else its record shows about the system itself: whether
+  it is outside the operator, the owner its source names, its roadmap, its own source and how sure
+  that source is, the concept each capability realises (or why none fits), and the information it
+  masters and reads, with its share of each entity it masters. Choosing a concept puts the
+  capability in that concept's business area, and each kind of information is mastered, read or
+  neither (one choice per row), as the service requires. The form is grouped (the system, where
+  its facts come from, what lies ahead), names each capability and component row, and says what
+  still names a system when it is retired. Beside Save it lists what the edit has changed, and
+  Cancel or Escape asks before throwing a changed edit away; closing gives focus back to "Edit
+  this system". While the system is edited, the parts of the record the form does not hold (its
+  context map, interfaces, dependencies, owners, offerings and journeys) stay in view, read only
+  until the edit is saved or cancelled. The record also says when a system is run outside the
+  operator, and a concept chip that wraps keeps its padding. No upgrade step.
 - The Check step lists what nothing in the draft links to (review recommendation 17):
   capabilities with no concept and no "none fits" reason, systems outside the landscape,
   interfaces no system consumes and no journey step or tracking flow goes through, and terms

@@ -67,6 +67,100 @@ describe("hand edits on a system's sheet", () => {
     ]);
   });
 
+  it("keeps the rest of the record in view while the system is edited", () => {
+    renderAt(draft(), "/architecture/versions/d/systems/cwom", systemRoutes);
+    fireEvent.click(screen.getByRole("button", { name: "Edit this system" }));
+    expect(screen.getByRole("form", { name: "Edit CWOM" })).toBeInTheDocument();
+    // What the form holds gives way to it; what it doesn't stays, read only until the edit closes.
+    expect(screen.getByRole("heading", { name: /Depends on/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add a dependency" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Constraints/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.getByRole("button", { name: "Add a dependency" })).toBeInTheDocument();
+  });
+
+  it("asks before throwing a changed edit away, and gives focus back to its button", async () => {
+    renderAt(draft(), "/architecture/versions/d/systems/cwom", systemRoutes);
+    fireEvent.click(screen.getByRole("button", { name: "Edit this system" }));
+    const form = screen.getByRole("form", { name: "Edit CWOM" });
+    expect(within(form).getByText("Nothing changed yet.")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("What it is"), { target: { value: "Orchestrates fixed-line orders." } });
+    expect(within(form).getByText("Changed: What it is.")).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByLabelText("What it is"), { key: "Escape" });
+    expect(within(form).getByText("Discard your changes to What it is?")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Keep editing" })).toHaveFocus());
+    // Escape again, or Keep editing, goes back to the edit as it was.
+    fireEvent.keyDown(screen.getByRole("button", { name: "Keep editing" }), { key: "Escape" });
+    expect(screen.getByLabelText("What it is")).toHaveValue("Orchestrates fixed-line orders.");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "Discard the changes" }));
+    expect(screen.queryByRole("form", { name: "Edit CWOM" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Edit this system" })).toHaveFocus());
+  });
+
+  const linked = () =>
+    draft({
+      systems: [
+        system("cwom", "CWOM", {
+          capabilities: [{ id: "take", name: "Take orders", triggers: ["take orders"], accepted: [] }],
+          masters: [], reads: [], mastery_notes: [], external: false, deprecated: false, accepted: [],
+        }),
+        system("bscs", "BSCS"),
+      ],
+      capability_domains: [{ id: "sales", name: "Sales", accepted: [] }],
+      business_capabilities: [
+        { id: "cap-order-capture", pref_label: "Order capture", domain_id: "sales", alt_labels: [], close_match: [], deprecated: false, accepted: [] },
+      ],
+      vocabulary: [
+        { id: "ent-order", scheme: "information_entity", pref_label: "Order", alt_labels: [], close_match: [], deprecated: false, accepted: [] },
+        { id: "ent-customer", scheme: "information_entity", pref_label: "Customer", alt_labels: [], close_match: [], deprecated: false, accepted: [] },
+      ],
+    } as unknown as Partial<Release>);
+
+  it("saves where its facts come from, its concept and the information it masters and reads", async () => {
+    const save = vi.spyOn(api, "saveSystem").mockResolvedValue(linked());
+    renderAt(linked(), "/architecture/versions/d/systems/cwom", systemRoutes);
+    fireEvent.click(screen.getByRole("button", { name: "Edit this system" }));
+    fireEvent.click(screen.getByLabelText(/Outside the operator/));
+    fireEvent.change(screen.getByLabelText("Owner in the source"), { target: { value: "Order management" } });
+    fireEvent.change(screen.getByLabelText("Roadmap"), { target: { value: "Replaced by CSRD over time." } });
+    fireEvent.change(screen.getByLabelText("Concept it realises"), { target: { value: "cap-order-capture" } });
+    // One role per kind of information: mastering what it read takes it off what it reads.
+    const order = screen.getByRole("group", { name: "Order" });
+    fireEvent.click(within(order).getByLabelText("Reads"));
+    fireEvent.click(within(order).getByLabelText("Masters"));
+    expect(within(order).getByLabelText("Reads")).not.toBeChecked();
+    fireEvent.click(within(screen.getByRole("group", { name: "Customer" })).getByLabelText("Reads"));
+    fireEvent.change(screen.getByLabelText("Its share of Order"), { target: { value: "Fixed-line orders only." } });
+    fireEvent.click(screen.getByRole("button", { name: "Save the system" }));
+    await waitFor(() => expect(save).toHaveBeenCalled());
+    expect(save.mock.calls[0]![2].system).toMatchObject({
+      external: true,
+      owner: "Order management",
+      roadmap: "Replaced by CSRD over time.",
+      masters: ["ent-order"],
+      reads: ["ent-customer"],
+      mastery_notes: [{ entity_id: "ent-order", note: "Fixed-line orders only." }],
+      // Its concept's business area comes with it.
+      capabilities: [expect.objectContaining({ concept_id: "cap-order-capture", domain_id: "sales", unlinked_reason: null })],
+    });
+  });
+
+  it("asks why when no concept fits a capability", async () => {
+    const save = vi.spyOn(api, "saveSystem").mockResolvedValue(linked());
+    renderAt(linked(), "/architecture/versions/d/systems/cwom", systemRoutes);
+    fireEvent.click(screen.getByRole("button", { name: "Edit this system" }));
+    fireEvent.change(screen.getByLabelText("Concept it realises"), { target: { value: "*none-fits" } });
+    const button = screen.getByRole("button", { name: "Save the system" });
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    // The field says what is missing, not only the foot.
+    expect(screen.getByLabelText(/Why no concept fits/)).toHaveAttribute("aria-invalid", "true");
+    fireEvent.change(screen.getByLabelText(/Why no concept fits/), { target: { value: " Too broad for one concept. " } });
+    fireEvent.click(button);
+    await waitFor(() => expect(save).toHaveBeenCalled());
+    expect(save.mock.calls[0]![2].system.capabilities[0]).toMatchObject({ concept_id: null, unlinked_reason: "Too broad for one concept." });
+  });
+
   it("adds a dependency to the whole draft", async () => {
     const save = vi.spyOn(api, "saveDraft").mockResolvedValue(draft({ revision: 6 }));
     renderAt(draft(), "/architecture/versions/d/systems/cwom", systemRoutes);
