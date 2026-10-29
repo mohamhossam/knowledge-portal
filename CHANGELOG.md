@@ -146,6 +146,12 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   context map, interfaces, dependencies, owners, offerings and journeys) stay in view, read only
   until the edit is saved or cancelled. The record also says when a system is run outside the
   operator, and a concept chip that wraps keeps its padding. No upgrade step.
+- A system's connections are edited where its "In context" map draws them. "Edit the connections"
+  opens both columns as rows, what it depends on and what depends on it (the system, how, and
+  what for), and saves them together, so a connection is no longer edited only from the system
+  that depends. It can be open beside the system's own edit. A kept connection keeps its place and
+  its provenance; ADR-0119's one dependency of each kind between two systems is checked before
+  saving. No upgrade step.
 - The Check step lists what nothing in the draft links to (review recommendation 17):
   capabilities with no concept and no "none fits" reason, systems outside the landscape,
   interfaces no system consumes and no journey step or tracking flow goes through, and terms

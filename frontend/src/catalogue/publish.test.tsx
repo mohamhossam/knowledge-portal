@@ -161,6 +161,54 @@ describe("hand edits on a system's sheet", () => {
     expect(save.mock.calls[0]![2].system.capabilities[0]).toMatchObject({ concept_id: null, unlinked_reason: "Too broad for one concept." });
   });
 
+  const connected = () =>
+    draft({
+      systems: [system("cwom", "CWOM"), system("bscs", "BSCS"), system("crm", "CRM")],
+      relationships: [
+        { source_system_id: "cwom", target_system_id: "bscs", kind: "calls_api", description: "Closure updates billing.", accepted: [], source: "SDD §4" },
+        { source_system_id: "crm", target_system_id: "cwom", kind: "orchestrates", description: "Hands orders over.", accepted: [] },
+        { source_system_id: "crm", target_system_id: "bscs", kind: "calls_api", description: "Reads balances.", accepted: [] },
+      ],
+    } as unknown as Partial<Release>);
+
+  it("edits both columns of the map where it is drawn, and saves them together", async () => {
+    const save = vi.spyOn(api, "saveDraft").mockResolvedValue(connected());
+    renderAt(connected(), "/architecture/versions/d/systems/cwom", systemRoutes);
+    fireEvent.click(screen.getByRole("button", { name: "Edit the connections" }));
+    const panel = screen.getByRole("form", { name: "Edit the connections of CWOM" });
+    // One edit of its connections at a time: the tables below wait.
+    expect(screen.queryByRole("button", { name: "Add a dependency" })).not.toBeInTheDocument();
+    const billing = within(panel).getByRole("group", { name: "dependency on BSCS" });
+    fireEvent.change(within(billing).getByLabelText(/For what/), { target: { value: "Closure and refunds update billing." } });
+    // The other end's side reads in its own words.
+    const crm = within(panel).getByRole("group", { name: "dependency of CRM" });
+    expect(within(crm).getByLabelText("How")).toHaveDisplayValue("Orchestrates CWOM");
+    fireEvent.click(within(panel).getByRole("button", { name: "Remove dependency of CRM" }));
+    fireEvent.click(within(panel).getByRole("button", { name: "Add another system it depends on" }));
+    const added = within(panel).getByRole("group", { name: "dependency 2" });
+    fireEvent.change(within(added).getByLabelText("Depends on"), { target: { value: "crm" } });
+    const button = within(panel).getByRole("button", { name: "Save the connections" });
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    fireEvent.change(within(panel).getByRole("group", { name: "dependency on CRM" }).querySelector("textarea")!, { target: { value: "Looks up the customer." } });
+    expect(within(panel).getByText("Changed: what it depends on, what depends on it.")).toBeInTheDocument();
+    fireEvent.click(button);
+    await waitFor(() => expect(save).toHaveBeenCalled());
+    expect(save.mock.calls[0]![1].relationships).toEqual([
+      // Kept where it was, its provenance with it; a connection between two other systems untouched; the new one after.
+      { source_system_id: "cwom", target_system_id: "bscs", kind: "calls_api", description: "Closure and refunds update billing.", accepted: [], source: "SDD §4" },
+      { source_system_id: "crm", target_system_id: "bscs", kind: "calls_api", description: "Reads balances.", accepted: [] },
+      { source_system_id: "cwom", target_system_id: "crm", kind: "calls_api", description: "Looks up the customer.", accepted: [] },
+    ]);
+  });
+
+  it("edits the connections while the system itself is being edited", () => {
+    renderAt(connected(), "/architecture/versions/d/systems/cwom", systemRoutes);
+    fireEvent.click(screen.getByRole("button", { name: "Edit this system" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit the connections" }));
+    expect(screen.getByRole("form", { name: "Edit CWOM" })).toBeInTheDocument();
+    expect(screen.getByRole("form", { name: "Edit the connections of CWOM" })).toBeInTheDocument();
+  });
+
   it("adds a dependency to the whole draft", async () => {
     const save = vi.spyOn(api, "saveDraft").mockResolvedValue(draft({ revision: 6 }));
     renderAt(draft(), "/architecture/versions/d/systems/cwom", systemRoutes);

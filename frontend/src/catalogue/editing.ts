@@ -1,5 +1,5 @@
 /** What an edit sends, and why it cannot be sent yet: shared by the catalogue's editors. */
-import type { CatalogueSystem, Journey, Offering, Release } from "../api/client";
+import type { CatalogueSystem, Journey, Offering, Relationship, RelationshipKind, Release } from "../api/client";
 
 /** A name or code as compared: no case, no surrounding space. */
 const fold = (text: string) => text.trim().toLocaleLowerCase();
@@ -254,4 +254,78 @@ const SYSTEM_PARTS: [string, (system: CatalogueSystem) => unknown][] = [
 export function systemChanges(before: CatalogueSystem, after: CatalogueSystem, release: Release): string[] {
   const [was, is] = [finishedSystem(before, release), finishedSystem(after, release)];
   return SYSTEM_PARTS.filter(([, read]) => JSON.stringify(read(was)) !== JSON.stringify(read(is))).map(([name]) => name);
+}
+
+/**
+ * One of a system's connections as its "In context" edit holds it: the system at the other
+ * end, how, and what for. `original` is the connection it was read from; a new one has none.
+ */
+export type Link = { other: string; kind: RelationshipKind; description: string; original?: Relationship };
+
+/** A system's connections as links: what it depends on, and what depends on it. */
+export function linksOf(release: Release, systemId: string): { dependsOn: Link[]; usedBy: Link[] } {
+  const link = (item: Relationship, other: string): Link => ({ other, kind: item.kind, description: item.description, original: item });
+  return {
+    dependsOn: release.relationships.filter((item) => item.source_system_id === systemId && item.target_system_id !== systemId).map((item) => link(item, item.target_system_id)),
+    usedBy: release.relationships.filter((item) => item.target_system_id === systemId && item.source_system_id !== systemId).map((item) => link(item, item.source_system_id)),
+  };
+}
+
+/**
+ * The draft's connections once a system's links are saved: every other connection as it was,
+ * each kept link in its old place, the new ones after. What a link was read from keeps its
+ * provenance.
+ */
+export function relationshipsWith(release: Release, systemId: string, dependsOn: Link[], usedBy: Link[]): Relationship[] {
+  const made = (link: Link, source: string, target: string): Relationship => ({
+    ...link.original,
+    source_system_id: source,
+    target_system_id: target,
+    kind: link.kind,
+    description: link.description.trim(),
+    accepted: link.original?.accepted ?? [],
+  });
+  const edited = new Map<Relationship, Relationship>();
+  const added: Relationship[] = [];
+  for (const link of dependsOn) {
+    const next = made(link, systemId, link.other);
+    if (link.original) edited.set(link.original, next);
+    else added.push(next);
+  }
+  for (const link of usedBy) {
+    const next = made(link, link.other, systemId);
+    if (link.original) edited.set(link.original, next);
+    else added.push(next);
+  }
+  const touches = (item: Relationship) => item.source_system_id === systemId || item.target_system_id === systemId;
+  return [
+    ...release.relationships.flatMap((item) => (touches(item) && item.source_system_id !== item.target_system_id ? (edited.has(item) ? [edited.get(item)!] : []) : [item])),
+    ...added,
+  ];
+}
+
+/** Why a system's links cannot be saved yet, if anything (ADR-0119: one dependency of each kind between two systems). */
+export function linksProblem(release: Release, systemId: string, dependsOn: Link[], usedBy: Link[]): string | null {
+  const name = (id: string) => release.systems.find((item) => item.id === id)?.name ?? id;
+  if ([...dependsOn, ...usedBy].some((link) => !link.other)) return "Choose the system at the other end of every connection.";
+  if ([...dependsOn, ...usedBy].some((link) => !link.description.trim())) return "Say what every connection is for.";
+  for (const [links, side] of [[dependsOn, "It depends on"], [usedBy, "Depend on it"]] as const) {
+    const seen = new Set<string>();
+    for (const link of links) {
+      const key = `${link.other}:${link.kind}`;
+      if (seen.has(key)) return `${side}: ${name(link.other)} is listed twice the same way; keep one, or say another way.`;
+      seen.add(key);
+    }
+  }
+  return null;
+}
+
+/** Which sides of a system's links an edit has changed, by the panel's names for them. */
+export function linksChanges(release: Release, systemId: string, dependsOn: Link[], usedBy: Link[]): string[] {
+  const was = linksOf(release, systemId);
+  const read = (links: Link[]) => JSON.stringify(links.map((link) => [link.other, link.kind, link.description.trim()]));
+  return [
+    ...(read(was.dependsOn) !== read(dependsOn) ? ["what it depends on"] : []),
+    ...(read(was.usedBy) !== read(usedBy) ? ["what depends on it"] : []),
+  ];
 }

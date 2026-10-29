@@ -15,7 +15,7 @@ import { acceptances } from "./accepted";
 import { AcceptedFrom } from "./AcceptedFrom";
 import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRoles, usedHow } from "./catalogue";
 import { SystemContextDiagram } from "./diagrams/CatalogueDiagrams";
-import { ConnectionEdit, ConnectionRemove, SystemEdit, SystemRemove } from "./DraftEdits";
+import { ConnectionEdit, ConnectionRemove, ConnectionsEdit, SystemEdit, SystemRemove } from "./DraftEdits";
 import { type ConceptIndex, entityNames, INTERFACE_STYLE, type Interface, interfacesOf, SOURCE_TONE, SOURCE_WORD } from "./ontology";
 import { SourceName } from "./provenance/Provenance";
 import { useCatalogueContext } from "./useCatalogue";
@@ -31,11 +31,17 @@ type Trail = { from?: string };
 export function SystemRecord({ system, index }: { system: CatalogueSystem; index: ConceptIndex }) {
   const { book, base, editable } = useCatalogueContext();
   const [editing, setEditing] = useState<"system" | "remove" | null>(null);
+  // Its connections are edited where the map draws them, beside the system's own edit if that is open.
+  const [connecting, setConnecting] = useState(false);
   // Closing an edit gives focus back to the button that opened it.
   const focusLater = useFocusAfterRender();
   const close = (key: "system" | "remove") => () => {
     focusLater(() => document.getElementById(`system-edit-${key}`));
     setEditing(null);
+  };
+  const closeConnections = () => {
+    focusLater(() => document.getElementById("system-edit-connections"));
+    setConnecting(false);
   };
   const location = useLocation();
   const navigate = useNavigate();
@@ -91,14 +97,22 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
       <Section
         title="In context"
         headingLevel={3}
-        actions={<RouterLink href={`${base}/map?system=${encodeURIComponent(system.id)}`}>Open it full width</RouterLink>}
+        actions={
+          <>
+            {editable && !connecting && (
+              <Button id="system-edit-connections" variant="quiet" onClick={() => setConnecting(true)}>Edit the connections</Button>
+            )}
+            <RouterLink href={`${base}/map?system=${encodeURIComponent(system.id)}`}>Open it full width</RouterLink>
+          </>
+        }
       >
         <SystemContextDiagram systemId={system.id} />
+        {connecting && <ConnectionsEdit system={system} onDone={closeConnections} />}
       </Section>
       {editing !== "system" && <Capabilities system={system} index={index} />}
       <Interfaces system={system} />
-      {/* One edit at a time: its dependencies are changed once the system's own edit is saved or cancelled. */}
-      <Connections system={system} from={from} locked={editing === "system"} />
+      {/* One edit of its connections at a time: the tables below wait while the system or its connections are edited. */}
+      <Connections system={system} from={from} locked={editing === "system" || connecting} />
       <Owners system={system} />
       <Roles system={system} />
       {editing !== "system" && (

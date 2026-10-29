@@ -4,7 +4,11 @@ import { useNavigate } from "react-router-dom";
 import type { CatalogueSystem, Channel, Journey, Offering, Relationship, RelationshipKind } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { blankSystem, channelUses, draftBody, systemUses } from "./drafting";
-import { finishedOffering, finishedSystem, journeyOrderProblem, journeyProblem, offeringProblem, slug, systemChanges, systemProblem } from "./editing";
+import { usedHow } from "./catalogue";
+import {
+  finishedOffering, finishedSystem, journeyOrderProblem, journeyProblem, type Link, linksChanges, linksOf, linksProblem, offeringProblem,
+  relationshipsWith, slug, systemChanges, systemProblem,
+} from "./editing";
 import { ActionGroup, Button, Status } from "../design/components";
 import { AreaField, Rows, SelectField, SystemField, TextField } from "./forms";
 import { JourneyEditor } from "./JourneyEditor";
@@ -253,6 +257,72 @@ export function ConnectionRemove({ connection, onDone }: { connection: Relations
         })
       }
     />
+  );
+}
+
+/**
+ * A system's connections edited where they are drawn: both columns of "In context", what it
+ * depends on and what depends on it, saved together with the draft.
+ */
+export function ConnectionsEdit({ system, onDone }: { system: CatalogueSystem; onDone: () => void }) {
+  const { book } = useCatalogueContext();
+  const release = book.release;
+  const { saveDraft } = useEditing(release);
+  const [links] = useState(() => linksOf(release, system.id));
+  const [dependsOn, setDependsOn] = useState<Link[]>(links.dependsOn);
+  const [usedBy, setUsedBy] = useState<Link[]>(links.usedBy);
+  const others = release.systems.filter((item) => item.id !== system.id);
+  const name = (id: string) => book.systems.get(id)?.name ?? "another system";
+  // The other end's side of it, in its own words: "Calls the API of B2B Web".
+  const theirHow = HOW.map(({ value }) => ({ value, label: usedHow(value, system.name) }));
+  const fields = (side: "dependsOn" | "usedBy") => (link: Link, update: (patch: Partial<Link>) => void) => (
+    <>
+      <SystemField label={side === "dependsOn" ? "Depends on" : "System"} value={link.other} systems={others} allowNone onChange={(other) => update({ other })} />
+      <SelectField
+        label="How"
+        value={link.kind}
+        options={side === "dependsOn" ? HOW : theirHow}
+        onChange={(kind) => update({ kind: kind as RelationshipKind })}
+      />
+      <AreaField label="For what" value={link.description} required onChange={(description) => update({ description })} />
+    </>
+  );
+  return (
+    <EditPanel
+      title={`Edit the connections of ${system.name}`}
+      focusOnOpen
+      action="Save the connections"
+      busy={saveDraft.isPending}
+      problem={linksProblem(release, system.id, dependsOn, usedBy)}
+      changes={linksChanges(release, system.id, dependsOn, usedBy)}
+      error={saveDraft.error}
+      onCancel={onDone}
+      onSubmit={() =>
+        saveDraft.mutate(draftBody(release, { relationships: relationshipsWith(release, system.id, dependsOn, usedBy) }), { onSuccess: onDone })
+      }
+    >
+      <p className="cat-edit__lead">Both columns of the map. A connection between two systems belongs to both, so it can be edited from either.</p>
+      <div className="cat-form">
+        <Rows<Link>
+          legend={`What ${system.name} depends on`}
+          one="system it depends on"
+          items={dependsOn}
+          onChange={setDependsOn}
+          blank={() => ({ other: "", kind: "calls_api", description: "" })}
+          itemLabel={(link, index) => (link.other ? `dependency on ${name(link.other)}` : `dependency ${index + 1}`)}
+          render={fields("dependsOn")}
+        />
+        <Rows<Link>
+          legend={`What depends on ${system.name}`}
+          one="system that depends on it"
+          items={usedBy}
+          onChange={setUsedBy}
+          blank={() => ({ other: "", kind: "calls_api", description: "" })}
+          itemLabel={(link, index) => (link.other ? `dependency of ${name(link.other)}` : `dependent ${index + 1}`)}
+          render={fields("usedBy")}
+        />
+      </div>
+    </EditPanel>
   );
 }
 
