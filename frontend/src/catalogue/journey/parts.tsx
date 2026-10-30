@@ -3,6 +3,8 @@ import { type ReactNode, useId } from "react";
 
 import type { Journey, JourneyActivity } from "../../api/client";
 import type { EdgeKind, Entry } from "./layout";
+import { CONFIDENCE } from "../catalogue";
+import { SOURCE_WORD } from "../ontology";
 import { KIND_WORDS } from "./words";
 
 /** What every view is given: the journey, and how its systems and channels read. */
@@ -111,7 +113,11 @@ export function MarkIcons({ step }: { step: JourneyActivity }) {
         </span>
       )}
       {step.confidence && step.confidence !== "confirmed" && (
-        <span className="journey-tag">{step.confidence === "gap" ? "Gap" : "Inferred"}</span>
+        <span className="journey-tag">
+          <span aria-hidden="true">{SOURCE_WORD[step.confidence]}</span>
+          {/* On a step, nothing says the tag is about the source: it is read in full. */}
+          <span className="ds-visually-hidden">{CONFIDENCE[step.confidence]}</span>
+        </span>
       )}
     </>
   );

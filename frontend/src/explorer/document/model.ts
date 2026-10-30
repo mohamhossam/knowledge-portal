@@ -8,6 +8,8 @@
 import type { CatalogPlans, ExplorerRelease, Journey, SourceConfidence } from "../../api/client";
 import { CONFIDENCE, COVERAGE, LAYERS, concerns, orderedSteps, roleNamer, sentenceCase } from "../../catalogue/catalogue";
 import { byLevel, levelTag, questionLine, questionOf, sourceRegister, withLevel } from "../../catalogue/governance";
+// How sure a source is, in the words every screen uses: "Has gaps", never a third vocabulary.
+import { SOURCE_WORD } from "../../catalogue/ontology";
 import { count } from "../../home/format";
 import { falling, formatAmount } from "../plans";
 import { gaps, involvement, journeyFor, listed, partsFor, performer, trackingFor, type Involvement, type Scenario } from "../scenario";
@@ -41,8 +43,9 @@ const STATUS = "DRAFT: generated from the catalogue; not approved until the arch
 const NO_SYSTEM = (n: number) => `${n} ${n === 1 ? "step" : "steps"}: no system (gap)`;
 /** Where a source is cited: its name, level and section, without the section's title after "›". */
 const citation = (text: string | null | undefined) => text?.split(" › ")[0]?.trim() || null;
+/** Words set within a sentence: "Its source leaves gaps" → "its source leaves gaps". */
+const lower = (text: string) => `${text.charAt(0).toLocaleLowerCase()}${text.slice(1)}`;
 const NOT_HELD = (what: string) => `The catalogue does not hold ${what} yet, so this is a gap; nothing is filled in.`;
-const SHORT: Record<SourceConfidence, string> = { confirmed: "Confirmed", inferred: "Inferred", gap: "Gap" };
 // For a step with no role, the words that make it a validation.
 const VALIDATE = /validat|check|eligib|verif|feasib/i;
 
@@ -70,7 +73,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
   const sourced = (text: string | null | undefined) => withLevel(text, sourceLines);
   /** How sure a fact is, and where it is said: "Confirmed · BPP SDD (L2) §10". */
   const evidence = (fact: { confidence?: SourceConfidence | null; source?: string | null } | null | undefined): DocCell => {
-    const parts = [fact?.confidence ? SHORT[fact.confidence] : null, sourced(citation(fact?.source))].filter(Boolean);
+    const parts = [fact?.confidence ? SOURCE_WORD[fact.confidence] : null, sourced(citation(fact?.source))].filter(Boolean);
     return { text: parts.join("\n") || "Not stated", confidence: fact?.confidence ?? null };
   };
   const steps = journey ? orderedSteps(journey) : [];
@@ -185,7 +188,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
   } else gap("Source documents", "The catalogue registers no source yet, so no fact below can say its level.");
   h2("Confidence");
   p("Every fact in the catalogue says how sure its source is and where it is said. A fact the sources do not give is shown as a gap, never filled in.");
-  table(columns(["Confidence", 20], ["Meaning", 80]), (Object.keys(SHORT) as SourceConfidence[]).map((key) => [{ text: SHORT[key], confidence: key }, CONFIDENCE[key]]));
+  table(columns(["Confidence", 20], ["Meaning", 80]), (Object.keys(SOURCE_WORD) as SourceConfidence[]).map((key) => [{ text: SOURCE_WORD[key], confidence: key }, CONFIDENCE[key]]));
   h2("Assumptions");
   p("The catalogue records no fact as an assumption. A fact read but not stated in its source is marked inferred; one its source does not give is a gap.");
   h2("Architecture boundaries");
@@ -287,7 +290,7 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
     const facts = steps.filter((item) => (item.phase?.trim() || "Not placed in a phase") === stage.phase);
     const rank: (SourceConfidence | null | undefined)[] = ["gap", "inferred", "confirmed"];
     const found = rank.find((level) => facts.some((item) => item.confidence === level));
-    return found ? { text: SHORT[found], confidence: found } : "Not stated";
+    return found ? { text: SOURCE_WORD[found], confidence: found } : "Not stated";
   };
   table(columns(["Stage", 22], ["Systems", 50], ["Weakest confidence", 28]), stageRows.map((stage) => [stage.phase, lines(stage.systems.map(name).concat(stage.unnamed ? [NO_SYSTEM(stage.unnamed)] : [])), weakest(stage)]), { firstColShade: true });
   h2("2.1 Hand-overs by interaction");
@@ -375,7 +378,8 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
       const layer = (key: (typeof LAYERS)[number]["layer"]): DocCell => {
         const items = (part.realisation ?? []).filter((item) => item.layer === key);
         if (!items.length) return { text: "Not recorded (gap)", due: true };
-        return { text: items.map((item) => `${item.name}${item.confidence && item.confidence !== "confirmed" ? ` [${SHORT[item.confidence]}]` : ""}`).join("\n"), confidence: items.some((item) => item.confidence === "gap") ? "gap" : null };
+        // In full, "[its source leaves gaps]": nothing in the cell says the word is about the source.
+        return { text: items.map((item) => `${item.name}${item.confidence && item.confidence !== "confirmed" ? ` [${lower(CONFIDENCE[item.confidence])}]` : ""}`).join("\n"), confidence: items.some((item) => item.confidence === "gap") ? "gap" : null };
       };
       return [
         part.name,
@@ -548,7 +552,8 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
       if (block.kind === "table" && block.columns.length) table(block.columns.map((label) => ({ label, w: Math.round(100 / block.columns.length) })), block.rows.map((row) => row.map((value) => String(value ?? ""))));
       if (block.source) p(`Source: ${sourced(block.source)}`, true);
     }
-    p(`Confidence: ${(evidence(note) as { text: string }).text}`, true);
+    // In a sentence, the long words: "Confidence: its source leaves gaps; BPP SDD (L2) §11".
+    p(`Confidence: ${[note.confidence ? lower(CONFIDENCE[note.confidence]) : "not stated", sourced(citation(note.source))].filter(Boolean).join("; ")}`, true);
   });
 
   /* 12 to 14 */
@@ -559,7 +564,8 @@ export function solutionDocument(input: DocumentInput): SolutionDocument {
   if (nfrs.length) {
     table(
       columns(["Quality", 18], ["Coverage", 14], ["Statement", 48], ["Confidence", 20]),
-      nfrs.map((item) => [item.quality, { text: COVERAGE[item.coverage], coverage: item.coverage }, item.statement || "No source defines it.", evidence(item)]),
+      // A quality no source defines says so once, under Coverage: no confidence word beside it.
+      nfrs.map((item) => [item.quality, { text: COVERAGE[item.coverage], coverage: item.coverage }, item.statement || "No source defines it.", evidence(item.coverage === "missing" ? { ...item, confidence: null } : item)]),
     );
   } else gap("Non-functional requirements", `No non-functional requirement is recorded for ${offering.name}.`);
   h1("14. Deployment & Runtime", true);

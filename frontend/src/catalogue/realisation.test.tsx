@@ -85,7 +85,8 @@ describe("realisation and NFRs read on a sheet", () => {
     const table = within(screen.getByRole("table", { name: "Non-functional requirements of Business Pro Plus" }));
     const availability = table.getByRole("row", { name: /Availability/ });
     expect(within(availability).getByText("Not defined").closest(".ds-status--attention")).not.toBeNull();
-    expect(within(availability).getByText("Its source leaves gaps")).toBeInTheDocument();
+    // Said once: the gap its source leaves is what "Not defined" already says.
+    expect(within(availability).queryByText("Its source leaves gaps")).not.toBeInTheDocument();
     expect(table.getByRole("row", { name: /Security/ }).querySelectorAll("td")[1]).toHaveTextContent("SAML SSO for the portal.SDD (L2) §11");
     expect(screen.getByText(/1 quality is not defined/)).toBeInTheDocument();
   });
