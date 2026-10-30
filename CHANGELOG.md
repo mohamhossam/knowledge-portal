@@ -7,6 +7,12 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- "Keep editing", in the question a changed system or connections edit asks before it is thrown
+  away, no longer saves the edit. The question's buttons took the place of Save and Cancel as the
+  same elements, so the click that chose to keep editing ended as a press of Save. Keeping on
+  editing now goes back to the field it left. Adding or removing a row in a catalogue form keeps
+  focus in the form: a new row takes it, and a removed one hands it to the next row or the add
+  button. No upgrade step.
 - A long requirement no longer fails its assessment in the precedent lane. The lane embedded
   the whole requirement (45,189 characters on 2026-10-28), which the embedding model refuses,
   and the assessment answered 502 ("The embedding service returned unusable output"). It now
@@ -133,6 +139,36 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- A system's edit form now covers everything else its record shows about the system itself: whether
+  it is outside the operator, the owner its source names, its roadmap, its own source and how sure
+  that source is, the concept each capability realises (or why none fits), and the information it
+  masters and reads, with its share of each entity it masters. Choosing a concept puts the
+  capability in that concept's business area, and each kind of information is mastered, read or
+  neither (one choice per row), as the service requires. The form is grouped (the system, where
+  its facts come from, what lies ahead), names each capability and component row, and says what
+  still names a system when it is retired. Beside Save it lists what the edit has changed, and
+  Cancel or Escape asks before throwing a changed edit away; closing gives focus back to "Edit
+  this system". While the system is edited, the parts of the record the form does not hold (its
+  context map, interfaces, dependencies, owners, offerings and journeys) stay in view, read only
+  until the edit is saved or cancelled. The record also says when a system is run outside the
+  operator, and a concept chip that wraps keeps its padding. No upgrade step.
+- A system's connections are edited where its "In context" map draws them. "Edit the connections"
+  opens both columns as rows, what it depends on and what depends on it (the system, how, and
+  what for), and saves them together, so a connection is no longer edited only from the system
+  that depends. It can be open beside the system's own edit. A kept connection keeps its place and
+  its provenance; ADR-0119's one dependency of each kind between two systems is checked before
+  saving. The panel follows the map (what depends on it first, under the map's own column names,
+  in its order), and the map draws the edit before it is saved: each new, changed or removed
+  connection marked in words. Opening it closes a single change or removal open in the tables
+  below. No upgrade step.
+- A system's interfaces are edited by hand where its record reads them; before, they came only
+  from accepted suggestions and catalogue files. "Edit the interfaces" holds what it exposes (each
+  interface's name, style, users, the information it carries, what it is for and its source) and
+  the interfaces of other systems it uses, where using one makes it one of that interface's users.
+  The service's rules are checked before saving: a name per interface of a system, never its own
+  user, and no interface dropped while a journey's hand-over, an offering's order tracking or
+  another interface still goes through it. What the panel does not show (an interface's Open API
+  terms and relays) is kept. No upgrade step.
 - The Check step lists what nothing in the draft links to (review recommendation 17):
   capabilities with no concept and no "none fits" reason, systems outside the landscape,
   interfaces no system consumes and no journey step or tracking flow goes through, and terms

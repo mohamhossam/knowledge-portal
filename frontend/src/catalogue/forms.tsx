@@ -6,10 +6,11 @@
 import "./frame/forms.css";
 
 import { Plus, X } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useRef } from "react";
 
 import type { CatalogueSystem } from "../api/client";
 import { Button, Checkbox, Field } from "../design/components";
+import { useFocusAfterRender } from "../design/hooks";
 
 export function TextField({ label, value, onChange, required, dir = "auto", wide, hint, error }: {
   label: string;
@@ -155,6 +156,56 @@ export function SystemField({ label, value, onChange, systems, writtenAs, allowN
   return <SelectField label={label} value={value} onChange={onChange} options={options} />;
 }
 
+/**
+ * Several chosen from a list: the chosen ones as words, each with its own remove, and one select
+ * to add another. One chosen that the list no longer has stays shown, as written.
+ */
+export function PickField({ label, hint, chosen, options, onChange }: {
+  label: string;
+  hint?: string;
+  chosen: string[];
+  /** Options with a group are set under it, in the order given. */
+  options: { value: string; label: string; group?: string }[];
+  onChange: (chosen: string[]) => void;
+}) {
+  const name = (value: string) => options.find((option) => option.value === value)?.label ?? value;
+  const left = options.filter((option) => !chosen.includes(option.value));
+  const cell = useRef<HTMLDivElement>(null);
+  const focusLater = useFocusAfterRender();
+  return (
+    <div ref={cell} className="cat-form__cell cat-form__wide">
+      <SelectField
+        label={label}
+        hint={hint}
+        value=""
+        options={[{ value: "", label: chosen.length ? "Add another…" : "Add one…" }, ...left]}
+        onChange={(value) => value && onChange([...chosen, value])}
+      />
+      {chosen.length > 0 && (
+        <ul className="cat-form__chosen" aria-label={`${label}: chosen`}>
+          {chosen.map((value) => (
+            <li key={value}>
+              <span dir="auto">{name(value)}</span>
+              <Button
+                variant="tertiary"
+                icon={<X size={14} />}
+                aria-label={`Remove ${name(value)} from ${label.toLocaleLowerCase()}`}
+                onClick={() => {
+                  onChange(chosen.filter((item) => item !== value));
+                  // The removed one's button goes with it: focus goes back to the select, never the page.
+                  focusLater(() => cell.current?.querySelector("select"));
+                }}
+              >
+                {null}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 const sentence = (text: string) => text.charAt(0).toLocaleUpperCase() + text.slice(1);
 
 /** Repeating rows: each a ruled fieldset with its own remove, and one add at the foot. */
@@ -170,8 +221,23 @@ export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel
   /** Show each row's name as its heading, for rows long enough to lose one's place in. */
   labelled?: boolean;
 }) {
+  const group = useRef<HTMLFieldSetElement>(null);
+  const focusLater = useFocusAfterRender();
+  // Focus never falls to the page: a new row takes it, and a removed row hands it on.
+  const rowAt = (index: number) => group.current?.querySelectorAll<HTMLElement>(":scope > .cat-form__row")[index];
+  const firstControl = (row: HTMLElement | undefined) => row?.querySelector<HTMLElement>("input, select, textarea, button");
+  const add = () => {
+    onChange([...items, blank()]);
+    focusLater(() => firstControl(rowAt(items.length)));
+  };
+  const remove = (index: number) => {
+    onChange(items.filter((_, at) => at !== index));
+    focusLater(() =>
+      firstControl(rowAt(Math.min(index, items.length - 2))) ?? group.current?.querySelector<HTMLElement>(":scope > .cat-form__remove button"),
+    );
+  };
   return (
-    <fieldset className="cat-form__rows">
+    <fieldset ref={group} className="cat-form__rows">
       <legend className="cat-form__legend">{legend}</legend>
       {items.length === 0 && <p className="ds-field__hint">None yet.</p>}
       {items.map((item, index) => (
@@ -183,15 +249,15 @@ export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel
             {render(item, (patch) => onChange(items.map((current, at) => (at === index ? { ...current, ...patch } : current))), index)}
           </div>
           <div className="cat-form__remove">
-            <Button variant="tertiary" icon={<X size={14} />} onClick={() => onChange(items.filter((_, at) => at !== index))}>
+            <Button variant="tertiary" icon={<X size={14} />} onClick={() => remove(index)}>
               Remove {itemLabel(item, index)}
             </Button>
           </div>
         </fieldset>
       ))}
       <div className="cat-form__remove">
-        <Button variant="tertiary" icon={<Plus size={14} />} onClick={() => onChange([...items, blank()])}>
-          Add {items.length ? "another" : "a"} {one}
+        <Button variant="tertiary" icon={<Plus size={14} />} onClick={add}>
+          Add {items.length ? "another" : /^[aeiou]/i.test(one) ? "an" : "a"} {one}
         </Button>
       </div>
     </fieldset>

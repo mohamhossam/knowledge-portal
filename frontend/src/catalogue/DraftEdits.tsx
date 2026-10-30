@@ -1,19 +1,30 @@
-import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { type FormEvent, Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import type { CatalogueSystem, Channel, Journey, Offering, Relationship, RelationshipKind } from "../api/client";
+import type { CatalogueSystem, Channel, Journey, Offering, Relationship, RelationshipKind, Release, SourceConfidence } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { blankSystem, channelUses, draftBody, systemUses } from "./drafting";
-import { finishedOffering, finishedSystem, journeyOrderProblem, journeyProblem, offeringProblem, slug, systemProblem } from "./editing";
+import { CONFIDENCE_OPTIONS, usedHow } from "./catalogue";
+import {
+  finishedOffering, finishedSystem, interfacesChanges, interfacesOfSystem, interfacesProblem, interfacesWith, journeyOrderProblem, journeyProblem,
+  type Link, linksChanges, linksOf, linksProblem, offeringProblem, relationshipsWith, slug, systemChanges, systemProblem,
+} from "./editing";
 import { ActionGroup, Button, Status } from "../design/components";
-import { AreaField, Rows, SelectField, SystemField, TextField } from "./forms";
+import { useFocusAfterRender } from "../design/hooks";
+import { AreaField, PickField, Rows, SelectField, SystemField, TextField } from "./forms";
 import { JourneyEditor } from "./JourneyEditor";
 import { OfferingFacts } from "./OfferingEditor";
 import { questionProblem } from "./governance";
 import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
+import { entityNames, INTERFACE_STYLE } from "./ontology";
 import { SystemEditor } from "./SystemEditor";
 import { useCatalogueContext } from "./useCatalogue";
 import { useEditing } from "./useEditing";
+
+/** Names in a sentence: "Name", "Name and Roadmap", "Name, Roadmap and Information". */
+function listed(names: string[]): string {
+  return names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+}
 
 /**
  * An edit opened in place where the thing is read, never a modal: its fields,
@@ -21,8 +32,14 @@ import { useEditing } from "./useEditing";
  * scrolls. The verb stays focusable while it can't be sent, with the reason
  * beside it (§1.2); a failure is said in a line mounted from the start.
  */
-export function EditPanel({ title, children, action, busy, problem, error, onSubmit, onCancel, danger, conflictMessage, focusOnOpen, level = 3 }: {
+export function EditPanel({ title, children, action, busy, problem, error, onSubmit, onCancel, danger, conflictMessage, focusOnOpen, level = 3, changes }: {
   title: string;
+  /**
+   * What the edit has changed so far, by the names of its fields: said beside the verb, and
+   * while there is any, Cancel and Escape ask before throwing it away. Left out, the panel
+   * cancels at once.
+   */
+  changes?: string[];
   /** Its title's heading level: 2 where it takes the place of a page's own section. */
   level?: 2 | 3;
   /** Take focus on its title when it opens, for a panel that replaces the button that opened it. */
@@ -41,9 +58,28 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
   const id = useId();
   const heading = useRef<HTMLHeadingElement>(null);
   const Heading = level === 2 ? "h2" : "h3";
+  const [asking, setAsking] = useState(false);
+  const focusAfter = useFocusAfterRender();
+  // Where the person was when the panel asked, so keeping on editing goes back there.
+  const was = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (focusOnOpen) heading.current?.focus();
   }, [focusOnOpen]);
+  useEffect(() => {
+    if (asking) document.getElementById(`${id}-keep`)?.focus();
+  }, [asking, id]);
+  const changed = changes ?? [];
+  const ask = () => {
+    was.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setAsking(true);
+  };
+  const keepEditing = () => {
+    setAsking(false);
+    // The Cancel pressed to ask is a new button by now; a field is still the one it was.
+    focusAfter(() => (was.current?.isConnected && was.current !== document.body ? was.current : document.getElementById(`${id}-cancel`)));
+  };
+  // A changed form is not thrown away by one press: Cancel or Escape asks first, and Escape again keeps editing.
+  const leave = () => (changed.length && !asking ? ask() : asking ? keepEditing() : onCancel());
   const conflict = error instanceof ApiError && error.status === 409;
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -58,7 +94,7 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
       onKeyDown={(event) => {
         if (event.key === "Escape") {
           event.stopPropagation();
-          onCancel();
+          leave();
         }
       }}
     >
@@ -75,12 +111,33 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
         ) : null}
       </p>
       <div className="cat-edit__foot">
-        <ActionGroup>
-          <Button type="submit" variant={danger ? "danger" : "primary"} busy={busy} unavailableReason={busy ? null : problem}>
-            {busy ? "Saving…" : action}
-          </Button>
-          <Button variant="tertiary" onClick={onCancel}>Cancel</Button>
-        </ActionGroup>
+        {/*
+          Keyed apart: without the keys React keeps one <button> across the two states and turns
+          "Keep editing" into the submit button during its own click, which then saves the form.
+        */}
+        {asking ? (
+          <Fragment key="asking">
+            <p id={`${id}-discard`} className="cat-edit__changes">Discard your changes to {listed(changed)}?</p>
+            <ActionGroup>
+              <Button id={`${id}-keep`} variant="primary" aria-describedby={`${id}-discard`} onClick={keepEditing}>Keep editing</Button>
+              <Button variant="tertiary" onClick={onCancel}>Discard the changes</Button>
+            </ActionGroup>
+          </Fragment>
+        ) : (
+          <Fragment key="editing">
+            {changes && (
+              <p className="cat-edit__changes" aria-live="polite">
+                {changed.length ? `Changed: ${listed(changed)}.` : "Nothing changed yet."}
+              </p>
+            )}
+            <ActionGroup>
+              <Button type="submit" variant={danger ? "danger" : "primary"} busy={busy} unavailableReason={busy ? null : problem}>
+                {busy ? "Saving…" : action}
+              </Button>
+              <Button id={`${id}-cancel`} variant="tertiary" onClick={leave}>Cancel</Button>
+            </ActionGroup>
+          </Fragment>
+        )}
       </div>
     </form>
   );
@@ -92,10 +149,12 @@ export function SystemEdit({ system, onDone }: { system?: CatalogueSystem; onDon
   const release = book.release;
   const navigate = useNavigate();
   const { saveSystem } = useEditing(release);
-  const [value, setValue] = useState<CatalogueSystem>(() => system ?? blankSystem());
+  const [original] = useState<CatalogueSystem>(() => system ?? blankSystem());
+  const [value, setValue] = useState<CatalogueSystem>(original);
   return (
     <EditPanel
       title={system ? `Edit ${system.name}` : "Add a system"}
+      changes={systemChanges(original, value, release)}
       action={system ? "Save the system" : "Add the system"}
       busy={saveSystem.isPending}
       problem={systemProblem(value, release)}
@@ -221,6 +280,178 @@ export function ConnectionRemove({ connection, onDone }: { connection: Relations
         })
       }
     />
+  );
+}
+
+/**
+ * A system's connections edited where they are drawn: both columns of "In context", what it
+ * depends on and what depends on it, saved together with the draft.
+ */
+export function ConnectionsEdit({ system, onDone, onPreview }: {
+  system: CatalogueSystem;
+  onDone: () => void;
+  /** Hears the draft's connections as this edit would save them, at every change, for the map to draw. */
+  onPreview?: (relationships: Relationship[]) => void;
+}) {
+  const { book } = useCatalogueContext();
+  const release = book.release;
+  const { saveDraft } = useEditing(release);
+  const [links] = useState(() => linksOf(release, system.id));
+  const [dependsOn, setDependsOn] = useState<Link[]>(links.dependsOn);
+  const [usedBy, setUsedBy] = useState<Link[]>(links.usedBy);
+  // Every change is drawn on the map above at once, before it is saved.
+  const changeDependsOn = (next: Link[]) => {
+    setDependsOn(next);
+    onPreview?.(relationshipsWith(release, system.id, next, usedBy));
+  };
+  const changeUsedBy = (next: Link[]) => {
+    setUsedBy(next);
+    onPreview?.(relationshipsWith(release, system.id, dependsOn, next));
+  };
+  const others = release.systems.filter((item) => item.id !== system.id);
+  const name = (id: string) => book.systems.get(id)?.name ?? "another system";
+  // The other end's side of it, in its own words: "Calls the API of B2B Web".
+  const theirHow = HOW.map(({ value }) => ({ value, label: usedHow(value, system.name) }));
+  const fields = (side: "dependsOn" | "usedBy") => (link: Link, update: (patch: Partial<Link>) => void) => (
+    <>
+      <SystemField label={side === "dependsOn" ? "Depends on" : "System"} value={link.other} systems={others} allowNone onChange={(other) => update({ other })} />
+      <SelectField
+        label="How"
+        value={link.kind}
+        options={side === "dependsOn" ? HOW : theirHow}
+        onChange={(kind) => update({ kind: kind as RelationshipKind })}
+      />
+      <AreaField label="For what" value={link.description} required onChange={(description) => update({ description })} />
+    </>
+  );
+  return (
+    <EditPanel
+      title={`Edit the connections of ${system.name}`}
+      focusOnOpen
+      action="Save the connections"
+      busy={saveDraft.isPending}
+      problem={linksProblem(release, system.id, dependsOn, usedBy)}
+      changes={linksChanges(release, system.id, dependsOn, usedBy)}
+      error={saveDraft.error}
+      onCancel={onDone}
+      onSubmit={() =>
+        saveDraft.mutate(draftBody(release, { relationships: relationshipsWith(release, system.id, dependsOn, usedBy) }), { onSuccess: onDone })
+      }
+    >
+      <p className="cat-edit__lead">
+        The map's two columns, left to right, in its order. A connection between two systems belongs to both, so it can be edited from
+        either. The map shows your changes before you save them.
+      </p>
+      <div className="cat-form">
+        <Rows<Link>
+          legend="Depend on it"
+          one="system that depends on it"
+          items={usedBy}
+          onChange={changeUsedBy}
+          blank={() => ({ other: "", kind: "calls_api", description: "" })}
+          itemLabel={(link, index) => (link.other ? `dependency of ${name(link.other)}` : `dependent ${index + 1}`)}
+          render={fields("usedBy")}
+        />
+        <Rows<Link>
+          legend="It depends on"
+          one="system it depends on"
+          items={dependsOn}
+          onChange={changeDependsOn}
+          blank={() => ({ other: "", kind: "calls_api", description: "" })}
+          itemLabel={(link, index) => (link.other ? `dependency on ${name(link.other)}` : `dependency ${index + 1}`)}
+          render={fields("dependsOn")}
+        />
+      </div>
+    </EditPanel>
+  );
+}
+
+type Interface = NonNullable<Release["interfaces"]>[number];
+
+const STYLES = (Object.keys(INTERFACE_STYLE) as Interface["style"][]).map((value) => ({ value, label: INTERFACE_STYLE[value] }));
+
+/**
+ * A system's interfaces edited where its record reads them: those it exposes, each with who uses
+ * it and what it carries, and those of other systems it uses, saved together with the draft.
+ */
+export function InterfacesEdit({ system, onDone }: { system: CatalogueSystem; onDone: () => void }) {
+  const { book } = useCatalogueContext();
+  const release = book.release;
+  const { saveDraft } = useEditing(release);
+  const [start] = useState(() => interfacesOfSystem(release, system.id));
+  const [exposed, setExposed] = useState<Interface[]>(start.exposed);
+  const [used, setUsed] = useState<string[]>(start.used);
+  const name = (id: string) => book.systems.get(id)?.name ?? id;
+  const systems = release.systems
+    .filter((item) => item.id !== system.id)
+    .map((item) => ({ value: item.id, label: item.name }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+  const entities = [...entityNames(release)].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
+  // Another system's interfaces, under the system that exposes each.
+  const theirs = (release.interfaces ?? [])
+    .filter((item) => item.system_id !== system.id)
+    .map((item) => ({ value: item.id, label: item.name, group: name(item.system_id) }))
+    .sort((a, b) => a.group.localeCompare(b.group) || a.label.localeCompare(b.label));
+  const usedOptions = theirs.map((item) => ({ ...item, label: `${item.label} (${item.group})` }));
+  return (
+    <EditPanel
+      title={`Edit the interfaces of ${system.name}`}
+      focusOnOpen
+      action="Save the interfaces"
+      busy={saveDraft.isPending}
+      problem={interfacesProblem(release, system.id, exposed, used)}
+      changes={interfacesChanges(release, system.id, exposed, used)}
+      error={saveDraft.error}
+      onCancel={onDone}
+      onSubmit={() =>
+        saveDraft.mutate(draftBody(release, { interfaces: interfacesWith(release, system.id, exposed, used) }), { onSuccess: onDone })
+      }
+    >
+      <p className="cat-edit__lead">
+        The contracts it offers others, and those of other systems it calls. Using an interface makes {system.name} one of its users.
+      </p>
+      <div className="cat-form">
+        <Rows<Interface>
+          legend="It exposes"
+          one="interface it exposes"
+          labelled
+          items={exposed}
+          onChange={setExposed}
+          blank={() => ({ id: "", name: "", system_id: system.id, style: "api", consumer_ids: [], entity_ids: [], open_api_ids: [], relays: [], accepted: [] })}
+          itemLabel={(item, index) => `interface ${item.name.trim() || index + 1}`}
+          render={(item, update) => (
+            <>
+              <TextField label="Interface" value={item.name} required onChange={(value) => update({ name: value })} />
+              <SelectField label="Style" value={item.style} options={STYLES} onChange={(style) => update({ style: style as Interface["style"] })} />
+              <PickField label="Used by" chosen={item.consumer_ids} options={systems} onChange={(consumer_ids) => update({ consumer_ids })} />
+              <PickField
+                label="Carries"
+                hint="The information it carries, from this version's vocabulary."
+                chosen={item.entity_ids}
+                options={entities}
+                onChange={(entity_ids) => update({ entity_ids })}
+              />
+              <AreaField label="What it is for" value={item.description} onChange={(description) => update({ description: description || null })} />
+              <SelectField
+                label="How sure its source is"
+                value={item.confidence ?? ""}
+                options={CONFIDENCE_OPTIONS}
+                onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
+              />
+              <TextField label="Source" value={item.source} hint="The document and where in it, such as SDD v2.3 · §4.1." onChange={(source) => update({ source: source || null })} />
+            </>
+          )}
+        />
+        <fieldset className="cat-form__rows">
+          <legend className="cat-form__legend">It uses</legend>
+          {theirs.length ? (
+            <PickField label="Interfaces of other systems it calls" chosen={used} options={usedOptions} onChange={setUsed} />
+          ) : (
+            <p className="ds-field__hint">No other system in this version exposes an interface yet.</p>
+          )}
+        </fieldset>
+      </div>
+    </EditPanel>
   );
 }
 

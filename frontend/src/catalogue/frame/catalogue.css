@@ -99,7 +99,8 @@ p.cat-quiet {
   display: inline-flex;
   align-items: center;
   min-block-size: var(--target-min);
-  padding-inline: var(--space-2);
+  /* Block padding keeps a label that wraps in a narrow cell off its border. */
+  padding: var(--space-1) var(--space-2);
   border: var(--hair-rule);
   border-radius: var(--radius-control);
   background: var(--color-surface-2);

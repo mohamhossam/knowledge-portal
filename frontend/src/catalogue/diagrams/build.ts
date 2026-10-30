@@ -76,13 +76,18 @@ export const CONTEXT_LANES = [
   { id: "called", label: "It depends on" },
 ];
 
+/** What an unsaved edit does to a neighbour's connections, in words the map shows. */
+const PENDING_STATUS = { added: "New, not saved", changed: "Changed, not saved", removed: "Removed, not saved" } as const;
+
 /**
  * One system in context: the systems that depend on it on the left, the ones it
  * depends on on the right. A system on both sides is drawn on both. `owned`,
- * when known, marks a neighbour no squad runs as a gap.
+ * when known, marks a neighbour no squad runs as a gap. `saved`, while its
+ * connections are being edited, is the draft's connections as saved: the map
+ * then draws the edit and marks each neighbour it adds, changes or removes.
  */
-export function systemContext(landscape: Landscape, systemId: string, options: { href?: Href; owned?: Set<string> } = {}) {
-  const { href, owned } = options;
+export function systemContext(landscape: Landscape, systemId: string, options: { href?: Href; owned?: Set<string>; saved?: Relationship[] } = {}) {
+  const { href, owned, saved } = options;
   const systems = new Map(landscape.systems.map((system) => [system.id, system]));
   const subject = systems.get(systemId);
   const node = (id: string, lane: string, key: string): DiagramNode => {
@@ -113,10 +118,62 @@ export function systemContext(landscape: Landscape, systemId: string, options: {
     if (!nodes.some((item) => item.id === key)) nodes.push(node(row.target_system_id, "called", key));
     edges.push(edgeOf(row, systemId, key));
   }
+  if (saved) markPending(nodes, edges, landscape.relationships, saved, systemId, node, name);
   // An empty side says so, rather than leave a blank column to puzzle over.
   if (edges.length && !nodes.some((item) => item.lane === "callers")) nodes.push({ id: "none:callers", label: "Nothing depends on it", lane: "callers", tone: "muted" });
   if (edges.length && !nodes.some((item) => item.lane === "called")) nodes.push({ id: "none:called", label: "It depends on nothing", lane: "called", tone: "muted" });
   return { nodes, edges };
+}
+
+/**
+ * An unsaved edit drawn on the context map. A neighbour whose connection is new or changed
+ * reads "New, not saved" or "Changed, not saved" (the decide tone); one whose connections are
+ * all removed stays drawn, dotted, on a dashed line that says it is removed. The words carry it,
+ * never the colour alone.
+ */
+function markPending(
+  nodes: DiagramNode[],
+  edges: DiagramEdge[],
+  drawn: Relationship[],
+  saved: Relationship[],
+  systemId: string,
+  node: (id: string, lane: string, key: string) => DiagramNode,
+  name: (id: string) => string,
+) {
+  type Side = { key: string; other: string; lane: "callers" | "called" };
+  const sideOf = (item: Relationship): Side | null =>
+    item.source_system_id === item.target_system_id
+      ? null
+      : item.target_system_id === systemId
+        ? { key: `in:${item.source_system_id}`, other: item.source_system_id, lane: "callers" }
+        : item.source_system_id === systemId
+          ? { key: `out:${item.target_system_id}`, other: item.target_system_id, lane: "called" }
+          : null;
+  const same = (a: Relationship, b: Relationship) => a.source_system_id === b.source_system_id && a.target_system_id === b.target_system_id;
+  const status = new Map<string, keyof typeof PENDING_STATUS>();
+  for (const item of drawn) {
+    const side = sideOf(item);
+    if (!side) continue;
+    const before = saved.filter((was) => same(was, item));
+    const kept = before.some((was) => was.kind === item.kind && was.description.trim() === item.description.trim());
+    if (!kept) status.set(side.key, before.length || status.get(side.key) === "changed" ? "changed" : "added");
+  }
+  const removed = saved.filter((was) => sideOf(was) && !drawn.some((item) => same(item, was) && item.kind === was.kind));
+  for (const was of removed.sort((a, b) => name(sideOf(a)!.other).localeCompare(name(sideOf(b)!.other)))) {
+    const side = sideOf(was)!;
+    if (!nodes.some((item) => item.id === side.key)) {
+      nodes.push(node(side.other, side.lane, side.key));
+      status.set(side.key, "removed");
+    } else if (!status.has(side.key)) {
+      status.set(side.key, "changed");
+    }
+    const [from, to] = side.lane === "callers" ? [side.key, systemId] : [systemId, side.key];
+    edges.push({ from, to, label: `${KIND_WORD[was.kind]}, removed`, dashed: true });
+  }
+  for (const item of nodes) {
+    const pending = status.get(item.id);
+    if (pending) Object.assign(item, { tone: pending === "removed" ? "muted" : "decide", status: PENDING_STATUS[pending] });
+  }
 }
 
 /**

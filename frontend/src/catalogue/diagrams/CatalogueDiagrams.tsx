@@ -6,7 +6,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useCallback, useMemo } from "react";
 
-import { api, type Offering, type Release } from "../../api/client";
+import { api, type Offering, type Relationship, type Release } from "../../api/client";
 import { EmptyState } from "../../design/components";
 import { DiagramLegend as Legend, layered, type LegendMark } from "../../design/diagram";
 import { count } from "../../home/format";
@@ -50,7 +50,11 @@ export function ConnectionsFlowDiagram({ landscape, href, highlight, table, capt
 }
 
 /** One system's record, first: what depends on it, the system, what it depends on. */
-export function SystemContextDiagram({ systemId }: { systemId: string }) {
+export function SystemContextDiagram({ systemId, pending }: {
+  systemId: string;
+  /** The draft's connections as an open edit would save them: drawn in place of the saved ones, each change marked. */
+  pending?: Relationship[] | null;
+}) {
   const { book, base, inService } = useCatalogueContext();
   // Squads are today's, whichever version is read: only the version in service marks gaps by them.
   const organisation = useQuery({ queryKey: ["organisation"], queryFn: api.organisation, enabled: inService });
@@ -59,17 +63,32 @@ export function SystemContextDiagram({ systemId }: { systemId: string }) {
     [inService, organisation.data],
   );
   const href = useMemo<Href>(() => (id) => diagramHref(`${base}/systems/${encodeURIComponent(id)}`), [base]);
-  const graph = useMemo(() => systemContext(book.release, systemId, { href, owned }), [book.release, systemId, href, owned]);
+  const graph = useMemo(
+    () =>
+      pending
+        ? systemContext({ ...book.release, relationships: pending }, systemId, { href, saved: book.release.relationships })
+        : systemContext(book.release, systemId, { href, owned }),
+    [book.release, systemId, href, owned, pending],
+  );
   const layout = useCallback((fitWidth?: number) => layered(graph.nodes, graph.edges, { lanes: CONTEXT_LANES, nodeWidth: 148, columnGap: 104, fitWidth }), [graph]);
   const name = systemName(book, systemId);
-  if (graph.edges.length === 0) return <p className="cat-quiet">{name} connects to no other system in this version.</p>;
+  const previewing = pending != null && graph.nodes.some((node) => node.status?.endsWith("not saved"));
+  if (graph.edges.length === 0) {
+    return <p className="cat-quiet">{name} {pending ? "would connect" : "connects"} to no other system in this version.</p>;
+  }
   return (
     <RoutedDiagram
       label={`${name} in context`}
-      caption={`What depends on ${name}, and what it depends on.`}
+      caption={previewing ? `What depends on ${name}, and what it depends on, with your changes, not yet saved.` : `What depends on ${name}, and what it depends on.`}
       layout={layout}
       headers={{ lane: "Side" }}
-      legend={owned ? <Legend items={[["subject", "This system"], ["gap", "Dashed frame: no squad runs it"]]} /> : undefined}
+      legend={
+        previewing ? (
+          <Legend items={[["subject", "This system"], ["decide", "New or changed, not saved"], ["muted", "Removed, not saved"]]} />
+        ) : owned ? (
+          <Legend items={[["subject", "This system"], ["gap", "Dashed frame: no squad runs it"]]} />
+        ) : undefined
+      }
     />
   );
 }

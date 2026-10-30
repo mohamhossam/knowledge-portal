@@ -6,6 +6,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api, type CatalogueSystem, type Relationship, type SourceConfidence } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { ActionGroup, Button, type Column, DataTable, Facts, Lines, RecordView, Section, Skeleton, Status } from "../design/components";
+import { useFocusAfterRender } from "../design/hooks";
 import { RouterLink } from "../shell/links";
 import { SystemReview } from "../reviews/SystemReview";
 import { seatsLine, seatsOn } from "../squads/organisation";
@@ -14,7 +15,7 @@ import { acceptances } from "./accepted";
 import { AcceptedFrom } from "./AcceptedFrom";
 import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRoles, usedHow } from "./catalogue";
 import { SystemContextDiagram } from "./diagrams/CatalogueDiagrams";
-import { ConnectionEdit, ConnectionRemove, SystemEdit, SystemRemove } from "./DraftEdits";
+import { ConnectionEdit, ConnectionRemove, ConnectionsEdit, InterfacesEdit, SystemEdit, SystemRemove } from "./DraftEdits";
 import { type ConceptIndex, entityNames, INTERFACE_STYLE, type Interface, interfacesOf, SOURCE_TONE, SOURCE_WORD } from "./ontology";
 import { SourceName } from "./provenance/Provenance";
 import { useCatalogueContext } from "./useCatalogue";
@@ -30,6 +31,21 @@ type Trail = { from?: string };
 export function SystemRecord({ system, index }: { system: CatalogueSystem; index: ConceptIndex }) {
   const { book, base, editable } = useCatalogueContext();
   const [editing, setEditing] = useState<"system" | "remove" | null>(null);
+  // Its connections are edited where the map draws them, beside the system's own edit if that is open.
+  const [connecting, setConnecting] = useState(false);
+  // What that edit would save, drawn on the map until it is saved or cancelled.
+  const [preview, setPreview] = useState<Relationship[] | null>(null);
+  // Closing an edit gives focus back to the button that opened it.
+  const focusLater = useFocusAfterRender();
+  const close = (key: "system" | "remove") => () => {
+    focusLater(() => document.getElementById(`system-edit-${key}`));
+    setEditing(null);
+  };
+  const closeConnections = () => {
+    focusLater(() => document.getElementById("system-edit-connections"));
+    setConnecting(false);
+    setPreview(null);
+  };
   const location = useLocation();
   const navigate = useNavigate();
   const from = (location.state as Trail | null)?.from;
@@ -50,8 +66,8 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
       actions={
         editable ? (
           <ActionGroup label={`Edit ${system.name}`}>
-            <Button aria-expanded={editing === "system"} onClick={() => setEditing(editing === "system" ? null : "system")}>Edit this system</Button>
-            <Button variant="tertiary" aria-expanded={editing === "remove"} onClick={() => setEditing(editing === "remove" ? null : "remove")}>Remove this system…</Button>
+            <Button id="system-edit-system" aria-expanded={editing === "system"} onClick={() => setEditing(editing === "system" ? null : "system")}>Edit this system</Button>
+            <Button id="system-edit-remove" variant="tertiary" aria-expanded={editing === "remove"} onClick={() => setEditing(editing === "remove" ? null : "remove")}>Remove this system…</Button>
           </ActionGroup>
         ) : undefined
       }
@@ -68,6 +84,7 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
             ...(system.aliases.length ? [["Also called", <bdi key="aliases">{system.aliases.join(", ")}</bdi>] as [string, ReactNode]] : []),
             ["Sits in", place.length ? <RouterLink href={`${base}/domains`}><bdi>{place.join(" › ")}</bdi></RouterLink> : <span className="cat-quiet">Not placed in the landscape</span>],
             ["Run by", <RunBy key="run-by" system={system} />],
+            ...(system.external ? [["Run by another party", "Outside the operator"] as [string, ReactNode]] : []),
             // The catalogue's own owner field, kept when its source names one: Ownership decides who runs it.
             ...(system.owner ? [["Owner in the source", <bdi key="owner">{system.owner}</bdi>] as [string, ReactNode]] : []),
             ...(system.roadmap ? [["Roadmap", <bdi key="roadmap">{system.roadmap}</bdi>] as [string, ReactNode]] : []),
@@ -77,22 +94,32 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
         />
       </div>
 
-      {editing === "system" && <SystemEdit system={system} onDone={() => setEditing(null)} />}
-      {editing === "remove" && <SystemRemove system={system} onDone={() => setEditing(null)} />}
+      {editing === "system" && <SystemEdit system={system} onDone={close("system")} />}
+      {editing === "remove" && <SystemRemove system={system} onDone={close("remove")} />}
+      {/* While the system is edited, the sections its form holds give way to it; the rest of the record stays. */}
+      <Section
+        title="In context"
+        headingLevel={3}
+        actions={
+          <>
+            {editable && !connecting && (
+              <Button id="system-edit-connections" variant="quiet" onClick={() => setConnecting(true)}>Edit the connections</Button>
+            )}
+            <RouterLink href={`${base}/map?system=${encodeURIComponent(system.id)}`}>Open it full width</RouterLink>
+          </>
+        }
+      >
+        <SystemContextDiagram systemId={system.id} pending={connecting ? preview : null} />
+        {connecting && <ConnectionsEdit system={system} onDone={closeConnections} onPreview={setPreview} />}
+      </Section>
+      {editing !== "system" && <Capabilities system={system} index={index} />}
+      <Interfaces system={system} />
+      {/* One edit of its connections at a time: the tables below wait while the system or its connections are edited. */}
+      <Connections system={system} from={from} locked={editing === "system" || connecting} />
+      <Owners system={system} />
+      <Roles system={system} />
       {editing !== "system" && (
         <>
-          <Section
-            title="In context"
-            headingLevel={3}
-            actions={<RouterLink href={`${base}/map?system=${encodeURIComponent(system.id)}`}>Open it full width</RouterLink>}
-          >
-            <SystemContextDiagram systemId={system.id} />
-          </Section>
-          <Capabilities system={system} index={index} />
-          <Interfaces system={system} />
-          <Connections system={system} from={from} />
-          <Owners system={system} />
-          <Roles system={system} />
           <Data system={system} />
           <Components system={system} />
           <Section title="Constraints" count={system.constraints.length} headingLevel={3}>
@@ -155,8 +182,18 @@ function Capabilities({ system, index }: { system: CatalogueSystem; index: Conce
 }
 
 function Interfaces({ system }: { system: CatalogueSystem }) {
-  const { book, base } = useCatalogueContext();
+  const { book, base, editable } = useCatalogueContext();
   const { exposes, uses } = interfacesOf(book.release, system.id);
+  // Edited in place of the two tables: the panel holds both, and closing gives focus back to its button.
+  const [editing, setEditing] = useState(false);
+  const focusLater = useFocusAfterRender();
+  const close = () => {
+    focusLater(() => document.getElementById("system-edit-interfaces"));
+    setEditing(false);
+  };
+  const edit = editable ? (
+    <Button id="system-edit-interfaces" variant="quiet" onClick={() => setEditing(true)}>Edit the interfaces</Button>
+  ) : undefined;
   const entities = entityNames(book.release);
   const sys = (systemId: string) => <Link key={systemId} to={`${base}/systems/${encodeURIComponent(systemId)}`} dir="auto">{systemName(book, systemId)}</Link>;
   const list = (ids: string[]) => ids.map((systemId, position) => <span key={systemId}>{position > 0 && ", "}{sys(systemId)}</span>);
@@ -180,16 +217,23 @@ function Interfaces({ system }: { system: CatalogueSystem }) {
       : { id: "who", header: "Exposed by", cell: (item) => sys(item.system_id) },
     { id: "style", header: "Style", cell: (item) => INTERFACE_STYLE[item.style] },
   ];
-  if (!exposes.length && !uses.length) {
+  if (editing) {
     return (
       <Section title="Interfaces" headingLevel={3}>
+        <InterfacesEdit system={system} onDone={close} />
+      </Section>
+    );
+  }
+  if (!exposes.length && !uses.length) {
+    return (
+      <Section title="Interfaces" headingLevel={3} actions={edit}>
         <p className="cat-quiet">No interface it exposes or uses is recorded.</p>
       </Section>
     );
   }
   return (
     <>
-      <Section title="Exposes" count={exposes.length} headingLevel={3}>
+      <Section title="Exposes" count={exposes.length} headingLevel={3} actions={edit}>
         {exposes.length ? (
           <DataTable caption={`Interfaces ${system.name} exposes`} captionHidden columns={columns("exposes")} rows={exposes} rowId={(item) => item.id} />
         ) : (
@@ -207,12 +251,15 @@ function Interfaces({ system }: { system: CatalogueSystem }) {
   );
 }
 
-function Connections({ system, from }: { system: CatalogueSystem; from?: string }) {
-  const { book, editable } = useCatalogueContext();
+function Connections({ system, from, locked }: { system: CatalogueSystem; from?: string; locked?: boolean }) {
+  const { book, editable: draft } = useCatalogueContext();
+  const editable = draft && !locked;
   const { dependsOn, usedBy } = connections(book, system.id);
   return (
     <>
       <ConnectionTable
+        // Locking starts the table afresh, so a single change or removal open in it closes rather than sits beside the other edit.
+        key={editable ? "open" : "locked"}
         title="Depends on"
         rows={dependsOn}
         other={(row) => row.target_system_id}

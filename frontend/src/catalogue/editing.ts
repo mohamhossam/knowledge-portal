@@ -1,5 +1,5 @@
 /** What an edit sends, and why it cannot be sent yet: shared by the catalogue's editors. */
-import type { CatalogueSystem, Journey, Offering, Release } from "../api/client";
+import type { CatalogueSystem, Journey, Offering, Relationship, RelationshipKind, Release } from "../api/client";
 
 /** A name or code as compared: no case, no surrounding space. */
 const fold = (text: string) => text.trim().toLocaleLowerCase();
@@ -179,7 +179,30 @@ export function finishedSystem(value: CatalogueSystem, release: Release): Catalo
     // A component chosen before it was saved is named by its name until it has an id.
     component_id: item.component_id ? renamed.get(item.component_id) ?? item.component_id : null,
   }));
-  return { ...value, id, aliases: lines(value.aliases), constraints: lines(value.constraints), components, capabilities };
+  // A note says its share of something it masters; an empty one, or one on data it no longer masters, goes.
+  const mastery_notes = (value.mastery_notes ?? [])
+    .map((item) => ({ ...item, note: item.note.trim() }))
+    .filter((item) => item.note && (value.masters ?? []).includes(item.entity_id));
+  return {
+    ...value,
+    id,
+    aliases: lines(value.aliases),
+    constraints: lines(value.constraints),
+    components,
+    capabilities: capabilities.map((item) => ({ ...item, unlinked_reason: item.unlinked_reason?.trim() ?? null })),
+    mastery_notes,
+  };
+}
+
+/** The business area a concept sits in: its own, or the nearest broader concept's. */
+export function conceptDomain(release: Release, conceptId: string): string | null {
+  const concepts = new Map((release.business_capabilities ?? []).map((concept) => [concept.id, concept]));
+  const seen = new Set<string>();
+  for (let concept = concepts.get(conceptId); concept && !seen.has(concept.id); concept = concept.broader_id ? concepts.get(concept.broader_id) : undefined) {
+    if (concept.domain_id) return concept.domain_id;
+    seen.add(concept.id);
+  }
+  return null;
 }
 
 /** Why a system cannot be saved yet, if anything. */
@@ -192,6 +215,200 @@ export function systemProblem(value: CatalogueSystem, release: Release): string 
   if (clash) return `${clash.name} already goes by one of these names; every name and alias must be unique.`;
   if (value.capabilities.some((item) => !item.name.trim())) return "Every capability needs a name.";
   if (value.capabilities.some((item) => !lines(item.triggers).length)) return "Every capability needs at least one matching phrase.";
+  const concepts = new Map((release.business_capabilities ?? []).map((concept) => [concept.id, concept]));
+  for (const item of value.capabilities) {
+    if (item.unlinked_reason != null && !item.unlinked_reason.trim()) return `${item.name}: say why no concept fits.`;
+    if (!item.concept_id) continue;
+    if (!concepts.has(item.concept_id)) return `${item.name}: its concept is not in this version; choose another.`;
+    const held = conceptDomain(release, item.concept_id);
+    if (item.domain_id && held && held !== item.domain_id) {
+      const area = release.capability_domains?.find((domain) => domain.id === held)?.name ?? held;
+      return `${item.name}: its concept sits in ${area}, so the capability does too; change its business area or its concept.`;
+    }
+  }
+  const reads = value.reads ?? [];
+  const both = (value.masters ?? []).find((entity) => reads.includes(entity));
+  if (both) return "A system does not read information it masters; take it off one of the two.";
   if (value.components.some((item) => !item.name.trim())) return "Every component needs a name.";
   return null;
+}
+
+/** A system's parts as its form names them, each read the way it is saved. */
+const SYSTEM_PARTS: [string, (system: CatalogueSystem) => unknown][] = [
+  ["Name", (system) => system.name.trim()],
+  ["Sits in", (system) => system.landscape_domain_id ?? null],
+  ["Also called", (system) => system.aliases],
+  ["What it is", (system) => system.description ?? null],
+  ["Outside the operator", (system) => system.external],
+  ["Owner in the source", (system) => system.owner ?? null],
+  ["Its source", (system) => [system.confidence ?? null, system.source ?? null]],
+  ["Roadmap", (system) => system.roadmap ?? null],
+  ["Retired", (system) => [system.deprecated, system.replaced_by ?? null]],
+  ["What it does", (system) => system.capabilities],
+  ["Information", (system) => [system.masters ?? [], system.reads ?? [], system.mastery_notes ?? []]],
+  ["Components", (system) => system.components],
+  ["Constraints", (system) => system.constraints],
+];
+
+/** Which parts of a system an edit has changed, by the form's names for them; none when it would save the same. */
+export function systemChanges(before: CatalogueSystem, after: CatalogueSystem, release: Release): string[] {
+  const [was, is] = [finishedSystem(before, release), finishedSystem(after, release)];
+  return SYSTEM_PARTS.filter(([, read]) => JSON.stringify(read(was)) !== JSON.stringify(read(is))).map(([name]) => name);
+}
+
+/**
+ * One of a system's connections as its "In context" edit holds it: the system at the other
+ * end, how, and what for. `original` is the connection it was read from; a new one has none.
+ */
+export type Link = { other: string; kind: RelationshipKind; description: string; original?: Relationship };
+
+/** A system's connections as links, what it depends on and what depends on it, each in the map's order: by the other system's name. */
+export function linksOf(release: Release, systemId: string): { dependsOn: Link[]; usedBy: Link[] } {
+  const names = new Map(release.systems.map((item) => [item.id, item.name]));
+  const link = (item: Relationship, other: string): Link => ({ other, kind: item.kind, description: item.description, original: item });
+  const inOrder = (links: Link[]) => links.sort((a, b) => (names.get(a.other) ?? a.other).localeCompare(names.get(b.other) ?? b.other));
+  return {
+    dependsOn: inOrder(release.relationships.filter((item) => item.source_system_id === systemId && item.target_system_id !== systemId).map((item) => link(item, item.target_system_id))),
+    usedBy: inOrder(release.relationships.filter((item) => item.target_system_id === systemId && item.source_system_id !== systemId).map((item) => link(item, item.source_system_id))),
+  };
+}
+
+/**
+ * The draft's connections once a system's links are saved: every other connection as it was,
+ * each kept link in its old place, the new ones after. What a link was read from keeps its
+ * provenance.
+ */
+export function relationshipsWith(release: Release, systemId: string, dependsOn: Link[], usedBy: Link[]): Relationship[] {
+  const made = (link: Link, source: string, target: string): Relationship => ({
+    ...link.original,
+    source_system_id: source,
+    target_system_id: target,
+    kind: link.kind,
+    description: link.description.trim(),
+    accepted: link.original?.accepted ?? [],
+  });
+  const edited = new Map<Relationship, Relationship>();
+  const added: Relationship[] = [];
+  for (const link of dependsOn) {
+    const next = made(link, systemId, link.other);
+    if (link.original) edited.set(link.original, next);
+    else added.push(next);
+  }
+  for (const link of usedBy) {
+    const next = made(link, link.other, systemId);
+    if (link.original) edited.set(link.original, next);
+    else added.push(next);
+  }
+  const touches = (item: Relationship) => item.source_system_id === systemId || item.target_system_id === systemId;
+  return [
+    ...release.relationships.flatMap((item) => (touches(item) && item.source_system_id !== item.target_system_id ? (edited.has(item) ? [edited.get(item)!] : []) : [item])),
+    ...added,
+  ];
+}
+
+/** Why a system's links cannot be saved yet, if anything (ADR-0119: one dependency of each kind between two systems). */
+export function linksProblem(release: Release, systemId: string, dependsOn: Link[], usedBy: Link[]): string | null {
+  const name = (id: string) => release.systems.find((item) => item.id === id)?.name ?? id;
+  if ([...dependsOn, ...usedBy].some((link) => !link.other)) return "Choose the system at the other end of every connection.";
+  if ([...dependsOn, ...usedBy].some((link) => !link.description.trim())) return "Say what every connection is for.";
+  for (const [links, side] of [[dependsOn, "It depends on"], [usedBy, "Depend on it"]] as const) {
+    const seen = new Set<string>();
+    for (const link of links) {
+      const key = `${link.other}:${link.kind}`;
+      if (seen.has(key)) return `${side}: ${name(link.other)} is listed twice the same way; keep one, or say another way.`;
+      seen.add(key);
+    }
+  }
+  return null;
+}
+
+/** Which sides of a system's links an edit has changed, by the panel's names for them. */
+export function linksChanges(release: Release, systemId: string, dependsOn: Link[], usedBy: Link[]): string[] {
+  const was = linksOf(release, systemId);
+  const read = (links: Link[]) => JSON.stringify(links.map((link) => [link.other, link.kind, link.description.trim()]));
+  return [
+    // In the map's order, left to right.
+    ...(read(was.usedBy) !== read(usedBy) ? ["what depends on it"] : []),
+    ...(read(was.dependsOn) !== read(dependsOn) ? ["what it depends on"] : []),
+  ];
+}
+
+type Interface = NonNullable<Release["interfaces"]>[number];
+
+/** A name as interfaces compare them: no case, no spaces or punctuation ("CRM GW API" is "crm-gw api"). */
+const nameKey = (name: string) => name.toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+
+/** A system's interfaces as its record edits them: those it exposes, and the ids of those it uses. */
+export function interfacesOfSystem(release: Release, systemId: string): { exposed: Interface[]; used: string[] } {
+  const all = release.interfaces ?? [];
+  return {
+    exposed: all.filter((item) => item.system_id === systemId),
+    used: all.filter((item) => item.system_id !== systemId && item.consumer_ids.includes(systemId)).map((item) => item.id),
+  };
+}
+
+/**
+ * The draft's interfaces once a system's are saved: those it exposes as edited (a new one gets an
+ * id from its system and name), and every other system's with this one added to or taken off its
+ * users. The rest stay as they were, in their places.
+ */
+export function interfacesWith(release: Release, systemId: string, exposed: Interface[], used: string[]): Interface[] {
+  const all = release.interfaces ?? [];
+  const taken = new Set(all.map((item) => item.id));
+  const tidy = (item: Interface): Interface => ({
+    ...item,
+    name: item.name.trim(),
+    description: item.description?.trim() || null,
+    source: item.source?.trim() || null,
+    system_id: systemId,
+  });
+  const edited = new Map(exposed.filter((item) => item.id).map((item) => [item.id, tidy(item)]));
+  const kept = all.flatMap((item): Interface[] => {
+    if (item.system_id === systemId) return edited.has(item.id) ? [edited.get(item.id)!] : [];
+    const uses = used.includes(item.id);
+    const listed = item.consumer_ids.includes(systemId);
+    if (uses === listed) return [item];
+    return [{ ...item, consumer_ids: uses ? [...item.consumer_ids, systemId] : item.consumer_ids.filter((id) => id !== systemId) }];
+  });
+  const added = exposed.filter((item) => !item.id).map((item) => ({ ...tidy(item), id: freeId(`${systemId}-${item.name}`, taken) }));
+  return [...kept, ...added];
+}
+
+/** Why a system's interfaces cannot be saved yet, if anything: the service's rules, and what still goes through one removed. */
+export function interfacesProblem(release: Release, systemId: string, exposed: Interface[], used: string[]): string | null {
+  const all = release.interfaces ?? [];
+  if (exposed.some((item) => !item.name.trim())) return "Every interface it exposes needs a name.";
+  const names = new Set<string>();
+  for (const item of exposed) {
+    const key = nameKey(item.name);
+    if (names.has(key)) return `Two interfaces it exposes are called ${item.name.trim()}; give each its own name.`;
+    names.add(key);
+  }
+  // What goes through an interface it no longer exposes must let go of it first.
+  const kept = new Set(exposed.map((item) => item.id).filter(Boolean));
+  for (const gone of all.filter((item) => item.system_id === systemId && !kept.has(item.id))) {
+    const journey = (release.journeys ?? []).find((item) => item.integrations.some((link) => link.interface_id === gone.id));
+    if (journey) return `The journey ${journey.name} still goes through ${gone.name}; change its hand-over first.`;
+    const tracked = (release.products ?? []).find((item) => (item.tracking?.flows ?? []).some((flow) => flow.interface_id === gone.id));
+    if (tracked) return `The order tracking of ${tracked.name} still goes through ${gone.name}; change it first.`;
+    const relay = all.find((item) => item.system_id !== systemId && item.relays.includes(gone.id));
+    if (relay) return `${relay.name} still relays ${gone.name}; change that interface first.`;
+  }
+  // An interface it exposes that relays another needs it to use that one.
+  for (const item of exposed) {
+    const relayed = all.find((other) => item.relays.includes(other.id) && other.system_id !== systemId && !used.includes(other.id));
+    if (relayed) return `${item.name.trim()} relays ${relayed.name}, so it keeps using ${relayed.name}.`;
+  }
+  return null;
+}
+
+/** Which of a system's interfaces an edit has changed, by the panel's names for them. */
+export function interfacesChanges(release: Release, systemId: string, exposed: Interface[], used: string[]): string[] {
+  const was = interfacesOfSystem(release, systemId);
+  const read = (items: Interface[]) =>
+    JSON.stringify(items.map((item) => [item.id, item.name.trim(), item.style, item.consumer_ids, item.entity_ids, item.description?.trim() || null, item.confidence ?? null, item.source?.trim() || null]));
+  return [
+    ...(read(was.exposed) !== read(exposed) ? ["what it exposes"] : []),
+    ...(JSON.stringify([...was.used].sort()) !== JSON.stringify([...used].sort()) ? ["what it uses"] : []),
+  ];
 }

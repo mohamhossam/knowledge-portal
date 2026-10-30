@@ -111,6 +111,50 @@
   margin-block-end: var(--space-1);
 }
 
+/* One role per kind of information (a system's data): a ruled row each, its name then its choices on one line. */
+.cat-form__roles {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  container-type: inline-size;
+}
+
+.cat-form__role {
+  display: grid;
+  gap: var(--space-2);
+  padding-block: var(--space-2);
+  border-block-end: var(--rule-hair) solid var(--color-rule);
+}
+
+.cat-form__role .ds-radios {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-4);
+}
+
+/* Floated, the legend leaves the fieldset's border and takes its place in the row as its first item. */
+.cat-form__role .ds-radios > legend {
+  float: left;
+  inline-size: 12rem;
+  margin: 0;
+}
+
+/* Too narrow for the name and its three choices side by side: the name takes its own line. */
+@container (max-width: 32rem) {
+  .cat-form__role .ds-radios > legend {
+    inline-size: 100%;
+  }
+}
+
+/* What the edit has changed so far, or the question before it is thrown away. */
+.cat-edit__changes {
+  margin: 0;
+  font-size: var(--text-meta);
+  color: var(--color-ink-2);
+}
+
 /* Chosen items (a journey's systems), each with its own remove. */
 .cat-form__chosen {
   display: flex;
