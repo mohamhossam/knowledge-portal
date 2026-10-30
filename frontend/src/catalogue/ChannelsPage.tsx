@@ -5,6 +5,7 @@ import type { Channel } from "../api/client";
 import { Button, type Column, DataTable, Section } from "../design/components";
 import { CONFIDENCE, sentenceCase, systemName } from "./catalogue";
 import { ChannelsEdit } from "./DraftEdits";
+import { SourceName } from "./provenance/Provenance";
 import { useCatalogueContext } from "./useCatalogue";
 
 /**
@@ -35,6 +36,7 @@ export function ChannelsPage() {
             </span>
           )}
           {channel.description && <span className="cat-detail" dir="auto">{channel.description}</span>}
+          {channel.source && <span className="cat-detail"><SourceName text={channel.source} /></span>}
         </>
       ),
     },

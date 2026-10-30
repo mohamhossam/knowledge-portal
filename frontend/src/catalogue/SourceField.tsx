@@ -52,8 +52,10 @@ function RegisterLink({ children }: { children: string }) {
 /** Where a fact comes from, as a row holds it: its source line and how sure that source is. */
 export type Sourced = { source?: string | null; confidence?: SourceConfidence | null };
 
-export function SourceField({ value, onChange, previous, onCopy }: {
+export function SourceField({ value, onChange, previous, onCopy, label = "Source" }: {
   value: string | null | undefined;
+  /** What the source is of, where a form holds more than one: "Where the conflict is recorded". */
+  label?: string;
   onChange: (line: string | null) => void;
   /** The row above, in a list of rows: its source is offered while this one names none, so a run of rows from one document is quick. */
   previous?: Sourced | null;
@@ -107,7 +109,7 @@ export function SourceField({ value, onChange, previous, onCopy }: {
   };
   return (
     <div className="cat-source" data-source={own}>
-      <SelectField label="Source" value={choice.source} options={options} onChange={(source) => choose({ ...choice, source })} />
+      <SelectField label={label} value={choice.source} options={options} onChange={(source) => choose({ ...choice, source })} />
       {!now && above && (
         <div className="cat-form__cell cat-source__copy">
           <Button variant="tertiary" onClick={copy}>

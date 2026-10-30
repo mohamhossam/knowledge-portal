@@ -6,6 +6,7 @@ import { draftBody, sourceUses } from "./drafting";
 import { EditPanel } from "./DraftEdits";
 import { slug } from "./editing";
 import { AreaField, CheckField, Rows, SelectField, TextField } from "./forms";
+import { SourceField } from "./SourceField";
 import { LEVEL_OPTIONS, questionLine, registerOptions, withIds } from "./governance";
 import { useCatalogueContext } from "./useCatalogue";
 import { useEditing } from "./useEditing";
@@ -218,6 +219,8 @@ export function ConflictsEdit({ onDone }: { onDone: () => void }) {
                 );
               }}
             />
+            {/* Where the conflict itself is recorded, after what it is: kept apart from the two sources that disagree. */}
+            <SourceField label="Where the conflict is recorded" value={item.source} onChange={(source) => update({ source })} />
           </>
         )}
       />

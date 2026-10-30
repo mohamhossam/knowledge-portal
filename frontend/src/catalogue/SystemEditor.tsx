@@ -109,6 +109,22 @@ export function SystemEditor({ value, onChange, release }: {
             options={places}
             onChange={(id) => set({ landscape_domain_id: id || null })}
           />
+          {/* Where a source puts it otherwise, as the source writes it (a domain the draft may not have), and why it sits here. */}
+          <TextField
+            label="Where a source places it instead"
+            value={value.placement_from}
+            hint="As the source writes it; the draft's places are offered. The map says so."
+            suggestions={places.filter((place) => place.value).map((place) => place.label)}
+            error={!value.placement_from?.trim() && value.placement_reason?.trim() ? "Say where a source places it, or leave why it sits here empty." : null}
+            onChange={(placement_from) => set({ placement_from: placement_from || null })}
+          />
+          <TextField
+            label="Why it sits here"
+            value={value.placement_reason}
+            wide
+            error={value.placement_from?.trim() && !value.placement_reason?.trim() ? "Say why it sits here rather than where a source places it." : null}
+            onChange={(placement_reason) => set({ placement_reason: placement_reason || null })}
+          />
         </div>
         <LinesField label="Also called" value={value.aliases} onChange={(aliases) => set({ aliases })} />
         <AreaField label="What it is" value={value.description} onChange={(description) => set({ description: description || null })} />

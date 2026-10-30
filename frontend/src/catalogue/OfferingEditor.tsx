@@ -648,6 +648,13 @@ export function OfferingNfrs({ value, onChange, errorAt }: SectionProps) {
             onChange={(coverage) => change({ coverage: coverage as Nfr["coverage"] })}
           />
           <AreaField label="What the sources say" value={item.statement} onChange={(statement) => change({ statement: statement || null })} />
+          <SourceField value={item.source} previous={(value.nfrs ?? [])[index - 1]} onCopy={change} onChange={(source) => change({ source })} />
+          <SelectField
+            label="How sure its source is"
+            value={item.confidence ?? ""}
+            options={CONFIDENCE_OPTIONS}
+            onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
+          />
         </>
       )}
     />

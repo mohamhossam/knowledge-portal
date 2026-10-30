@@ -610,6 +610,10 @@ export function systemProblem(value: CatalogueSystem, release: Release): string 
     .filter((system) => system.id !== value.id)
     .find((system) => [system.name, ...system.aliases].some((name) => names.includes(fold(name))));
   if (clash) return `${clash.name} already goes by one of these names; every name and alias must be unique.`;
+  // A placement a source makes elsewhere names both where and why, as the service keeps it.
+  if (Boolean(value.placement_from?.trim()) !== Boolean(value.placement_reason?.trim())) {
+    return value.placement_from?.trim() ? "Say why it sits here rather than where a source places it." : "Say where a source places it, or leave why it sits here empty.";
+  }
   if (value.capabilities.some((item) => !item.name.trim())) return "Every capability needs a name.";
   if (value.capabilities.some((item) => !lines(item.triggers).length)) return "Every capability needs at least one matching phrase.";
   const concepts = new Map((release.business_capabilities ?? []).map((concept) => [concept.id, concept]));
@@ -634,6 +638,7 @@ export function systemProblem(value: CatalogueSystem, release: Release): string 
 const SYSTEM_PARTS: [string, (system: CatalogueSystem) => unknown][] = [
   ["Name", (system) => system.name.trim()],
   ["Sits in", (system) => system.landscape_domain_id ?? null],
+  ["Where a source places it", (system) => [system.placement_from?.trim() || null, system.placement_reason?.trim() || null]],
   ["Also called", (system) => system.aliases],
   ["What it is", (system) => system.description ?? null],
   ["Outside the operator", (system) => system.external],

@@ -7,6 +7,7 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- Changing a system's dependency no longer drops where it comes from and how sure that is.
 - "Keep editing", in the question a changed system or connections edit asks before it is thrown
   away, no longer saves the edit. The question's buttons took the place of Save and Cancel as the
   same elements, so the click that chose to keep editing ended as a press of Save. Keeping on
@@ -139,6 +140,16 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- The last facts the catalogue shows but could not be changed by hand are edited where they are
+  read. An offering already in the draft is retired, with what replaces it, from its own "what it
+  is" edit; before, only a new one could be. A non-functional requirement, each channel's
+  tracking, flow, milestone and fallout case of the order tracking, each part of a lifecycle note,
+  and each channel say their source and how sure it is, and a conflict where it is recorded. A
+  journey's branch takes an arrow label, shown when it has no condition, and a system says, under
+  where it sits, where a source places it instead (the draft's places offered) and why it sits
+  here, both or neither, each said at its field and counted as a change. In every row, the source
+  and how sure it is now sit last and together, with what the source saves as below them. The
+  Channels page says each channel's source. No upgrade step.
 - Quicker editing in the catalogue. A landscape domain added in an edit can hold another before
   either is saved, both saved by the ids their names give them, and an unnamed one is told apart
   in the list of places by its row. In a list of rows, a row that names no source offers, just

@@ -128,8 +128,9 @@
   align-self: end;
 }
 
-/* A source's line as it will be saved, or what to do when none can be: under the source's fields. */
+/* A source's line as it will be saved, or what to do when none can be: after the fields beside it, how sure it is included. */
 .cat-source__note {
+  order: 1;
   display: grid;
   gap: var(--space-1);
   justify-items: start;
