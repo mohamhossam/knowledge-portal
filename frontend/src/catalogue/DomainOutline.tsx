@@ -3,7 +3,7 @@ import { type CSSProperties, useState } from "react";
 
 import { Button, Status } from "../design/components";
 import { useFocusAfterRender } from "../design/hooks";
-import { domainOutline, type EditedDomain, LAYOUT_WORDS, moveDomain, outlined, removeDomain, siblingsOf } from "./editing";
+import { domainOutline, domainRef, type EditedDomain, LAYOUT_WORDS, moveDomain, outlined, removeDomain, siblingsOf } from "./editing";
 import { AreaField, CheckField, SelectField, TextField } from "./forms";
 import { layerOrder, sideOf } from "./landscape/posterModel";
 import { landscapeAsDrawn } from "./model/adapter";
@@ -81,9 +81,11 @@ export function DomainOutline({ items, onChange, onPlaced, landscape, errorAt }:
   const fieldsOf = ["name", "parent", "layout"];
   const isOpen = (key: string, index: number) => opened.includes(key) || fieldsOf.some((field) => Boolean(errorAt(`domains.${index}.${field}`)));
   const nameOf = (item: EditedDomain) => item.name.trim() || "the new domain";
+  // An unnamed new domain is told apart by its place in the outline: "New domain, row 7".
+  const pathName = (row: (typeof rows)[number]) => row.item.name.trim() || `New domain, row ${rows.indexOf(row) + 1}`;
   const pathOf = (index: number): string => {
     const row = rows.find((entry) => entry.index === index)!;
-    return row.parent === null ? nameOf(row.item) : `${pathOf(row.parent)} › ${nameOf(row.item)}`;
+    return row.parent === null ? pathName(row) : `${pathOf(row.parent)} › ${pathName(row)}`;
   };
   const update = (index: number, patch: Partial<EditedDomain>) => onChange(items.map((item, at) => (at === index ? { ...item, ...patch } : item)));
 
@@ -155,7 +157,8 @@ export function DomainOutline({ items, onChange, onPlaced, landscape, errorAt }:
             for (const row of rows) if (row.parent !== null && within.has(row.parent)) within.add(row.index);
             const parents = [
               { value: "", label: "At the top" },
-              ...rows.filter((row) => !within.has(row.index) && row.item.id).map((row) => ({ value: row.item.id, label: pathOf(row.index) })),
+              // A new domain is offered too, by its row key, which takes its id once saved.
+              ...rows.filter((row) => !within.has(row.index) && domainRef(row.item)).map((row) => ({ value: domainRef(row.item), label: pathOf(row.index) })),
             ];
             return (
               <li key={key} data-domain={key} data-depth={depth} className="cat-outline__item" style={{ "--depth": depth } as CSSProperties}>

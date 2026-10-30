@@ -308,6 +308,11 @@ function TermsList({ current, within, onAdd }: { current?: string; within?: stri
       }));
   }, [terms, schemes, within, find, base, release, waitingFor]);
   const shown = groups.reduce((sum, group) => sum + group.items.length, 0);
+  // The open term, when the list is filtered to another vocabulary.
+  const outside = (() => {
+    const open = current ? terms.find((term) => term.id === current) : undefined;
+    return open && within && open.scheme !== within ? open : null;
+  })();
   const inScope = within ? terms.filter((term) => term.scheme === within).length : terms.length;
   return (
     <>
@@ -320,14 +325,15 @@ function TermsList({ current, within, onAdd }: { current?: string; within?: stri
             { id: ALL, label: "Every vocabulary", count: terms.length },
             ...schemes.map((scheme) => ({ id: scheme.id, label: scheme.name, count: terms.filter((term) => term.scheme === scheme.id).length })),
           ]}
-          onChange={(value) =>
+          // Choosing only filters the list, so arrowing through it never closes the term open beside it.
+          onChange={(value) => {
             setParams((previous) => {
               const next = new URLSearchParams(previous);
               if (value === ALL) next.delete("in");
               else next.set("in", value);
               return next;
-            }, { replace: true })
-          }
+            }, { replace: true });
+          }}
         />
         {onAdd && (
           <>
@@ -336,6 +342,15 @@ function TermsList({ current, within, onAdd }: { current?: string; within?: stri
           </>
         )}
       </ListTools>
+      {outside && (
+        <p className="cat-quiet cat-vocab__outside">
+          <bdi>{outside.pref_label}</bdi>, open beside the list, is in{" "}
+          <Link to={`${base}/vocabulary/${encodeURIComponent(outside.id)}?in=${encodeURIComponent(outside.scheme)}`}>
+            {schemes.find((scheme) => scheme.id === outside.scheme)?.name ?? outside.scheme}
+          </Link>
+          , not shown here.
+        </p>
+      )}
       <RecordList
         label="Terms in this version"
         groups={groups}

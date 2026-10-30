@@ -309,13 +309,16 @@ export const MAX_DOMAIN_DEPTH = 3;
 /** A row of the outline: the domain, where it is in the list, how deep it sits, and its parent's place. */
 export type OutlineRow<T> = { item: T; index: number; depth: number; parent: number | null };
 
+/** How a domain is named in the edit: its id, or a new one's row key until it is saved. */
+export const domainRef = (item: EditedDomain): string => item.id || item.key || "";
+
 /**
  * The domains as an outline: the top domains in their order, each one's sub-domains under it in
  * theirs. A domain whose parent is missing, or that would be inside itself, reads at the top.
  */
 export function domainOutline<T extends EditedDomain>(items: T[]): OutlineRow<T>[] {
   const at = new Map<string, number>();
-  items.forEach((item, index) => item.id && !at.has(item.id) && at.set(item.id, index));
+  items.forEach((item, index) => domainRef(item) && !at.has(domainRef(item)) && at.set(domainRef(item), index));
   const parentOf = (index: number): number | null => {
     const parent = items[index]!.parent_id;
     const found = parent ? at.get(parent) : undefined;
@@ -373,7 +376,7 @@ export function removeDomain<T extends EditedDomain>(items: T[], index: number):
   return outlined(
     items
       .filter((_, at) => at !== index)
-      .map((item) => (gone.id && item.parent_id === gone.id ? { ...item, parent_id: gone.parent_id ?? null } : item)),
+      .map((item) => (domainRef(gone) && item.parent_id === domainRef(gone) ? { ...item, parent_id: gone.parent_id ?? null } : item)),
   );
 }
 
@@ -387,7 +390,8 @@ export function removeDomain<T extends EditedDomain>(items: T[], index: number):
 export function domainsIssue(items: EditedDomain[], before: EditedDomain[] = [], latest?: string): OfferingIssue | null {
   const at = (path: string, field: string, message: string): OfferingIssue => ({ message, at: path, field });
   const words = (item: EditedDomain) => (item.name.trim() ? `the domain ${item.name.trim()}` : "a new domain");
-  const byId = new Map(items.filter((item) => item.id).map((item) => [item.id, item]));
+  // A new domain is named by its row key until saved, so one may already sit inside it.
+  const byId = new Map(items.filter((item) => domainRef(item)).map((item) => [domainRef(item), item]));
   const named = new Map<string, string>();
   for (const [index, item] of items.entries()) {
     if (!item.name.trim()) return at(`domains.${index}.name`, `the name of ${words(item)}`, "Give the domain a name.");
@@ -398,11 +402,11 @@ export function domainsIssue(items: EditedDomain[], before: EditedDomain[] = [],
     }
     named.set(sibling, item.name);
     let depth = 1;
-    for (let seen = new Set([item.id]), up = item.parent_id; up; depth += 1) {
+    for (let seen = new Set([domainRef(item)]), up = item.parent_id; up; depth += 1) {
       const parent = byId.get(up);
       if (!parent) return at(`domains.${index}.parent`, `where ${words(item)} sits`, "Its parent is not in the list; choose another, or At the top.");
-      if (seen.has(parent.id) || parent.id === item.id) return at(`domains.${index}.parent`, `where ${words(item)} sits`, "It would be inside itself; choose another parent.");
-      seen.add(parent.id);
+      if (seen.has(domainRef(parent)) || domainRef(parent) === domainRef(item)) return at(`domains.${index}.parent`, `where ${words(item)} sits`, "It would be inside itself; choose another parent.");
+      seen.add(domainRef(parent));
       up = parent.parent_id;
     }
     if (depth > MAX_DOMAIN_DEPTH) {

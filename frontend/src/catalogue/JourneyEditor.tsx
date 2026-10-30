@@ -4,7 +4,7 @@ import type { CatalogueSystem, Channel, Journey, JourneyActivity, Offering, Sour
 import type { Interface } from "./ontology";
 import { CONFIDENCE, orderedSteps } from "./catalogue";
 import { AreaField, PickField, Rows, SelectField, SystemField, TextField, CheckField } from "./forms";
-import { SourceField } from "./SourceField";
+import { SourceField, type Sourced } from "./SourceField";
 import { roleCode } from "./model/vocabulary";
 import { ChannelChoices } from "./OfferingEditor";
 
@@ -137,9 +137,13 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
   };
   // A step with a problem in it opens once Save has been tried, so focus can reach the field.
   const stepFields = ["number", "name", "performer", "system", "team"];
-  const source = (item: { confidence?: SourceConfidence | null; source?: string | null }, update: (patch: { confidence?: SourceConfidence | null; source?: string | null }) => void) => (
+  const source = (
+    item: { confidence?: SourceConfidence | null; source?: string | null },
+    update: (patch: { confidence?: SourceConfidence | null; source?: string | null }) => void,
+    previous?: Sourced | null,
+  ) => (
     <>
-      <SourceField value={item.source} onChange={(source) => update({ source })} />
+      <SourceField value={item.source} previous={previous} onCopy={update} onChange={(source) => update({ source })} />
       <SelectField
         label="How sure its source is"
         value={item.confidence ?? ""}
@@ -267,7 +271,7 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
                   onChange={(chosen) => update({ channels: chosen })}
                 />
               )}
-              {source(step, update)}
+              {source(step, update, value.activities[index - 1])}
             </>
           );
         }}
@@ -320,7 +324,7 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
         onChange={(integrations) => set({ integrations })}
         blank={() => ({ from_activity: firstStep, to_activity: firstStep, open_api_ids: [] })}
         itemLabel={(link, index) => `hand-over ${index + 1}: ${stepLabel(link.from_activity)} to ${stepLabel(link.to_activity)}`}
-        render={(link, update) => (
+        render={(link, update, index) => (
           <>
             <SelectField label="From step" value={link.from_activity} options={stepOptions} onChange={(from_activity) => update({ from_activity })} />
             <SelectField label="To step" value={link.to_activity} options={stepOptions} onChange={(to_activity) => update({ to_activity })} />
@@ -345,7 +349,7 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
               options={TIMINGS}
               onChange={(timing) => update({ timing: (timing || null) as Handover["timing"] })}
             />
-            {source(link, update)}
+            {source(link, update, value.integrations[index - 1])}
           </>
         )}
       />

@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, Outlet, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api, type Journey, type Release } from "../api/client";
@@ -28,6 +28,28 @@ const RELEASE = {
 } as unknown as Release;
 const JOURNEY = RELEASE.journeys![0]!;
 const HANDOVER = "Hand-over 1: 2. Submit the service request to 3. Orchestrate";
+
+/** The journey's record, opened at a link's address. */
+function openAt(query: string) {
+  const context: CatalogueContext = { book: catalogue(RELEASE), base: "/architecture", inService: false, editable: true, actorName: () => "Amina" };
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter initialEntries={[`/architecture/journeys/${JOURNEY.id}${query}`]}>
+        <Routes>
+          <Route path="architecture" element={<Outlet context={context} />}>
+            <Route path="journeys/:journeyId" element={<JourneysPage />} />
+          </Route>
+        </Routes>
+        <Where />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+function Where() {
+  const location = useLocation();
+  return <p data-testid="where">{location.pathname}{location.search}</p>;
+}
 
 function open() {
   const context: CatalogueContext = { book: catalogue(RELEASE), base: "/architecture", inService: false, editable: true, actorName: () => "Amina" };
@@ -163,7 +185,46 @@ describe("a journey's hand-overs", () => {
   });
 });
 
+describe("a journey opened at a step", () => {
+  it("brings that step's row into view once, marked as the place linked to, with focus on it", async () => {
+    openAt("?row=3");
+    const row = await waitFor(() => {
+      const found = document.querySelector<HTMLElement>('.ds-record tr[data-row-id="3"]');
+      expect(found).toHaveAttribute("data-row-target");
+      return found!;
+    });
+    expect(row).toHaveAttribute("aria-current", "location");
+    expect(row.closest("details")).toHaveProperty("open", true);
+    expect(row.contains(document.activeElement)).toBe(true);
+    // It lands once: choosing another view afterwards never pulls focus back to it.
+    fireEvent.click(screen.getByRole("tab", { name: "Flowchart" }));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(row.contains(document.activeElement)).toBe(false);
+  });
+
+  it("says when the step the link named is no longer in the journey", async () => {
+    openAt("?row=99");
+    expect(await screen.findByText("Step 99, which the link named, is no longer in this journey.", {}, { timeout: 3000 })).toBeInTheDocument();
+  });
+});
+
 describe("a fact's source, in an edit", () => {
+  it("offers the source of the row above, and how sure it is, while a row names none, keeping focus in the row", async () => {
+    const form = open();
+    const second = row(form, "Step 2. Submit the service request");
+    const first = row(form, "Step 1. Capture the order");
+    fireEvent.change(within(first).getByLabelText("Source"), { target: { value: "SDD" } });
+    fireEvent.change(within(first).getByLabelText(/^Where in it/), { target: { value: "§7" } });
+    fireEvent.change(within(first).getByLabelText("How sure its source is"), { target: { value: "inferred" } });
+    fireEvent.click(within(second).getByRole("button", { name: "Same source as above: “BPP SDD · §7”, inferred" }));
+    expect(within(second).getByLabelText("Source")).toHaveValue("SDD");
+    expect(within(second).getByLabelText(/^Where in it/)).toHaveValue("§7");
+    expect(within(second).getByLabelText("How sure its source is")).toHaveValue("inferred");
+    expect(within(second).queryByRole("button", { name: /^Same source as above/ })).not.toBeInTheDocument();
+    // The button gives way, and focus goes to the source it filled, never to the page.
+    await waitFor(() => expect(within(second).getByLabelText("Source")).toHaveFocus());
+  });
+
   it("offers the register in a new tab, so the edit stays open", () => {
     const form = open();
     const ticket = row(form, "Step 4. Ticket the onboarding");

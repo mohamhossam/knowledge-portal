@@ -1,8 +1,9 @@
-import { useContext, useState } from "react";
+import { useContext, useId, useState } from "react";
 import { Link } from "react-router-dom";
 
-import type { KnowledgeSource } from "../api/client";
-import { Status } from "../design/components";
+import type { KnowledgeSource, SourceConfidence } from "../api/client";
+import { Button, Status } from "../design/components";
+import { useFocusAfterRender } from "../design/hooks";
 import { citedAs, registerOptions, SourcesContext } from "./governance";
 import { SelectField, TextField } from "./forms";
 import { useCatalogueContext } from "./useCatalogue";
@@ -17,6 +18,9 @@ const SEPARATOR = " · ";
 const lineOf = (source: KnowledgeSource, where: string) => `${citedAs(source)}${where.trim() ? `${SEPARATOR}${where.trim()}` : ""}`;
 
 type Choice = { source: string; where: string; text: string };
+
+/** How sure a source is, in a word that reads within a sentence: "…, inferred". */
+const CONFIDENCE_WORD: Record<SourceConfidence, string> = { confirmed: "confirmed", inferred: "inferred", gap: "with gaps" };
 
 /**
  * Lines written in this session, each with the choice that wrote it, so a row that moves (and
@@ -45,7 +49,19 @@ function RegisterLink({ children }: { children: string }) {
  * stays as written, marked, with the way to register it. Controlled: `value` is the line,
  * `onChange` gets the line or null.
  */
-export function SourceField({ value, onChange }: { value: string | null | undefined; onChange: (line: string | null) => void }) {
+/** Where a fact comes from, as a row holds it: its source line and how sure that source is. */
+export type Sourced = { source?: string | null; confidence?: SourceConfidence | null };
+
+export function SourceField({ value, onChange, previous, onCopy }: {
+  value: string | null | undefined;
+  onChange: (line: string | null) => void;
+  /** The row above, in a list of rows: its source is offered while this one names none, so a run of rows from one document is quick. */
+  previous?: Sourced | null;
+  /** Takes the row above's source and how sure it is in one change, so neither is lost to the other. */
+  onCopy?: (copied: { source: string; confidence: SourceConfidence | null }) => void;
+}) {
+  const own = useId();
+  const focusLater = useFocusAfterRender();
   const register = useContext(SourcesContext);
   const sources = [...register.sources.values()];
   // What a line says, as the service read it, or as this session wrote it against this register.
@@ -79,9 +95,26 @@ export function SourceField({ value, onChange }: { value: string | null | undefi
     onChange(line);
   };
   const options = [{ value: "", label: "Not stated" }, ...registerOptions(sources), { value: ELSEWHERE, label: "A document not in the register" }];
+  const above = previous?.source?.trim() || null;
+  // The copy takes the row's source in its place, and focus goes to it, never to the page.
+  const copy = () => {
+    if (!above) return;
+    setChoice(read(above));
+    setSaid(above);
+    if (onCopy) onCopy({ source: above, confidence: previous?.confidence ?? null });
+    else onChange(above);
+    focusLater(() => document.querySelector<HTMLElement>(`[data-source="${CSS.escape(own)}"] :is(input, select)`));
+  };
   return (
-    <>
+    <div className="cat-source" data-source={own}>
       <SelectField label="Source" value={choice.source} options={options} onChange={(source) => choose({ ...choice, source })} />
+      {!now && above && (
+        <div className="cat-form__cell cat-source__copy">
+          <Button variant="tertiary" onClick={copy}>
+            Same source as above: “{above}”{previous?.confidence ? `, ${CONFIDENCE_WORD[previous.confidence]}` : ""}
+          </Button>
+        </div>
+      )}
       {chosen && <TextField label="Where in it" value={choice.where} hint="Such as §4.1; a note may follow a ·" onChange={(where) => choose({ ...choice, where })} />}
       {choice.source === ELSEWHERE && (
         <TextField
@@ -111,6 +144,6 @@ export function SourceField({ value, onChange }: { value: string | null | undefi
           </>
         ) : null}
       </div>
-    </>
+    </div>
   );
 }

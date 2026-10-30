@@ -319,7 +319,7 @@ function RecordsEdit({ onDone }: { onDone: () => void }) {
               </>
             )}
             <AreaField label="What it is" value={record.description} onChange={(description) => update({ description: description || null })} />
-            <SourceField value={record.source} onChange={(source) => update({ source })} />
+            <SourceField value={record.source} previous={items[index - 1]} onCopy={update} onChange={(source) => update({ source })} />
             <SelectField
               label="How sure its source is"
               value={record.confidence ?? ""}

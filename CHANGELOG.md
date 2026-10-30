@@ -139,6 +139,17 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Quicker editing in the catalogue. A landscape domain added in an edit can hold another before
+  either is saved, both saved by the ids their names give them, and an unnamed one is told apart
+  in the list of places by its row. In a list of rows, a row that names no source offers, just
+  after its Source, the source of the row above and how sure it is, in one press that keeps focus
+  in the row. The Vocabulary tab's filter only filters the list: a term open beside it stays, and
+  the list says which vocabulary it is in. A written value waiting to be linked opens at its own
+  step of a journey, in the steps table, or its own part of an offering: the row is brought into
+  view once, marked as the place linked to and in focus, and the address then lets go of it, so
+  choosing another view never pulls focus back; a step or part no longer there is said. A
+  hand-over's opens the journey's integrations, and an NFR's or a rule's its offering's tab. No
+  upgrade step.
 - A fact's source is chosen from the draft's source register, grouped by level with the
   canonical sources first, and where in it is typed beside it, in every catalogue edit that asks
   for one: systems, their capabilities and components, journeys, steps and hand-overs, offerings

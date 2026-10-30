@@ -147,6 +147,28 @@ describe("where systems sit, edited as an outline with the map's layout", () => 
     await waitFor(() => expect(screen.getByRole("button", { name: "Edit where systems sit" })).toHaveFocus());
   });
 
+  it("lets a domain added in the edit hold another before either is saved, and saves them by their new ids", async () => {
+    const save = vi.spyOn(api, "saveDraft").mockResolvedValue(RELEASE);
+    const form = open();
+    fireEvent.click(within(form).getByRole("button", { name: "Add a domain at the top" }));
+    fireEvent.change(within(row(form, "New domain")).getByLabelText(/^Name/), { target: { value: "Digital" } });
+    fireEvent.click(within(form).getByRole("button", { name: "Add a domain at the top" }));
+    const web = row(form, "New domain");
+    fireEvent.change(within(web).getByLabelText(/^Name/), { target: { value: "Web" } });
+    fireEvent.change(within(row(form, "Web")).getByLabelText("Inside"), {
+      target: { value: [...(within(row(form, "Web")).getByLabelText("Inside") as HTMLSelectElement).options].find((option) => option.text === "Digital")!.value },
+    });
+    // Web now sits inside Digital, a step in.
+    expect(within(form).getByRole("group", { name: "Web" }).closest("[data-domain]")).toHaveAttribute("data-depth", "1");
+    fireEvent.click(within(form).getByRole("button", { name: "Save the domains" }));
+    await waitFor(() => expect(save).toHaveBeenCalled());
+    const sent = (save.mock.calls[0]![1] as { landscape_domains: { id: string; parent_id: string | null }[] }).landscape_domains;
+    expect(sent.filter((item) => ["digital", "web"].includes(item.id)).map(({ id, parent_id }) => [id, parent_id])).toEqual([
+      ["digital", null],
+      ["web", "digital"],
+    ]);
+  });
+
   it("keeps the business areas to their names, places and descriptions", () => {
     const form = open("Edit the business areas");
     opened(form, "Fulfilment");

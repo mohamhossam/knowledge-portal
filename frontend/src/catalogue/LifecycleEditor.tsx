@@ -77,11 +77,11 @@ export function LifecycleEditor({ value, onChange, channels, orderTypes, names }
       blank={() => ({ id: "", title: "", order_types: [], channels: [], blocks: [] })}
       labelled
       itemLabel={(item, index) => cut(item.title, index, "note")}
-      render={(note, change) => (
+      render={(note, change, index) => (
         <>
           <TextField label="Title" value={note.title} required wide onChange={(title) => change({ title })} />
           <TextField label="Kind, as the source groups it" value={note.kind} onChange={(kind) => change({ kind: kind || null })} />
-          <SourceField value={note.source} onChange={(source) => change({ source })} />
+          <SourceField value={note.source} previous={value[index - 1]} onCopy={change} onChange={(source) => change({ source })} />
           <SelectField
             label="How sure its source is"
             value={note.confidence ?? ""}
