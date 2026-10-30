@@ -16,6 +16,7 @@ import { ActionGroup, Button, Status } from "../design/components";
 import { useFocusAfterRender } from "../design/hooks";
 import { RouterLink } from "../shell/links";
 import { AreaField, PickField, Rows, SelectField, SystemField, TextField } from "./forms";
+import { SourceField } from "./SourceField";
 import { JourneyEditor } from "./JourneyEditor";
 import { OfferingFacts } from "./OfferingEditor";
 import { questionProblem } from "./governance";
@@ -111,7 +112,7 @@ export function EditPanel({ title, children, action, actionIcon, busy, problem, 
     const click = (event: MouseEvent) => {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href]") : null;
-      if (!link || link.target || link.hasAttribute("download") || link.origin !== window.location.origin || form.current?.contains(link)) return;
+      if (!link || link.target || link.hasAttribute("download") || link.origin !== window.location.origin) return;
       event.preventDefault();
       event.stopPropagation();
       was.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -589,13 +590,13 @@ export function InterfacesEdit({ system, onDone }: { system: CatalogueSystem; on
                 onChange={(entity_ids) => update({ entity_ids })}
               />
               <AreaField label="What it is for" value={item.description} onChange={(description) => update({ description: description || null })} />
+              <SourceField value={item.source} onChange={(source) => update({ source })} />
               <SelectField
                 label="How sure its source is"
                 value={item.confidence ?? ""}
                 options={CONFIDENCE_OPTIONS}
                 onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
               />
-              <TextField label="Source" value={item.source} hint="The document and where in it, such as SDD v2.3 · §4.1." onChange={(source) => update({ source: source || null })} />
             </>
           )}
         />

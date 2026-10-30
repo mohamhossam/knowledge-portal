@@ -139,6 +139,18 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- A fact's source is chosen from the draft's source register, grouped by level with the
+  canonical sources first, and where in it is typed beside it, in every catalogue edit that asks
+  for one: systems, their capabilities and components, journeys, steps and hand-overs, offerings
+  and what they are for and promise, their plans, rules and lifecycle notes, concepts,
+  vocabulary terms and realisation records. It is saved as the one line the service reads back
+  to that source ("SDD v2.3 · §4.1"), said under the field as it will be saved, so it opens as a
+  link to the source's record; a line opens on the source the service read it as. A document the
+  register does not hold can still be cited as written, marked as not in the register, and the
+  register opens on Governance in a new tab so the edit stays open, from there or from a draft
+  that registers no source yet. The source now comes before how sure it is in every edit, and a
+  conflict's sides pick from the same grouped register, with "Where in it". Any link out of an
+  edit with changes asks before leaving, one inside the edit too. No upgrade step.
 - The Vocabulary tab says, on a draft, which values the catalogue writes as text wait to be
   linked to a term, as the vocabulary clean-up proposed them. The overview counts the written
   values waiting in each vocabulary, and each term in the list says how many wait for it. A

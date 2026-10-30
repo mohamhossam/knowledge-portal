@@ -86,7 +86,8 @@
   grid-column: 1 / -1;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-3) var(--space-4);
-  align-items: end;
+  /* Labels in a line: the source's note under its fields must not push its neighbour down. */
+  align-items: start;
 }
 
 .cat-points__means,
@@ -97,6 +98,14 @@
 
 .cat-points--long .cat-points__means {
   grid-column: span 1;
+}
+
+/* Its source and where in it, side by side within the source's columns, and what it saves as under both. */
+.cat-points__source {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-4);
+  align-items: end;
 }
 
 .cat-points__note {
@@ -110,7 +119,33 @@
   max-inline-size: 72ch;
 }
 
+/* A source's line as it will be saved, or what to do when none can be: under the source's fields. */
+.cat-source__note {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+}
+
+.cat-source__note:empty {
+  display: none;
+}
+
+.cat-source__note p {
+  margin: 0;
+}
+
+/* The way to the register stands on its own, a full target rather than words in a hint. */
+.cat-source__register {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-min);
+}
+
 @media (max-width: 40rem) {
+  .cat-points__source {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .cat-points {
     grid-template-columns: minmax(0, 1fr);
   }

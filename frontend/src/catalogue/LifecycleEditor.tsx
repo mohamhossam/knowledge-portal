@@ -1,6 +1,7 @@
 import type { Channel, Offering, SourceConfidence } from "../api/client";
 import { CONFIDENCE_OPTIONS } from "./catalogue";
 import { AreaField, CheckField, LinesField, Rows, SelectField, TextField } from "./forms";
+import { SourceField } from "./SourceField";
 import { ChannelChoices, type Names } from "./OfferingEditor";
 
 type Note = Offering["lifecycle_notes"][number];
@@ -80,13 +81,13 @@ export function LifecycleEditor({ value, onChange, channels, orderTypes, names }
         <>
           <TextField label="Title" value={note.title} required wide onChange={(title) => change({ title })} />
           <TextField label="Kind, as the source groups it" value={note.kind} onChange={(kind) => change({ kind: kind || null })} />
+          <SourceField value={note.source} onChange={(source) => change({ source })} />
           <SelectField
             label="How sure its source is"
             value={note.confidence ?? ""}
             options={CONFIDENCE_OPTIONS}
             onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
           />
-          <TextField label="Source" value={note.source} onChange={(source) => change({ source: source || null })} />
           <AreaField label="Summary" value={note.summary} onChange={(summary) => change({ summary: summary || null })} />
           {orderTypes.length > 0 && (
             <fieldset className="cat-form__choices cat-form__wide">

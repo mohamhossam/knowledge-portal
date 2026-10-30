@@ -129,3 +129,18 @@ export const ITEM_STATUS: Record<ChangeRecord["items"][number]["status"] & strin
   gap: "needs an architect's review",
   conflict: "needs a decision",
 };
+
+/** How a source is cited at the head of a line: its short name, or else its id, which the service reads either way. */
+export const citedAs = (source: KnowledgeSource) => source.short?.trim() || source.id;
+
+/** A source as an option: as it is cited, then its title when that says more. */
+const optionLabel = (source: KnowledgeSource) => `${citedAs(source)}${source.title && source.title !== citedAs(source) ? `: ${source.title}` : ""}`;
+
+/** Registered sources, grouped by level as the register ranks them: "Canonical (L1)", "Primary (L2)", "Carried forward (L3)". */
+export function registerOptions(sources: KnowledgeSource[]): { value: string; label: string; group: string }[] {
+  return byLevel(sources).map((source) => ({
+    value: source.id,
+    label: optionLabel(source),
+    group: `${LEVEL[source.level as SourceLevel]?.word ?? source.level} (${source.level})`,
+  }));
+}

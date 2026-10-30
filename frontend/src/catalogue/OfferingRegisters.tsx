@@ -14,6 +14,7 @@ import { draftBody } from "./drafting";
 import { EditPanel } from "./DraftEdits";
 import { BELOW, finishedPortfolio, finishedRecords, portfolioIssue, portfolioRemoveReason, recordRemoveReason, recordsIssue, type RowIssue, savedSame } from "./editing";
 import { AreaField, CheckField, LinesField, PickField, Rows, SelectField, TextField } from "./forms";
+import { SourceField } from "./SourceField";
 import { useCatalogueContext } from "./useCatalogue";
 import { useEditing } from "./useEditing";
 
@@ -318,13 +319,13 @@ function RecordsEdit({ onDone }: { onDone: () => void }) {
               </>
             )}
             <AreaField label="What it is" value={record.description} onChange={(description) => update({ description: description || null })} />
+            <SourceField value={record.source} onChange={(source) => update({ source })} />
             <SelectField
               label="How sure its source is"
               value={record.confidence ?? ""}
               options={CONFIDENCE_OPTIONS}
               onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
             />
-            <TextField label="Source" value={record.source} hint="The document and where in it, such as SDD v2.3 · §4.1." onChange={(source) => update({ source: source || null })} />
           </>
         )}
       />

@@ -6,6 +6,7 @@ import { useFocusAfterRender } from "../design/hooks";
 import { CONFIDENCE_OPTIONS, COVERAGE, LAYERS } from "./catalogue";
 import { ambiguousNameMatches, conceptDomain, nameMatches } from "./editing";
 import { AreaField, CheckField, Choices, LinesField, PickField, Rows, SelectField, SystemField, TextField } from "./forms";
+import { SourceField } from "./SourceField";
 import { LifecycleEditor } from "./LifecycleEditor";
 import { TrackingEditor } from "./TrackingEditor";
 
@@ -86,7 +87,6 @@ function PointRows({ legend, one, items, onChange, path, errorAt, longNames }: {
         items={items}
         onChange={onChange}
         blank={() => ({ name: "" })}
-        hint="Its source is the document and where in it, such as SDD v2.3 · §4.1."
         itemLabel={(point, index) => `${one} ${point.name.trim() || index + 1}`}
         render={(point, change, index) => (
           <div className={`cat-points${longNames ? " cat-points--long" : ""}`}>
@@ -97,7 +97,7 @@ function PointRows({ legend, one, items, onChange, path, errorAt, longNames }: {
               <TextField label="What it means" value={point.description} onChange={(description) => change({ description: description || null })} />
             </div>
             <div className="cat-form__cell cat-points__source">
-              <TextField label="Source" value={point.source} onChange={(source) => change({ source: source || null })} />
+              <SourceField value={point.source} onChange={(source) => change({ source })} />
             </div>
             <div className="cat-form__cell">
               <SelectField
@@ -697,13 +697,13 @@ export function QuestionFields({ item, orders, change }: {
   return (
     <>
       <TextField label="Id" value={item.id} dir="ltr" hint="The source’s own, such as F3; made for you when empty." onChange={(id) => change({ id })} />
+      <SourceField value={item.source} onChange={(source) => change({ source })} />
       <SelectField
         label="How sure its source is"
         value={item.confidence ?? ""}
         options={CONFIDENCE_OPTIONS}
         onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
       />
-      <TextField label="Source" value={item.source} onChange={(source) => change({ source: source || null })} />
       <TextField label="In a few words" value={item.title} wide hint="The question’s title, such as Is B2B Digital in scope?; optional." onChange={(title) => change({ title: title || null })} />
       <AreaField label="Question" value={item.text} required onChange={(text) => change({ text })} />
       <AreaField label="What the catalogue does meanwhile" value={item.impact} onChange={(impact) => change({ impact: impact || null })} />
@@ -753,13 +753,13 @@ export function OfferingDecisions({ value, onChange }: SectionProps) {
         <>
           <TextField label="Decision" value={item.title} required wide onChange={(title) => change({ title })} />
           <TextField label="Id" value={item.id} dir="ltr" hint="Such as AD-01; made for you when left empty." onChange={(id) => change({ id })} />
+          <SourceField value={item.source} onChange={(source) => change({ source })} />
           <SelectField
             label="How sure its source is"
             value={item.confidence ?? ""}
             options={CONFIDENCE_OPTIONS}
             onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
           />
-          <TextField label="Source" value={item.source} onChange={(source) => change({ source: source || null })} />
           <AreaField label="What was decided, and why" value={item.text} onChange={(text) => change({ text: text || null })} />
         </>
       )}
@@ -828,13 +828,13 @@ export function OfferingPlansFields({ value, onChange, errorAt }: SectionProps) 
       render={(plan, update, index) => (
         <>
           <TextField label="Plan" value={plan.name} required error={errorAt?.(`plans.${index}.name`)} onChange={(name) => update({ name })} />
+          <SourceField value={plan.source} onChange={(source) => update({ source })} />
           <SelectField
             label="How sure its source is"
             value={plan.confidence ?? ""}
             options={CONFIDENCE_OPTIONS}
             onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
           />
-          <TextField label="Source" value={plan.source} hint="The document and where in it, such as SDD v2.3 · §4.1." onChange={(source) => update({ source: source || null })} />
           <AreaField label="What it is" value={plan.description} onChange={(description) => update({ description: description || null })} />
           <Rows<Characteristic>
             legend="Characteristics"
@@ -895,13 +895,13 @@ export function OfferingBusinessRules({ value, onChange, errorAt }: SectionProps
             error={errorAt?.(`business_rules.${index}.id`)}
             onChange={(id) => update({ id })}
           />
+          <SourceField value={rule.source} onChange={(source) => update({ source })} />
           <SelectField
             label="How sure its source is"
             value={rule.confidence ?? ""}
             options={CONFIDENCE_OPTIONS}
             onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
           />
-          <TextField label="Source" value={rule.source} hint="The document and where in it, such as SDD v2.3 · §4.1." onChange={(source) => update({ source: source || null })} />
         </>
       )}
     />

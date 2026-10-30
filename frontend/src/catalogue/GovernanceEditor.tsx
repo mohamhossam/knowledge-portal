@@ -6,7 +6,7 @@ import { draftBody, sourceUses } from "./drafting";
 import { EditPanel } from "./DraftEdits";
 import { slug } from "./editing";
 import { AreaField, CheckField, Rows, SelectField, TextField } from "./forms";
-import { LEVEL_OPTIONS, questionLine, withIds } from "./governance";
+import { LEVEL_OPTIONS, questionLine, registerOptions, withIds } from "./governance";
 import { useCatalogueContext } from "./useCatalogue";
 import { useEditing } from "./useEditing";
 
@@ -101,11 +101,11 @@ function SideFields({ legend, side, sources, onChange }: { legend: string; side:
           options={[
             { value: "", label: "Choose a source" },
             ...(!known && side.source_id ? [{ value: side.source_id, label: `${side.source_id} (not in the register)` }] : []),
-            ...sources.map((source) => ({ value: source.id, label: `${source.short ?? source.title} (${source.level})` })),
+            ...registerOptions(sources),
           ]}
           onChange={(source_id) => onChange({ ...side, source_id })}
         />
-        <TextField label="Where it says so" value={side.reference} wide onChange={(reference) => onChange({ ...side, reference: reference || null })} />
+        <TextField label="Where in it" value={side.reference} wide onChange={(reference) => onChange({ ...side, reference: reference || null })} />
       </div>
       <AreaField label="What it says" value={side.statement} required onChange={(statement) => onChange({ ...side, statement })} />
     </fieldset>

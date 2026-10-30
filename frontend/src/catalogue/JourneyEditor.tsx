@@ -4,6 +4,7 @@ import type { CatalogueSystem, Channel, Journey, JourneyActivity, Offering, Sour
 import type { Interface } from "./ontology";
 import { CONFIDENCE, orderedSteps } from "./catalogue";
 import { AreaField, PickField, Rows, SelectField, SystemField, TextField, CheckField } from "./forms";
+import { SourceField } from "./SourceField";
 import { roleCode } from "./model/vocabulary";
 import { ChannelChoices } from "./OfferingEditor";
 
@@ -27,8 +28,6 @@ const RULE_KINDS = [
   { value: "loop", label: "A loop back" },
   { value: "parallel", label: "A parallel track" },
 ];
-
-const SOURCE_HINT = "The document and where in it, such as SDD v2.3 · §4.1.";
 
 /** Who performs a step: a named system, the entry system of the channel the order came through, a team or party, or not said. */
 type Performer = "system" | "entry" | "team" | "";
@@ -140,13 +139,13 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
   const stepFields = ["number", "name", "performer", "system", "team"];
   const source = (item: { confidence?: SourceConfidence | null; source?: string | null }, update: (patch: { confidence?: SourceConfidence | null; source?: string | null }) => void) => (
     <>
+      <SourceField value={item.source} onChange={(source) => update({ source })} />
       <SelectField
         label="How sure its source is"
         value={item.confidence ?? ""}
         options={CONFIDENCE_OPTIONS}
         onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
       />
-      <TextField label="Source" value={item.source} hint={SOURCE_HINT} onChange={(text) => update({ source: text || null })} />
     </>
   );
 
