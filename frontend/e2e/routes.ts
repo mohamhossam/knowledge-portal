@@ -16,6 +16,7 @@ export type Seeded = {
   replaced?: string;
   system?: string;
   concept?: string;
+  term?: string;
   offering?: string;
   journey?: string;
 };
@@ -61,6 +62,8 @@ export const ROUTES: RouteDef[] = [
   { key: "architecture-system", path: (s) => s.system && `architecture/systems/${s.system}` },
   { key: "architecture-concepts", path: at("architecture/concepts") },
   { key: "architecture-concept", path: (s) => s.concept && `architecture/concepts/${s.concept}` },
+  { key: "architecture-vocabulary", path: at("architecture/vocabulary") },
+  { key: "architecture-term", path: (s) => s.term && `architecture/vocabulary/${s.term}` },
   { key: "architecture-offerings", path: at("architecture/offerings") },
   { key: "architecture-offering", path: (s) => s.offering && `architecture/offerings/${s.offering}` },
   { key: "architecture-journeys", path: at("architecture/journeys") },
@@ -125,7 +128,7 @@ export function seeded(): Promise<Seeded> {
     const [documents, releases, active] = await Promise.all([
       read<Named[]>("/library/documents?offset=0&limit=100"),
       read<Named[]>("/architecture-knowledge/releases"),
-      read<(Named & { systems?: Named[]; business_capabilities?: Named[]; products?: Named[]; journeys?: Named[] }) | null>(
+      read<(Named & { systems?: Named[]; business_capabilities?: Named[]; vocabulary?: Named[]; products?: Named[]; journeys?: Named[] }) | null>(
         "/architecture-knowledge/releases/active",
       ),
     ]);
@@ -137,6 +140,7 @@ export function seeded(): Promise<Seeded> {
       replaced: releases.find((release) => release.status !== "draft" && release.id !== active?.id)?.id,
       system: active?.systems?.[0]?.id,
       concept: active?.business_capabilities?.[0]?.id,
+      term: active?.vocabulary?.[0]?.id,
       offering: active?.products?.[0]?.id,
       journey: active?.journeys?.[0]?.id,
     };
