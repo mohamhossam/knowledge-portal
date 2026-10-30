@@ -92,14 +92,11 @@ function journeyOf(
     output: item.output ?? undefined,
     evidence: evidence(item),
   }));
-  const seen = new Map<string, number>();
-  const calls: ActivityCall[] = journey.integrations.map((call) => {
+  const ids = callIds(journey.integrations);
+  const calls: ActivityCall[] = journey.integrations.map((call, index) => {
     const operation = call.interface ?? call.interaction ?? undefined;
-    const base = `${call.from_activity}>${call.to_activity}:${call.to_system_id ?? ""}:${operation ?? "handover"}`;
-    const count = (seen.get(base) ?? 0) + 1;
-    seen.set(base, count);
     return {
-      id: count > 1 ? `${base}#${count}` : base,
+      id: ids[index]!,
       fromActivity: call.from_activity,
       toActivity: call.to_activity,
       ...(call.from_system_id != null ? { fromSystem: call.from_system_id } : {}),
@@ -514,4 +511,20 @@ export function journeyViews(data: Catalogue, offeringId: string, orderType?: st
       const channels = channel ? (journey.channels.includes(channel) ? [channel] : journey.channels.length ? [] : [null]) : journey.channels.length ? journey.channels : [null];
       return channels.map((item) => journeyView(data, journey.id, item)).filter((view): view is JourneyView => view !== null);
     });
+}
+
+/**
+ * Each hand-over's call id, in the journey's order: from step, to step, the system called and how,
+ * counted when the same call is made again. Stable across the channels' views of a journey, so a
+ * link names one hand-over by it.
+ */
+export function callIds(integrations: NonNullable<Release["journeys"]>[number]["integrations"]): string[] {
+  const seen = new Map<string, number>();
+  return integrations.map((call) => {
+    const operation = call.interface ?? call.interaction ?? undefined;
+    const base = `${call.from_activity}>${call.to_activity}:${call.to_system_id ?? ""}:${operation ?? "handover"}`;
+    const count = (seen.get(base) ?? 0) + 1;
+    seen.set(base, count);
+    return count > 1 ? `${base}#${count}` : base;
+  });
 }

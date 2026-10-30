@@ -7,6 +7,15 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- Small catalogue leftovers from the edit reviews. A link to a hand-over, a business rule or a
+  non-functional requirement opens on that row, not just its tab; a hand-over opens the journey's
+  calls as a table, in a channel its step is taken in. A retired portfolio node's successor is
+  named by its path, a link to its row. "This draft registers no source yet" is said once, under
+  a form's title, not at every row. A conflict offers "Same as the conflict above", and an
+  internal tracking status takes a source and how sure it is. Whether a part is always included
+  can go back to "Not said". "How sure its source is" stays in its place but is unavailable,
+  with the reason, until a source is stated, and a value it holds can still be cleared. Choosing
+  another tab or view lets go of a row link, so it is not announced again. No upgrade step.
 - Changing a system's dependency no longer drops where it comes from and how sure that is.
 - "Keep editing", in the question a changed system or connections edit asks before it is thrown
   away, no longer saves the edit. The question's buttons took the place of Save and Cancel as the

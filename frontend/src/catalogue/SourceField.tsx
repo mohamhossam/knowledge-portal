@@ -4,7 +4,9 @@ import { Link } from "react-router-dom";
 import type { KnowledgeSource, SourceConfidence } from "../api/client";
 import { Button, Status } from "../design/components";
 import { useFocusAfterRender } from "../design/hooks";
+import { CONFIDENCE_OPTIONS } from "./catalogue";
 import { citedAs, registerOptions, SourcesContext } from "./governance";
+import { useSourceFieldInForm } from "./sourceNotes";
 import { SelectField, TextField } from "./forms";
 import { useCatalogueContext } from "./useCatalogue";
 
@@ -52,7 +54,7 @@ function RegisterLink({ children }: { children: string }) {
 /** Where a fact comes from, as a row holds it: its source line and how sure that source is. */
 export type Sourced = { source?: string | null; confidence?: SourceConfidence | null };
 
-export function SourceField({ value, onChange, previous, onCopy, label = "Source" }: {
+export function SourceField({ value, onChange, previous, onCopy, label = "Source", copyLabel = "Same source as above" }: {
   value: string | null | undefined;
   /** What the source is of, where a form holds more than one: "Where the conflict is recorded". */
   label?: string;
@@ -60,9 +62,12 @@ export function SourceField({ value, onChange, previous, onCopy, label = "Source
   /** The row above, in a list of rows: its source is offered while this one names none, so a run of rows from one document is quick. */
   previous?: Sourced | null;
   /** Takes the row above's source and how sure it is in one change, so neither is lost to the other. */
+  /** What the copy calls the row above, where "above" could mean another field: "Same as the conflict above". */
+  copyLabel?: string;
   onCopy?: (copied: { source: string; confidence: SourceConfidence | null }) => void;
 }) {
   const own = useId();
+  const inForm = useSourceFieldInForm(own);
   const focusLater = useFocusAfterRender();
   const register = useContext(SourcesContext);
   const sources = [...register.sources.values()];
@@ -113,7 +118,7 @@ export function SourceField({ value, onChange, previous, onCopy, label = "Source
       {!now && above && (
         <div className="cat-form__cell cat-source__copy">
           <Button variant="tertiary" onClick={copy}>
-            Same source as above: “{above}”{previous?.confidence ? `, ${CONFIDENCE_WORD[previous.confidence]}` : ""}
+            {copyLabel}: “{above}”{previous?.confidence ? `, ${CONFIDENCE_WORD[previous.confidence]}` : ""}
           </Button>
         </div>
       )}
@@ -139,7 +144,7 @@ export function SourceField({ value, onChange, previous, onCopy, label = "Source
             )}
             <RegisterLink>Register it on Governance</RegisterLink>
           </>
-        ) : sources.length === 0 ? (
+        ) : sources.length === 0 && !inForm ? (
           <>
             <p className="ds-field__hint">This draft registers no source yet.</p>
             <RegisterLink>Register a source on Governance</RegisterLink>
@@ -147,5 +152,38 @@ export function SourceField({ value, onChange, previous, onCopy, label = "Source
         ) : null}
       </div>
     </div>
+  );
+}
+
+/**
+ * How sure a fact's source is, beside the source. It says nothing of a fact with no source, so
+ * until one is stated it is unavailable, with the reason, in its place: nothing moves when a
+ * source is chosen, and focus is never lost. A value it already holds can still be changed.
+ */
+export function SurenessField({ source, value, onChange }: {
+  source: string | null | undefined;
+  value: SourceConfidence | null | undefined;
+  onChange: (confidence: SourceConfidence | null) => void;
+}) {
+  return (
+    <SelectField
+      label="How sure its source is"
+      value={value ?? ""}
+      options={CONFIDENCE_OPTIONS}
+      unavailableReason={!source?.trim() && !value ? "Name its source first." : null}
+      onChange={(confidence) => onChange((confidence || null) as SourceConfidence | null)}
+    />
+  );
+}
+
+/**
+ * What a form says once, under its title, when the draft registers no source: why every source
+ * list in it offers none, and the way to register one.
+ */
+export function NoSourceYet() {
+  return (
+    <p className="cat-edit__lead">
+      This draft registers no source yet, so a source can only be cited as written. <RegisterLink>Register a source on Governance</RegisterLink>
+    </p>
   );
 }

@@ -83,15 +83,19 @@ describe("saying where a capability and a component come from (review recommenda
     render(<Editing start={start} />);
 
     const capability = screen.getByRole("group", { name: "Capability Tracking" });
-    fireEvent.change(within(capability).getByLabelText("How sure its source is"), { target: { value: "confirmed" } });
+    // How sure its source is waits for a source to be sure of.
+    expect(within(capability).getByLabelText("How sure its source is")).toHaveAttribute("aria-disabled", "true");
     // No register in this test: the source is a document cited as written, marked as not in it.
     fireEvent.change(within(capability).getByLabelText("Source"), { target: { value: "*elsewhere" } });
     expect(within(capability).getByText(/Not in the register/)).toBeInTheDocument();
     fireEvent.change(within(capability).getByLabelText("The document, as cited"), { target: { value: "SDD v2.3 · §4.1" } });
+    fireEvent.change(within(capability).getByLabelText("How sure its source is"), { target: { value: "confirmed" } });
     const component = screen.getByRole("group", { name: "Component Milestones" });
+    fireEvent.change(within(component).getByLabelText("Source"), { target: { value: "*elsewhere" } });
+    fireEvent.change(within(component).getByLabelText("The document, as cited"), { target: { value: "BRD" } });
     fireEvent.change(within(component).getByLabelText("How sure its source is"), { target: { value: "gap" } });
 
-    expect(screen.getByTestId("value")).toHaveTextContent(JSON.stringify({ capability: ["confirmed", "SDD v2.3 · §4.1"], component: ["gap", null] }));
+    expect(screen.getByTestId("value")).toHaveTextContent(JSON.stringify({ capability: ["confirmed", "SDD v2.3 · §4.1"], component: ["gap", "BRD"] }));
     expect(within(capability).getByLabelText(/Matched by/)).toHaveValue("track orders");
   });
 });

@@ -38,6 +38,7 @@ export default function JourneyFlowViews({ release, journeyId, title, show }: { 
   const channelName = (id: string) => data.channels.find((item) => item.id === id)?.name ?? id;
   const pick = (id: string) => {
     const next = new URLSearchParams(params);
+    next.delete("row");
     if (id) next.set("channel", id);
     else next.delete("channel");
     setParams(next, { replace: true });

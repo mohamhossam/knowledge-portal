@@ -58,6 +58,19 @@ const savedOffering = (save: ReturnType<typeof vi.spyOn>) =>
   (save.mock.calls[0]![1] as { products: typeof RELEASE.products }).products!.find((item) => item.id === OFFERING.id)!;
 
 describe("an offering's parts and what they link to", () => {
+  it("lets whether a part is always included go back to not said", async () => {
+    const save = vi.spyOn(api, "saveDraft").mockResolvedValue(RELEASE);
+    open(`/architecture/offerings/${OFFERING.id}`);
+    fireEvent.click(screen.getByRole("button", { name: "Edit the parts" }));
+    const broadband = within(screen.getByRole("form", { name: "Edit the parts of Business Pro Plus" })).getByRole("group", { name: "Part Broadband" });
+    const included = within(broadband).getByLabelText("Included");
+    fireEvent.change(included, { target: { value: "always" } });
+    fireEvent.change(included, { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save the parts" }));
+    await waitFor(() => expect(save).toHaveBeenCalled());
+    expect(savedOffering(save).components[0]).toMatchObject({ mandatory: null });
+  });
+
   it("links a part to concepts, says why none fits another, and links what a part is realised as to its record", async () => {
     const save = vi.spyOn(api, "saveDraft").mockResolvedValue(RELEASE);
     open(`/architecture/offerings/${OFFERING.id}`);
@@ -214,9 +227,11 @@ describe("who an offering is for and what it promises, each with where it comes 
     const promise = screen.getByRole("group", { name: "Promise 1" });
     fireEvent.change(within(promise).getByLabelText(/^Name/), { target: { value: " Always on " } });
     fireEvent.change(within(promise).getByLabelText("What it means"), { target: { value: "A backup line keeps it up." } });
-    fireEvent.change(within(promise).getByLabelText("How sure its source is"), { target: { value: "inferred" } });
+    // How sure its source is is asked once there is a source to be sure of.
+    expect(within(promise).getByLabelText("How sure its source is")).toHaveAttribute("aria-disabled", "true");
     fireEvent.change(within(promise).getByLabelText("Source"), { target: { value: "SDD" } });
     fireEvent.change(within(promise).getByLabelText(/^Where in it/), { target: { value: " §3 " } });
+    fireEvent.change(within(promise).getByLabelText("How sure its source is"), { target: { value: "inferred" } });
     fireEvent.click(screen.getByRole("button", { name: "Save who it is for and what it promises" }));
     await waitFor(() => expect(save).toHaveBeenCalled());
     const saved = savedOffering(save);
@@ -232,7 +247,12 @@ describe("who an offering is for and what it promises, each with where it comes 
     expect(screen.queryByRole("button", { name: "Edit what it is" })).not.toBeInTheDocument();
     const audiences = screen.getByRole("group", { name: "Who it is for" });
     fireEvent.click(within(audiences).getByRole("button", { name: "Add an audience" }));
-    fireEvent.change(within(screen.getByRole("group", { name: "Audience 1" })).getByLabelText("How sure its source is"), { target: { value: "confirmed" } });
+    // Confirmed, then its source taken away: how sure it is stays to be cleared, and says what is missing.
+    const audience = within(screen.getByRole("group", { name: "Audience 1" }));
+    fireEvent.change(audience.getByLabelText("Source"), { target: { value: "*elsewhere" } });
+    fireEvent.change(audience.getByLabelText("The document, as cited"), { target: { value: "BRD" } });
+    fireEvent.change(audience.getByLabelText("How sure its source is"), { target: { value: "confirmed" } });
+    fireEvent.change(audience.getByLabelText("The document, as cited"), { target: { value: "" } });
     expect(screen.getByText("Confirmed, but its source is not named; name it, or say how sure it is.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Save who it is for and what it promises" }));
     const name = within(screen.getByRole("group", { name: "Audience 1" })).getByLabelText(/^Name/);

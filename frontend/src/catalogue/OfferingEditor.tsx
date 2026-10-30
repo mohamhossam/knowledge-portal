@@ -1,12 +1,12 @@
 import { useRef, useState } from "react";
 
-import type { CatalogueSystem, Channel, KnowledgeSource, Offering, Release, SourceConfidence } from "../api/client";
+import type { CatalogueSystem, Channel, KnowledgeSource, Offering, Release } from "../api/client";
 import { ActionGroup, Button, Status } from "../design/components";
 import { useFocusAfterRender } from "../design/hooks";
-import { CONFIDENCE_OPTIONS, COVERAGE, LAYERS } from "./catalogue";
+import { COVERAGE, LAYERS } from "./catalogue";
 import { ambiguousNameMatches, conceptDomain, nameMatches } from "./editing";
 import { AreaField, CheckField, Choices, LinesField, PickField, Rows, SelectField, SystemField, TextField } from "./forms";
-import { SourceField } from "./SourceField";
+import { SourceField, SurenessField } from "./SourceField";
 import { LifecycleEditor } from "./LifecycleEditor";
 import { TrackingEditor } from "./TrackingEditor";
 
@@ -36,6 +36,12 @@ function realisedLabel(item: Realised, index: number): string {
 
 const LAYER_OPTIONS = LAYERS.map(({ layer, short, long }) => ({ value: layer, label: short === long ? long : `${short}: ${long}` }));
 const COVERAGE_OPTIONS = (Object.keys(COVERAGE) as Nfr["coverage"][]).map((value) => ({ value, label: COVERAGE[value] }));
+/** Whether a part comes with every sale, as its source says; "Not said" leaves it open. */
+const INCLUDED = [
+  { value: "", label: "Not said" },
+  { value: "always", label: "Always included" },
+  { value: "optional", label: "Optional" },
+];
 
 
 /** Lines read as points: "name — description", one a line, the empty ones left out. */
@@ -100,12 +106,7 @@ function PointRows({ legend, one, items, onChange, path, errorAt, longNames }: {
               <SourceField value={point.source} previous={items[index - 1]} onCopy={change} onChange={(source) => change({ source })} />
             </div>
             <div className="cat-form__cell">
-              <SelectField
-                label="How sure its source is"
-                value={point.confidence ?? ""}
-                options={CONFIDENCE_OPTIONS}
-                onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
-              />
+              <SurenessField source={point.source} value={point.confidence} onChange={(confidence) => change({ confidence })} />
             </div>
             {/* Confirmed in a source no one names reads as nothing when the offering is read: said here, not refused. */}
             {point.confidence === "confirmed" && !point.source?.trim() && (
@@ -235,12 +236,7 @@ export function OfferingFacts({ value, onChange, offerings, release, errorAt }: 
         <TextField label="Family" value={value.family} onChange={(family) => set({ family: family || null })} />
         <TextField label="Version" value={value.version} onChange={(version) => set({ version: version || null })} />
         <TextField label="Lifecycle status" value={value.lifecycle} onChange={(lifecycle) => set({ lifecycle: lifecycle || null })} />
-        <SelectField
-          label="How sure its source is"
-          value={value.confidence ?? ""}
-          options={CONFIDENCE_OPTIONS}
-          onChange={(confidence) => set({ confidence: (confidence || null) as SourceConfidence | null })}
-        />
+        <SurenessField source={value.source || value.primary_source || value.sources?.[0]} value={value.confidence} onChange={(confidence) => set({ confidence })} />
         {(release?.portfolio ?? []).length > 0 && (
           <SelectField
             label="Portfolio"
@@ -513,7 +509,12 @@ export function OfferingParts({ value, onChange, systems, names, release, errorA
             <TextField label="Name" value={part.name} required error={errorAt?.(`components.${index}.name`)} onChange={(name) => update({ name })} />
             <TextField label="Code" value={part.code} onChange={(code) => update({ code: code || null })} />
             <TextField label="Kind" value={part.kind} onChange={(kind) => update({ kind: kind || null })} />
-            <CheckField label="Always included" checked={part.mandatory === true} onChange={(mandatory) => update({ mandatory })} />
+            <SelectField
+              label="Included"
+              value={part.mandatory === true ? "always" : part.mandatory === false ? "optional" : ""}
+              options={INCLUDED}
+              onChange={(included) => update({ mandatory: included === "always" ? true : included === "optional" ? false : null })}
+            />
             <CheckField
               label="Seen by the customer"
               checked={part.customer_visible === true}
@@ -612,12 +613,7 @@ export function OfferingParts({ value, onChange, systems, names, release, errorA
                   />
                   <TextField label="Name" value={item.name} required wide error={errorAt?.(`components.${index}.realisation.${line}.name`)} onChange={(name) => change({ name })} />
                   {hasRecords && <RecordField item={item} release={release} onChange={(record_id) => change({ record_id })} />}
-                  <SelectField
-                    label="How sure its source is"
-                    value={item.confidence ?? ""}
-                    options={CONFIDENCE_OPTIONS}
-                    onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
-                  />
+                  <SurenessField source={item.source} value={item.confidence} onChange={(confidence) => change({ confidence })} />
                 </>
               )}
             />
@@ -649,12 +645,7 @@ export function OfferingNfrs({ value, onChange, errorAt }: SectionProps) {
           />
           <AreaField label="What the sources say" value={item.statement} onChange={(statement) => change({ statement: statement || null })} />
           <SourceField value={item.source} previous={(value.nfrs ?? [])[index - 1]} onCopy={change} onChange={(source) => change({ source })} />
-          <SelectField
-            label="How sure its source is"
-            value={item.confidence ?? ""}
-            options={CONFIDENCE_OPTIONS}
-            onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
-          />
+          <SurenessField source={item.source} value={item.confidence} onChange={(confidence) => change({ confidence })} />
         </>
       )}
     />
@@ -705,12 +696,7 @@ export function QuestionFields({ item, orders, change }: {
     <>
       <TextField label="Id" value={item.id} dir="ltr" hint="The source’s own, such as F3; made for you when empty." onChange={(id) => change({ id })} />
       <SourceField value={item.source} onChange={(source) => change({ source })} />
-      <SelectField
-        label="How sure its source is"
-        value={item.confidence ?? ""}
-        options={CONFIDENCE_OPTIONS}
-        onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
-      />
+      <SurenessField source={item.source} value={item.confidence} onChange={(confidence) => change({ confidence })} />
       <TextField label="In a few words" value={item.title} wide hint="The question’s title, such as Is B2B Digital in scope?; optional." onChange={(title) => change({ title: title || null })} />
       <AreaField label="Question" value={item.text} required onChange={(text) => change({ text })} />
       <AreaField label="What the catalogue does meanwhile" value={item.impact} onChange={(impact) => change({ impact: impact || null })} />
@@ -761,12 +747,7 @@ export function OfferingDecisions({ value, onChange }: SectionProps) {
           <TextField label="Decision" value={item.title} required wide onChange={(title) => change({ title })} />
           <TextField label="Id" value={item.id} dir="ltr" hint="Such as AD-01; made for you when left empty." onChange={(id) => change({ id })} />
           <SourceField value={item.source} previous={(value.decisions ?? [])[index - 1]} onCopy={change} onChange={(source) => change({ source })} />
-          <SelectField
-            label="How sure its source is"
-            value={item.confidence ?? ""}
-            options={CONFIDENCE_OPTIONS}
-            onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
-          />
+          <SurenessField source={item.source} value={item.confidence} onChange={(confidence) => change({ confidence })} />
           <AreaField label="What was decided, and why" value={item.text} onChange={(text) => change({ text: text || null })} />
         </>
       )}
@@ -836,12 +817,7 @@ export function OfferingPlansFields({ value, onChange, errorAt }: SectionProps) 
         <>
           <TextField label="Plan" value={plan.name} required error={errorAt?.(`plans.${index}.name`)} onChange={(name) => update({ name })} />
           <SourceField value={plan.source} previous={(value.plans ?? [])[index - 1]} onCopy={update} onChange={(source) => update({ source })} />
-          <SelectField
-            label="How sure its source is"
-            value={plan.confidence ?? ""}
-            options={CONFIDENCE_OPTIONS}
-            onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
-          />
+          <SurenessField source={plan.source} value={plan.confidence} onChange={(confidence) => update({ confidence })} />
           <AreaField label="What it is" value={plan.description} onChange={(description) => update({ description: description || null })} />
           <Rows<Characteristic>
             legend="Characteristics"
@@ -903,12 +879,7 @@ export function OfferingBusinessRules({ value, onChange, errorAt }: SectionProps
             onChange={(id) => update({ id })}
           />
           <SourceField value={rule.source} previous={(value.business_rules ?? [])[index - 1]} onCopy={update} onChange={(source) => update({ source })} />
-          <SelectField
-            label="How sure its source is"
-            value={rule.confidence ?? ""}
-            options={CONFIDENCE_OPTIONS}
-            onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
-          />
+          <SurenessField source={rule.source} value={rule.confidence} onChange={(confidence) => update({ confidence })} />
         </>
       )}
     />
