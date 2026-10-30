@@ -212,7 +212,7 @@ describe("ExplorerPage", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(renewal.getByText("v8.2 carry-over (re-verify)")).toBeInTheDocument();
     expect(renewal.getByText("Carried over from another source: to re-verify before anyone relies on it.")).toBeInTheDocument();
-    expect(renewal.getByText(/inferred, not stated in the source/)).toBeInTheDocument();
+    expect(renewal.getByText("Inferred, not stated in its source")).toBeInTheDocument();
     expect(renewal.getByRole("listitem")).toHaveTextContent("Inherit tenure");
 
     fireEvent.click(section.getByRole("button", { name: "Open every note" }));

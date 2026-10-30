@@ -15,7 +15,7 @@ import { NfrSection, RealisationKey, RealisedAs } from "../catalogue/Realisation
 import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions } from "../catalogue/GovernanceSections";
 import { conflictsFor, questionOf, sourceRegister, SourcesContext } from "../catalogue/governance";
 import { LifecycleSection } from "../catalogue/LifecycleNotes";
-import { SOURCE_TONE, SOURCE_WORD } from "../catalogue/ontology";
+import { SourceStatus } from "../catalogue/SourceStatus";
 import { TrackingSection } from "../catalogue/Tracking";
 import {
   ActionGroup, Banner, Button, type Column, DataTable, EmptyState, Lines, PageHeader, Section, Select, Skeleton, Status,
@@ -301,7 +301,7 @@ function ScenarioSheet({ release, scenario, linkSystems, view, onView }: {
           {journey ? (
             <>
               Fulfilled by <bdi>{journey.name}</bdi>
-              {journey.confidence && <> · <Status tone={SOURCE_TONE[journey.confidence]}>{SOURCE_WORD[journey.confidence]}</Status></>}
+              {journey.confidence && <> · <SourceStatus confidence={journey.confidence} /></>}
             </>
           ) : (
             "No journey fulfils it yet"

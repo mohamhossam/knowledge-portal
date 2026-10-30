@@ -53,7 +53,7 @@ export function RealisedAs({ part, records }: { part: Part; records?: ReadonlyMa
                 {breakable(item.name)}
               </span>
               {(item.confidence === "inferred" || item.confidence === "gap") && (
-                <span className="offering-by"><ConfidenceMark confidence={item.confidence} /></span>
+                <>{" "}<span className="offering-by"><ConfidenceMark confidence={item.confidence} /></span></>
               )}
               <SpecificationRules record={item.record_id ? records?.get(item.record_id) : undefined} />
             </li>

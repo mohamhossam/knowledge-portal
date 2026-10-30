@@ -205,7 +205,7 @@ function AllOfferings({ release }: { release: Release }) {
     {
       id: "source",
       header: "Source",
-      cell: (offering) => (offering.confidence ? <SourceMark confidence={offering.confidence} /> : <span className="cat-quiet">Not stated</span>),
+      cell: (offering) => (offering.confidence ? <SourceMark confidence={offering.confidence} short /> : <span className="cat-quiet">Not stated</span>),
     },
   ];
   // The placeholder above already counts them and says what to do; this section only lays them side by side.
