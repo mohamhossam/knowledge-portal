@@ -8,7 +8,7 @@ import { routerPath } from "../auth/paths";
 import { blankSystem, channelUses, draftBody, systemUses } from "./drafting";
 import { CONFIDENCE_OPTIONS, usedHow } from "./catalogue";
 import {
-  blankConcept, conceptChanges, type ConceptField, conceptIssue, conceptsWith, conceptUsers, finishedConcept, finishedOffering, finishedSystem, interfacesChanges, interfacesOfSystem, interfacesProblem, interfacesWith, finishedJourney, journeyChanges, journeyIssue, journeyOrderProblem, savedSame,
+  blankConcept, conceptChanges, type ConceptField, conceptIssue, conceptsWith, conceptUsers, finishedConcept, finishedOffering, finishedSystem, interfacesChanges, interfacesOfSystem, interfacesProblem, interfacesWith, finishedJourney, journeyChanges, journeyIssue, journeyOrderProblem, savedSame, domainsChanges, domainsIssue, type EditedDomain, outlined,
   type Link, linksChanges, linksOf, linksProblem, offeringChanged, offeringIssue, offeringProblem, realisationProblem, relationshipsWith, slug, systemChanges,
   systemProblem,
 } from "./editing";
@@ -22,6 +22,8 @@ import { questionProblem } from "./governance";
 import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
 import { entityNames, INTERFACE_STYLE } from "./ontology";
 import { ConceptEditor } from "./ConceptEditor";
+import { DomainOutline } from "./DomainOutline";
+import { landscapeAsDrawn } from "./model/adapter";
 import { roleTerms } from "./model/vocabulary";
 import { SystemEditor } from "./SystemEditor";
 import { useCatalogueContext } from "./useCatalogue";
@@ -608,19 +610,28 @@ export function InterfacesEdit({ system, onDone }: { system: CatalogueSystem; on
   );
 }
 
-/** A domain as edited; a landscape domain keeps whether it is cross-cutting, which the panel doesn't change. */
-type Domain = { id: string; name: string; parent_id?: string | null; description?: string | null; cross_cutting?: boolean };
-
-/** One domain tree edited whole: the landscape, or the business areas. */
+/** One domain tree edited whole, as an outline: the landscape, or the business areas. */
 export function DomainsEdit({ tree, onDone }: { tree: "landscape" | "areas"; onDone: () => void }) {
   const { book } = useCatalogueContext();
   const release = book.release;
   const { saveDraft } = useEditing(release);
-  const original = (tree === "landscape" ? release.landscape_domains : release.capability_domains) ?? [];
-  const [items, setItems] = useState<Domain[]>(original);
+  const landscape = tree === "landscape";
+  // The landscape starts as the map draws it, so saving one domain's place keeps the others where
+  // they are; each row keeps its key through moves; and the list reads in the outline's order.
+  const [original] = useState<EditedDomain[]>(() =>
+    outlined((landscape ? landscapeAsDrawn(release.landscape_domains ?? []) : (release.capability_domains ?? [])).map((item) => ({ ...item, key: item.id }))),
+  );
+  const [items, setItems] = useState<EditedDomain[]>(original);
+  // A problem one field holds is said under it once Save has been tried; the verb points there.
+  const [attempted, setAttempted] = useState(false);
+  // The domain given a place last: of two claiming one place, the later is told.
+  const [latest, setLatest] = useState<string>();
   const finished = (() => {
     const taken = new Set(items.map((item) => item.id).filter(Boolean));
-    return items.map((item) => {
+    // The edit's own row keys stay behind; a new domain takes an id from its name.
+    return items.map((row) => {
+      const item = { ...row };
+      delete item.key;
       if (item.id) return item;
       let id = slug(item.name);
       for (let n = 2; taken.has(id); n += 1) id = `${slug(item.name)}-${n}`;
@@ -629,54 +640,55 @@ export function DomainsEdit({ tree, onDone }: { tree: "landscape" | "areas"; onD
     });
   })();
   const placed = new Set(
-    tree === "landscape"
+    landscape
       ? release.systems.map((system) => system.landscape_domain_id).filter(Boolean)
       : release.systems.flatMap((system) => system.capabilities.map((item) => item.domain_id)).filter(Boolean),
   );
   const gone = original.filter((item) => !items.some((kept) => kept.id === item.id) && placed.has(item.id));
-  const problem = items.some((item) => !item.name.trim())
-    ? "Every domain needs a name."
+  const issue = domainsIssue(items, original, latest);
+  const problem = issue
+    ? issue.at
+      ? `Correct ${issue.field} first.`
+      : issue.message
     : gone.length
-      ? `${gone.map((item) => item.name).join(", ")} still ${gone.length === 1 ? "holds" : "hold"} ${tree === "landscape" ? "systems" : "capabilities"}; move them first.`
+      ? `${gone.map((item) => item.name).join(", ")} still ${gone.length === 1 ? "holds" : "hold"} ${landscape ? "systems" : "capabilities"}; move them first.`
       : null;
-  const parents = (self: string) => [
-    { value: "", label: "At the top" },
-    ...finished.filter((item) => item.id !== self && item.name.trim()).map((item) => ({ value: item.id, label: item.name })),
-  ];
   return (
     <EditPanel
-      title={tree === "landscape" ? "Edit where systems sit" : "Edit the business areas"}
+      title={landscape ? "Edit where systems sit" : "Edit the business areas"}
       focusOnOpen
       action="Save the domains"
       busy={saveDraft.isPending}
       problem={problem}
+      changes={domainsChanges(original, items)}
+      onAttempt={() => setAttempted(true)}
       error={saveDraft.error}
       onCancel={onDone}
       onSubmit={() =>
-        saveDraft.mutate(draftBody(release, tree === "landscape" ? { landscape_domains: finished.map((item) => ({ ...item, cross_cutting: item.cross_cutting ?? false, accepted: [] })) } : { capability_domains: finished.map((item) => ({ ...item, accepted: [] })) }), {
-          onSuccess: onDone,
-        })
+        saveDraft.mutate(
+          draftBody(
+            release,
+            landscape
+              ? {
+                  landscape_domains: finished.map((item) => ({
+                    ...item,
+                    cross_cutting: item.cross_cutting ?? false,
+                    layout: item.parent_id ? null : (item.layout ?? null),
+                    accepted: [],
+                  })),
+                }
+              : { capability_domains: finished.map((item) => ({ ...item, accepted: [] })) },
+          ),
+          { onSuccess: onDone },
+        )
       }
     >
-      <Rows<Domain>
-        legend="Domains"
-        one="domain"
+      <DomainOutline
         items={items}
         onChange={setItems}
-        blank={() => ({ id: "", name: "", parent_id: null })}
-        itemLabel={(item, index) => `domain ${item.name || index + 1}`}
-        render={(item, update, index) => (
-          <>
-            <TextField label="Name" value={item.name} required onChange={(name) => update({ name })} />
-            <SelectField
-              label="Inside"
-              value={item.parent_id ?? ""}
-              options={parents(finished[index]?.id ?? "")}
-              onChange={(parent) => update({ parent_id: parent || null })}
-            />
-            <AreaField label="What it covers" value={item.description} onChange={(description) => update({ description: description || null })} />
-          </>
-        )}
+        onPlaced={setLatest}
+        landscape={landscape}
+        errorAt={(path) => (attempted && issue?.at === path ? issue.message : null)}
       />
     </EditPanel>
   );

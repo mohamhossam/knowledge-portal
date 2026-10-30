@@ -4,6 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import type { CatalogueSystem } from "../api/client";
 import { Button, type Column, DataTable, Section } from "../design/components";
+import { useFocusAfterRender } from "../design/hooks";
 import { type DomainRow, domainTree } from "./catalogue";
 import { CapabilityMapDiagram } from "./diagrams/CatalogueDiagrams";
 import { DomainsEdit } from "./DraftEdits";
@@ -39,8 +40,18 @@ export function DomainsPage() {
     else next.set("view", "table");
     setParams(next, { replace: true });
   };
+  const focusLater = useFocusAfterRender();
   const editButton = (tree: "landscape" | "areas", label: string) =>
-    editable && editing !== tree ? <Button onClick={() => setEditing(tree)}>{label}</Button> : undefined;
+    editable && editing !== tree ? (
+      <Button data-edits={tree} onClick={() => setEditing(tree)}>
+        {label}
+      </Button>
+    ) : undefined;
+  // Closing an edit hands focus back to the button that opened it, never to the page.
+  const closed = (tree: "landscape" | "areas") => () => {
+    setEditing(null);
+    focusLater(() => document.querySelector<HTMLElement>(`[data-edits="${tree}"]`));
+  };
   const landscape = useMemo(() => domainTree<Domain>(book.release.landscape_domains ?? []), [book]);
   const areas = useMemo(() => domainTree<Domain>(book.release.capability_domains ?? []), [book]);
   const unplaced = book.release.systems.filter(
@@ -115,7 +126,7 @@ export function DomainsPage() {
           {asTable ? "The landscape: each domain with the systems placed directly in it." : "The landscape by layer: pick a system to see what it is linked to."}
         </p>
         {editing === "landscape" ? (
-          <DomainsEdit tree="landscape" onDone={() => setEditing(null)} />
+          <DomainsEdit tree="landscape" onDone={closed("landscape")} />
         ) : !asTable ? (
           <LandscapePoster release={book.release} base={base} />
         ) : (
@@ -133,7 +144,7 @@ export function DomainsPage() {
       <Section title="What systems do, by business area" actions={editButton("areas", "Edit the business areas")}>
         <p className="cat-lead">Each business area with the capabilities filed under it, and the system that has each.</p>
         {editing === "areas" ? (
-          <DomainsEdit tree="areas" onDone={() => setEditing(null)} />
+          <DomainsEdit tree="areas" onDone={closed("areas")} />
         ) : (
           // Drawn as the capability map (the Map's second view, until the catalogue merge), its table one press away.
           <CapabilityMapDiagram
