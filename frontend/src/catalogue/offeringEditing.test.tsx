@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, type Release } from "../api/client";
 import { EXPLORED } from "../explorer/fixtures";
 import { catalogue } from "./catalogue";
+import { SourcesContext, sourceRegister } from "./governance";
 import { OfferingsPage } from "./OfferingsPage";
 import type { CatalogueContext } from "./useCatalogue";
 import { checkAxeAfterEach } from "../test/axe";
@@ -191,6 +192,7 @@ describe("who an offering is for and what it promises, each with where it comes 
     const save = vi.spyOn(api, "saveDraft").mockResolvedValue(sourced);
     const context: CatalogueContext = { book: catalogue(sourced), base: "/architecture", inService: false, editable: true, actorName: () => "Amina" };
     render(
+      <SourcesContext.Provider value={sourceRegister(sourced)}>
       <QueryClientProvider client={new QueryClient()}>
         <MemoryRouter initialEntries={[`/architecture/offerings/${OFFERING.id}?tab=audience`]}>
           <Routes>
@@ -199,7 +201,8 @@ describe("who an offering is for and what it promises, each with where it comes 
             </Route>
           </Routes>
         </MemoryRouter>
-      </QueryClientProvider>,
+      </QueryClientProvider>
+      </SourcesContext.Provider>,
     );
     // Read: each point says where it comes from; the tab has its own edit.
     expect(screen.getByText(/BPP SDD §2/)).toBeInTheDocument();
@@ -212,12 +215,13 @@ describe("who an offering is for and what it promises, each with where it comes 
     fireEvent.change(within(promise).getByLabelText(/^Name/), { target: { value: " Always on " } });
     fireEvent.change(within(promise).getByLabelText("What it means"), { target: { value: "A backup line keeps it up." } });
     fireEvent.change(within(promise).getByLabelText("How sure its source is"), { target: { value: "inferred" } });
-    fireEvent.change(within(promise).getByLabelText("Source"), { target: { value: " BPP SDD §3 " } });
+    fireEvent.change(within(promise).getByLabelText("Source"), { target: { value: "SDD" } });
+    fireEvent.change(within(promise).getByLabelText(/^Where in it/), { target: { value: " §3 " } });
     fireEvent.click(screen.getByRole("button", { name: "Save who it is for and what it promises" }));
     await waitFor(() => expect(save).toHaveBeenCalled());
     const saved = savedOffering(save);
     expect(saved.audiences).toEqual([{ name: "Small and medium businesses", description: null, confidence: "confirmed", source: "BPP SDD §2" }]);
-    expect(saved.values).toEqual([{ name: "Always on", description: "A backup line keeps it up.", confidence: "inferred", source: "BPP SDD §3" }]);
+    expect(saved.values).toEqual([{ name: "Always on", description: "A backup line keeps it up.", confidence: "inferred", source: "BPP SDD · §3" }]);
   });
 
   it("says an audience left without a name under its field once Save is tried, and a confirmed one with no source named", async () => {
@@ -227,7 +231,6 @@ describe("who an offering is for and what it promises, each with where it comes 
     // The long form of what it is no longer holds them.
     expect(screen.queryByRole("button", { name: "Edit what it is" })).not.toBeInTheDocument();
     const audiences = screen.getByRole("group", { name: "Who it is for" });
-    expect(audiences).toHaveAccessibleDescription("Its source is the document and where in it, such as SDD v2.3 · §4.1.");
     fireEvent.click(within(audiences).getByRole("button", { name: "Add an audience" }));
     fireEvent.change(within(screen.getByRole("group", { name: "Audience 1" })).getByLabelText("How sure its source is"), { target: { value: "confirmed" } });
     expect(screen.getByText("Confirmed, but its source is not named; name it, or say how sure it is.")).toBeInTheDocument();

@@ -2,6 +2,7 @@ import type { Release, SourceConfidence } from "../api/client";
 import { CONFIDENCE_OPTIONS } from "./catalogue";
 import { conceptAndNarrower, conceptDomain, type ConceptField, conceptUses, fitsUnder } from "./editing";
 import { AreaField, CheckField, LinesField, SelectField, TextField } from "./forms";
+import { SourceField } from "./SourceField";
 
 type Concept = NonNullable<Release["business_capabilities"]>[number];
 
@@ -115,13 +116,13 @@ export function ConceptEditor({ value, onChange, release, issue }: {
       <fieldset className="cat-form__rows">
         <legend className="cat-form__legend">Its source</legend>
         <div className="cat-form__grid">
+          <SourceField value={value.source} onChange={(source) => set({ source })} />
           <SelectField
             label="How sure its source is"
             value={value.confidence ?? ""}
             options={CONFIDENCE_OPTIONS}
             onChange={(confidence) => set({ confidence: (confidence || null) as SourceConfidence | null })}
           />
-          <TextField label="Source" value={value.source} hint="The document and where in it, such as SDD v2.3 · §4.1." onChange={(source) => set({ source: source || null })} />
         </div>
       </fieldset>
 
