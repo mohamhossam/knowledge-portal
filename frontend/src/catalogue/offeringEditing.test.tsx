@@ -182,6 +182,80 @@ describe("where an offering sits in the portfolio", () => {
   });
 });
 
+describe("who an offering is for and what it promises, each with where it comes from", () => {
+  it("edits each audience and promise with its source, keeping the source of one only renamed", async () => {
+    const sourced = {
+      ...RELEASE,
+      products: [{ ...OFFERING, audiences: [{ name: "Small businesses", confidence: "confirmed", source: "BPP SDD §2" }], values: [] }],
+    } as unknown as Release;
+    const save = vi.spyOn(api, "saveDraft").mockResolvedValue(sourced);
+    const context: CatalogueContext = { book: catalogue(sourced), base: "/architecture", inService: false, editable: true, actorName: () => "Amina" };
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={[`/architecture/offerings/${OFFERING.id}?tab=audience`]}>
+          <Routes>
+            <Route path="architecture" element={<Outlet context={context} />}>
+              <Route path="offerings/:offeringId" element={<OfferingsPage />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    // Read: each point says where it comes from; the tab has its own edit.
+    expect(screen.getByText(/BPP SDD §2/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Edit who it is for and what it promises" }));
+    const audience = screen.getByRole("group", { name: "Audience Small businesses" });
+    fireEvent.change(within(audience).getByLabelText(/^Name/), { target: { value: "Small and medium businesses" } });
+    const promises = screen.getByRole("group", { name: "What it promises" });
+    fireEvent.click(within(promises).getByRole("button", { name: "Add a promise" }));
+    const promise = screen.getByRole("group", { name: "Promise 1" });
+    fireEvent.change(within(promise).getByLabelText(/^Name/), { target: { value: " Always on " } });
+    fireEvent.change(within(promise).getByLabelText("What it means"), { target: { value: "A backup line keeps it up." } });
+    fireEvent.change(within(promise).getByLabelText("How sure its source is"), { target: { value: "inferred" } });
+    fireEvent.change(within(promise).getByLabelText("Source"), { target: { value: " BPP SDD §3 " } });
+    fireEvent.click(screen.getByRole("button", { name: "Save who it is for and what it promises" }));
+    await waitFor(() => expect(save).toHaveBeenCalled());
+    const saved = savedOffering(save);
+    expect(saved.audiences).toEqual([{ name: "Small and medium businesses", description: null, confidence: "confirmed", source: "BPP SDD §2" }]);
+    expect(saved.values).toEqual([{ name: "Always on", description: "A backup line keeps it up.", confidence: "inferred", source: "BPP SDD §3" }]);
+  });
+
+  it("says an audience left without a name under its field once Save is tried, and a confirmed one with no source named", async () => {
+    const save = vi.spyOn(api, "saveDraft").mockResolvedValue(RELEASE);
+    open(`/architecture/offerings/${OFFERING.id}?tab=audience`);
+    fireEvent.click(screen.getByRole("button", { name: "Edit who it is for and what it promises" }));
+    // The long form of what it is no longer holds them.
+    expect(screen.queryByRole("button", { name: "Edit what it is" })).not.toBeInTheDocument();
+    const audiences = screen.getByRole("group", { name: "Who it is for" });
+    expect(audiences).toHaveAccessibleDescription("Its source is the document and where in it, such as SDD v2.3 · §4.1.");
+    fireEvent.click(within(audiences).getByRole("button", { name: "Add an audience" }));
+    fireEvent.change(within(screen.getByRole("group", { name: "Audience 1" })).getByLabelText("How sure its source is"), { target: { value: "confirmed" } });
+    expect(screen.getByText("Confirmed, but its source is not named; name it, or say how sure it is.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Save who it is for and what it promises" }));
+    const name = within(screen.getByRole("group", { name: "Audience 1" })).getByLabelText(/^Name/);
+    expect(name).toHaveAttribute("aria-invalid", "true");
+    await waitFor(() => expect(name).toHaveFocus());
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it("pastes several promises at once, one a line, with what each means after a dash", async () => {
+    const save = vi.spyOn(api, "saveDraft").mockResolvedValue(RELEASE);
+    open(`/architecture/offerings/${OFFERING.id}?tab=audience`);
+    fireEvent.click(screen.getByRole("button", { name: "Edit who it is for and what it promises" }));
+    fireEvent.click(screen.getByRole("button", { name: "Paste several promises" }));
+    fireEvent.change(screen.getByLabelText(/Paste several promises/), { target: { value: "Always on — A backup line keeps it up.\n\nFast install\n" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add these 2 promises" }));
+    expect(screen.getByText("2 promises added.")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Paste several promises" })).toHaveFocus());
+    fireEvent.click(screen.getByRole("button", { name: "Save who it is for and what it promises" }));
+    await waitFor(() => expect(save).toHaveBeenCalled());
+    expect(savedOffering(save).values).toEqual([
+      { name: "Always on", description: "A backup line keeps it up.", source: null },
+      { name: "Fast install", description: null, source: null },
+    ]);
+  });
+});
+
 describe("problems said where they are, and linking several parts at once", () => {
   it("says a problem under its field once Save is tried, and takes focus there", async () => {
     open(`/architecture/offerings/${OFFERING.id}?tab=rules`);

@@ -152,6 +152,15 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   The service's rules are said at the field once Save has been tried, and a new term or
   vocabulary asks before what was filled in is thrown away. A concept's edit, like a term's, now
   takes focus when it opens, and adding one is headed at the record's level. No upgrade step.
+- Who an offering is for and what it promises have an edit of their own on the offering's "Who it is
+  for" tab, out of the long "what it is" form. Each is a row with its name, what it means,
+  its source and how sure that source is, so where each comes from is kept and can be changed by
+  hand; before, the form wrote them as lines of "name — description" and left their sources as
+  they were. Several are pasted at once, one a line with " — " before what it means; a confirmed
+  one whose source is not named is said at its field; and one left without a name is said under
+  its field once Save has been tried. The tab says each one's source. Rows named on their own rule
+  across the catalogue's edits now sit quieter under their group's legend, and a hint a group
+  shares is said once for it. No upgrade step.
 - "Edit where systems sit" (and "Edit the business areas") edits the tree as an outline: the top
   domains in their order, each one's sub-domains indented under it in theirs. A domain moves past
   its neighbour with everything inside it, a sub-domain put at the top lands after its old

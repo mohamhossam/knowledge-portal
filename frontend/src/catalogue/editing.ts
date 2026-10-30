@@ -13,11 +13,21 @@ export function slug(name: string): string {
 }
 
 /** What the service is sent: trimmed lists, and an id for every new part and note. */
+/** An audience or a promise as the service is sent it: trimmed, and nothing said where a field was left empty. */
+const finishedPoint = (point: Offering["values"][number]) => ({
+  ...point,
+  name: point.name.trim(),
+  description: point.description?.trim() || null,
+  source: point.source?.trim() || null,
+});
+
 export function finishedOffering(value: Offering): Offering {
   const noteIds = new Set((value.lifecycle_notes ?? []).map((note) => note.id).filter(Boolean));
   return {
     ...value,
     rules: lines(value.rules),
+    audiences: value.audiences.map(finishedPoint),
+    values: value.values.map(finishedPoint),
     boundaries: lines(value.boundaries ?? []),
     not_used: lines(value.not_used ?? []),
     questions: numbered(value.questions ?? [], "OQ"),
@@ -86,6 +96,12 @@ export function offeringIssue(value: Offering): OfferingIssue | null {
   const at = (path: string, field: string, message: string): OfferingIssue => ({ message, at: path, field });
   const say = (message: string): OfferingIssue => ({ message });
   if (!value.name.trim()) return at("name", "the offering's name", "Give the offering a name.");
+  for (const [index, point] of value.audiences.entries()) {
+    if (!point.name.trim()) return at(`audiences.${index}.name`, "an audience's name", "Every audience needs a name.");
+  }
+  for (const [index, point] of value.values.entries()) {
+    if (!point.name.trim()) return at(`values.${index}.name`, "a promise's name", "Every promise needs a name.");
+  }
   const codes: string[] = [];
   for (const [index, type] of value.order_types.entries()) {
     if (!type.name.trim()) return at(`order_types.${index}.name`, "an order type's name", "Every order type needs a name.");
