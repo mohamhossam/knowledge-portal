@@ -6,6 +6,8 @@
  */
 import "./offering-views.css";
 
+import type { ReactNode } from "react";
+
 import type { Offering } from "../../api/client";
 import { type Column, DataTable, Section } from "../../design/components";
 import { SourceMark } from "../GovernanceSections";
@@ -27,7 +29,7 @@ function priced(plans: Plan[]): boolean {
   return plans.some((plan) => plan.characteristics.some((item) => /price|fee|aed/i.test(item.name)));
 }
 
-export function OfferingPlans({ offering }: { offering: Offering }) {
+export function OfferingPlans({ offering, action }: { offering: Offering; action?: ReactNode }) {
   // A version saved before offerings held plans has none.
   const plans = offering.plans ?? [];
   // A plan named after its offering reads by what sets it apart ("Business Pro Plus 500" → "500").
@@ -48,7 +50,7 @@ export function OfferingPlans({ offering }: { offering: Offering }) {
   ];
 
   return (
-    <Section title="Plans compared" count={plans.length} headingLevel={3}>
+    <Section title="Plans compared" count={plans.length} actions={action} headingLevel={3}>
       {plans.length === 0 ? (
         <p className="cat-quiet">No plan is recorded for this offering.</p>
       ) : (

@@ -172,6 +172,18 @@
 }
 
 /* Chosen items (a journey's systems), each with its own remove. */
+/* A select and its Add, side by side: choosing adds nothing until Add is pressed. */
+.cat-form__pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.cat-form__pick > .cat-form__cell {
+  flex: 1 1 16rem;
+}
+
 .cat-form__chosen {
   display: flex;
   flex-wrap: wrap;

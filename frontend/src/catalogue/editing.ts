@@ -22,7 +22,27 @@ export function finishedOffering(value: Offering): Offering {
     not_used: lines(value.not_used ?? []),
     questions: numbered(value.questions ?? [], "OQ"),
     decisions: numbered(value.decisions ?? [], "AD"),
-    components: value.components.map((part) => ({ ...part, id: part.id || slug(part.name) })),
+    components: value.components.map((part) => ({
+      ...part,
+      id: part.id || slug(part.name),
+      // Linked to concepts, or saying why none fits: never both (concepts.check_link).
+      capability_ids: part.unlinked_reason != null ? [] : part.capability_ids ?? [],
+      unlinked_reason: part.unlinked_reason?.trim() ?? null,
+    })),
+    plans: (value.plans ?? []).map((plan) => ({
+      ...plan,
+      name: plan.name.trim(),
+      description: plan.description?.trim() || null,
+      source: plan.source?.trim() || null,
+      // A row left empty goes; the service reads the amount and unit from the value.
+      characteristics: plan.characteristics
+        .map((item) => ({ ...item, name: item.name.trim(), value: item.value.trim() }))
+        .filter((item) => item.name || item.value),
+    })),
+    business_rules: numbered(
+      (value.business_rules ?? []).map((rule) => ({ ...rule, statement: rule.statement.trim(), kind: rule.kind?.trim() || null, source: rule.source?.trim() || null })),
+      "BR",
+    ),
     lifecycle_notes: (value.lifecycle_notes ?? []).map((note) => ({
       ...note,
       id: note.id || freeId(note.title, noteIds),
@@ -101,6 +121,21 @@ export function offeringProblem(value: Offering): string | null {
       }
     }
   }
+  for (const part of value.components) {
+    if (part.unlinked_reason != null && !part.unlinked_reason.trim()) return `${part.name || "A part"}: say why no concept fits.`;
+  }
+  const plans = value.plans ?? [];
+  if (plans.some((plan) => !plan.name.trim())) return "Every plan needs a name.";
+  if (new Set(plans.map((plan) => fold(plan.name))).size !== plans.length) return "Each plan needs its own name.";
+  for (const plan of plans) {
+    const stated = plan.characteristics.filter((item) => item.name.trim() || item.value.trim());
+    if (stated.some((item) => !item.name.trim() || !item.value.trim())) return `${plan.name.trim()}: every characteristic needs its name and its value.`;
+    if (new Set(stated.map((item) => fold(item.name))).size !== stated.length) return `${plan.name.trim()}: each characteristic is stated once.`;
+  }
+  const rules = value.business_rules ?? [];
+  if (rules.some((rule) => !rule.statement.trim())) return "Every business rule needs what it says.";
+  const ruleIds = rules.map((rule) => fold(rule.id)).filter(Boolean);
+  if (new Set(ruleIds).size !== ruleIds.length) return "Each business rule needs its own id.";
   if ((value.questions ?? []).some((item) => !item.text.trim())) return "Every open question needs its question.";
   if ((value.decisions ?? []).some((item) => !item.title.trim())) return "Every architecture decision needs what was decided.";
   for (const [items, what] of [[value.questions ?? [], "question"], [value.decisions ?? [], "decision"]] as const) {
@@ -134,6 +169,39 @@ function orderTypeNamedElsewhere(value: Offering): { where: string; code: string
 }
 
 /** A journey of this offering whose order type the offering no longer has: it must change first. */
+/** A value as edits compare it: keys in order, and nothing said (null or missing) the same as nothing. */
+function settled(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(settled);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([, item]) => item !== null && item !== undefined)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, item]) => [key, settled(item)]),
+    );
+  }
+  return value;
+}
+
+/** Whether an edit would save an offering any differently: what its panel asks about before throwing the edit away. */
+export function offeringChanged(before: Offering, after: Offering): boolean {
+  return JSON.stringify(settled(finishedOffering(before))) !== JSON.stringify(settled(finishedOffering(after)));
+}
+
+/** A thing a part is realised as, linked to a record of another layer: it must be relinked or let go before saving. */
+export function realisationProblem(value: Offering, release: Release): string | null {
+  const records = new Map((release.realisations ?? []).map((record) => [record.id, record]));
+  for (const part of value.components) {
+    for (const item of part.realisation ?? []) {
+      const record = item.record_id ? records.get(item.record_id) : undefined;
+      if (record && record.layer !== item.layer) {
+        return `${part.name || "A part"}: ${record.name} is a record of another layer; choose one of this layer, or none.`;
+      }
+    }
+  }
+  return null;
+}
+
 export function journeyOrderProblem(value: Offering, journeys: Journey[]): string | null {
   const known = new Set(value.order_types.map((type) => fold(type.code)));
   const journey = journeys.find((item) => item.product_id === value.id && item.order_type_code && !known.has(fold(item.order_type_code)));

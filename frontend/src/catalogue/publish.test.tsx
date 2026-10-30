@@ -265,11 +265,14 @@ describe("hand edits on a system's sheet", () => {
     const orders = within(panel).getByRole("group", { name: "Interface Orders API" });
     fireEvent.change(within(orders).getByLabelText("Style"), { target: { value: "event" } });
     fireEvent.change(within(orders).getByLabelText("Used by"), { target: { value: "bscs" } });
+    // Choosing adds nothing until Add is pressed: arrowing a closed select picks each option it passes.
+    fireEvent.click(within(orders).getByRole("button", { name: "Add to used by" }));
     fireEvent.click(within(panel).getByRole("button", { name: "Add another interface it exposes" }));
     const added = within(panel).getByRole("group", { name: "Interface 2" });
     fireEvent.change(within(added).getByLabelText(/^Interface/), { target: { value: " Status feed " } });
     const uses = within(panel).getByLabelText("Interfaces of other systems it calls");
     fireEvent.change(uses, { target: { value: "bscs-billing" } });
+    fireEvent.click(within(panel).getByRole("button", { name: "Add to interfaces of other systems it calls" }));
     fireEvent.click(within(panel).getByRole("button", { name: "Remove Customer API (CRM) from interfaces of other systems it calls" }));
     expect(within(panel).getByText("Changed: what it exposes and what it uses.")).toBeInTheDocument();
     fireEvent.click(within(panel).getByRole("button", { name: "Save the interfaces" }));
