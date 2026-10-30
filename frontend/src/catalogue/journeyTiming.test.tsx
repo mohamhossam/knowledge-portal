@@ -8,6 +8,9 @@ import { checkAxeAfterEach } from "../test/axe";
 
 checkAxeAfterEach();
 
+/** Hand-overs are closed to their titles; the one here is opened from its own. */
+const openHandover = () => fireEvent.click(screen.getByRole("button", { name: /^Hand-over 1:/ }));
+
 const SAMPLE = release as unknown as Release;
 const FULL = SAMPLE.journeys!.find((item) => item.integrations.length > 0)!;
 // Two steps and one hand-over: the editor's other rows have nothing to draw.
@@ -23,6 +26,7 @@ describe("a hand-over's timing", () => {
     const onChange = vi.fn<(value: Journey) => void>();
     const journey = { ...JOURNEY, integrations: [{ ...JOURNEY.integrations[0]!, timing: null }] };
     render(<JourneyEditor value={journey} onChange={onChange} systems={SAMPLE.systems} offerings={[]} />);
+    openHandover();
 
     const timing = screen.getByLabelText("Timing");
     expect([...(timing as HTMLSelectElement).options].map((option) => option.value)).toEqual(["", "Sync", "Async"]);
@@ -49,6 +53,7 @@ describe("a hand-over's interface record (review recommendation 8)", () => {
       integrations: [{ ...JOURNEY.integrations[0]!, from_system_id: from!.performing_system_id, to_system_id: exposer, via_system_id: null, interface_id: null }],
     };
     render(<JourneyEditor value={journey} onChange={onChange} systems={SAMPLE.systems} offerings={[]} interfaces={interfaces} />);
+    openHandover();
 
     const record = screen.getByLabelText("Goes through the interface record");
     expect([...(record as HTMLSelectElement).options].map((option) => option.value)).toEqual(["", "if-own"]);

@@ -15,6 +15,7 @@ import { AcceptedFrom } from "./AcceptedFrom";
 import { roleLabel, systemName } from "./catalogue";
 import { OfferingStructureDiagram } from "./diagrams/CatalogueDiagrams";
 import { OfferingEdit, OfferingSectionEdit, WholeRemove, WholeRename } from "./DraftEdits";
+import { PortfolioRegister, RecordsRegister } from "./OfferingRegisters";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useFindParam } from "./frame/useFindParam";
 import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions, SourceMark } from "./GovernanceSections";
@@ -70,11 +71,18 @@ export function OfferingsPage() {
   ) : offerings.length ? (
     <RecordPlaceholder title={`${count(offerings.length, "offering")}. Choose one to read what it is made of and who delivers it.`}>
       <AllOfferings release={book.release} />
+      <PortfolioRegister />
+      <RecordsRegister />
     </RecordPlaceholder>
   ) : (
-    <EmptyState title="This version describes no product offering.">
-      <p>Offerings arrive from a solution design read into a draft{editable ? ", or add one by hand" : ""}.</p>
-    </EmptyState>
+    <>
+      <EmptyState title="This version describes no product offering.">
+        <p>Offerings arrive from a solution design read into a draft{editable ? ", or add one by hand" : ""}.</p>
+      </EmptyState>
+      {/* The registers offerings draw on can be set up before the first offering. */}
+      <PortfolioRegister />
+      <RecordsRegister />
+    </>
   );
 
   return (
@@ -393,11 +401,13 @@ function OfferingRecord({ offering }: { offering: Offering }) {
           </div>
         )}
         {tab === "components" && edited("parts", <Components offering={offering} action={offer("parts")} orderName={orderName} />)}
-        {tab === "plans" && <OfferingPlans offering={offering} />}
+        {tab === "plans" && edited("plans", <OfferingPlans offering={offering} action={offer("plans")} />)}
         {tab === "footprint" && <OfferingFootprint release={book.release} offeringId={offering.id} base={base} />}
         {tab === "rules" && (
           <OfferingRules
             offering={offering}
+            action={offer("business")}
+            editing={editing === "business" ? panel("business") : undefined}
             freeText={edited("rules", (
               <Section title="Other rules" count={offering.rules.length} actions={offer("rules")} headingLevel={3}>
                 {offering.rules.length ? (

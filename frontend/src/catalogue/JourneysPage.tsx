@@ -278,7 +278,8 @@ function JourneyRecord({ journey }: { journey: Journey }) {
           <Suspense fallback={null}>
             <JourneyExport release={book.release} journeyId={journey.id} />
           </Suspense>
-          {editable && (
+          {/* One edit at a time: while one is open its own Cancel closes it, so switching never drops changes unasked. */}
+          {editable && editing === null && (
             <>
             <Button id={buttonId("edit")} aria-expanded={editing === "edit"} onClick={() => toggle("edit")}>Edit this journey</Button>
             <Button id={buttonId("remove")} variant="tertiary" aria-expanded={editing === "remove"} onClick={() => toggle("remove")}>Remove this journey…</Button>

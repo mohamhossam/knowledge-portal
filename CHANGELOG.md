@@ -139,6 +139,57 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- A journey's edit covers everything its views show. Each step says who performs it as one
+  choice (a system, the channel's entry system, a team or party, or not said, never two), its role
+  from the vocabulary's roles, its eTOM place, what it does and produces, its point of no return,
+  its track and its source. Each hand-over names its calling, called and through systems, what it
+  is for, its style, its TM Forum equivalent and its source, and the journey its own source. Like
+  the other edits, it asks before a change is thrown away, says each problem under its field once
+  Save has been tried, and the record's buttons give way while it is open. Supporting systems are
+  added with an explicit Add, and a suggested journey is sent trimmed, with nothing said where a
+  choice was left empty. Steps and hand-overs open from their titles, each closed to a line of
+  what it holds, so the one to correct is found at once; a row with a problem opens when Save is
+  tried. Switching who performs a step and back keeps the system or team written, and one chosen
+  but left empty is said rather than saved as not said. What has changed, and each problem, names
+  the step or hand-over. A hand-over reads by its steps' names, and an empty calling or called
+  system says whose performer stands in. No upgrade step.
+- The portfolio and the realisation records are read and edited on the Offerings page, beside
+  the list of offerings. "Edit the portfolio" holds each node's name, level, where it sits, what
+  it covers and whether it is retired; "Edit the realisation records" each record's layer, name,
+  other names, the systems that deliver it, the records one layer down that realise it, its
+  specification rules, what it is and its source. The service's rules are checked before saving:
+  names once among siblings and once per layer, no node inside itself, a record realised only by
+  layers below it, and nothing taken away, or a record moved to another layer, while an offering,
+  a part or another record still names it. A node or record still named cannot be removed: its
+  Remove says what names it (and, for a node, to retire it instead). Switching a record to a
+  resource says what saving lets go of, and a node counts the offerings in the nodes inside it.
+- An offering's forms and the two registers say each problem under the field it is at (a part's
+  name, an order type's code, a characteristic, what a business rule says, a quality, a record's
+  layer, and more) once Save has been tried, not before anything is done; the verb points there
+  and pressing it takes focus to the field. The concept form does the same. "Edit the parts" can
+  link several parts at once: one concept to the parts ticked, and what parts are realised as to
+  the one record of their layer that goes by the same name, each pair listed and ticked before it
+  is linked (a name two records share is left to choose on the part). Each link says what it did,
+  and focus stays there. No upgrade step.
+- More of an offering's sheet is edited where it is read. Each part is linked to the concepts it
+  means, or says why no concept fits (requirement work maps to a part through its concepts), and
+  each thing a part is realised as is linked to the realisation record it means, in its own layer,
+  with how sure its source is. The Plans tab has "Edit the plans" (each plan's name, what it is,
+  its characteristics with their values, and its source) and the Rules tab "Edit the business
+  rules" (each rule's id, numbered when left empty, what it governs, what it says and its source).
+  "Edit what it is" places the offering in the portfolio, each node named by its path. The
+  service's rules are checked before saving: a link to concepts or a reason, never both; plan
+  names and business rule ids each once; every characteristic with its name and value, once per
+  plan; a realisation linked only to a record of its own layer. Part rows carry their names, and
+  the free-text rules' edit reads "Edit the other rules". No upgrade step.
+- An offering's section edits ask before Cancel, Escape, a link elsewhere or closing the tab
+  throws a change away, as the system and concept edits do. Ticking "No concept fits it" keeps
+  the part's concepts until it is saved (unticking brings them back) and says saving lets them go;
+  a realisation's record stays through a layer change and is said to be of another layer until it
+  is relinked or let go; a layer with no records says so.
+- Choosing in a pick-several field (a part's concepts, an interface's users and what it carries,
+  the interfaces a system uses) adds nothing until "Add" is pressed: arrowing through a closed
+  select picked every option it passed.
 - Concepts are edited, added and removed on their own screen; before, they came only from
   accepted suggestions and catalogue files. "Edit this concept" holds its preferred and other
   labels, what it means, its broader concept or capability domain, its outside and near matches,

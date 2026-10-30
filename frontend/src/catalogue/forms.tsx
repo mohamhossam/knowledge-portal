@@ -6,7 +6,7 @@
 import "./frame/forms.css";
 
 import { Plus, X } from "lucide-react";
-import { type ReactNode, useRef } from "react";
+import { type ReactNode, useRef, useState } from "react";
 
 import type { CatalogueSystem } from "../api/client";
 import { Button, Checkbox, Field } from "../design/components";
@@ -144,30 +144,38 @@ export function Choices({ legend, hint, children }: { legend: ReactNode; hint?: 
  * A system chosen from the draft. A name the document used that the draft does
  * not have yet stays choosable, said as written.
  */
-export function SystemField({ label, value, onChange, systems, writtenAs, allowNone }: {
+export function SystemField({ label, value, onChange, systems, writtenAs, allowNone, noneLabel = "No system named", error, hint }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   systems: CatalogueSystem[];
   writtenAs?: string;
   allowNone?: boolean;
+  /** What naming none means here, such as the step's own performer standing in. */
+  noneLabel?: string;
+  error?: string | null;
+  hint?: string;
 }) {
   const known = systems.some((system) => system.id === value);
   const options = [
-    ...(allowNone ? [{ value: "", label: "No system named" }] : []),
+    ...(allowNone ? [{ value: "", label: noneLabel }] : []),
     ...(!known && value ? [{ value, label: `${writtenAs ?? value} (not in the draft yet)` }] : []),
     ...[...systems].sort((a, b) => a.name.localeCompare(b.name)).map((system) => ({ value: system.id, label: system.name })),
   ];
-  return <SelectField label={label} value={value} onChange={onChange} options={options} />;
+  return <SelectField label={label} value={value} onChange={onChange} options={options} error={error} hint={hint} />;
 }
 
 /**
- * Several chosen from a list: the chosen ones as words, each with its own remove, and one select
- * to add another. One chosen that the list no longer has stays shown, as written.
+ * Several chosen from a list: the chosen ones as words, each with its own remove, and a select
+ * with an Add beside it. Choosing in the select adds nothing until Add is pressed, since arrowing
+ * through a closed select picks each option it passes. One chosen that the list no longer has
+ * stays shown, as written.
  */
-export function PickField({ label, hint, chosen, options, onChange }: {
+export function PickField({ label, hint, chosen, options, onChange, error }: {
   label: string;
   hint?: string;
+  /** What is wrong with the choices, said under the select and tied to it. */
+  error?: string | null;
   chosen: string[];
   /** Options with a group are set under it, in the order given. */
   options: { value: string; label: string; group?: string }[];
@@ -175,17 +183,31 @@ export function PickField({ label, hint, chosen, options, onChange }: {
 }) {
   const name = (value: string) => options.find((option) => option.value === value)?.label ?? value;
   const left = options.filter((option) => !chosen.includes(option.value));
+  const [next, setNext] = useState("");
   const cell = useRef<HTMLDivElement>(null);
   const focusLater = useFocusAfterRender();
+  const add = () => {
+    if (!next) return;
+    onChange([...chosen, next]);
+    setNext("");
+    // Add is unavailable again once its choice is in: focus goes back to the select for the next one.
+    focusLater(() => cell.current?.querySelector("select"));
+  };
   return (
     <div ref={cell} className="cat-form__cell cat-form__wide">
-      <SelectField
-        label={label}
-        hint={hint}
-        value=""
-        options={[{ value: "", label: chosen.length ? "Add another…" : "Add one…" }, ...left]}
-        onChange={(value) => value && onChange([...chosen, value])}
-      />
+      <div className="cat-form__pick">
+        <SelectField
+          label={label}
+          hint={hint}
+          value={left.some((option) => option.value === next) ? next : ""}
+          options={[{ value: "", label: left.length ? "Choose one to add…" : "All are chosen already" }, ...left]}
+          error={error}
+          onChange={setNext}
+        />
+        <Button aria-label={`Add to ${label.toLocaleLowerCase()}`} icon={<Plus size={14} />} disabled={!next || left.length === 0} onClick={add}>
+          Add
+        </Button>
+      </div>
       {chosen.length > 0 && (
         <ul className="cat-form__chosen" aria-label={`${label}: chosen`}>
           {chosen.map((value) => (
@@ -214,7 +236,7 @@ export function PickField({ label, hint, chosen, options, onChange }: {
 const sentence = (text: string) => text.charAt(0).toLocaleUpperCase() + text.slice(1);
 
 /** Repeating rows: each a ruled fieldset with its own remove, and one add at the foot. */
-export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel, labelled }: {
+export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel, labelled, removeReason, collapsible, summary, forceOpen }: {
   legend: string;
   /** One of them, for the add button: "branch", "hand-over". */
   one: string;
@@ -225,41 +247,76 @@ export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel
   itemLabel: (item: T, index: number) => string;
   /** Show each row's name as its heading, for rows long enough to lose one's place in. */
   labelled?: boolean;
+  /** Why a row cannot be removed, such as something still naming it; its Remove then says so instead. */
+  removeReason?: (item: T, index: number) => string | null;
+  /**
+   * Each row closed to its title, a button that opens it, and a line saying what it holds: for a
+   * long list such as a journey's steps, whose closed rows read as its index. A new row opens.
+   */
+  collapsible?: boolean;
+  /** The line a closed row shows under its title. */
+  summary?: (item: T, index: number) => string;
+  /** A row that must be open, such as one with a problem in it once Save has been tried. */
+  forceOpen?: (item: T, index: number) => boolean;
 }) {
   const group = useRef<HTMLFieldSetElement>(null);
   const focusLater = useFocusAfterRender();
+  const [opened, setOpened] = useState<number[]>([]);
+  const isOpen = (item: T, index: number) => !collapsible || opened.includes(index) || Boolean(forceOpen?.(item, index));
   // Focus never falls to the page: a new row takes it, and a removed row hands it on.
   const rowAt = (index: number) => group.current?.querySelectorAll<HTMLElement>(":scope > .cat-form__row")[index];
-  const firstControl = (row: HTMLElement | undefined) => row?.querySelector<HTMLElement>("input, select, textarea, button");
+  const firstControl = (row: HTMLElement | undefined) =>
+    row?.querySelector<HTMLElement>(".cat-form__grid input, .cat-form__grid select, .cat-form__grid textarea") ??
+    row?.querySelector<HTMLElement>("input, select, textarea, button");
   const add = () => {
     onChange([...items, blank()]);
+    setOpened([...opened, items.length]);
     focusLater(() => firstControl(rowAt(items.length)));
   };
   const remove = (index: number) => {
     onChange(items.filter((_, at) => at !== index));
+    // The rows after it move up one, and stay as open as they were.
+    setOpened(opened.filter((at) => at !== index).map((at) => (at > index ? at - 1 : at)));
     focusLater(() =>
       firstControl(rowAt(Math.min(index, items.length - 2))) ?? group.current?.querySelector<HTMLElement>(":scope > .cat-form__remove button"),
     );
   };
+  const toggle = (index: number) => setOpened(opened.includes(index) ? opened.filter((at) => at !== index) : [...opened, index]);
   return (
     <fieldset ref={group} className="cat-form__rows">
       <legend className="cat-form__legend">{legend}</legend>
       {items.length === 0 && <p className="ds-field__hint">None yet.</p>}
-      {items.map((item, index) => (
+      {items.map((item, index) => {
+        const open = isOpen(item, index);
+        const title = sentence(itemLabel(item, index));
+        return (
         <fieldset key={index} className="cat-form__row">
-          <legend className={labelled ? "cat-form__row-title" : "ds-visually-hidden"}>
-            {labelled ? sentence(itemLabel(item, index)) : itemLabel(item, index)}
+          <legend className={labelled || collapsible ? "cat-form__row-title" : "ds-visually-hidden"}>
+            {collapsible ? (
+              <button type="button" className="cat-form__row-toggle" aria-expanded={open} onClick={() => toggle(index)}>
+                {title}
+              </button>
+            ) : labelled ? (
+              title
+            ) : (
+              itemLabel(item, index)
+            )}
           </legend>
-          <div className="cat-form__grid">
-            {render(item, (patch) => onChange(items.map((current, at) => (at === index ? { ...current, ...patch } : current))), index)}
-          </div>
+          {open ? (
+            <div className="cat-form__grid">
+              {render(item, (patch) => onChange(items.map((current, at) => (at === index ? { ...current, ...patch } : current))), index)}
+            </div>
+          ) : (
+            summary && <p className="ds-field__hint">{summary(item, index)}</p>
+          )}
           <div className="cat-form__remove">
-            <Button variant="tertiary" icon={<X size={14} />} onClick={() => remove(index)}>
+            <Button variant="tertiary" icon={<X size={14} />} unavailableReason={removeReason?.(item, index) ?? null} onClick={() => remove(index)}>
               Remove {itemLabel(item, index)}
             </Button>
           </div>
         </fieldset>
-      ))}
+        );
+      })}
       <div className="cat-form__remove">
         <Button variant="tertiary" icon={<Plus size={14} />} onClick={add}>
           Add {items.length ? "another" : /^[aeiou]/i.test(one) ? "an" : "a"} {one}

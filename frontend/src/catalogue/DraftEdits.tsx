@@ -8,8 +8,9 @@ import { routerPath } from "../auth/paths";
 import { blankSystem, channelUses, draftBody, systemUses } from "./drafting";
 import { CONFIDENCE_OPTIONS, usedHow } from "./catalogue";
 import {
-  blankConcept, conceptChanges, type ConceptField, conceptIssue, conceptsWith, conceptUsers, finishedConcept, finishedOffering, finishedSystem, interfacesChanges, interfacesOfSystem, interfacesProblem, interfacesWith, journeyOrderProblem, journeyProblem,
-  type Link, linksChanges, linksOf, linksProblem, offeringProblem, relationshipsWith, slug, systemChanges, systemProblem,
+  blankConcept, conceptChanges, type ConceptField, conceptIssue, conceptsWith, conceptUsers, finishedConcept, finishedOffering, finishedSystem, interfacesChanges, interfacesOfSystem, interfacesProblem, interfacesWith, finishedJourney, journeyChanges, journeyIssue, journeyOrderProblem, savedSame,
+  type Link, linksChanges, linksOf, linksProblem, offeringChanged, offeringIssue, offeringProblem, realisationProblem, relationshipsWith, slug, systemChanges,
+  systemProblem,
 } from "./editing";
 import { ActionGroup, Button, Status } from "../design/components";
 import { useFocusAfterRender } from "../design/hooks";
@@ -21,6 +22,7 @@ import { questionProblem } from "./governance";
 import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
 import { entityNames, INTERFACE_STYLE } from "./ontology";
 import { ConceptEditor } from "./ConceptEditor";
+import { roleTerms } from "./model/vocabulary";
 import { SystemEditor } from "./SystemEditor";
 import { useCatalogueContext } from "./useCatalogue";
 import { useEditing } from "./useEditing";
@@ -36,8 +38,13 @@ function listed(names: string[]): string {
  * scrolls. The verb stays focusable while it can't be sent, with the reason
  * beside it (§1.2); a failure is said in a line mounted from the start.
  */
-export function EditPanel({ title, children, action, actionIcon, busy, problem, error, onSubmit, onCancel, danger, conflictMessage, focusOnOpen, level = 3, changes }: {
+export function EditPanel({ title, children, action, actionIcon, busy, problem, error, onSubmit, onCancel, onAttempt, danger, conflictMessage, focusOnOpen, level = 3, changes }: {
   title: string;
+  /**
+   * Hears a press of the verb while it cannot be sent: a form that says its problems at their
+   * fields shows them from then on (not before anything is tried), and focus goes to the first.
+   */
+  onAttempt?: () => void;
   /** An icon before the verb, such as a bin on a removal. */
   actionIcon?: ReactNode;
   /**
@@ -119,6 +126,10 @@ export function EditPanel({ title, children, action, actionIcon, busy, problem, 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!problem && !busy) onSubmit();
+    else if (problem && onAttempt) {
+      onAttempt();
+      focusAfter(() => form.current?.querySelector<HTMLElement>('[aria-invalid="true"]'));
+    }
   };
   return (
     <form
@@ -271,6 +282,7 @@ export function ConceptEdit({ concept, retire, onDone }: { concept?: Concept; re
   const { saveDraft } = useEditing(release);
   const [original] = useState<Concept>(() => concept ?? blankConcept());
   const [value, setValue] = useState<Concept>(() => (retire ? { ...original, deprecated: true } : original));
+  const [attempted, setAttempted] = useState(false);
   const issue = conceptIssue(value, release);
   return (
     <EditPanel
@@ -281,6 +293,7 @@ export function ConceptEdit({ concept, retire, onDone }: { concept?: Concept; re
       // The field says what is wrong; the verb only points to it.
       problem={issue ? `Correct ${CONCEPT_FIELD[issue.field]} first.` : null}
       changes={conceptChanges(original, value, release)}
+      onAttempt={() => setAttempted(true)}
       error={saveDraft.error}
       onCancel={() => onDone()}
       onSubmit={() => {
@@ -293,7 +306,8 @@ export function ConceptEdit({ concept, retire, onDone }: { concept?: Concept; re
         });
       }}
     >
-      <ConceptEditor value={value} onChange={setValue} release={release} issue={issue} />
+      {/* Each problem is said at its field once Save has been tried, not before anything is done. */}
+      <ConceptEditor value={value} onChange={setValue} release={release} issue={attempted ? issue : null} />
     </EditPanel>
   );
 }
@@ -737,13 +751,13 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
   const { book } = useCatalogueContext();
   const release = book.release;
   const { saveDraft } = useEditing(release);
-  const [value, setValue] = useState<Offering>(
-    () => ({
-      id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [],
-      sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], accepted: [], former_ids: [],
-      deprecated: false,
-    }),
-  );
+  const [blank] = useState<Offering>(() => ({
+    id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [],
+    sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], accepted: [], former_ids: [],
+    deprecated: false,
+  }));
+  const [value, setValue] = useState<Offering>(blank);
+  const [attempted, setAttempted] = useState(false);
   const products = release.products ?? [];
   const clash = products.some((item) => item.name.trim().toLocaleLowerCase() === value.name.trim().toLocaleLowerCase());
   return (
@@ -753,6 +767,8 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
       action="Add the offering"
       busy={saveDraft.isPending}
       problem={offeringProblem(value) ?? (clash ? "Another offering has that name." : null)}
+      changes={offeringChanged(blank, value) ? ["the new offering"] : []}
+      onAttempt={() => setAttempted(true)}
       error={saveDraft.error}
       onCancel={() => onDone()}
       onSubmit={() => {
@@ -762,7 +778,15 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
     >
       <p className="cat-edit__lead">Say what it is; its order types, parts and the rest are added on its sheet, one section at a time.</p>
       <div className="cat-form">
-        <OfferingFacts value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} offerings={release.products ?? []} />
+        <OfferingFacts
+          value={value}
+          onChange={setValue}
+          systems={release.systems}
+          channels={release.channels ?? []}
+          offerings={release.products ?? []}
+          release={release}
+          errorAt={(path) => (attempted && offeringIssue(value)?.at === path ? offeringIssue(value)!.message : null)}
+        />
       </div>
     </EditPanel>
   );
@@ -780,6 +804,10 @@ export function OfferingSectionEdit({ offering, section, onDone }: { offering: O
   const products = release.products ?? [];
   const clash = products.some((item) => item.id !== offering.id && item.name.trim().toLocaleLowerCase() === value.name.trim().toLocaleLowerCase());
   const { edit, save, Fields } = OFFERING_SECTIONS[section];
+  // A problem one field holds is said under it once Save has been tried, and the verb only points there.
+  const [attempted, setAttempted] = useState(false);
+  const issue = offeringIssue(value);
+  const errorAt = (path: string) => (attempted && issue?.at === path ? issue.message : null);
   return (
     <EditPanel
       title={section === "facts" ? `Edit what ${offering.name} is` : `Edit ${edit} of ${offering.name}`}
@@ -787,11 +815,15 @@ export function OfferingSectionEdit({ offering, section, onDone }: { offering: O
       action={save}
       busy={saveDraft.isPending}
       problem={
-        offeringProblem(value) ??
+        (issue && (issue.at ? `Correct ${issue.field} first.` : issue.message)) ??
+        realisationProblem(value, release) ??
         journeyOrderProblem(value, release.journeys ?? []) ??
         questionProblem(value, release.conflicts ?? []) ??
         (clash ? "Another offering has that name." : null)
       }
+      // A section that would save the offering differently asks before Cancel, Escape or a link throw it away.
+      changes={offeringChanged(offering, value) ? [section === "facts" ? "what it is" : edit] : []}
+      onAttempt={() => setAttempted(true)}
       error={saveDraft.error}
       onCancel={onDone}
       onSubmit={() => {
@@ -802,7 +834,15 @@ export function OfferingSectionEdit({ offering, section, onDone }: { offering: O
     >
       <p className="cat-edit__lead">The other sections can be edited once this one is saved or cancelled.</p>
       <div className="cat-form">
-        <Fields value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} register={release.sources ?? []} />
+        <Fields
+          value={value}
+          onChange={setValue}
+          systems={release.systems}
+          channels={release.channels ?? []}
+          register={release.sources ?? []}
+          release={release}
+          errorAt={errorAt}
+        />
       </div>
     </EditPanel>
   );
@@ -813,20 +853,27 @@ export function JourneyEdit({ journey, onDone }: { journey?: Journey; onDone: (s
   const { book } = useCatalogueContext();
   const release = book.release;
   const { saveDraft } = useEditing(release);
-  const [value, setValue] = useState<Journey>(
+  const [original] = useState<Journey>(
     () => journey ?? { id: "", name: "", activities: [], flow_rules: [], integrations: [], edges: [], channel_edges: [], shared_edges: [], accepted: [], former_ids: [] },
   );
+  const [value, setValue] = useState<Journey>(original);
+  // A problem one field holds is said under it once Save has been tried; the verb points there.
+  const [attempted, setAttempted] = useState(false);
+  const issue = journeyIssue(value);
   const journeys = release.journeys ?? [];
   return (
     <EditPanel
       title={journey ? `Edit ${journey.name}` : "Add a journey"}
       action={journey ? "Save the journey" : "Add the journey"}
       busy={saveDraft.isPending}
-      problem={journeyProblem(value)}
+      problem={issue ? (issue.at ? `Correct ${issue.field} first.` : issue.message) : null}
+      changes={journey ? journeyChanges(original, value) : savedSame(finishedJourney(original), finishedJourney(value)) ? [] : ["the new journey"]}
+      onAttempt={() => setAttempted(true)}
+      focusOnOpen
       error={saveDraft.error}
       onCancel={() => onDone()}
       onSubmit={() => {
-        const finished = { ...value, id: value.id || slug(value.name), edges: [] };
+        const finished = finishedJourney(value);
         const next = journey ? journeys.map((item) => (item.id === journey.id ? finished : item)) : [...journeys, finished];
         saveDraft.mutate(draftBody(release, { journeys: next }), { onSuccess: () => onDone(finished.id) });
       }}
@@ -838,6 +885,8 @@ export function JourneyEdit({ journey, onDone }: { journey?: Journey; onDone: (s
         offerings={release.products ?? []}
         channels={release.channels ?? []}
         interfaces={release.interfaces ?? []}
+        roles={roleTerms(release)}
+        errorAt={(path) => (attempted && issue?.at === path ? issue.message : null)}
       />
     </EditPanel>
   );

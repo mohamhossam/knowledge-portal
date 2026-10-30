@@ -1,5 +1,5 @@
 /** What an edit sends, and why it cannot be sent yet: shared by the catalogue's editors. */
-import type { CatalogueSystem, Journey, Offering, Relationship, RelationshipKind, Release } from "../api/client";
+import type { CatalogueSystem, Journey, JourneyActivity, Offering, Relationship, RelationshipKind, Release } from "../api/client";
 
 /** A name or code as compared: no case, no surrounding space. */
 const fold = (text: string) => text.trim().toLocaleLowerCase();
@@ -22,7 +22,27 @@ export function finishedOffering(value: Offering): Offering {
     not_used: lines(value.not_used ?? []),
     questions: numbered(value.questions ?? [], "OQ"),
     decisions: numbered(value.decisions ?? [], "AD"),
-    components: value.components.map((part) => ({ ...part, id: part.id || slug(part.name) })),
+    components: value.components.map((part) => ({
+      ...part,
+      id: part.id || slug(part.name),
+      // Linked to concepts, or saying why none fits: never both (concepts.check_link).
+      capability_ids: part.unlinked_reason != null ? [] : part.capability_ids ?? [],
+      unlinked_reason: part.unlinked_reason?.trim() ?? null,
+    })),
+    plans: (value.plans ?? []).map((plan) => ({
+      ...plan,
+      name: plan.name.trim(),
+      description: plan.description?.trim() || null,
+      source: plan.source?.trim() || null,
+      // A row left empty goes; the service reads the amount and unit from the value.
+      characteristics: plan.characteristics
+        .map((item) => ({ ...item, name: item.name.trim(), value: item.value.trim() }))
+        .filter((item) => item.name || item.value),
+    })),
+    business_rules: numbered(
+      (value.business_rules ?? []).map((rule) => ({ ...rule, statement: rule.statement.trim(), kind: rule.kind?.trim() || null, source: rule.source?.trim() || null })),
+      "BR",
+    ),
     lifecycle_notes: (value.lifecycle_notes ?? []).map((note) => ({
       ...note,
       id: note.id || freeId(note.title, noteIds),
@@ -55,64 +75,113 @@ function numbered<T extends { id: string }>(items: T[], prefix: string): T[] {
 }
 
 /** Why the offering cannot be accepted yet, if anything. */
-export function offeringProblem(value: Offering): string | null {
-  if (!value.name.trim()) return "Give the offering a name.";
-  if (value.order_types.some((type) => !type.name.trim() || !type.code.trim())) return "Every order type needs a name and a code.";
-  const codes = value.order_types.map((type) => fold(type.code));
-  if (new Set(codes).size !== codes.length) return "Each order type needs its own code.";
-  const missing = orderTypeNamedElsewhere(value);
-  if (missing) return `${missing.where} still names the order type ‘${missing.code}’, which the offering no longer has; change it there first.`;
-  if (value.components.some((part) => !part.name.trim())) return "Every part needs a name.";
-  if (value.components.some((part) => part.responsibilities.some((item) => !item.role.trim() || !item.system_id))) {
-    return "Every responsibility needs a system and a role.";
+/**
+ * What stops an offering being saved, if anything: the message, and the field it is at as a path
+ * ("plans.0.characteristics.1.value") with the words for that field, so the form can say it there.
+ * A problem no single field holds (order tracking, lifecycle notes, sources) has no path.
+ */
+export type OfferingIssue = { message: string; at?: string; field?: string };
+
+export function offeringIssue(value: Offering): OfferingIssue | null {
+  const at = (path: string, field: string, message: string): OfferingIssue => ({ message, at: path, field });
+  const say = (message: string): OfferingIssue => ({ message });
+  if (!value.name.trim()) return at("name", "the offering's name", "Give the offering a name.");
+  const codes: string[] = [];
+  for (const [index, type] of value.order_types.entries()) {
+    if (!type.name.trim()) return at(`order_types.${index}.name`, "an order type's name", "Every order type needs a name.");
+    if (!type.code.trim()) return at(`order_types.${index}.code`, "an order type's code", "Every order type needs a code.");
+    if (codes.includes(fold(type.code))) return at(`order_types.${index}.code`, "an order type's code", "Each order type needs its own code.");
+    codes.push(fold(type.code));
   }
-  for (const part of value.components) {
-    const realised = part.realisation ?? [];
-    if (realised.some((item) => !item.name.trim())) return `${part.name}: everything it is realised as needs a name.`;
-    const keys = realised.map((item) => `${item.layer}:${item.name.trim().toLocaleLowerCase()}`);
-    if (new Set(keys).size !== keys.length) return `${part.name}: the same thing is named twice in one layer.`;
+  const missing = orderTypeNamedElsewhere(value);
+  if (missing) return say(`${missing.where} still names the order type ‘${missing.code}’, which the offering no longer has; change it there first.`);
+  for (const [index, part] of value.components.entries()) {
+    if (!part.name.trim()) return at(`components.${index}.name`, "a part's name", "Every part needs a name.");
+    for (const [line, item] of part.responsibilities.entries()) {
+      if (!item.system_id) return say(`${part.name}: every responsibility needs its system.`);
+      if (!item.role.trim()) return at(`components.${index}.responsibilities.${line}.role`, "a responsibility's role", `${part.name}: every responsibility needs a role.`);
+    }
+    const keys: string[] = [];
+    for (const [line, item] of (part.realisation ?? []).entries()) {
+      if (!item.name.trim()) return at(`components.${index}.realisation.${line}.name`, "what a part is realised as", `${part.name}: everything it is realised as needs a name.`);
+      const key = `${item.layer}:${item.name.trim().toLocaleLowerCase()}`;
+      if (keys.includes(key)) return at(`components.${index}.realisation.${line}.name`, "what a part is realised as", `${part.name}: the same thing is named twice in one layer.`);
+      keys.push(key);
+    }
   }
   const tracking = value.tracking;
   if (tracking) {
-    if (tracking.channels.some((item) => !item.channel_id)) return "Order tracking: choose the channel of each channel's tracking.";
+    if (tracking.channels.some((item) => !item.channel_id)) return say("Order tracking: choose the channel of each channel's tracking.");
     const channels = tracking.channels.map((item) => item.channel_id);
-    if (new Set(channels).size !== channels.length) return "Order tracking: each channel is described once.";
+    if (new Set(channels).size !== channels.length) return say("Order tracking: each channel is described once.");
     if (tracking.flows.some((item) => !item.label.trim() || !item.from_system_id || !item.to_system_id)) {
-      return "Order tracking: every flow needs its two systems and what it carries.";
+      return say("Order tracking: every flow needs its two systems and what it carries.");
     }
     for (const [items, what] of [[tracking.milestones, "milestone"], [tracking.statuses, "status"]] as const) {
       const labels = items.map((item) => item.label.trim().toLocaleLowerCase());
-      if (labels.some((label) => !label)) return `Order tracking: every ${what} needs a name.`;
-      if (new Set(labels).size !== labels.length) return `Order tracking: each ${what} is named once.`;
+      if (labels.some((label) => !label)) return say(`Order tracking: every ${what} needs a name.`);
+      if (new Set(labels).size !== labels.length) return say(`Order tracking: each ${what} is named once.`);
     }
-    if (tracking.fallout.some((item) => !item.trigger.trim())) return "Order tracking: every fallout case needs what makes it fall out.";
+    if (tracking.fallout.some((item) => !item.trigger.trim())) return say("Order tracking: every fallout case needs what makes it fall out.");
   }
   for (const note of value.lifecycle_notes ?? []) {
     const name = note.title.trim();
-    if (!name) return "Every lifecycle note needs a title.";
-    if (!note.summary?.trim() && !note.blocks.length) return `${name}: a note needs a summary or what it says.`;
+    if (!name) return say("Every lifecycle note needs a title.");
+    if (!note.summary?.trim() && !note.blocks.length) return say(`${name}: a note needs a summary or what it says.`);
     for (const block of note.blocks) {
-      if (block.kind === "text" && !block.text?.trim()) return `${name}: a paragraph needs its text.`;
-      if (block.kind === "list" && !lines(block.items).length) return `${name}: a list needs at least one item.`;
+      if (block.kind === "text" && !block.text?.trim()) return say(`${name}: a paragraph needs its text.`);
+      if (block.kind === "list" && !lines(block.items).length) return say(`${name}: a list needs at least one item.`);
       if (block.kind === "table") {
         const width = block.columns.filter((cell) => cell.trim()).length;
-        if (!width) return `${name}: a table needs its column heads.`;
-        if (block.rows.some((row) => row.length > block.columns.length)) return `${name}: a table row has more cells than the table has columns.`;
+        if (!width) return say(`${name}: a table needs its column heads.`);
+        if (block.rows.some((row) => row.length > block.columns.length)) return say(`${name}: a table row has more cells than the table has columns.`);
       }
     }
   }
-  if ((value.questions ?? []).some((item) => !item.text.trim())) return "Every open question needs its question.";
-  if ((value.decisions ?? []).some((item) => !item.title.trim())) return "Every architecture decision needs what was decided.";
+  for (const [index, part] of value.components.entries()) {
+    if (part.unlinked_reason != null && !part.unlinked_reason.trim()) {
+      return at(`components.${index}.unlinked_reason`, "why no concept fits", "Say why no concept fits, so the gap is not taken for one nobody checked.");
+    }
+  }
+  const planNames: string[] = [];
+  for (const [index, plan] of (value.plans ?? []).entries()) {
+    if (!plan.name.trim()) return at(`plans.${index}.name`, "a plan's name", "Every plan needs a name.");
+    if (planNames.includes(fold(plan.name))) return at(`plans.${index}.name`, "a plan's name", "Each plan needs its own name.");
+    planNames.push(fold(plan.name));
+    const stated: string[] = [];
+    for (const [line, item] of plan.characteristics.entries()) {
+      if (!item.name.trim() && !item.value.trim()) continue;
+      if (!item.name.trim()) return at(`plans.${index}.characteristics.${line}.name`, "a characteristic", `${plan.name.trim()}: every characteristic needs its name.`);
+      if (!item.value.trim()) return at(`plans.${index}.characteristics.${line}.value`, "a characteristic's value", `${plan.name.trim()}: every characteristic needs its value.`);
+      if (stated.includes(fold(item.name))) return at(`plans.${index}.characteristics.${line}.name`, "a characteristic", `${plan.name.trim()}: each characteristic is stated once.`);
+      stated.push(fold(item.name));
+    }
+  }
+  const ruleIds: string[] = [];
+  for (const [index, rule] of (value.business_rules ?? []).entries()) {
+    if (!rule.statement.trim()) return at(`business_rules.${index}.statement`, "what a business rule says", "Every business rule needs what it says.");
+    if (rule.id.trim() && ruleIds.includes(fold(rule.id))) return at(`business_rules.${index}.id`, "a business rule's id", "Each business rule needs its own id.");
+    if (rule.id.trim()) ruleIds.push(fold(rule.id));
+  }
+  if ((value.questions ?? []).some((item) => !item.text.trim())) return say("Every open question needs its question.");
+  if ((value.decisions ?? []).some((item) => !item.title.trim())) return say("Every architecture decision needs what was decided.");
   for (const [items, what] of [[value.questions ?? [], "question"], [value.decisions ?? [], "decision"]] as const) {
     const ids = items.map((item) => fold(item.id)).filter(Boolean);
-    if (new Set(ids).size !== ids.length) return `Each ${what} needs its own id.`;
+    if (new Set(ids).size !== ids.length) return say(`Each ${what} needs its own id.`);
   }
-  if (value.primary_source && !(value.sources ?? []).includes(value.primary_source)) return "Its primary source must be one of its sources.";
-  const qualities = (value.nfrs ?? []).map((item) => item.quality.trim().toLocaleLowerCase());
-  if (qualities.some((quality) => !quality)) return "Every non-functional requirement needs a quality.";
-  if (new Set(qualities).size !== qualities.length) return "Each quality is stated once.";
+  if (value.primary_source && !(value.sources ?? []).includes(value.primary_source)) return say("Its primary source must be one of its sources.");
+  const qualities: string[] = [];
+  for (const [index, item] of (value.nfrs ?? []).entries()) {
+    const quality = item.quality.trim().toLocaleLowerCase();
+    if (!quality) return at(`nfrs.${index}.quality`, "a quality", "Every non-functional requirement needs a quality.");
+    if (qualities.includes(quality)) return at(`nfrs.${index}.quality`, "a quality", "Each quality is stated once.");
+    qualities.push(quality);
+  }
   return null;
 }
+
+/** Why an offering cannot be saved yet, if anything. */
+export const offeringProblem = (value: Offering): string | null => offeringIssue(value)?.message ?? null;
 
 /** The first part, tracking or note naming an order type the offering does not have. */
 function orderTypeNamedElsewhere(value: Offering): { where: string; code: string } | null {
@@ -134,20 +203,156 @@ function orderTypeNamedElsewhere(value: Offering): { where: string; code: string
 }
 
 /** A journey of this offering whose order type the offering no longer has: it must change first. */
+/** A value as edits compare it: keys in order, and nothing said (null or missing) the same as nothing. */
+function settled(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(settled);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([, item]) => item !== null && item !== undefined)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, item]) => [key, settled(item)]),
+    );
+  }
+  return value;
+}
+
+/** Whether an edit would save an offering any differently: what its panel asks about before throwing the edit away. */
+export function offeringChanged(before: Offering, after: Offering): boolean {
+  return JSON.stringify(settled(finishedOffering(before))) !== JSON.stringify(settled(finishedOffering(after)));
+}
+
+/** A thing a part is realised as, linked to a record of another layer: it must be relinked or let go before saving. */
+export function realisationProblem(value: Offering, release: Release): string | null {
+  const records = new Map((release.realisations ?? []).map((record) => [record.id, record]));
+  for (const part of value.components) {
+    for (const item of part.realisation ?? []) {
+      const record = item.record_id ? records.get(item.record_id) : undefined;
+      if (record && record.layer !== item.layer) {
+        return `${part.name || "A part"}: ${record.name} is a record of another layer; choose one of this layer, or none.`;
+      }
+    }
+  }
+  return null;
+}
+
 export function journeyOrderProblem(value: Offering, journeys: Journey[]): string | null {
   const known = new Set(value.order_types.map((type) => fold(type.code)));
   const journey = journeys.find((item) => item.product_id === value.id && item.order_type_code && !known.has(fold(item.order_type_code)));
   return journey ? `The journey ${journey.name} is for the order type ‘${journey.order_type_code}’; edit that journey first.` : null;
 }
 
-/** Why the journey cannot be accepted yet, if anything. */
-export function journeyProblem(value: Journey): string | null {
-  if (!value.name.trim()) return "Give the journey a name.";
-  if (value.activities.some((step) => !step.number.trim() || !step.name.trim())) return "Every step needs a number and a name.";
-  const numbers = value.activities.map((step) => step.number.trim());
-  if (new Set(numbers).size !== numbers.length) return "Step numbers must be different.";
-  if (value.order_type_code && !value.product_id) return "An order type needs its offering.";
+/** A step in words: "step 30", or by its name while it has no number. */
+const stepWords = (step: JourneyActivity): string =>
+  step.number.trim() ? `step ${step.number.trim()}` : step.name.trim() ? `the step ${step.name.trim()}` : "a new step";
+
+/** What stops a journey being saved, if anything: the message, and the field it is at ("activities.2.name") with its words. */
+export function journeyIssue(value: Journey): OfferingIssue | null {
+  const at = (path: string, field: string, message: string): OfferingIssue => ({ message, at: path, field });
+  if (!value.name.trim()) return at("name", "the journey's name", "Give the journey a name.");
+  const numbers: string[] = [];
+  for (const [index, step] of value.activities.entries()) {
+    const which = stepWords(step);
+    const path = (field: string) => `activities.${index}.${field}`;
+    if (!step.number.trim()) return at(path("number"), `the number of ${which}`, "Give the step a number.");
+    if (numbers.includes(step.number.trim())) return at(path("number"), `the number of ${which}`, `Another step is numbered ${step.number.trim()}; step numbers must be different.`);
+    numbers.push(step.number.trim());
+    if (!step.name.trim()) return at(path("name"), `the name of ${which}`, "Give the step a name.");
+    // A step is performed by a named system, the channel's entry system, or a team or party: one of them.
+    const performers = [step.performing_system_id, step.channel_entry ? "entry" : null, step.performer?.trim() || null].filter(Boolean);
+    if (performers.length > 1) return at(path("performer"), `who performs ${which}`, "A step is performed by one of a system, the channel's entry system, or a team or party.");
+    // Chosen, and then left empty: said, rather than saved as not said.
+    if (step.performing_system_id === "") return at(path("system"), `the system of ${which}`, "Choose the system that performs it, or choose Not said above.");
+    if (step.performer != null && !step.performer.trim()) return at(path("team"), `the team of ${which}`, "Name the team or party that performs it, or choose Not said above.");
+  }
+  if (value.order_type_code && !value.product_id) return at("order_type_code", "the order type", "An order type needs its offering.");
   return null;
+}
+
+/** Why a journey cannot be saved yet, if anything. */
+export const journeyProblem = (value: Journey): string | null => journeyIssue(value)?.message ?? null;
+
+/**
+ * What an edit of a journey has changed, in words: its own facts, each step by its number (a step
+ * renumbered reads as one added and one removed), the branches, and each hand-over by its steps.
+ */
+export function journeyChanges(before: Journey, after: Journey): string[] {
+  const [was, is] = [finishedJourney(before), finishedJourney(after)];
+  const changed: string[] = [];
+  const own: [string, (journey: Journey) => unknown][] = [
+    ["the name", (journey) => journey.name],
+    ["the offering and order type", (journey) => [journey.product_id ?? null, journey.order_type_code ?? null]],
+    ["the journey's source", (journey) => [journey.confidence ?? null, journey.source]],
+    ["what the journey is", (journey) => journey.description],
+  ];
+  for (const [name, read] of own) if (!savedSame(read(was), read(is))) changed.push(name);
+  const steps = new Map(was.activities.map((step) => [step.number, step]));
+  for (const step of is.activities) {
+    const before = steps.get(step.number);
+    if (!before) changed.push(`the new step ${step.number}`);
+    else if (!savedSame(before, step)) changed.push(`step ${step.number}`);
+  }
+  const kept = new Set(is.activities.map((step) => step.number));
+  for (const step of was.activities) if (!kept.has(step.number)) changed.push(`the removed step ${step.number}`);
+  if (!savedSame(was.flow_rules, is.flow_rules)) changed.push("the branches");
+  // Hand-overs have no id: each is known by its steps, and by which of those it is when two share them.
+  const keyed = (links: Journey["integrations"]) => {
+    const seen = new Map<string, number>();
+    return links.map((link) => {
+      const pair = `${link.from_activity} to ${link.to_activity}`;
+      const count = (seen.get(pair) ?? 0) + 1;
+      seen.set(pair, count);
+      return { key: `${pair}#${count}`, pair, link };
+    });
+  };
+  const links = new Map(keyed(was.integrations).map((item) => [item.key, item.link]));
+  const now = keyed(is.integrations);
+  for (const { key, pair, link } of now) {
+    const before = links.get(key);
+    if (!before) changed.push(`the new hand-over ${pair}`);
+    else if (!savedSame(before, link)) changed.push(`the hand-over ${pair}`);
+  }
+  const still = new Set(now.map((item) => item.key));
+  for (const { key, pair } of keyed(was.integrations)) if (!still.has(key)) changed.push(`the removed hand-over ${pair}`);
+  // Said in a line beside the verb: a long list ends in how many more.
+  return changed.length > 6 ? [...changed.slice(0, 5), `${changed.length - 5} more`] : changed;
+}
+
+/** What the service is sent for a journey: an id when new, trimmed text, and nothing said where a choice was left empty. */
+export function finishedJourney(value: Journey): Journey {
+  const text = (item: string | null | undefined) => item?.trim() || null;
+  return {
+    ...value,
+    id: value.id || slug(value.name),
+    name: value.name.trim(),
+    source: text(value.source),
+    description: text(value.description),
+    edges: [],
+    activities: value.activities.map((step) => ({
+      ...step,
+      number: step.number.trim(),
+      name: step.name.trim(),
+      performing_system_id: step.performing_system_id || null,
+      performer: text(step.performer),
+      role: text(step.role),
+      etom: text(step.etom),
+      description: text(step.description),
+      output: text(step.output),
+      point_of_no_return: text(step.point_of_no_return),
+      track: text(step.track),
+      source: text(step.source),
+    })),
+    integrations: value.integrations.map((link) => ({
+      ...link,
+      from_system_id: link.from_system_id || null,
+      to_system_id: link.to_system_id || null,
+      via_system_id: link.via_system_id || null,
+      purpose: text(link.purpose),
+      style: text(link.style),
+      tmf_equivalent: text(link.tmf_equivalent),
+      source: text(link.source),
+    })),
+  };
 }
 
 /** An id not yet taken: "order-hub", then "order-hub-2". */
@@ -601,3 +806,186 @@ export function conceptUsers(release: Release, id: string): { text: string; path
 
 /** What names a concept, in words. */
 export const conceptUses = (release: Release, id: string): string[] => conceptUsers(release, id).map((user) => user.text);
+
+type PortfolioNode = NonNullable<Release["portfolio"]>[number];
+type RealisationRecord = NonNullable<Release["realisations"]>[number];
+
+/** Whether two values would be saved the same: keys in order, nothing said the same as nothing. */
+export const savedSame = (before: unknown, after: unknown): boolean => JSON.stringify(settled(before)) === JSON.stringify(settled(after));
+
+/** What the service is sent for the portfolio: trimmed, an id for every new node, a successor only on a retired one. */
+export function finishedPortfolio(items: PortfolioNode[], release: Release): PortfolioNode[] {
+  const taken = new Set([...(release.portfolio ?? []), ...items].map((item) => item.id).filter(Boolean));
+  return items.map((item) => ({
+    ...item,
+    id: item.id || freeId(item.name, taken),
+    name: item.name.trim(),
+    level: item.level.trim(),
+    description: item.description?.trim() || null,
+    parent_id: item.parent_id || null,
+    replaced_by: item.deprecated ? item.replaced_by || null : null,
+  }));
+}
+
+/** What stops a register (the portfolio, the realisation records) being saved: the message, and the row's field it is at ("2.name"). */
+export type RowIssue = { message: string; at?: string; field?: string };
+
+/** Why the portfolio cannot be saved yet, and where, if anything: the service's rules, and what still sits in a node taken away. */
+export function portfolioIssue(items: PortfolioNode[], release: Release): RowIssue | null {
+  const at = (path: string, field: string, message: string): RowIssue => ({ message, at: path, field });
+  for (const [index, item] of items.entries()) {
+    if (!item.name.trim()) return at(`${index}.name`, "a node's name", "Every portfolio node needs a name.");
+    if (!item.level.trim()) return at(`${index}.level`, "a node's level", "Every portfolio node needs its level, such as business unit or family.");
+  }
+  const finished = finishedPortfolio(items, release);
+  const byId = new Map(finished.map((item) => [item.id, item]));
+  const siblings = new Set<string>();
+  for (const [index, item] of finished.entries()) {
+    const key = `${item.parent_id ?? ""}:${fold(item.name)}`;
+    if (siblings.has(key)) return at(`${index}.name`, "a node's name", `Another node in the same place is called ${item.name}; give each its own name.`);
+    siblings.add(key);
+    const seen = new Set([item.id]);
+    for (let parent = byId.get(item.parent_id ?? ""); parent; parent = byId.get(parent.parent_id ?? "")) {
+      if (seen.has(parent.id)) return at(`${index}.parent_id`, "where a node sits", `${item.name} would sit inside itself; choose another place for it.`);
+      seen.add(parent.id);
+    }
+  }
+  const kept = new Set(finished.map((item) => item.id));
+  for (const gone of (release.portfolio ?? []).filter((item) => !kept.has(item.id))) {
+    const offering = (release.products ?? []).find((item) => item.portfolio_node_id === gone.id);
+    if (offering) return { message: `${offering.name} still sits in ${gone.name}; move it first, or retire the node instead.` };
+    const child = finished.find((item) => item.parent_id === gone.id);
+    if (child) return { message: `${child.name} still sits inside ${gone.name}; move it first.` };
+  }
+  return null;
+}
+
+/** Why the portfolio cannot be saved yet, if anything. */
+export const portfolioProblem = (items: PortfolioNode[], release: Release): string | null => portfolioIssue(items, release)?.message ?? null;
+
+/** Why a portfolio node cannot be taken away: an offering sits in it, or another node does. Retiring it keeps it readable. */
+export function portfolioRemoveReason(node: PortfolioNode, items: PortfolioNode[], release: Release): string | null {
+  if (!node.id) return null;
+  const offering = (release.products ?? []).find((item) => item.portfolio_node_id === node.id);
+  if (offering) return `${offering.name} sits in it; retire it instead.`;
+  const child = items.find((item) => item.parent_id === node.id);
+  if (child) return `${child.name.trim() || "Another node"} sits inside it; move that first.`;
+  return null;
+}
+
+/** The layers that may realise each layer: those below it. */
+export const BELOW: Record<RealisationRecord["layer"], RealisationRecord["layer"][]> = { cfs: ["rfs", "resource"], rfs: ["resource"], resource: [] };
+
+/** What the service is sent for the realisation records: trimmed lists, an id from the layer and name for every new one. */
+export function finishedRecords(items: RealisationRecord[], release: Release): RealisationRecord[] {
+  const taken = new Set([...(release.realisations ?? []), ...items].map((item) => item.id).filter(Boolean));
+  return items.map((item) => ({
+    ...item,
+    id: item.id || freeId(`${item.layer}-${item.name}`, taken),
+    name: item.name.trim(),
+    aliases: lines(item.aliases),
+    description: item.description?.trim() || null,
+    source: item.source?.trim() || null,
+    // A resource is realised by nothing below it, and its rules belong to the services above.
+    realised_by: item.layer === "resource" ? [] : item.realised_by,
+    rules: item.layer === "resource" ? [] : lines(item.rules),
+  }));
+}
+
+/** Why the realisation records cannot be saved yet, and where, if anything: the service's rules, and what still links a record. */
+export function recordsIssue(items: RealisationRecord[], release: Release): RowIssue | null {
+  const at = (path: string, field: string, message: string): RowIssue => ({ message, at: path, field });
+  for (const [index, item] of items.entries()) {
+    if (!item.name.trim()) return at(`${index}.name`, "a record's name", "Every realisation record needs a name.");
+  }
+  const finished = finishedRecords(items, release);
+  const byId = new Map(finished.map((item) => [item.id, item]));
+  const owners = new Map<string, RealisationRecord>();
+  for (const [index, item] of finished.entries()) {
+    const keys = [item.name, ...item.aliases].map(labelKey);
+    if (new Set(keys).size !== keys.length) return at(`${index}.aliases`, "a record's other names", `${item.name}: each of its names differs from the rest.`);
+    for (const label of [item.name, ...item.aliases]) {
+      const owner = owners.get(`${item.layer}:${labelKey(label)}`);
+      if (owner && owner !== item) {
+        const where = labelKey(label) === labelKey(item.name) ? "name" : "aliases";
+        return at(`${index}.${where}`, where === "name" ? "a record's name" : "a record's other names", `“${label}” already names ${owner.name} in the same layer; each name names one record.`);
+      }
+      owners.set(`${item.layer}:${labelKey(label)}`, item);
+    }
+    for (const below of item.realised_by.map((id) => byId.get(id))) {
+      if (below && !BELOW[item.layer].includes(below.layer)) {
+        return at(`${index}.realised_by`, "what realises a record", `${item.name} is realised only by the layers below it, not by ${below.name}.`);
+      }
+    }
+    const rules = item.rules.map((rule) => rule.toLocaleLowerCase().split(/\s+/).join(" "));
+    if (new Set(rules).size !== rules.length) return at(`${index}.rules`, "a record's specification rules", `${item.name} states a specification rule twice.`);
+  }
+  // What links a record must let go of it, or keep its layer, before it goes or moves.
+  for (const was of release.realisations ?? []) {
+    const now = byId.get(was.id);
+    const index = finished.findIndex((item) => item.id === was.id);
+    for (const offering of release.products ?? []) {
+      for (const part of offering.components) {
+        const link = (part.realisation ?? []).find((item) => item.record_id === was.id);
+        if (!link) continue;
+        if (!now) return { message: `The part ${part.name} of ${offering.name} is still realised as ${was.name}; change it there first.` };
+        if (now.layer !== link.layer) {
+          const layer = { cfs: "CFSS", rfs: "RFSS", resource: "resource" }[link.layer];
+          return at(`${index}.layer`, "a record's layer", `The part ${part.name} of ${offering.name} is realised as it, as a ${layer}; keep its layer, or change the part first.`);
+        }
+      }
+    }
+    if (!now) {
+      const above = finished.find((item) => item.realised_by.includes(was.id));
+      if (above) return { message: `${above.name} is still realised by ${was.name}; take it off there first.` };
+    }
+  }
+  return null;
+}
+
+/** Why the realisation records cannot be saved yet, if anything. */
+export const recordsProblem = (items: RealisationRecord[], release: Release): string | null => recordsIssue(items, release)?.message ?? null;
+
+/** Why a realisation record cannot be taken away: a part is realised as it, or another record is realised by it. */
+export function recordRemoveReason(record: RealisationRecord, items: RealisationRecord[], release: Release): string | null {
+  if (!record.id) return null;
+  for (const offering of release.products ?? []) {
+    const part = offering.components.find((item) => (item.realisation ?? []).some((line) => line.record_id === record.id));
+    if (part) return `The part ${part.name} of ${offering.name} is realised as it; change that first.`;
+  }
+  const above = items.find((item) => item.realised_by.includes(record.id));
+  if (above) return `${above.name.trim() || "Another record"} is realised by it; take it off there first.`;
+  return null;
+}
+
+/**
+ * The things an offering's parts are realised as that link to no record, but whose name is one a
+ * record of the same layer goes by: each with where it is and the record it would link to.
+ */
+export function nameMatches(value: Offering, release: Release): { part: number; line: number; recordId: string }[] {
+  const records = release.realisations ?? [];
+  return value.components.flatMap((part, partIndex) =>
+    (part.realisation ?? []).flatMap((item, line) => {
+      if (item.record_id || !item.name.trim()) return [];
+      const found = records.filter((record) => record.layer === item.layer && [record.name, ...record.aliases].some((name) => labelKey(name) === labelKey(item.name)));
+      // Only one record may go by the name: two would be a guess.
+      return found.length === 1 ? [{ part: partIndex, line, recordId: found[0]!.id }] : [];
+    }),
+  );
+}
+
+/** How many unlinked things parts are realised as go by a name two or more records of their layer share: those are not guessed at. */
+export function ambiguousNameMatches(value: Offering, release: Release): number {
+  const records = release.realisations ?? [];
+  return value.components.reduce(
+    (sum, part) =>
+      sum +
+      (part.realisation ?? []).filter(
+        (item) =>
+          !item.record_id &&
+          item.name.trim() &&
+          records.filter((record) => record.layer === item.layer && [record.name, ...record.aliases].some((name) => labelKey(name) === labelKey(item.name))).length > 1,
+      ).length,
+    0,
+  );
+}

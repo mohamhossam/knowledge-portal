@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import type { Channel, Journey, Offering, RelationshipKind, Release, Suggestion, SuggestionContent } from "../api/client";
 import { ActionGroup, Button } from "../design/components";
-import { finishedOffering, journeyProblem, lines, offeringProblem, slug } from "./editing";
+import { finishedJourney, finishedOffering, journeyProblem, lines, offeringProblem, slug } from "./editing";
 import { AreaField, LinesField, SelectField, SystemField, TextField } from "./forms";
 import { JourneyEditor } from "./JourneyEditor";
 import { OfferingEditor, QuestionFields } from "./OfferingEditor";
@@ -92,7 +92,11 @@ export function SuggestionEditor({ suggestion, release, words, busy, kept, onCha
       const product = finishedOffering(content.product);
       return { ...base, product, system_id: product.id, name: product.name };
     }
-    if (content.kind === "journey" && content.journey) return { ...base, system_id: content.journey.id, name: content.journey.name };
+    if (content.kind === "journey" && content.journey) {
+      // Trimmed, and nothing said where a choice was left empty: the service refuses empty text.
+      const journey = finishedJourney(content.journey);
+      return { ...base, journey, system_id: journey.id, name: journey.name };
+    }
     if (content.kind === "channel" && content.channel) return { ...base, name: content.channel.name };
     if (content.kind === "interface" && content.interface) return { ...base, name: content.interface.name };
     if (content.kind === "capability_domain" && content.capability_domain) return { ...base, name: content.capability_domain.name };
