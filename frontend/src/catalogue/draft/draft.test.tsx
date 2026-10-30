@@ -192,6 +192,17 @@ describe("Decide", () => {
     expect(within(pane).queryByRole("button", { name: "Show the passage around it" })).not.toBeInTheDocument();
   });
 
+  it("shows only the clean-up's proposals for one vocabulary, from the Vocabulary tab, until cleared", async () => {
+    const term = (id: string, scheme: string, pref_label: string) => ({ id, scheme, pref_label, alt_labels: [], close_match: [], deprecated: false, accepted: [] });
+    const bill = base("v-bill", { kind: "vocabulary_term", system_id: "role-bill", term: term("role-bill", "responsibility_role", "Bill"), value_refs: [] } as never);
+    const entity = base("v-entity", { kind: "vocabulary_term", system_id: "entity-order", term: term("entity-order", "information_entity", "Order"), value_refs: [] } as never);
+    renderStep("decide?vocabulary=responsibility_role", { suggestions: [...SUGGESTIONS, bill, entity] });
+    const grid = await screen.findByRole("grid");
+    expect(within(grid).getByText(/Bill/)).toBeInTheDocument();
+    expect(within(grid).queryByText(/Order Hub/)).not.toBeInTheDocument();
+    expect(within(grid).queryByText(/the information entity Order/)).not.toBeInTheDocument();
+  });
+
   it("on a narrow screen, brings the pane into view when a row is tapped", async () => {
     renderStep("decide");
     await screen.findByRole("grid");
