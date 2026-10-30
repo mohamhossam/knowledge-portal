@@ -62,6 +62,14 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Changed
 
+- A fact whose source only infers it is marked "Inferred", a neutral status, on every screen, as
+  the system and concept records already marked it. The offering views showed it with the
+  lightbulb Suggested mark, which the design system keeps for what a model proposed, so a
+  curator could not tell a source's inference from a model's suggestion. Where no Source column
+  says what the mark is about, it says it in full, "Inferred, not stated in its source" or "Its
+  source leaves gaps"; under one it reads "Inferred" or "Has gaps". An inferred fact carries a
+  dashed ring rather than the clock that read as waiting. The sample catalogue marks rule R10,
+  whose exit charge its source leaves to be confirmed, as a gap. No upgrade step.
 - One architecture catalogue: the catalogue redesign lab's views move into `/architecture`, on
   the design system and in both themes, and the lab is removed (with `VITE_CATALOGUE_LAB`,
   `VITE_CATALOGUE_SOURCE` and its sample switch). The Landscape tab draws where systems sit as

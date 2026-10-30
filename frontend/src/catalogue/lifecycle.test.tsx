@@ -121,7 +121,9 @@ describe("lifecycle notes read in the explorer", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(renewal.getByText("v8.2 carry-over (re-verify)")).toBeInTheDocument();
     expect(renewal.getByText("Carried over from another source: to re-verify before anyone relies on it.").closest(".ds-status--attention")).not.toBeNull();
-    expect(renewal.getByText("Suggested · inferred, not stated in the source")).toBeInTheDocument();
+    // How sure its source is, said as every record says it: never the mark kept for a model's suggestion.
+    expect(renewal.getByText("Inferred, not stated in its source")).toBeInTheDocument();
+    expect(renewal.queryByText(/Suggested/)).not.toBeInTheDocument();
     expect(renewal.getByRole("listitem")).toHaveTextContent("Inherit tenure");
 
     fireEvent.click(section().getByRole("button", { name: "Open every note" }));

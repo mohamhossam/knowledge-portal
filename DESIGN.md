@@ -350,6 +350,12 @@ and tints, never by shadow.
   semibold.
 - **Suggested:** slate teal on its wash, with a lightbulb glyph and "Suggested · stated / inferred,
   not stated in the source". It never uses sparkles or gradients.
+- **How sure a source is** (a fact's confidence: Confirmed, Inferred, Has gaps) is a Status, never
+  Suggested: "Inferred" is neutral, because it says how sure the source document is, not that a
+  model proposed the fact. Suggested stays for what a model proposed. It says the whole of it
+  ("Inferred, not stated in its source", "Its source leaves gaps") unless a Source column or
+  label already names what it is about, and inferred carries a dashed ring, never neutral's
+  clock, which reads as waiting (`SourceStatus`).
 
 ### Inputs / Fields
 

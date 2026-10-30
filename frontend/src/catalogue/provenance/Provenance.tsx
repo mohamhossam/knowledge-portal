@@ -16,7 +16,7 @@ import type { SourceConfidence } from "../../api/client";
 import { Button, EvidenceQuote, Status } from "../../design/components";
 import { RouterLink } from "../../shell/links";
 import { SourcesContext, namedSource, withLevel } from "../governance";
-import { SOURCE_TONE, SOURCE_WORD } from "../ontology";
+import { SourceStatus } from "../SourceStatus";
 import { useCatalogueContext } from "../useCatalogue";
 
 /** Where a registered source's record is, on Governance. */
@@ -161,7 +161,7 @@ function CitedImage({ versionId, title }: { versionId: string; title: string }) 
 export function SourceStated({ fact }: { fact: { confidence?: SourceConfidence | null; source?: string | null } }) {
   return (
     <span className="cat-inline">
-      {fact.confidence && <Status tone={SOURCE_TONE[fact.confidence]}>{SOURCE_WORD[fact.confidence]}</Status>}
+      {fact.confidence && <SourceStatus confidence={fact.confidence} short />}
       {fact.source ? <SourceName text={fact.source} /> : !fact.confidence && <span className="cat-quiet">Not stated</span>}
     </span>
   );

@@ -2,31 +2,28 @@ import "./offering/offering.css";
 
 import type { ReactNode } from "react";
 
-import type { KnowledgeSource, Offering, SourceConflict } from "../api/client";
-import { type Column, DataTable, Lines, Section, Status, Suggested } from "../design/components";
-import { CONFIDENCE } from "./catalogue";
+import type { KnowledgeSource, Offering, SourceConfidence, SourceConflict } from "../api/client";
+import { type Column, DataTable, Lines, Section, Status } from "../design/components";
 import { LEVEL, levelTag, questionOf, useSourceText } from "./governance";
 import { SourceName } from "./provenance/Provenance";
+import { SourceStatus } from "./SourceStatus";
 
 type Sourced = { confidence?: string | null; source?: string | null };
 
 /**
- * How a fact stands against its source, as a mark: inferred is the Suggested mark,
- * a gap its source leaves is a status needing attention; confirmed says nothing.
+ * How a fact stands against its source, as a mark: inferred is a neutral status, a gap its
+ * source leaves needs attention, and confirmed says nothing. Inferred says how sure the source
+ * is, not who inferred it, so it is never the Suggested mark, which is kept for what a model
+ * proposed (DESIGN.md, Slate Teal); with no column to say so, the mark says it in full.
  */
 export function ConfidenceMark({ confidence }: { confidence?: string | null }) {
-  if (confidence === "inferred") return <Suggested basis="inferred" />;
-  if (confidence === "gap") return <Status tone="attention">{CONFIDENCE.gap}</Status>;
+  if (confidence === "inferred" || confidence === "gap") return <SourceStatus confidence={confidence} />;
   return null;
 }
 
-/**
- * How a fact stands against its source where every row says it: confirmed as done,
- * a gap as needing attention, and inferred as the Suggested mark, never a plain status.
- */
-export function SourceMark({ confidence }: { confidence: "confirmed" | "inferred" | "gap" }) {
-  if (confidence === "confirmed") return <Status tone="done">Confirmed</Status>;
-  return <ConfidenceMark confidence={confidence} />;
+/** How a fact stands against its source where every row says it, confirmed included; `short` under a Source column. */
+export function SourceMark({ confidence, short }: { confidence: SourceConfidence; short?: boolean }) {
+  return <SourceStatus confidence={confidence} short={short} />;
 }
 
 /** A fact's mark and its source, "BPP SDD (L2) §11", on a quiet line; nothing when confirmed and unsourced. */

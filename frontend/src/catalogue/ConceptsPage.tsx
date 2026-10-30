@@ -10,13 +10,14 @@ import { useFocusAfterRender } from "../design/hooks";
 import { count } from "../home/format";
 import { RouterLink } from "../shell/links";
 import { Retired } from "./Retired";
+import { SourceStatus } from "./SourceStatus";
 import { acceptances } from "./accepted";
 import { AcceptedFrom } from "./AcceptedFrom";
 import { ConceptEdit, ConceptRemove } from "./DraftEdits";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useFindParam } from "./frame/useFindParam";
 import {
-  type Concept, type ConceptIndex, conceptIndex, conceptPath, coverage, domainOf, findConcepts, realisationRecords, SOURCE_TONE, SOURCE_WORD,
+  type Concept, type ConceptIndex, conceptIndex, conceptPath, coverage, domainOf, findConcepts, realisationRecords,
 } from "./ontology";
 import { SourceName } from "./provenance/Provenance";
 import { useCatalogueContext } from "./useCatalogue";
@@ -255,7 +256,7 @@ function ConceptRecord({ concept, index }: { concept: Concept; index: ConceptInd
       meta={
         <>
           {concept.deprecated && <Retired successor={replacement && { name: replacement.pref_label, href: `${base}/concepts/${encodeURIComponent(replacement.id)}` }} />}
-          {concept.confidence && <Status tone={SOURCE_TONE[concept.confidence]}>{SOURCE_WORD[concept.confidence]}</Status>}
+          {concept.confidence && <SourceStatus confidence={concept.confidence} />}
           {path.length > 0 && <bdi>{path.join(" › ")}</bdi>}
         </>
       }
