@@ -118,7 +118,7 @@ export function LifecycleEditor({ value, onChange, channels, orderTypes, names }
             onChange={(blocks) => change({ blocks })}
             blank={() => ({ kind: "text", items: [], columns: [], rows: [], to_verify: false })}
             itemLabel={(block, index) => `${(KIND_OPTIONS.find((item) => item.value === block.kind)?.label ?? "part").toLocaleLowerCase()} ${index + 1}${block.title ? ` (${cut(block.title, index, "").trim()})` : ""}`}
-            render={(block, edit) => (
+            render={(block, edit, place) => (
               <>
                 <SelectField
                   label="Kind of part"
@@ -133,6 +133,13 @@ export function LifecycleEditor({ value, onChange, channels, orderTypes, names }
                   onChange={(to_verify) => edit({ to_verify })}
                 />
                 <BlockFields block={block} change={edit} />
+                <SourceField value={block.source} previous={note.blocks[place - 1]} onCopy={edit} onChange={(source) => edit({ source })} />
+                <SelectField
+                  label="How sure its source is"
+                  value={block.confidence ?? ""}
+                  options={CONFIDENCE_OPTIONS}
+                  onChange={(confidence) => edit({ confidence: (confidence || null) as SourceConfidence | null })}
+                />
               </>
             )}
           />

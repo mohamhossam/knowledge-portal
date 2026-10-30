@@ -12,7 +12,7 @@ import type { CatalogueSystem } from "../api/client";
 import { Button, Checkbox, Field } from "../design/components";
 import { useFocusAfterRender } from "../design/hooks";
 
-export function TextField({ label, value, onChange, required, dir = "auto", wide, hint, error }: {
+export function TextField({ label, value, onChange, required, dir = "auto", wide, hint, error, suggestions }: {
   label: string;
   value: string | null | undefined;
   onChange: (value: string) => void;
@@ -22,19 +22,30 @@ export function TextField({ label, value, onChange, required, dir = "auto", wide
   hint?: string;
   /** What is wrong with the value, said beside the field and tied to it. */
   error?: string | null;
+  /** Values offered as it is typed, any other still taken: names a source may write as the draft does. */
+  suggestions?: string[];
 }) {
+  const listId = useId();
   return (
     <div className={wide ? "cat-form__cell cat-form__wide" : "cat-form__cell"}>
       <Field label={label} hint={hint} error={error} required={required}>
         {(control) => (
-          <input
-            className="ds-input"
-            {...control}
-            value={value ?? ""}
-            dir={dir}
-            required={required}
-            onChange={(event) => onChange(event.target.value)}
-          />
+          <>
+            <input
+              className="ds-input"
+              {...control}
+              value={value ?? ""}
+              dir={dir}
+              required={required}
+              list={suggestions?.length ? listId : undefined}
+              onChange={(event) => onChange(event.target.value)}
+            />
+            {suggestions?.length ? (
+              <datalist id={listId}>
+                {suggestions.map((item) => <option key={item} value={item} />)}
+              </datalist>
+            ) : null}
+          </>
         )}
       </Field>
     </div>

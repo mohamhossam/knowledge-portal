@@ -394,7 +394,8 @@ export function ConnectionEdit({ system, connection, onDone }: { system: Catalog
     : duplicate
       ? "It already depends on that system that way; change that connection instead."
       : !text.trim() ? "Say what the dependency is for." : null;
-  const next: Relationship = { source_system_id: system.id, target_system_id: target, kind, description: text.trim(), accepted: connection?.accepted ?? [] };
+  // A change keeps what the form does not hold: where the dependency comes from, and how sure that is.
+  const next: Relationship = { ...connection, source_system_id: system.id, target_system_id: target, kind, description: text.trim(), accepted: connection?.accepted ?? [] };
   const relationships = connection
     ? release.relationships.map((item) => (item === connection ? next : item))
     : [...release.relationships, next];
@@ -746,7 +747,7 @@ export function ChannelsEdit({ onDone }: { onDone: () => void }) {
         onChange={setItems}
         blank={() => ({ id: "", name: "", accepted: [] })}
         itemLabel={(item, index) => `channel ${item.name || index + 1}`}
-        render={(item, update) => (
+        render={(item, update, index) => (
           <>
             <TextField label="Name" value={item.name} required onChange={(name) => update({ name })} />
             <TextField label="Kind" value={item.kind} onChange={(kind) => update({ kind: kind || null })} />
@@ -758,6 +759,13 @@ export function ChannelsEdit({ onDone }: { onDone: () => void }) {
               onChange={(id) => update({ entry_system_id: id || null })}
             />
             <AreaField label="What it is" value={item.description} onChange={(description) => update({ description: description || null })} />
+            <SourceField value={item.source} previous={items[index - 1]} onCopy={update} onChange={(source) => update({ source })} />
+            <SelectField
+              label="How sure its source is"
+              value={item.confidence ?? ""}
+              options={CONFIDENCE_OPTIONS}
+              onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
+            />
           </>
         )}
       />
@@ -859,6 +867,8 @@ export function OfferingSectionEdit({ offering, section, onDone }: { offering: O
           systems={release.systems}
           channels={release.channels ?? []}
           register={release.sources ?? []}
+          // What it is says whether it is retired, and what replaces it, from the draft's offerings.
+          offerings={release.products ?? []}
           release={release}
           errorAt={errorAt}
         />

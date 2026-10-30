@@ -290,6 +290,12 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
             <SelectField label="From step" value={rule.from_activity} options={stepOptions} onChange={(from_activity) => update({ from_activity })} />
             <SelectField label="To step" value={rule.to_activity} options={stepOptions} onChange={(to_activity) => update({ to_activity })} />
             <TextField label="When" value={rule.condition} onChange={(condition) => update({ condition: condition || null })} />
+            <TextField
+              label="Arrow label"
+              value={rule.branch}
+              hint={rule.condition?.trim() ? "Not shown while When is filled in: the arrow says the condition." : "Shown on the arrow, such as Retry or Escalate."}
+              onChange={(branch) => update({ branch: branch || null })}
+            />
             {(channels.length > 0 || rule.channel_id) && (
               <SelectField
                 label="Taken for channel"

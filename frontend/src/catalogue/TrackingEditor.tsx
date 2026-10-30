@@ -4,6 +4,7 @@ import type { CatalogueSystem, Channel, Offering, SourceConfidence } from "../ap
 import { Button } from "../design/components";
 import { CONFIDENCE_OPTIONS } from "./catalogue";
 import { AreaField, CheckField, Rows, SelectField, SystemField, TextField } from "./forms";
+import { SourceField } from "./SourceField";
 import type { Names } from "./OfferingEditor";
 
 type Tracking = NonNullable<Offering["tracking"]>;
@@ -97,16 +98,17 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes,
         onChange={(items) => set({ channels: items })}
         blank={() => ({ channel_id: channels.find((channel) => !value.channels.some((item) => item.channel_id === channel.id))?.id ?? "" })}
         itemLabel={(item, index) => cut(item.channel_id ? channelName(item.channel_id) : "", index, "tracking of")}
-        render={(item, change) => (
+        render={(item, change, index) => (
           <>
             <SelectField label="Channel" value={item.channel_id} options={[{ value: "", label: "Choose a channel" }, ...written(item.channel_id), ...channelOptions]} onChange={(channel_id) => change({ channel_id })} />
-            <Sureness value={item.confidence} onChange={(confidence) => change({ confidence })} />
             <TextField label="Correlation key" value={item.correlation_key} wide onChange={(key) => change({ correlation_key: key || null })} />
             <SystemField label="Tracked in" value={item.ui_system_id ?? ""} systems={systems} writtenAs={system(item.ui_system_id)} allowNone onChange={(id) => change({ ui_system_id: id || null })} />
             <SystemField label="Reads its status from" value={item.read_system_id ?? ""} systems={systems} writtenAs={system(item.read_system_id)} allowNone onChange={(id) => change({ read_system_id: id || null })} />
             <TextField label="Over (interface)" value={item.read_interface} wide onChange={(text) => change({ read_interface: text || null })} />
             <TextField label="Its story" value={item.story} wide onChange={(story) => change({ story: story || null })} />
             <TextField label="What the sources say when the screen is not named" value={item.ui_note} wide onChange={(text) => change({ ui_note: text || null })} />
+            <SourceField value={item.source} previous={value.channels[index - 1]} onCopy={change} onChange={(source) => change({ source })} />
+            <Sureness value={item.confidence} onChange={(confidence) => change({ confidence })} />
           </>
         )}
       />
@@ -118,13 +120,14 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes,
         onChange={(items) => set({ flows: items })}
         blank={() => ({ from_system_id: firstSystem, to_system_id: firstSystem, label: "" })}
         itemLabel={(item, index) => cut(item.label, index, "flow")}
-        render={(item, change) => (
+        render={(item, change, index) => (
           <>
             <SystemField label="From" value={item.from_system_id} systems={systems} writtenAs={system(item.from_system_id)} onChange={(from_system_id) => change({ from_system_id })} />
             <SystemField label="To, or the same system when it logs the event" value={item.to_system_id} systems={systems} writtenAs={system(item.to_system_id)} onChange={(to_system_id) => change({ to_system_id })} />
-            <Sureness value={item.confidence} onChange={(confidence) => change({ confidence })} />
             <TextField label="What it carries" value={item.label} required wide onChange={(label) => change({ label })} />
             <TextField label="Over (interface)" value={item.interface} wide onChange={(text) => change({ interface: text || null })} />
+            <SourceField value={item.source} previous={value.flows[index - 1]} onCopy={change} onChange={(source) => change({ source })} />
+            <Sureness value={item.confidence} onChange={(confidence) => change({ confidence })} />
           </>
         )}
       />
@@ -136,12 +139,13 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes,
         onChange={(items) => set({ milestones: items })}
         blank={() => ({ label: "" })}
         itemLabel={(item, index) => cut(item.label, index, "milestone")}
-        render={(item, change) => (
+        render={(item, change, index) => (
           <>
             <TextField label="Milestone" value={item.label} required onChange={(label) => change({ label })} />
             <SystemField label="Raised by" value={item.system_id ?? ""} systems={systems} writtenAs={system(item.system_id)} allowNone onChange={(id) => change({ system_id: id || null })} />
-            <Sureness value={item.confidence} onChange={(confidence) => change({ confidence })} />
             <TextField label="Detail" value={item.detail} wide onChange={(detail) => change({ detail: detail || null })} />
+            <SourceField value={item.source} previous={value.milestones[index - 1]} onCopy={change} onChange={(source) => change({ source })} />
+            <Sureness value={item.confidence} onChange={(confidence) => change({ confidence })} />
           </>
         )}
       />
@@ -168,12 +172,13 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes,
         onChange={(items) => set({ fallout: items })}
         blank={() => ({ trigger: "" })}
         itemLabel={(item, index) => cut(item.trigger, index, "fallout")}
-        render={(item, change) => (
+        render={(item, change, index) => (
           <>
             <TextField label="When" value={item.trigger} required wide onChange={(trigger) => change({ trigger })} />
-            <Sureness value={item.confidence} onChange={(confidence) => change({ confidence })} />
             <AreaField label="What happens" value={item.handling} onChange={(handling) => change({ handling: handling || null })} />
             <SystemField label="Falls out in" value={item.system_id ?? ""} systems={systems} writtenAs={system(item.system_id)} allowNone onChange={(id) => change({ system_id: id || null })} />
+            <SourceField value={item.source} previous={value.fallout[index - 1]} onCopy={change} onChange={(source) => change({ source })} />
+            <Sureness value={item.confidence} onChange={(confidence) => change({ confidence })} />
           </>
         )}
       />
