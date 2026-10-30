@@ -67,7 +67,7 @@ export function TrackingSection({ offering, system, channelName, orderName, focu
         <p className="offering-lead" dir="auto">
           Not specified for {focus.orderName}. {tracking.not_applicable_note ?? scope}
         </p>
-        <FalloutPart tracking={tracking} level={level} />
+        <FalloutPart tracking={tracking} level={level} system={system} />
       </>,
     );
   }
@@ -201,13 +201,15 @@ export function TrackingSection({ offering, system, channelName, orderName, focu
         </>
       )}
 
-      <FalloutPart tracking={tracking} level={level} />
+      <FalloutPart tracking={tracking} level={level} system={system} />
     </>,
   );
 }
 
-const FALLOUT_COLUMNS: Column<Fallout>[] = [
+/** What makes an order fall out, where it falls out, and how it is handled. */
+const falloutColumns = (system: (systemId: string) => ReactNode): Column<Fallout>[] => [
   { id: "when", header: "When", rowHeader: true, bidi: true, width: "35%", cell: (item) => item.trigger },
+  { id: "where", header: "Falls out in", bidi: true, cell: (item) => (item.system_id ? system(item.system_id) : <span className="offering-quiet">Not said</span>) },
   {
     id: "handling",
     header: "What happens",
@@ -221,7 +223,7 @@ const FALLOUT_COLUMNS: Column<Fallout>[] = [
   },
 ];
 
-function FalloutPart({ tracking, level }: { tracking: Tracking; level: 2 | 3 }) {
+function FalloutPart({ tracking, level, system }: { tracking: Tracking; level: 2 | 3; system: (systemId: string) => ReactNode }) {
   return (
     <>
       <PartHeading level={level}>When an order falls out</PartHeading>
@@ -229,7 +231,7 @@ function FalloutPart({ tracking, level }: { tracking: Tracking; level: 2 | 3 }) 
         <DataTable
           caption="What makes an order fall out, and how it is handled"
           captionHidden
-          columns={FALLOUT_COLUMNS}
+          columns={falloutColumns(system)}
           rows={tracking.fallout}
           rowId={(item) => item.trigger}
         />

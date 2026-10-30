@@ -140,6 +140,14 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- What the catalogue's edits hold is shown where it is read. A system's record says each
+  capability's business area, and what each interface is and where it comes from, in columns of
+  their own. An offering says why a customer buys it, which part is the device it is built on,
+  what each part is in its own column, what each system's role in a part is, the stage of each
+  order type, what each plan is, and the system an order falls out in. The portfolio and the
+  realisation records say what each node and record covers and where it comes from, "Not stated"
+  when nothing says, and what replaces a retired node. A row is headed by its name alone, and a
+  description reads as prose, three lines at most in a dense table. No upgrade step.
 - The last facts the catalogue shows but could not be changed by hand are edited where they are
   read. An offering already in the draft is retired, with what replaces it, from its own "what it
   is" edit; before, only a new one could be. A non-functional requirement, each channel's

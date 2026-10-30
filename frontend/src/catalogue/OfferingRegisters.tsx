@@ -14,6 +14,7 @@ import { draftBody } from "./drafting";
 import { EditPanel } from "./DraftEdits";
 import { BELOW, finishedPortfolio, finishedRecords, portfolioIssue, portfolioRemoveReason, recordRemoveReason, recordsIssue, type RowIssue, savedSame } from "./editing";
 import { AreaField, CheckField, LinesField, PickField, Rows, SelectField, TextField } from "./forms";
+import { SourceStated } from "./provenance/Provenance";
 import { SourceField } from "./SourceField";
 import { useCatalogueContext } from "./useCatalogue";
 import { useEditing } from "./useEditing";
@@ -79,7 +80,24 @@ export function PortfolioRegister() {
     return false;
   };
   const columns: Column<Row>[] = [
-    { id: "node", header: "Node", rowHeader: true, bidi: true, cell: (row) => <>{row.path}{row.deprecated && <span className="cat-detail">Retired</span>}</> },
+    {
+      id: "node",
+      header: "Node",
+      rowHeader: true,
+      bidi: true,
+      cell: (row) => (
+        <>
+          {row.path}
+          {row.deprecated && (
+            <span className="cat-detail">
+              Retired{row.replaced_by && <>, replaced by <bdi>{byId.get(row.replaced_by)?.name ?? row.replaced_by}</bdi></>}
+            </span>
+          )}
+        </>
+      ),
+    },
+    { id: "what", header: "What it covers", bidi: true, cell: (row) => (row.description ? <span className="cat-desc">{row.description}</span> : <span className="cat-quiet">No description</span>) },
+    { id: "source", header: "Source", bidi: true, cell: (row) => <SourceStated fact={row} /> },
     { id: "level", header: "Level", bidi: true, cell: (row) => row.level },
     // Counted with the nodes inside it, so a business unit says what all its families hold.
     { id: "offerings", header: "Offerings in it", numeric: true, cell: (row) => offerings.filter((item) => item.portfolio_node_id && within(item.portfolio_node_id, row.id)).length },
@@ -198,6 +216,8 @@ export function RecordsRegister() {
       ),
     },
     { id: "layer", header: "Layer", cell: (record) => layerName(record.layer) },
+    { id: "what", header: "What it is", bidi: true, cell: (record) => (record.description ? <span className="cat-desc">{record.description}</span> : <span className="cat-quiet">No description</span>) },
+    { id: "source", header: "Source", bidi: true, cell: (record) => <SourceStated fact={record} /> },
     {
       id: "below",
       header: "Realised by",
