@@ -141,6 +141,7 @@ describe("an offering's plans and business rules", () => {
     fireEvent.change(within(second).getByLabelText(/^Value/), { target: { value: "1 Gbps" } });
     const button = within(panel).getByRole("button", { name: "Save the plans" });
     expect(button).toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(button);
     expect(within(panel).getByText("Business Pro Plus 500: each characteristic is stated once.")).toBeInTheDocument();
     fireEvent.change(within(second).getByLabelText(/^Characteristic/), { target: { value: "Upload" } });
     fireEvent.click(button);
@@ -178,5 +179,52 @@ describe("where an offering sits in the portfolio", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save what it is" }));
     await waitFor(() => expect(save).toHaveBeenCalled());
     expect(savedOffering(save).portfolio_node_id).toBe("fam-internet");
+  });
+});
+
+describe("problems said where they are, and linking several parts at once", () => {
+  it("says a problem under its field once Save is tried, and takes focus there", async () => {
+    open(`/architecture/offerings/${OFFERING.id}?tab=rules`);
+    fireEvent.click(screen.getByRole("button", { name: "Edit the business rules" }));
+    const panel = screen.getByRole("form", { name: "Edit the business rules of Business Pro Plus" });
+    fireEvent.click(within(panel).getByRole("button", { name: "Add a business rule" }));
+    expect(within(panel).getByText("Correct what a business rule says first.")).toBeInTheDocument();
+    // Not before anything is tried: an empty row just added is not wrong yet.
+    expect(within(panel).getByLabelText(/What it says/)).not.toHaveAttribute("aria-invalid");
+    fireEvent.click(within(panel).getByRole("button", { name: "Save the business rules" }));
+    const says = within(panel).getByLabelText(/What it says/);
+    await waitFor(() => expect(says).toHaveFocus());
+    expect(says).toHaveAttribute("aria-invalid", "true");
+    expect(says).toHaveAccessibleDescription(/Every business rule needs what it says\./);
+  });
+
+  it("links one concept to several parts at once, says so, and keeps focus there", async () => {
+    open(`/architecture/offerings/${OFFERING.id}`);
+    fireEvent.click(screen.getByRole("button", { name: "Edit the parts" }));
+    const panel = screen.getByRole("form", { name: "Edit the parts of Business Pro Plus" });
+    const several = within(panel).getByRole("group", { name: "Link several at once" });
+    fireEvent.change(within(several).getByLabelText("Concept"), { target: { value: "cap-security" } });
+    fireEvent.click(within(several).getByLabelText("Broadband"));
+    fireEvent.click(within(several).getByLabelText("Firewall"));
+    fireEvent.click(within(several).getByRole("button", { name: "Link 2 parts" }));
+    const said = within(several).getByText("Linked Network security to Broadband and Firewall.");
+    expect(said).toHaveAttribute("role", "status");
+    await waitFor(() => expect(said).toHaveFocus());
+    for (const part of ["Part Broadband", "Part Firewall"]) {
+      expect(within(within(panel).getByRole("group", { name: part })).getByRole("list", { name: "Concepts it means: chosen" })).toHaveTextContent("Network security");
+    }
+  });
+
+  it("links what parts are realised as to the record that goes by the same name", () => {
+    open(`/architecture/offerings/${OFFERING.id}`);
+    fireEvent.click(screen.getByRole("button", { name: "Edit the parts" }));
+    const panel = screen.getByRole("form", { name: "Edit the parts of Business Pro Plus" });
+    const several = within(panel).getByRole("group", { name: "Link several at once" });
+    // Broadband is realised as "GPON line" and "GPON internet CFS": both go by a record's name, each shown before it is linked.
+    expect(within(several).getByLabelText("Broadband: GPON line → GPON line (Resource)")).toBeChecked();
+    fireEvent.click(within(several).getByRole("button", { name: "Link 2 ticked" }));
+    expect(within(several).getByText("Linked GPON line on Broadband, GPON internet CFS on Broadband to the record that goes by its name.")).toHaveAttribute("role", "status");
+    const broadband = within(panel).getByRole("group", { name: "Part Broadband" });
+    expect(within(broadband).getAllByLabelText("The record it means").map((field) => (field as HTMLSelectElement).value)).toEqual(["resource-gpon-line", "cfs-gpon-internet"]);
   });
 });

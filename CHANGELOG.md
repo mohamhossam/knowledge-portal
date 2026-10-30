@@ -139,6 +139,24 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- The portfolio and the realisation records are read and edited on the Offerings page, beside
+  the list of offerings. "Edit the portfolio" holds each node's name, level, where it sits, what
+  it covers and whether it is retired; "Edit the realisation records" each record's layer, name,
+  other names, the systems that deliver it, the records one layer down that realise it, its
+  specification rules, what it is and its source. The service's rules are checked before saving:
+  names once among siblings and once per layer, no node inside itself, a record realised only by
+  layers below it, and nothing taken away, or a record moved to another layer, while an offering,
+  a part or another record still names it. A node or record still named cannot be removed: its
+  Remove says what names it (and, for a node, to retire it instead). Switching a record to a
+  resource says what saving lets go of, and a node counts the offerings in the nodes inside it.
+- An offering's forms and the two registers say each problem under the field it is at (a part's
+  name, an order type's code, a characteristic, what a business rule says, a quality, a record's
+  layer, and more) once Save has been tried, not before anything is done; the verb points there
+  and pressing it takes focus to the field. The concept form does the same. "Edit the parts" can
+  link several parts at once: one concept to the parts ticked, and what parts are realised as to
+  the one record of their layer that goes by the same name, each pair listed and ticked before it
+  is linked (a name two records share is left to choose on the part). Each link says what it did,
+  and focus stays there. No upgrade step.
 - More of an offering's sheet is edited where it is read. Each part is linked to the concepts it
   means, or says why no concept fits (requirement work maps to a part through its concepts), and
   each thing a part is realised as is linked to the realisation record it means, in its own layer,
