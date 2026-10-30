@@ -32,3 +32,56 @@
 .cat-order__slot {
   display: flex;
 }
+
+/* What waits to be linked: read at a measure, what the clean-up does a step away, the question asked in place. */
+.cat-waiting {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+
+.cat-waiting p {
+  margin: 0;
+  max-inline-size: 72ch;
+}
+
+/* The disclosure keeps a marker of its own: a flex summary loses the browser's. */
+.cat-waiting__about summary {
+  min-block-size: var(--target-min);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  list-style: none;
+}
+
+.cat-waiting__about summary::-webkit-details-marker {
+  display: none;
+}
+
+.cat-waiting__about summary::before {
+  content: "";
+  inline-size: 0.5em;
+  block-size: 0.5em;
+  border-inline-end: 2px solid currentColor;
+  border-block-end: 2px solid currentColor;
+  transform: rotate(-45deg);
+  flex: none;
+}
+
+.cat-waiting__about[open] summary::before {
+  transform: rotate(45deg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cat-waiting__about summary::before {
+    transition: transform 120ms ease-out;
+  }
+}
+
+.cat-waiting__ask {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--rule-hair) solid var(--color-rule);
+}

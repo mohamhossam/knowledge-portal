@@ -151,6 +151,17 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
   that registers no source yet. The source now comes before how sure it is in every edit, and a
   conflict's sides pick from the same grouped register, with "Where in it". Any link out of an
   edit with changes asks before leaving, one inside the edit too. No upgrade step.
+- The Vocabulary tab says, on a draft, which values the catalogue writes as text wait to be
+  linked to a term, as the vocabulary clean-up proposed them. The overview counts the written
+  values waiting in each vocabulary, and each term in the list says how many wait for it. A
+  vocabulary's page says, in written values, how many wait to be linked to its terms and how many
+  new terms are proposed for the rest, when the clean-up last read the draft, and what it does;
+  it runs the clean-up, asking first when proposals still wait (reading again replaces them), and
+  opens Decide on that vocabulary's proposals alone. A term's record lists each place that writes
+  it as text, each a link, with the value written there, and opens Decide on its own proposals.
+  Removing a term says when the clean-up proposes linking values to it, and what to do; a
+  proposal list that could not be read is said, never shown as nothing waiting. Decide shows only
+  a vocabulary's or a term's proposals when opened so, until cleared. No upgrade step.
 - A Vocabulary tab reads and edits the catalogue's controlled vocabulary. Every vocabulary of
   the version, the seven built in (eTOM process, channel kind, component kind, role, Open API,
   information entity and document type) and any a curator defined, is listed with its terms in

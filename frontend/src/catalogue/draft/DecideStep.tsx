@@ -71,6 +71,17 @@ function Decide() {
   // What is shown lives in the address, so a reload or a shared link keeps it.
   const filter = (FILTERS.find((item) => item === params.get("show")) ?? "waiting") as Filter;
   const find = params.get("find") ?? "";
+  // From the Vocabulary tab: only the clean-up's proposals for one vocabulary ("*" for every one), or one term.
+  const vocabulary = params.get("vocabulary");
+  const termId = params.get("term");
+  const ofVocabulary = useCallback(
+    (suggestion: (typeof all)[number]) => {
+      if (!vocabulary) return true;
+      const content = suggestion.content as unknown as { kind: string; term?: { id: string; scheme: string } | null };
+      return content.kind === "vocabulary_term" && (vocabulary === "*" || content.term?.scheme === vocabulary) && (!termId || content.term?.id === termId);
+    },
+    [vocabulary, termId],
+  );
   const setView = useCallback((next: Filter, text: string) => {
     setParams((previous) => {
       const query = new URLSearchParams(previous);
@@ -78,6 +89,10 @@ function Decide() {
       else query.set("show", next);
       if (text) query.set("find", text);
       else query.delete("find");
+      if (next === "waiting" && !text) {
+        query.delete("vocabulary");
+        query.delete("term");
+      }
       return query;
     }, { replace: true });
   }, [setParams]);
@@ -144,8 +159,13 @@ function Decide() {
   );
   // The suggestion in hand stays listed while it is worked on, even once it no longer matches the filter.
   const shown = useMemo(
-    () => rows.filter((row) => row.suggestion.id === currentId || (inFilter(row.suggestion, filter, readyIds) && matchesFind(row.suggestion, row.sentence, row.group.label, find))),
-    [rows, currentId, filter, find, readyIds],
+    () =>
+      rows.filter(
+        (row) =>
+          row.suggestion.id === currentId ||
+          (inFilter(row.suggestion, filter, readyIds) && ofVocabulary(row.suggestion) && matchesFind(row.suggestion, row.sentence, row.group.label, find)),
+      ),
+    [rows, currentId, filter, find, readyIds, ofVocabulary],
   );
   const current = shown.find((row) => row.suggestion.id === currentId) ?? shown[0];
 
@@ -544,7 +564,7 @@ function Decide() {
           active={filter}
           onChange={(id) => setView(id as Filter, find)}
           find={{ label: "Find in the suggestions", value: find, onChange: (value) => setView(filter, value), placeholder: "A system, a word or a document…" }}
-          onClear={filter !== "waiting" || find ? () => setView("waiting", "") : undefined}
+          onClear={filter !== "waiting" || find || vocabulary ? () => setView("waiting", "") : undefined}
         />
       </div>
       <KeysHint

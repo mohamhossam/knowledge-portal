@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import type { SourceConfidence } from "../api/client";
-import { ActionGroup, Button, Checkbox } from "../design/components";
+import { ActionGroup, Button, Checkbox, Status } from "../design/components";
 import { useFocusAfterRender } from "../design/hooks";
 import { RouterLink } from "../shell/links";
 import { CONFIDENCE_OPTIONS } from "./catalogue";
@@ -14,6 +14,7 @@ import { SourceField } from "./SourceField";
 import { LEGACY_ROLE_RANK } from "./model/conventions";
 import { useCatalogueContext } from "./useCatalogue";
 import { useEditing } from "./useEditing";
+import { useTermProposals } from "./useTermProposals";
 import { useTypedDocuments } from "./useTypedDocuments";
 import {
   blankScheme, blankTerm, FIELD_WORDS, finishedScheme, finishedTerm, OPEN_FIELDS, rolesInOrder, type Scheme, schemeChanges, schemeIssue,
@@ -211,6 +212,9 @@ export function TermRemove({ term, onDone, onRetire }: { term: Term; onDone: () 
   // A document type still given to library documents stays until they are retyped.
   const library = useTypedDocuments(term);
   const named = users.length + library.documents.length;
+  // A clean-up proposal that would link values to it is left with nothing to link to.
+  const { proposals, failed } = useTermProposals(release);
+  const waiting = proposals.filter((proposal) => proposal.term.id === term.id && proposal.existing).reduce((sum, proposal) => sum + proposal.refs.length, 0);
   return (
     <EditPanel
       title={`Remove ${term.pref_label}`}
@@ -257,6 +261,19 @@ export function TermRemove({ term, onDone, onRetire }: { term: Term; onDone: () 
         <p className="cat-edit__lead">
           Nothing in the draft{term.scheme === "document_type" ? " or the library" : ""} names it. It goes from this draft only; the version in
           service keeps it until the draft is published.
+        </p>
+      )}
+      {waiting > 0 && (
+        <p className="cat-edit__lead">
+          <Status tone="warning">
+            The clean-up proposes linking {waiting === 1 ? "a written value" : `${waiting} written values`} to it; removed, that proposal has
+            nothing to link to. Reject it on Decide first, or retire the term instead.
+          </Status>
+        </p>
+      )}
+      {failed && (
+        <p className="cat-edit__lead">
+          <Status tone="attention">Whether the clean-up proposes linking values to it could not be read.</Status>
         </p>
       )}
       {/* Retiring keeps it readable but out of use, whether or not anything names it. */}

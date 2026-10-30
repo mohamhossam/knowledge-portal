@@ -219,6 +219,95 @@ describe("what the critique asked of it", () => {
   });
 });
 
+/** What the clean-up proposed: two written roles to link to Bill, and a new role no term names. */
+const PROPOSED = {
+  release_id: "draft-1", release_revision: 4, runs: [],
+  suggestions: [
+    {
+      id: "s-bill", status: "proposed", match: "updates_existing", citations: [],
+      content: {
+        kind: "vocabulary_term", term: term("role-bill", "responsibility_role", "Bill"),
+        value_refs: [
+          { field: "activity_role", owner_id: "new", value: "BILLS", item: "10" },
+          { field: "responsibility_role", owner_id: "bpp", value: "BILLS", item: "billing", part: "cwom" },
+        ],
+      },
+    },
+    {
+      id: "s-allocate", status: "proposed", match: "new", citations: [],
+      content: { kind: "vocabulary_term", term: term("role-allocate", "responsibility_role", "Allocate"), value_refs: [{ field: "activity_role", owner_id: "new", value: "ALLOCATES", item: "10" }] },
+    },
+    { id: "s-decided", status: "accepted", match: "new", citations: [], content: { kind: "vocabulary_term", term: term("role-old", "responsibility_role", "Old"), value_refs: [] } },
+  ],
+};
+
+describe("values the draft writes, waiting to be linked to terms", () => {
+  it("says on a vocabulary's page what waits, in written values, and asks before reading the draft again", async () => {
+    vi.spyOn(api, "suggestions").mockResolvedValue(PROPOSED as never);
+    const run = vi.spyOn(api, "cleanUpVocabulary").mockResolvedValue({ candidate_count: 2 } as never);
+    open("/architecture/vocabulary?in=responsibility_role");
+    // Two values to Bill, already here; one more for the new term Allocate.
+    expect(await screen.findByText("2 written values wait to be linked to 1 term; 1 new term is proposed for 1 more.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Decide the role proposals" })).toHaveAttribute("href", "/architecture/decide?vocabulary=responsibility_role");
+    // Reading again replaces what still waits, so it asks first, and keeping them changes nothing.
+    fireEvent.click(screen.getByRole("button", { name: "Read the draft again…" }));
+    expect(screen.getByText(/replaces the 2 proposals still waiting on Decide, in every vocabulary \(3 written values\)/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Keep them" }));
+    expect(run).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Read the draft again…" }));
+    fireEvent.click(screen.getByRole("button", { name: "Read it again" }));
+    await waitFor(() => expect(run).toHaveBeenCalledWith("draft-1"));
+    expect(await screen.findByText("The clean-up read the draft again.")).toBeInTheDocument();
+  });
+
+  it("counts what waits in each vocabulary on the overview, and beside each term", async () => {
+    vi.spyOn(api, "suggestions").mockResolvedValue(PROPOSED as never);
+    open();
+    expect(await screen.findByRole("link", { name: "3 written values waiting" })).toHaveAttribute("href", "/architecture/vocabulary?in=responsibility_role");
+    expect(screen.getByText("2 waiting")).toBeInTheDocument();
+  });
+
+  it("lists on a term's record each place that writes it as text, waiting to be linked", async () => {
+    vi.spyOn(api, "suggestions").mockResolvedValue(PROPOSED as never);
+    open("/architecture/vocabulary/role-bill");
+    const waiting = await screen.findByRole("heading", { name: /Waiting to be linked/ });
+    const section = waiting.closest("section")!;
+    expect(within(section).getByRole("link", { name: "Step 10 of the journey New activation" })).toHaveAttribute("href", "/architecture/journeys/new");
+    expect(within(section).getAllByText("BILLS")).toHaveLength(2);
+    expect(within(section).getByRole("link", { name: "Decide the 2 links to Bill" })).toHaveAttribute(
+      "href",
+      "/architecture/decide?vocabulary=responsibility_role&term=role-bill",
+    );
+  });
+
+  it("warns before removing a term the clean-up proposes linking values to, and says what to do", async () => {
+    vi.spyOn(api, "suggestions").mockResolvedValue(PROPOSED as never);
+    open("/architecture/vocabulary/role-bill");
+    fireEvent.click(screen.getByRole("button", { name: "Remove this term…" }));
+    expect(await screen.findByText(/The clean-up proposes linking 2 written values to it.*Reject it on Decide first, or retire the term instead\./)).toBeInTheDocument();
+  });
+
+  it("says when what the clean-up proposed could not be read, never that nothing waits", async () => {
+    vi.spyOn(api, "suggestions").mockRejectedValue(new Error("down"));
+    open("/architecture/vocabulary?in=responsibility_role");
+    expect(await screen.findByText("What the clean-up proposed could not be read.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+    expect(screen.queryByText("Nothing waits to be linked.")).not.toBeInTheDocument();
+  });
+
+  it("says in one line that nothing waits, below what the vocabulary is, and runs the clean-up at once", async () => {
+    vi.spyOn(api, "suggestions").mockResolvedValue({ ...PROPOSED, suggestions: [] } as never);
+    const run = vi.spyOn(api, "cleanUpVocabulary").mockResolvedValue({ candidate_count: 0 } as never);
+    open("/architecture/vocabulary?in=information_entity");
+    expect(await screen.findByText("Nothing waits to be linked.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^Decide/ })).not.toBeInTheDocument();
+    const headings = screen.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent);
+    expect(headings.indexOf("About")).toBeLessThan(headings.findIndex((text) => text?.startsWith("Values waiting")));
+    fireEvent.click(screen.getByRole("button", { name: "Clean up the vocabulary" }));
+    await waitFor(() => expect(run).toHaveBeenCalled());
+  });
+});
+
 describe("a curator's vocabulary, edited", () => {
   it("adds one with its own name and the fields it covers, a field another covers left out", async () => {
     const save = vi.spyOn(api, "saveDraft").mockResolvedValue(RELEASE);

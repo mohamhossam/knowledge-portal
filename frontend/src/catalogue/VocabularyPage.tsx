@@ -7,8 +7,8 @@ import {
   Workbench,
 } from "../design/components";
 import { useFocusAfterRender } from "../design/hooks";
-import { count } from "../home/format";
-import { RouterLink } from "../shell/links";
+import { count, formatDay } from "../home/format";
+import { ButtonLink, RouterLink } from "../shell/links";
 import { acceptances } from "./accepted";
 import { AcceptedFrom } from "./AcceptedFrom";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
@@ -19,7 +19,9 @@ import { SourceName } from "./provenance/Provenance";
 import { Retired } from "./Retired";
 import { useCatalogueContext } from "./useCatalogue";
 import { RoleOrder, SchemeEdit, SchemeRemove, TermEdit, TermRemove } from "./VocabularyEdits";
+import { useTermProposals } from "./useTermProposals";
 import { useTypedDocuments } from "./useTypedDocuments";
+import { placeOf, type TermProposal, waitingIn, waitingSentence, waitingValues } from "./vocabularyProposals";
 import {
   BUILT_IN_FIELDS, FIELD_WORDS, labelKey, ROLES, rolesInOrder, type Scheme, schemesOf, type Term, termUsers, type VocabularyField,
 } from "./vocabularyEditing";
@@ -112,6 +114,8 @@ export function VocabularyPage() {
     <RecordPlaceholder title={`${count(terms.length, "term")} in ${count(schemes.length, "vocabulary", "vocabularies")}. Choose one to read where it is used.`}>
       {notice && <p role="status" className="cat-notice"><Status tone="done">{notice}</Status></p>}
       <VocabulariesTable />
+      {/* The overview has no record heading above it, so its sections are the record's level. */}
+      <WaitingLinks level={2} />
     </RecordPlaceholder>
   );
 
@@ -134,10 +138,100 @@ export function VocabularyPage() {
   );
 }
 
+/** Decide, showing only the clean-up's proposals for a vocabulary, or for one term. */
+const decideHref = (base: string, scheme?: string, term?: string) =>
+  `${base}/decide${scheme ? `?vocabulary=${encodeURIComponent(scheme)}${term ? `&term=${encodeURIComponent(term)}` : ""}` : "?vocabulary=*"}`;
+
+/**
+ * The values the draft writes that wait to be linked to a vocabulary's terms, as the clean-up
+ * proposed them, with the clean-up itself and the way to Decide, where they are accepted. On a
+ * draft only; one vocabulary's, or every one's when none is given. With nothing waiting it is one
+ * line, and what the clean-up does is a step away.
+ */
+function WaitingLinks({ scheme, level = 3 }: { scheme?: { id: string; name: string }; level?: 2 | 3 }) {
+  const { book, base, editable } = useCatalogueContext();
+  const release = book.release;
+  const { proposals, loading, failed, retry, lastRun, cleanUp } = useTermProposals(release);
+  // Running it again replaces every undecided proposal of the last run, in every vocabulary: asked first.
+  const [asking, setAsking] = useState(false);
+  const focusLater = useFocusAfterRender();
+  if (release.status !== "draft") return null;
+  const waiting = waitingIn(proposals, scheme ? [scheme.id] : undefined);
+  const everywhere = waitingIn(proposals);
+  const said = waitingSentence(waiting);
+  const run = () => {
+    setAsking(false);
+    cleanUp.mutate();
+    focusLater(() => document.getElementById("vocabulary-cleanup"));
+  };
+  const waitingNow = proposals.length;
+  return (
+    <Section title="Values waiting to be linked" count={waitingValues(waiting)} headingLevel={level}>
+      <div className="cat-waiting">
+        {failed ? (
+          <p>
+            <Status tone="attention">What the clean-up proposed could not be read.</Status>{" "}
+            <Button variant="tertiary" onClick={retry}>Try again</Button>
+          </p>
+        ) : (
+          <p>{loading ? "Reading what the clean-up proposed…" : said ?? "Nothing waits to be linked."}</p>
+        )}
+        <p className="cat-quiet">
+          {lastRun ? `The clean-up last read this draft on ${formatDay(lastRun)}.` : "The clean-up has not read this draft yet."}
+        </p>
+        <details className="cat-waiting__about">
+          <summary>What the clean-up does</summary>
+          <p className="cat-quiet">
+            It reads each value the draft writes in a field a vocabulary covers, and proposes the term it means, or a new term when none
+            does. Nothing is linked until it is accepted on Decide, and the written value stays beside its term. Reading the draft again
+            replaces the proposals still waiting; those accepted or rejected stay as they are.
+          </p>
+        </details>
+        <p role="status" className="cat-waiting__said">
+          {cleanUp.isSuccess && <Status tone="done">The clean-up read the draft again.</Status>}
+          {cleanUp.isError && <Status tone="attention">The clean-up did not run; the draft may have changed. Reload, then try again.</Status>}
+        </p>
+        {editable && asking ? (
+          <div className="cat-waiting__ask">
+            <p>
+              Reading the draft again replaces the {waitingNow === 1 ? "proposal" : `${waitingNow} proposals`} still waiting on Decide, in every
+              vocabulary ({waitingValues(everywhere) === 1 ? "1 written value" : `${waitingValues(everywhere)} written values`}). Those accepted or rejected stay.
+            </p>
+            <ActionGroup label="Read the draft again?">
+              <Button variant="primary" onClick={run}>Read it again</Button>
+              <Button
+                variant="tertiary"
+                onClick={() => {
+                  setAsking(false);
+                  focusLater(() => document.getElementById("vocabulary-cleanup"));
+                }}
+              >
+                Keep them
+              </Button>
+            </ActionGroup>
+          </div>
+        ) : editable ? (
+          <ActionGroup label="Link the written values">
+            <Button id="vocabulary-cleanup" busy={cleanUp.isPending} onClick={() => (waitingNow ? setAsking(true) : run())}>
+              {waitingNow ? "Read the draft again…" : "Clean up the vocabulary"}
+            </Button>
+            {waitingValues(waiting) + waiting.added > 0 && (
+              <ButtonLink to={decideHref(base, scheme?.id)} variant="tertiary">
+                {scheme ? `Decide the ${scheme.name.toLocaleLowerCase()} proposals` : "Decide every proposal"}
+              </ButtonLink>
+            )}
+          </ActionGroup>
+        ) : null}
+      </div>
+    </Section>
+  );
+}
+
 /** Every vocabulary, each with how many terms it holds and the fields it covers. */
 function VocabulariesTable() {
   const { book, base } = useCatalogueContext();
   const release = book.release;
+  const { proposals } = useTermProposals(release);
   type Row = ReturnType<typeof schemesOf>[number];
   return (
     <DataTable<Row>
@@ -148,6 +242,17 @@ function VocabulariesTable() {
         { id: "name", header: "Vocabulary", rowHeader: true, bidi: true, cell: (scheme) => <Link to={`${base}/vocabulary?in=${encodeURIComponent(scheme.id)}`}>{scheme.name}</Link> },
         { id: "kind", header: "Kind", cell: (scheme) => (scheme.builtIn ? "Built in" : "Defined in this version") },
         { id: "terms", header: "Terms", numeric: true, cell: (scheme) => (release.vocabulary ?? []).filter((term) => term.scheme === scheme.id).length },
+        ...(release.status === "draft"
+          ? [{
+              id: "waiting",
+              header: "Waiting to link",
+              numeric: true,
+              cell: (scheme: Row) => {
+                const n = waitingValues(waitingIn(proposals, [scheme.id]));
+                return n ? <Link to={`${base}/vocabulary?in=${encodeURIComponent(scheme.id)}`}>{`${n} `}<span className="ds-visually-hidden">written values waiting</span></Link> : <span className="cat-quiet">0</span>;
+              },
+            }]
+          : []),
         {
           id: "fields",
           header: "Covers",
@@ -161,6 +266,12 @@ function VocabulariesTable() {
 function TermsList({ current, within, onAdd }: { current?: string; within?: string; onAdd?: (what: "term" | "vocabulary") => void }) {
   const { book, base } = useCatalogueContext();
   const release = book.release;
+  const { proposals } = useTermProposals(release);
+  const waitingFor = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const proposal of proposals) if (proposal.existing) counts.set(proposal.term.id, (counts.get(proposal.term.id) ?? 0) + proposal.refs.length);
+    return counts;
+  }, [proposals]);
   const [, setParams] = useSearchParams();
   const [find, setFind] = useFindParam();
   const terms = useMemo(() => release.vocabulary ?? [], [release]);
@@ -187,11 +298,15 @@ function TermsList({ current, within, onAdd }: { current?: string; within?: stri
               name: term.deprecated ? <span className="cat-retired">{term.pref_label}</span> : term.pref_label,
               bidi: true,
               detail: detail.length ? <>{detail.map((part, at) => <span key={at}>{at > 0 && " · "}{part}</span>)}</> : undefined,
-              meta: term.deprecated ? <span className="cat-quiet">Retired</span> : undefined,
+              meta: term.deprecated ? (
+                <span className="cat-quiet">Retired</span>
+              ) : waitingFor.get(term.id) ? (
+                <span className="cat-quiet">{waitingFor.get(term.id)} waiting</span>
+              ) : undefined,
             };
           }),
       }));
-  }, [terms, schemes, within, find, base, release]);
+  }, [terms, schemes, within, find, base, release, waitingFor]);
   const shown = groups.reduce((sum, group) => sum + group.items.length, 0);
   const inScope = within ? terms.filter((term) => term.scheme === within).length : terms.length;
   return (
@@ -240,6 +355,8 @@ function SchemeRecord({ id, notice }: { id: string; notice?: string }) {
   const terms = (release.vocabulary ?? []).filter((term) => term.scheme === id);
   const retired = terms.filter((term) => term.deprecated).length;
   const [editing, setEditing] = useState<"edit" | "remove" | "order" | null>(null);
+  const { proposals } = useTermProposals(release);
+  const waitingHere = waitingValues(waitingIn(proposals, [id])) + waitingIn(proposals, [id]).added;
   const focusLater = useFocusAfterRender();
   const close = (key: string) => () => {
     focusLater(() => document.getElementById(`vocabulary-${key}`));
@@ -268,6 +385,7 @@ function SchemeRecord({ id, notice }: { id: string; notice?: string }) {
       {editing === "order" && <RoleOrder onDone={close("order")} />}
       {editing === "edit" && scheme.scheme && <SchemeEdit scheme={scheme.scheme} onDone={close("edit")} />}
       {editing === "remove" && scheme.scheme && <SchemeRemove scheme={scheme.scheme} onDone={close("remove")} />}
+      {editing === null && waitingHere > 0 && <WaitingLinks scheme={{ id, name: scheme.name }} />}
       {editing === null && (
         <Section title="About" headingLevel={3}>
           <Facts
@@ -279,7 +397,37 @@ function SchemeRecord({ id, notice }: { id: string; notice?: string }) {
           />
         </Section>
       )}
+      {editing === null && waitingHere === 0 && <WaitingLinks scheme={{ id, name: scheme.name }} />}
     </RecordView>
+  );
+}
+
+/** The places the clean-up proposes linking to a term, each with the value written there, decided on Decide. */
+function TermWaiting({ term, waiting }: { term: Term; waiting: TermProposal[] }) {
+  const { book, base, editable } = useCatalogueContext();
+  const refs = waiting.flatMap((proposal) => proposal.refs);
+  return (
+    <Section title="Waiting to be linked" count={refs.length} headingLevel={3}>
+      <p className="cat-quiet">Written as text where it means this term; the clean-up proposes linking each, and nothing is linked until it is accepted.</p>
+      <ul className="cat-edit__users">
+        {refs.map((ref, index) => {
+          const place = placeOf(ref, book.release);
+          return (
+            <li key={`${index}:${ref.owner_id}:${ref.item ?? ""}:${ref.part ?? ""}`}>
+              {place.path ? <RouterLink href={`${base}/${place.path}`}>{place.text.charAt(0).toLocaleUpperCase() + place.text.slice(1)}</RouterLink> : place.text}
+              {" "}writes “<bdi>{ref.value}</bdi>”
+            </li>
+          );
+        })}
+      </ul>
+      {editable && (
+        <ActionGroup label={`Decide the links to ${term.pref_label}`}>
+          <ButtonLink to={decideHref(base, term.scheme, term.id)} variant="tertiary">
+            Decide the {refs.length === 1 ? "link" : `${refs.length} links`} to {term.pref_label}
+          </ButtonLink>
+        </ActionGroup>
+      )}
+    </Section>
   );
 }
 
@@ -309,6 +457,8 @@ function TermRecord({ term }: { term: Term }) {
   const termLink = (other: Term) => <Link key={other.id} to={`${base}/vocabulary/${encodeURIComponent(other.id)}`} dir="auto">{other.pref_label}</Link>;
   const users = termUsers(release, term.id).filter((use) => use.key !== "broader_id");
   const library = useTypedDocuments(term);
+  const { proposals } = useTermProposals(release);
+  const waiting = proposals.filter((proposal) => proposal.term.id === term.id);
   const roles = term.scheme === ROLES ? rolesInOrder(release, LEGACY_ROLE_RANK) : [];
   const place = roles.findIndex((item) => item.id === term.id);
   return (
@@ -370,6 +520,7 @@ function TermRecord({ term }: { term: Term }) {
           </p>
         )}
       </Section>
+      {!changing && waiting.length > 0 && <TermWaiting term={term} waiting={waiting} />}
       {!changing && (
         <Section title="About" headingLevel={3}>
           <Facts
