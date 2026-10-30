@@ -272,7 +272,9 @@ describe("values the draft writes, waiting to be linked to terms", () => {
     open("/architecture/vocabulary/role-bill");
     const waiting = await screen.findByRole("heading", { name: /Waiting to be linked/ });
     const section = waiting.closest("section")!;
-    expect(within(section).getByRole("link", { name: "Step 10 of the journey New activation" })).toHaveAttribute("href", "/architecture/journeys/new");
+    // At the step itself: the journey's steps, that row in view.
+    expect(within(section).getByRole("link", { name: "Step 10 of the journey New activation" })).toHaveAttribute("href", "/architecture/journeys/new?row=10");
+    expect(within(section).getByRole("link", { name: /^CWOM in the part billing/ })).toHaveAttribute("href", "/architecture/offerings/bpp?tab=components&row=billing");
     expect(within(section).getAllByText("BILLS")).toHaveLength(2);
     expect(within(section).getByRole("link", { name: "Decide the 2 links to Bill" })).toHaveAttribute(
       "href",
@@ -305,6 +307,17 @@ describe("values the draft writes, waiting to be linked to terms", () => {
     expect(headings.indexOf("About")).toBeLessThan(headings.findIndex((text) => text?.startsWith("Values waiting")));
     fireEvent.click(screen.getByRole("button", { name: "Clean up the vocabulary" }));
     await waitFor(() => expect(run).toHaveBeenCalled());
+  });
+});
+
+describe("the vocabulary filter", () => {
+  it("only filters the list, keeping the term open beside it and saying which vocabulary it is in", async () => {
+    open("/architecture/vocabulary/role-bill");
+    fireEvent.change(screen.getByRole("combobox", { name: "Vocabulary" }), { target: { value: "information_entity" } });
+    await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent("/architecture/vocabulary/role-bill?in=information_entity"));
+    expect(screen.getByRole("heading", { name: "Bill", level: 2 })).toBeInTheDocument();
+    const note = screen.getByText(/open beside the list, is in/).closest("p")!;
+    expect(within(note).getByRole("link", { name: "Role" })).toHaveAttribute("href", "/architecture/vocabulary/role-bill?in=responsibility_role");
   });
 });
 

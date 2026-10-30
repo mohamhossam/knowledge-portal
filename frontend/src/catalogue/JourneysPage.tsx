@@ -19,6 +19,7 @@ import { useFindParam } from "./frame/useFindParam";
 import type { JourneyView } from "./journey/JourneyViews";
 import { SOURCE_TONE, SOURCE_WORD } from "./ontology";
 import { useCatalogueContext } from "./useCatalogue";
+import { useRowTarget } from "./useRowTarget";
 
 /** The diagrams load as their own chunk, on the first journey opened (the main chunk stays under budget). */
 const JourneyViews = lazy(() => import("./journey/JourneyViews"));
@@ -245,6 +246,8 @@ function JourneyRecord({ journey }: { journey: Journey }) {
   };
   const toggle = (key: "edit" | "remove" | "rename") => (editing === key ? close(key) : setEditing(key));
   const view = VIEWS.find((item) => item === params.get("view")) ?? "swimlane";
+  // Opened at a step from elsewhere (?row=10): that row of the steps table, opened and in view.
+  const missingStep = useRowTarget();
   const offering = (book.release.products ?? []).find((item) => item.id === journey.product_id);
   const orderType = orderTypeName(book.release, journey);
   const channels = new Map((book.release.channels ?? []).map((item) => [item.id, item.name]));
@@ -289,6 +292,11 @@ function JourneyRecord({ journey }: { journey: Journey }) {
         </ActionGroup>
       }
     >
+      {missingStep && (
+        <p role="status" className="cat-notice">
+          <Status tone="attention">Step {missingStep}, which the link named, is no longer in this journey.</Status>
+        </p>
+      )}
       {editing === "edit" && <JourneyEdit journey={journey} onDone={() => close("edit")} />}
       {editing === "rename" && (
         <WholeRename

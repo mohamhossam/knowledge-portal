@@ -61,20 +61,21 @@ export function placeOf(ref: ValueRef, release: Release): { text: string; path: 
     case "activity_role":
     case "activity_mode":
     case "activity_phase":
-      return { text: `step ${ref.item} of the journey ${named(release.journeys)}`, path: at("journeys") };
+      return { text: `step ${ref.item} of the journey ${named(release.journeys)}`, path: `${at("journeys")}?row=${encodeURIComponent(ref.item ?? "")}` };
     case "integration_open_api":
-      return { text: `hand-over ${Number(ref.item) + 1} of the journey ${named(release.journeys)}`, path: at("journeys") };
+      return { text: `hand-over ${Number(ref.item) + 1} of the journey ${named(release.journeys)}`, path: `${at("journeys")}?view=integrations` };
     case "channel_kind":
       return { text: `the channel ${named(release.channels)}`, path: "channels" };
     case "component_kind":
-      return { text: `the part ${ref.item} of ${offering()}`, path: at("offerings") };
+      return { text: `the part ${ref.item} of ${offering()}`, path: `${at("offerings")}?tab=components&row=${encodeURIComponent(ref.item ?? "")}` };
     case "responsibility_role": {
       const system = release.systems.find((item) => item.id === ref.part)?.name ?? ref.part;
-      return { text: `${system} in the part ${ref.item} of ${offering()}`, path: at("offerings") };
+      return { text: `${system} in the part ${ref.item} of ${offering()}`, path: `${at("offerings")}?tab=components&row=${encodeURIComponent(ref.item ?? "")}` };
     }
     case "nfr_quality":
+      return { text: `${ref.item} in ${offering()}`, path: `${at("offerings")}?tab=service` };
     case "rule_kind":
-      return { text: `${ref.item} in ${offering()}`, path: at("offerings") };
+      return { text: `${ref.item} in ${offering()}`, path: `${at("offerings")}?tab=rules` };
     case "offering_family":
     case "offering_lifecycle":
       return { text: offering(), path: at("offerings") };

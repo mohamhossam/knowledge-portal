@@ -170,7 +170,7 @@ export function SystemEditor({ value, onChange, release }: {
         onChange={(capabilities) => set({ capabilities })}
         blank={() => ({ id: "", name: "", triggers: [], accepted: [] })}
         itemLabel={(item, index) => `capability ${item.name || index + 1}`}
-        render={(item, update) => (
+        render={(item, update, index) => (
           <>
             <TextField label="Capability" value={item.name} required onChange={(name) => update({ name })} />
             <SelectField label="Business area" value={item.domain_id ?? ""} options={areas} wide onChange={(id) => update({ domain_id: id || null })} />
@@ -204,7 +204,7 @@ export function SystemEditor({ value, onChange, release }: {
               hint="One phrase per line. Requirement work maps a requirement here when it uses one."
               onChange={(triggers) => update({ triggers })}
             />
-            <SourceField value={item.source} onChange={(source) => update({ source })} />
+            <SourceField value={item.source} previous={value.capabilities[index - 1]} onCopy={update} onChange={(source) => update({ source })} />
             <SelectField
               label="How sure its source is"
               value={item.confidence ?? ""}
@@ -262,13 +262,13 @@ export function SystemEditor({ value, onChange, release }: {
         onChange={(next) => set({ components: next })}
         blank={() => ({ id: "", name: "", aliases: [], accepted: [] })}
         itemLabel={(item, index) => `component ${item.name || index + 1}`}
-        render={(item, update) => (
+        render={(item, update, index) => (
           <>
             <TextField label="Component" value={item.name} required onChange={(name) => update({ name })} />
             <TextField label="Built with" value={item.technology} onChange={(technology) => update({ technology: technology || null })} />
             <LinesField label="Also called" value={item.aliases} onChange={(aliases) => update({ aliases })} />
             <AreaField label="What it does" value={item.description} onChange={(description) => update({ description: description || null })} />
-            <SourceField value={item.source} onChange={(source) => update({ source })} />
+            <SourceField value={item.source} previous={value.components[index - 1]} onCopy={update} onChange={(source) => update({ source })} />
             <SelectField
               label="How sure its source is"
               value={item.confidence ?? ""}

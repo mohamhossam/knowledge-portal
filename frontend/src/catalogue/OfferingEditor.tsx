@@ -97,7 +97,7 @@ function PointRows({ legend, one, items, onChange, path, errorAt, longNames }: {
               <TextField label="What it means" value={point.description} onChange={(description) => change({ description: description || null })} />
             </div>
             <div className="cat-form__cell cat-points__source">
-              <SourceField value={point.source} onChange={(source) => change({ source })} />
+              <SourceField value={point.source} previous={items[index - 1]} onCopy={change} onChange={(source) => change({ source })} />
             </div>
             <div className="cat-form__cell">
               <SelectField
@@ -749,11 +749,11 @@ export function OfferingDecisions({ value, onChange }: SectionProps) {
       onChange={(decisions) => onChange({ ...value, decisions })}
       blank={() => ({ id: "", title: "" })}
       itemLabel={(item, index) => `decision ${item.id || index + 1}`}
-      render={(item, change) => (
+      render={(item, change, index) => (
         <>
           <TextField label="Decision" value={item.title} required wide onChange={(title) => change({ title })} />
           <TextField label="Id" value={item.id} dir="ltr" hint="Such as AD-01; made for you when left empty." onChange={(id) => change({ id })} />
-          <SourceField value={item.source} onChange={(source) => change({ source })} />
+          <SourceField value={item.source} previous={(value.decisions ?? [])[index - 1]} onCopy={change} onChange={(source) => change({ source })} />
           <SelectField
             label="How sure its source is"
             value={item.confidence ?? ""}
@@ -828,7 +828,7 @@ export function OfferingPlansFields({ value, onChange, errorAt }: SectionProps) 
       render={(plan, update, index) => (
         <>
           <TextField label="Plan" value={plan.name} required error={errorAt?.(`plans.${index}.name`)} onChange={(name) => update({ name })} />
-          <SourceField value={plan.source} onChange={(source) => update({ source })} />
+          <SourceField value={plan.source} previous={(value.plans ?? [])[index - 1]} onCopy={update} onChange={(source) => update({ source })} />
           <SelectField
             label="How sure its source is"
             value={plan.confidence ?? ""}
@@ -895,7 +895,7 @@ export function OfferingBusinessRules({ value, onChange, errorAt }: SectionProps
             error={errorAt?.(`business_rules.${index}.id`)}
             onChange={(id) => update({ id })}
           />
-          <SourceField value={rule.source} onChange={(source) => update({ source })} />
+          <SourceField value={rule.source} previous={(value.business_rules ?? [])[index - 1]} onCopy={update} onChange={(source) => update({ source })} />
           <SelectField
             label="How sure its source is"
             value={rule.confidence ?? ""}

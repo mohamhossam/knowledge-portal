@@ -119,6 +119,15 @@
   max-inline-size: 72ch;
 }
 
+/* A source's own fields flow in the form's grid as if the wrapper were not there. */
+.cat-source {
+  display: contents;
+}
+
+.cat-source__copy {
+  align-self: end;
+}
+
 /* A source's line as it will be saved, or what to do when none can be: under the source's fields. */
 .cat-source__note {
   display: grid;
@@ -367,4 +376,16 @@
 html:has(.cat-edit__foot),
 .ds-bench__record:has(.cat-edit__foot) {
   scroll-padding-block-end: 9rem;
+}
+
+/* A row a link from elsewhere opened the page at: marked as the current row is, until another is. */
+.ds-table tbody tr[data-row-target] {
+  background: var(--table-row-current);
+  box-shadow: inset 3px 0 0 var(--table-row-current-bar);
+}
+
+/* Its cell's focus ring sits inside the cell: the table's wrapper clips whatever lies outside it. */
+.ds-table tbody tr[data-row-target] > [tabindex="-1"]:focus {
+  outline-offset: -2px;
+  box-shadow: none;
 }

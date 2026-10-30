@@ -5,7 +5,7 @@ import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } 
 import type { Offering, Release } from "../api/client";
 import {
   ActionGroup, Button, type Column, DataTable, EmptyState, Facts, FilterStrip, GapBadge, Lines, ListFind, ListTools, RecordList, type RecordGroup,
-  RecordPlaceholder, RecordView, Section, Tabs, Workbench,
+  RecordPlaceholder, RecordView, Section, Status, Tabs, Workbench,
 } from "../design/components";
 import { useFocusAfterRender } from "../design/hooks";
 import { count } from "../home/format";
@@ -31,6 +31,7 @@ import { NfrSection, RealisationKey, RealisedAs } from "./Realisation";
 import { Retired } from "./Retired";
 import { TrackingSection } from "./Tracking";
 import { useCatalogueContext } from "./useCatalogue";
+import { useRowTarget } from "./useRowTarget";
 
 type Component = Offering["components"][number];
 
@@ -269,6 +270,8 @@ function OfferingRecord({ offering }: { offering: Offering }) {
   const location = useLocation();
   const [params, setParams] = useSearchParams();
   const tab = (TABS.find((item) => item === params.get("tab")) ?? "components") as Tab;
+  // Opened at a part from elsewhere (?tab=components&row=billing): that row of the parts, in view.
+  const missingPart = useRowTarget();
   const choose = (next: Tab) =>
     setParams((previous) => {
       const query = new URLSearchParams(previous);
@@ -355,6 +358,11 @@ function OfferingRecord({ offering }: { offering: Offering }) {
         ) : undefined
       }
     >
+      {missingPart && (
+        <p role="status" className="cat-notice">
+          <Status tone="attention">The part {missingPart}, which the link named, is no longer in this offering.</Status>
+        </p>
+      )}
       {editing === "facts" && panel("facts")}
       {editing === "rename" && (
         <WholeRename

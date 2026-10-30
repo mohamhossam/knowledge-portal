@@ -577,7 +577,7 @@ export function InterfacesEdit({ system, onDone }: { system: CatalogueSystem; on
           onChange={setExposed}
           blank={() => ({ id: "", name: "", system_id: system.id, style: "api", consumer_ids: [], entity_ids: [], open_api_ids: [], relays: [], accepted: [] })}
           itemLabel={(item, index) => `interface ${item.name.trim() || index + 1}`}
-          render={(item, update) => (
+          render={(item, update, index) => (
             <>
               <TextField label="Interface" value={item.name} required onChange={(value) => update({ name: value })} />
               <SelectField label="Style" value={item.style} options={STYLES} onChange={(style) => update({ style: style as Interface["style"] })} />
@@ -590,7 +590,7 @@ export function InterfacesEdit({ system, onDone }: { system: CatalogueSystem; on
                 onChange={(entity_ids) => update({ entity_ids })}
               />
               <AreaField label="What it is for" value={item.description} onChange={(description) => update({ description: description || null })} />
-              <SourceField value={item.source} onChange={(source) => update({ source })} />
+              <SourceField value={item.source} previous={exposed[index - 1]} onCopy={update} onChange={(source) => update({ source })} />
               <SelectField
                 label="How sure its source is"
                 value={item.confidence ?? ""}
@@ -632,15 +632,19 @@ export function DomainsEdit({ tree, onDone }: { tree: "landscape" | "areas"; onD
   const finished = (() => {
     const taken = new Set(items.map((item) => item.id).filter(Boolean));
     // The edit's own row keys stay behind; a new domain takes an id from its name.
-    return items.map((row) => {
+    // A new domain takes its id from its name; any inside it named it by its row key, and now by that id.
+    const ids = new Map<string, string>();
+    const named = items.map((row) => {
       const item = { ...row };
       delete item.key;
       if (item.id) return item;
       let id = slug(item.name);
       for (let n = 2; taken.has(id); n += 1) id = `${slug(item.name)}-${n}`;
       taken.add(id);
+      if (row.key) ids.set(row.key, id);
       return { ...item, id };
     });
+    return named.map((item) => (item.parent_id && ids.has(item.parent_id) ? { ...item, parent_id: ids.get(item.parent_id)! } : item));
   })();
   const placed = new Set(
     landscape
