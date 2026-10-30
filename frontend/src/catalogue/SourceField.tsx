@@ -160,14 +160,16 @@ export function SourceField({ value, onChange, previous, onCopy, label = "Source
  * until one is stated it is unavailable, with the reason, in its place: nothing moves when a
  * source is chosen, and focus is never lost. A value it already holds can still be changed.
  */
-export function SurenessField({ source, value, onChange }: {
+export function SurenessField({ source, value, onChange, label = "How sure its source is" }: {
   source: string | null | undefined;
+  /** Which source, where a form holds several: "How sure the line's source is". */
+  label?: string;
   value: SourceConfidence | null | undefined;
   onChange: (confidence: SourceConfidence | null) => void;
 }) {
   return (
     <SelectField
-      label="How sure its source is"
+      label={label}
       value={value ?? ""}
       options={CONFIDENCE_OPTIONS}
       unavailableReason={!source?.trim() && !value ? "Name its source first." : null}

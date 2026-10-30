@@ -177,12 +177,13 @@ export function RecordList({ label, items, groups, currentId, empty = "Nothing m
   return (
     <div ref={root} className="ds-records" onKeyDown={keyDown}>
       {groups ? (
-        groups.filter((group) => group.items.length).map((group) => (
+        groups.filter((group) => group.items.length).map((group, place) => (
           <div key={group.id} className="ds-records__group">
-            <p className="ds-records__label" id={`${id}-${group.id}`}>
+            {/* By place, not by the group's id, which may hold spaces an id reference cannot. */}
+            <p className="ds-records__label" id={`${id}-group-${place}`}>
               {group.label} <span className="ds-records__count">{(group.count ?? group.items.length).toLocaleString("en")}</span>
             </p>
-            <ul aria-labelledby={`${id}-${group.id}`}>{group.items.map(row)}</ul>
+            <ul aria-labelledby={`${id}-group-${place}`}>{group.items.map(row)}</ul>
           </div>
         ))
       ) : (

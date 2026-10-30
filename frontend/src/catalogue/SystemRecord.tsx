@@ -16,7 +16,7 @@ import { AcceptedFrom } from "./AcceptedFrom";
 import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRoles, usedHow } from "./catalogue";
 import { SystemContextDiagram } from "./diagrams/CatalogueDiagrams";
 import { ConnectionEdit, ConnectionRemove, ConnectionsEdit, InterfacesEdit, SystemEdit, SystemRemove } from "./DraftEdits";
-import { type ConceptIndex, entityNames, INTERFACE_STYLE, type Interface, interfacesOf } from "./ontology";
+import { type ConceptIndex, entityNames, INTERFACE_STYLE, type Interface, interfacesOf, openApiNames } from "./ontology";
 import { SourceStated } from "./provenance/Provenance";
 import { useCatalogueContext } from "./useCatalogue";
 
@@ -204,6 +204,9 @@ function Interfaces({ system }: { system: CatalogueSystem }) {
     <Button id="system-edit-interfaces" variant="quiet" onClick={() => setEditing(true)}>Edit the interfaces</Button>
   ) : undefined;
   const entities = entityNames(book.release);
+  const openApis = openApiNames(book.release);
+  // A relayed interface by its name and the system that exposes it: names repeat across systems.
+  const interfaceName = new Map((book.release.interfaces ?? []).map((item) => [item.id, `${item.name} (${systemName(book, item.system_id)})`]));
   const sys = (systemId: string) => <Link key={systemId} to={`${base}/systems/${encodeURIComponent(systemId)}`} dir="auto">{systemName(book, systemId)}</Link>;
   const list = (ids: string[]) => ids.map((systemId, position) => <span key={systemId}>{position > 0 && ", "}{sys(systemId)}</span>);
   const columns = (side: "exposes" | "uses"): Column<Interface>[] => [
@@ -217,6 +220,13 @@ function Interfaces({ system }: { system: CatalogueSystem }) {
           {item.name}
           {item.entity_ids.length > 0 && (
             <span className="cat-detail">Carries <bdi>{item.entity_ids.map((entity) => entities.get(entity) ?? entity).join(", ")}</bdi></span>
+          )}
+          {/* What it passes on to the systems behind it: a change to one ripples through it. */}
+          {item.relays.length > 0 && (
+            <span className="cat-detail">Passes on <bdi>{item.relays.map((relayed) => interfaceName.get(relayed) ?? relayed).join(", ")}</bdi></span>
+          )}
+          {item.open_api_ids.length > 0 && (
+            <span className="cat-detail">Matches Open API <bdi>{item.open_api_ids.map((api) => openApis.get(api) ?? api).join(", ")}</bdi></span>
           )}
         </>
       ),

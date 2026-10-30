@@ -28,6 +28,7 @@ import { OfferingRules } from "./offering/OfferingRules";
 import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
 import { conceptIndex, realisationRecords } from "./ontology";
 import { NfrSection, RealisationKey, RealisedAs } from "./Realisation";
+import { SourceStated } from "./provenance/Provenance";
 import { Retired } from "./Retired";
 import { TrackingSection } from "./Tracking";
 import { useCatalogueContext } from "./useCatalogue";
@@ -535,7 +536,8 @@ function Components({ offering, action, orderName }: { offering: Offering; actio
               part.code,
             ].filter(Boolean).join(" · ")}
           </span>
-
+          {/* Where the part comes from, under its name: a column of its own would crowd the table. */}
+          <Provenance item={part} />
         </>
       ),
     },
@@ -625,6 +627,7 @@ function OrderMatrix({ offering, action, channelName }: { offering: Offering; ac
           <span className="cat-detail">
             <code className="cat-code">{type.code}</code>
             {type.stage && ` · ${STAGE_WORD[type.stage]}`}
+            {type.delivery_drop && <> · Delivery drop <bdi>{type.delivery_drop}</bdi></>}
             {!type.enabled && " · Not offered"}
           </span>
         </>
@@ -640,6 +643,8 @@ function OrderMatrix({ offering, action, channelName }: { offering: Offering; ac
           <span className="cat-mark cat-quiet"><Minus size={16} aria-hidden="true" /><span className="ds-visually-hidden">No</span></span>
         ),
     })),
+    // Set apart from the channels by a rule: it says where the row comes from, not a channel.
+    { id: "source", header: "Source", bidi: true, divider: true, cell: (type: OrderType) => <SourceStated fact={type} /> },
   ];
   return (
     <Section title="Order types by channel" count={offering.order_types.length} actions={action} headingLevel={3}>

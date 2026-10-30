@@ -23,7 +23,7 @@ import { JourneyEditor } from "./JourneyEditor";
 import { OfferingFacts } from "./OfferingEditor";
 import { questionProblem, SourcesContext } from "./governance";
 import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
-import { entityNames, INTERFACE_STYLE } from "./ontology";
+import { entityNames, INTERFACE_STYLE, openApiNames } from "./ontology";
 import { ConceptEditor } from "./ConceptEditor";
 import { DomainOutline } from "./DomainOutline";
 import { landscapeAsDrawn } from "./model/adapter";
@@ -547,12 +547,15 @@ export function InterfacesEdit({ system, onDone }: { system: CatalogueSystem; on
   const [start] = useState(() => interfacesOfSystem(release, system.id));
   const [exposed, setExposed] = useState<Interface[]>(start.exposed);
   const [used, setUsed] = useState<string[]>(start.used);
+  // Interfaces "It uses" holds only because one here passes them on: let go with the last relay of each.
+  const [byRelay, setByRelay] = useState<string[]>([]);
   const name = (id: string) => book.systems.get(id)?.name ?? id;
   const systems = release.systems
     .filter((item) => item.id !== system.id)
     .map((item) => ({ value: item.id, label: item.name }))
     .sort((a, b) => a.label.localeCompare(b.label));
   const entities = [...entityNames(release)].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
+  const openApis = [...openApiNames(release)].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
   // Another system's interfaces, under the system that exposes each.
   const theirs = (release.interfaces ?? [])
     .filter((item) => item.system_id !== system.id)
@@ -597,6 +600,33 @@ export function InterfacesEdit({ system, onDone }: { system: CatalogueSystem; on
                 options={entities}
                 onChange={(entity_ids) => update({ entity_ids })}
               />
+              {theirs.length > 0 && (
+                <PickField
+                  label="Passes on"
+                  hint="Interfaces of other systems this one forwards. Each one picked is also added to It uses."
+                  chosen={item.relays}
+                  options={usedOptions}
+                  onChange={(relays) => {
+                    update({ relays });
+                    // Passing an interface on means calling it: it joins It uses, and leaves with its last relay
+                    // when only a relay put it there.
+                    const added = relays.filter((relayed) => !used.includes(relayed));
+                    const stillRelayed = (relayed: string) => relays.includes(relayed) || exposed.some((other, at) => at !== index && other.relays.includes(relayed));
+                    const dropped = byRelay.filter((relayed) => !stillRelayed(relayed));
+                    setUsed([...used.filter((relayed) => !dropped.includes(relayed)), ...added]);
+                    setByRelay([...byRelay.filter((relayed) => !dropped.includes(relayed)), ...added]);
+                  }}
+                />
+              )}
+              {(openApis.length > 0 || item.open_api_ids.length > 0) && (
+                <PickField
+                  label="Matches Open API"
+                  hint="The TM Forum Open APIs that do the same job, from this version's vocabulary."
+                  chosen={item.open_api_ids}
+                  options={openApis}
+                  onChange={(open_api_ids) => update({ open_api_ids })}
+                />
+              )}
               <AreaField label="What it is for" value={item.description} onChange={(description) => update({ description: description || null })} />
               <SourceField value={item.source} previous={exposed[index - 1]} onCopy={update} onChange={(source) => update({ source })} />
               <SurenessField source={item.source} value={item.confidence} onChange={(confidence) => update({ confidence })} />
@@ -606,7 +636,15 @@ export function InterfacesEdit({ system, onDone }: { system: CatalogueSystem; on
         <fieldset className="cat-form__rows">
           <legend className="cat-form__legend">It uses</legend>
           {theirs.length ? (
-            <PickField label="Interfaces of other systems it calls" chosen={used} options={usedOptions} onChange={setUsed} />
+            <>
+              <PickField label="Interfaces of other systems it calls" chosen={used} options={usedOptions} onChange={setUsed} />
+              {byRelay.length > 0 && (
+                <p className="ds-field__hint" aria-live="polite">
+                  Added because an interface it exposes passes {byRelay.length === 1 ? "it" : "them"} on:{" "}
+                  <bdi>{byRelay.map((relayed) => usedOptions.find((option) => option.value === relayed)?.label ?? relayed).join(", ")}</bdi>.
+                </p>
+              )}
+            </>
           ) : (
             <p className="ds-field__hint">No other system in this version exposes an interface yet.</p>
           )}

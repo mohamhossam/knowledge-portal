@@ -291,6 +291,7 @@ export function OfferingOrderTypes({ value, onChange, channels, names, errorAt }
             options={STAGE_OPTIONS}
             onChange={(stage) => update({ stage: (stage || null) as OrderTypeStage })}
           />
+          <TextField label="Delivery drop" value={type.delivery_drop} hint="Such as P1." onChange={(delivery_drop) => update({ delivery_drop: delivery_drop || null })} />
           {(channels.length > 0 || (type.channels ?? []).length > 0) && (
             <ChannelChoices
               legend="Ordered through"
@@ -300,6 +301,8 @@ export function OfferingOrderTypes({ value, onChange, channels, names, errorAt }
               onChange={(chosen) => update({ channels: chosen })}
             />
           )}
+          <SourceField value={type.source} previous={value.order_types[index - 1]} onCopy={update} onChange={(source) => update({ source })} />
+          <SurenessField source={type.source} value={type.confidence} onChange={(confidence) => update({ confidence })} />
         </>
       )}
     />
@@ -521,6 +524,8 @@ export function OfferingParts({ value, onChange, systems, names, release, errorA
               onChange={(customer_visible) => update({ customer_visible })}
             />
             <AreaField label="What it is" value={part.description} onChange={(description) => update({ description: description || null })} />
+            <SourceField label="Source of this part" value={part.source} previous={value.components[index - 1]} copyLabel="Same as the part above" onCopy={update} onChange={(source) => update({ source })} />
+            <SurenessField label="How sure the part's source is" source={part.source} value={part.confidence} onChange={(confidence) => update({ confidence })} />
             {(hasConcepts || (part.capability_ids ?? []).length > 0 || part.unlinked_reason != null) && (
               <>
                 {part.unlinked_reason == null && (
@@ -613,7 +618,16 @@ export function OfferingParts({ value, onChange, systems, names, release, errorA
                   />
                   <TextField label="Name" value={item.name} required wide error={errorAt?.(`components.${index}.realisation.${line}.name`)} onChange={(name) => change({ name })} />
                   {hasRecords && <RecordField item={item} release={release} onChange={(record_id) => change({ record_id })} />}
-                  <SurenessField source={item.source} value={item.confidence} onChange={(confidence) => change({ confidence })} />
+                  {/* The first line is offered the part's own source; the others, the line above. */}
+                  <SourceField
+                    label="Source of this line"
+                    value={item.source}
+                    previous={line === 0 ? part : (part.realisation ?? [])[line - 1]}
+                    copyLabel={line === 0 ? "Same as the part" : "Same as the line above"}
+                    onCopy={change}
+                    onChange={(source) => change({ source })}
+                  />
+                  <SurenessField label="How sure the line's source is" source={item.source} value={item.confidence} onChange={(confidence) => change({ confidence })} />
                 </>
               )}
             />

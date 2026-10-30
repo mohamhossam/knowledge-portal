@@ -225,6 +225,19 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
                   onChange={(id) => update({ performing_system_id: id })}
                 />
               )}
+              {(performer === "system" || performer === "entry" || step.system_function) && (
+                <TextField
+                  label="System's function"
+                  value={step.system_function}
+                  wide
+                  hint={
+                    performer === "system" || performer === "entry"
+                      ? "The system's own part, such as “Validates the address against the network inventory”. The step's purpose goes in What it does."
+                      : "No system performs this step, so this is not shown: clear it, or choose a system."
+                  }
+                  onChange={(system_function) => update({ system_function: system_function || null })}
+                />
+              )}
               {performer === "team" && (
                 <TextField
                   label="The team or party"

@@ -5,7 +5,7 @@ import { Fragment, type ReactNode } from "react";
 import type { Offering, Release } from "../api/client";
 import { type Column, DataTable, Section, Status, type StatusTone } from "../design/components";
 import { COVERAGE, LAYERS } from "./catalogue";
-import { ConfidenceMark, Provenance } from "./GovernanceSections";
+import { Provenance } from "./GovernanceSections";
 
 type Part = Offering["components"][number];
 type Nfr = Offering["nfrs"][number];
@@ -52,8 +52,8 @@ export function RealisedAs({ part, records }: { part: Part; records?: ReadonlyMa
               <span dir="auto" className={item.confidence === "gap" ? "offering-realised__name offering-due" : "offering-realised__name"}>
                 {breakable(item.name)}
               </span>
-              {(item.confidence === "inferred" || item.confidence === "gap") && (
-                <>{" "}<span className="offering-by"><ConfidenceMark confidence={item.confidence} /></span></>
+              {(item.confidence === "inferred" || item.confidence === "gap" || item.source) && (
+                <>{" "}<Provenance item={item} /></>
               )}
               <SpecificationRules record={item.record_id ? records?.get(item.record_id) : undefined} />
             </li>
