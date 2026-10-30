@@ -8,7 +8,7 @@ import { routerPath } from "../auth/paths";
 import { blankSystem, channelUses, draftBody, systemUses } from "./drafting";
 import { CONFIDENCE_OPTIONS, usedHow } from "./catalogue";
 import {
-  blankConcept, conceptChanges, type ConceptField, conceptIssue, conceptsWith, conceptUsers, finishedConcept, finishedOffering, finishedSystem, interfacesChanges, interfacesOfSystem, interfacesProblem, interfacesWith, journeyOrderProblem, journeyProblem,
+  blankConcept, conceptChanges, type ConceptField, conceptIssue, conceptsWith, conceptUsers, finishedConcept, finishedOffering, finishedSystem, interfacesChanges, interfacesOfSystem, interfacesProblem, interfacesWith, finishedJourney, journeyChanges, journeyIssue, journeyOrderProblem, savedSame,
   type Link, linksChanges, linksOf, linksProblem, offeringChanged, offeringIssue, offeringProblem, realisationProblem, relationshipsWith, slug, systemChanges,
   systemProblem,
 } from "./editing";
@@ -22,6 +22,7 @@ import { questionProblem } from "./governance";
 import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
 import { entityNames, INTERFACE_STYLE } from "./ontology";
 import { ConceptEditor } from "./ConceptEditor";
+import { roleTerms } from "./model/vocabulary";
 import { SystemEditor } from "./SystemEditor";
 import { useCatalogueContext } from "./useCatalogue";
 import { useEditing } from "./useEditing";
@@ -852,20 +853,27 @@ export function JourneyEdit({ journey, onDone }: { journey?: Journey; onDone: (s
   const { book } = useCatalogueContext();
   const release = book.release;
   const { saveDraft } = useEditing(release);
-  const [value, setValue] = useState<Journey>(
+  const [original] = useState<Journey>(
     () => journey ?? { id: "", name: "", activities: [], flow_rules: [], integrations: [], edges: [], channel_edges: [], shared_edges: [], accepted: [], former_ids: [] },
   );
+  const [value, setValue] = useState<Journey>(original);
+  // A problem one field holds is said under it once Save has been tried; the verb points there.
+  const [attempted, setAttempted] = useState(false);
+  const issue = journeyIssue(value);
   const journeys = release.journeys ?? [];
   return (
     <EditPanel
       title={journey ? `Edit ${journey.name}` : "Add a journey"}
       action={journey ? "Save the journey" : "Add the journey"}
       busy={saveDraft.isPending}
-      problem={journeyProblem(value)}
+      problem={issue ? (issue.at ? `Correct ${issue.field} first.` : issue.message) : null}
+      changes={journey ? journeyChanges(original, value) : savedSame(finishedJourney(original), finishedJourney(value)) ? [] : ["the new journey"]}
+      onAttempt={() => setAttempted(true)}
+      focusOnOpen
       error={saveDraft.error}
       onCancel={() => onDone()}
       onSubmit={() => {
-        const finished = { ...value, id: value.id || slug(value.name), edges: [] };
+        const finished = finishedJourney(value);
         const next = journey ? journeys.map((item) => (item.id === journey.id ? finished : item)) : [...journeys, finished];
         saveDraft.mutate(draftBody(release, { journeys: next }), { onSuccess: () => onDone(finished.id) });
       }}
@@ -877,6 +885,8 @@ export function JourneyEdit({ journey, onDone }: { journey?: Journey; onDone: (s
         offerings={release.products ?? []}
         channels={release.channels ?? []}
         interfaces={release.interfaces ?? []}
+        roles={roleTerms(release)}
+        errorAt={(path) => (attempted && issue?.at === path ? issue.message : null)}
       />
     </EditPanel>
   );

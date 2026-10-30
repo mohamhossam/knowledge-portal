@@ -144,21 +144,25 @@ export function Choices({ legend, hint, children }: { legend: ReactNode; hint?: 
  * A system chosen from the draft. A name the document used that the draft does
  * not have yet stays choosable, said as written.
  */
-export function SystemField({ label, value, onChange, systems, writtenAs, allowNone }: {
+export function SystemField({ label, value, onChange, systems, writtenAs, allowNone, noneLabel = "No system named", error, hint }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   systems: CatalogueSystem[];
   writtenAs?: string;
   allowNone?: boolean;
+  /** What naming none means here, such as the step's own performer standing in. */
+  noneLabel?: string;
+  error?: string | null;
+  hint?: string;
 }) {
   const known = systems.some((system) => system.id === value);
   const options = [
-    ...(allowNone ? [{ value: "", label: "No system named" }] : []),
+    ...(allowNone ? [{ value: "", label: noneLabel }] : []),
     ...(!known && value ? [{ value, label: `${writtenAs ?? value} (not in the draft yet)` }] : []),
     ...[...systems].sort((a, b) => a.name.localeCompare(b.name)).map((system) => ({ value: system.id, label: system.name })),
   ];
-  return <SelectField label={label} value={value} onChange={onChange} options={options} />;
+  return <SelectField label={label} value={value} onChange={onChange} options={options} error={error} hint={hint} />;
 }
 
 /**
@@ -232,7 +236,7 @@ export function PickField({ label, hint, chosen, options, onChange, error }: {
 const sentence = (text: string) => text.charAt(0).toLocaleUpperCase() + text.slice(1);
 
 /** Repeating rows: each a ruled fieldset with its own remove, and one add at the foot. */
-export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel, labelled, removeReason }: {
+export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel, labelled, removeReason, collapsible, summary, forceOpen }: {
   legend: string;
   /** One of them, for the add button: "branch", "hand-over". */
   one: string;
@@ -245,41 +249,74 @@ export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel
   labelled?: boolean;
   /** Why a row cannot be removed, such as something still naming it; its Remove then says so instead. */
   removeReason?: (item: T, index: number) => string | null;
+  /**
+   * Each row closed to its title, a button that opens it, and a line saying what it holds: for a
+   * long list such as a journey's steps, whose closed rows read as its index. A new row opens.
+   */
+  collapsible?: boolean;
+  /** The line a closed row shows under its title. */
+  summary?: (item: T, index: number) => string;
+  /** A row that must be open, such as one with a problem in it once Save has been tried. */
+  forceOpen?: (item: T, index: number) => boolean;
 }) {
   const group = useRef<HTMLFieldSetElement>(null);
   const focusLater = useFocusAfterRender();
+  const [opened, setOpened] = useState<number[]>([]);
+  const isOpen = (item: T, index: number) => !collapsible || opened.includes(index) || Boolean(forceOpen?.(item, index));
   // Focus never falls to the page: a new row takes it, and a removed row hands it on.
   const rowAt = (index: number) => group.current?.querySelectorAll<HTMLElement>(":scope > .cat-form__row")[index];
-  const firstControl = (row: HTMLElement | undefined) => row?.querySelector<HTMLElement>("input, select, textarea, button");
+  const firstControl = (row: HTMLElement | undefined) =>
+    row?.querySelector<HTMLElement>(".cat-form__grid input, .cat-form__grid select, .cat-form__grid textarea") ??
+    row?.querySelector<HTMLElement>("input, select, textarea, button");
   const add = () => {
     onChange([...items, blank()]);
+    setOpened([...opened, items.length]);
     focusLater(() => firstControl(rowAt(items.length)));
   };
   const remove = (index: number) => {
     onChange(items.filter((_, at) => at !== index));
+    // The rows after it move up one, and stay as open as they were.
+    setOpened(opened.filter((at) => at !== index).map((at) => (at > index ? at - 1 : at)));
     focusLater(() =>
       firstControl(rowAt(Math.min(index, items.length - 2))) ?? group.current?.querySelector<HTMLElement>(":scope > .cat-form__remove button"),
     );
   };
+  const toggle = (index: number) => setOpened(opened.includes(index) ? opened.filter((at) => at !== index) : [...opened, index]);
   return (
     <fieldset ref={group} className="cat-form__rows">
       <legend className="cat-form__legend">{legend}</legend>
       {items.length === 0 && <p className="ds-field__hint">None yet.</p>}
-      {items.map((item, index) => (
+      {items.map((item, index) => {
+        const open = isOpen(item, index);
+        const title = sentence(itemLabel(item, index));
+        return (
         <fieldset key={index} className="cat-form__row">
-          <legend className={labelled ? "cat-form__row-title" : "ds-visually-hidden"}>
-            {labelled ? sentence(itemLabel(item, index)) : itemLabel(item, index)}
+          <legend className={labelled || collapsible ? "cat-form__row-title" : "ds-visually-hidden"}>
+            {collapsible ? (
+              <button type="button" className="cat-form__row-toggle" aria-expanded={open} onClick={() => toggle(index)}>
+                {title}
+              </button>
+            ) : labelled ? (
+              title
+            ) : (
+              itemLabel(item, index)
+            )}
           </legend>
-          <div className="cat-form__grid">
-            {render(item, (patch) => onChange(items.map((current, at) => (at === index ? { ...current, ...patch } : current))), index)}
-          </div>
+          {open ? (
+            <div className="cat-form__grid">
+              {render(item, (patch) => onChange(items.map((current, at) => (at === index ? { ...current, ...patch } : current))), index)}
+            </div>
+          ) : (
+            summary && <p className="ds-field__hint">{summary(item, index)}</p>
+          )}
           <div className="cat-form__remove">
             <Button variant="tertiary" icon={<X size={14} />} unavailableReason={removeReason?.(item, index) ?? null} onClick={() => remove(index)}>
               Remove {itemLabel(item, index)}
             </Button>
           </div>
         </fieldset>
-      ))}
+        );
+      })}
       <div className="cat-form__remove">
         <Button variant="tertiary" icon={<Plus size={14} />} onClick={add}>
           Add {items.length ? "another" : /^[aeiou]/i.test(one) ? "an" : "a"} {one}

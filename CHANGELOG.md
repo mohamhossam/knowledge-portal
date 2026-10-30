@@ -139,6 +139,20 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- A journey's edit covers everything its views show. Each step says who performs it as one
+  choice (a system, the channel's entry system, a team or party, or not said, never two), its role
+  from the vocabulary's roles, its eTOM place, what it does and produces, its point of no return,
+  its track and its source. Each hand-over names its calling, called and through systems, what it
+  is for, its style, its TM Forum equivalent and its source, and the journey its own source. Like
+  the other edits, it asks before a change is thrown away, says each problem under its field once
+  Save has been tried, and the record's buttons give way while it is open. Supporting systems are
+  added with an explicit Add, and a suggested journey is sent trimmed, with nothing said where a
+  choice was left empty. Steps and hand-overs open from their titles, each closed to a line of
+  what it holds, so the one to correct is found at once; a row with a problem opens when Save is
+  tried. Switching who performs a step and back keeps the system or team written, and one chosen
+  but left empty is said rather than saved as not said. What has changed, and each problem, names
+  the step or hand-over. A hand-over reads by its steps' names, and an empty calling or called
+  system says whose performer stands in. No upgrade step.
 - The portfolio and the realisation records are read and edited on the Offerings page, beside
   the list of offerings. "Edit the portfolio" holds each node's name, level, where it sits, what
   it covers and whether it is retired; "Edit the realisation records" each record's layer, name,

@@ -1,5 +1,5 @@
 /** What an edit sends, and why it cannot be sent yet: shared by the catalogue's editors. */
-import type { CatalogueSystem, Journey, Offering, Relationship, RelationshipKind, Release } from "../api/client";
+import type { CatalogueSystem, Journey, JourneyActivity, Offering, Relationship, RelationshipKind, Release } from "../api/client";
 
 /** A name or code as compared: no case, no surrounding space. */
 const fold = (text: string) => text.trim().toLocaleLowerCase();
@@ -242,14 +242,117 @@ export function journeyOrderProblem(value: Offering, journeys: Journey[]): strin
   return journey ? `The journey ${journey.name} is for the order type ‘${journey.order_type_code}’; edit that journey first.` : null;
 }
 
-/** Why the journey cannot be accepted yet, if anything. */
-export function journeyProblem(value: Journey): string | null {
-  if (!value.name.trim()) return "Give the journey a name.";
-  if (value.activities.some((step) => !step.number.trim() || !step.name.trim())) return "Every step needs a number and a name.";
-  const numbers = value.activities.map((step) => step.number.trim());
-  if (new Set(numbers).size !== numbers.length) return "Step numbers must be different.";
-  if (value.order_type_code && !value.product_id) return "An order type needs its offering.";
+/** A step in words: "step 30", or by its name while it has no number. */
+const stepWords = (step: JourneyActivity): string =>
+  step.number.trim() ? `step ${step.number.trim()}` : step.name.trim() ? `the step ${step.name.trim()}` : "a new step";
+
+/** What stops a journey being saved, if anything: the message, and the field it is at ("activities.2.name") with its words. */
+export function journeyIssue(value: Journey): OfferingIssue | null {
+  const at = (path: string, field: string, message: string): OfferingIssue => ({ message, at: path, field });
+  if (!value.name.trim()) return at("name", "the journey's name", "Give the journey a name.");
+  const numbers: string[] = [];
+  for (const [index, step] of value.activities.entries()) {
+    const which = stepWords(step);
+    const path = (field: string) => `activities.${index}.${field}`;
+    if (!step.number.trim()) return at(path("number"), `the number of ${which}`, "Give the step a number.");
+    if (numbers.includes(step.number.trim())) return at(path("number"), `the number of ${which}`, `Another step is numbered ${step.number.trim()}; step numbers must be different.`);
+    numbers.push(step.number.trim());
+    if (!step.name.trim()) return at(path("name"), `the name of ${which}`, "Give the step a name.");
+    // A step is performed by a named system, the channel's entry system, or a team or party: one of them.
+    const performers = [step.performing_system_id, step.channel_entry ? "entry" : null, step.performer?.trim() || null].filter(Boolean);
+    if (performers.length > 1) return at(path("performer"), `who performs ${which}`, "A step is performed by one of a system, the channel's entry system, or a team or party.");
+    // Chosen, and then left empty: said, rather than saved as not said.
+    if (step.performing_system_id === "") return at(path("system"), `the system of ${which}`, "Choose the system that performs it, or choose Not said above.");
+    if (step.performer != null && !step.performer.trim()) return at(path("team"), `the team of ${which}`, "Name the team or party that performs it, or choose Not said above.");
+  }
+  if (value.order_type_code && !value.product_id) return at("order_type_code", "the order type", "An order type needs its offering.");
   return null;
+}
+
+/** Why a journey cannot be saved yet, if anything. */
+export const journeyProblem = (value: Journey): string | null => journeyIssue(value)?.message ?? null;
+
+/**
+ * What an edit of a journey has changed, in words: its own facts, each step by its number (a step
+ * renumbered reads as one added and one removed), the branches, and each hand-over by its steps.
+ */
+export function journeyChanges(before: Journey, after: Journey): string[] {
+  const [was, is] = [finishedJourney(before), finishedJourney(after)];
+  const changed: string[] = [];
+  const own: [string, (journey: Journey) => unknown][] = [
+    ["the name", (journey) => journey.name],
+    ["the offering and order type", (journey) => [journey.product_id ?? null, journey.order_type_code ?? null]],
+    ["the journey's source", (journey) => [journey.confidence ?? null, journey.source]],
+    ["what the journey is", (journey) => journey.description],
+  ];
+  for (const [name, read] of own) if (!savedSame(read(was), read(is))) changed.push(name);
+  const steps = new Map(was.activities.map((step) => [step.number, step]));
+  for (const step of is.activities) {
+    const before = steps.get(step.number);
+    if (!before) changed.push(`the new step ${step.number}`);
+    else if (!savedSame(before, step)) changed.push(`step ${step.number}`);
+  }
+  const kept = new Set(is.activities.map((step) => step.number));
+  for (const step of was.activities) if (!kept.has(step.number)) changed.push(`the removed step ${step.number}`);
+  if (!savedSame(was.flow_rules, is.flow_rules)) changed.push("the branches");
+  // Hand-overs have no id: each is known by its steps, and by which of those it is when two share them.
+  const keyed = (links: Journey["integrations"]) => {
+    const seen = new Map<string, number>();
+    return links.map((link) => {
+      const pair = `${link.from_activity} to ${link.to_activity}`;
+      const count = (seen.get(pair) ?? 0) + 1;
+      seen.set(pair, count);
+      return { key: `${pair}#${count}`, pair, link };
+    });
+  };
+  const links = new Map(keyed(was.integrations).map((item) => [item.key, item.link]));
+  const now = keyed(is.integrations);
+  for (const { key, pair, link } of now) {
+    const before = links.get(key);
+    if (!before) changed.push(`the new hand-over ${pair}`);
+    else if (!savedSame(before, link)) changed.push(`the hand-over ${pair}`);
+  }
+  const still = new Set(now.map((item) => item.key));
+  for (const { key, pair } of keyed(was.integrations)) if (!still.has(key)) changed.push(`the removed hand-over ${pair}`);
+  // Said in a line beside the verb: a long list ends in how many more.
+  return changed.length > 6 ? [...changed.slice(0, 5), `${changed.length - 5} more`] : changed;
+}
+
+/** What the service is sent for a journey: an id when new, trimmed text, and nothing said where a choice was left empty. */
+export function finishedJourney(value: Journey): Journey {
+  const text = (item: string | null | undefined) => item?.trim() || null;
+  return {
+    ...value,
+    id: value.id || slug(value.name),
+    name: value.name.trim(),
+    source: text(value.source),
+    description: text(value.description),
+    edges: [],
+    activities: value.activities.map((step) => ({
+      ...step,
+      number: step.number.trim(),
+      name: step.name.trim(),
+      performing_system_id: step.performing_system_id || null,
+      performer: text(step.performer),
+      role: text(step.role),
+      etom: text(step.etom),
+      description: text(step.description),
+      output: text(step.output),
+      point_of_no_return: text(step.point_of_no_return),
+      track: text(step.track),
+      source: text(step.source),
+    })),
+    integrations: value.integrations.map((link) => ({
+      ...link,
+      from_system_id: link.from_system_id || null,
+      to_system_id: link.to_system_id || null,
+      via_system_id: link.via_system_id || null,
+      purpose: text(link.purpose),
+      style: text(link.style),
+      tmf_equivalent: text(link.tmf_equivalent),
+      source: text(link.source),
+    })),
+  };
 }
 
 /** An id not yet taken: "order-hub", then "order-hub-2". */
