@@ -1,10 +1,10 @@
 import { useRef, useState } from "react";
 
 import type { CatalogueSystem, Channel, KnowledgeSource, Offering, Release, SourceConfidence } from "../api/client";
-import { ActionGroup, Button } from "../design/components";
+import { ActionGroup, Button, Status } from "../design/components";
 import { useFocusAfterRender } from "../design/hooks";
 import { CONFIDENCE_OPTIONS, COVERAGE, LAYERS } from "./catalogue";
-import { ambiguousNameMatches, conceptDomain, lines, nameMatches } from "./editing";
+import { ambiguousNameMatches, conceptDomain, nameMatches } from "./editing";
 import { AreaField, CheckField, Choices, LinesField, PickField, Rows, SelectField, SystemField, TextField } from "./forms";
 import { LifecycleEditor } from "./LifecycleEditor";
 import { TrackingEditor } from "./TrackingEditor";
@@ -37,15 +37,141 @@ const LAYER_OPTIONS = LAYERS.map(({ layer, short, long }) => ({ value: layer, la
 const COVERAGE_OPTIONS = (Object.keys(COVERAGE) as Nfr["coverage"][]).map((value) => ({ value, label: COVERAGE[value] }));
 
 
-/** "Name — description" per line, the way offering values and audiences are written. */
-const pointLines = (points: Point[]) => points.map((point) => (point.description ? `${point.name} — ${point.description}` : point.name));
-const linePoints = (items: string[], before: Point[]): Point[] =>
-  lines(items).map((line) => {
-    const [name = "", ...rest] = line.split(" — ");
-    const description = rest.join(" — ").trim() || null;
-    const kept = before.find((point) => point.name === name.trim());
-    return { ...kept, name: name.trim(), description };
-  });
+/** Lines read as points: "name — description", one a line, the empty ones left out. */
+const pastedPoints = (text: string): Point[] =>
+  text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [name = "", ...rest] = line.split(/\s+[—–-]\s+/);
+      return { name: name.trim(), description: rest.join(" — ").trim() || null };
+    });
+
+/**
+ * Who an offering is for, or what it promises: each a row with its name, what it means, and
+ * where it comes from, as the service keeps them (OfferingPoint). Two lines a row: what it is,
+ * then its source; several are pasted at once, one a line.
+ */
+function PointRows({ legend, one, items, onChange, path, errorAt, longNames }: {
+  legend: string;
+  one: string;
+  items: Point[];
+  onChange: (items: Point[]) => void;
+  /** Where its rows sit in the offering, for what is wrong with a field: "audiences". */
+  path: string;
+  errorAt?: (path: string) => string | null;
+  /** Names that read as sentences, such as a promise: the name takes the wider column. */
+  longNames?: boolean;
+}) {
+  const [pasting, setPasting] = useState(false);
+  const [text, setText] = useState("");
+  const [said, setSaid] = useState("");
+  const focusLater = useFocusAfterRender();
+  const many = one === "audience" ? "audiences" : `${one}s`;
+  const pasted = pastedPoints(text);
+  const addPasted = () => {
+    onChange([...items, ...pasted]);
+    setSaid(`${pasted.length === 1 ? `One ${one}` : `${pasted.length} ${many}`} added.`);
+    setText("");
+    setPasting(false);
+    focusLater(() => document.getElementById(`${path}-paste`));
+  };
+  return (
+    <div className="cat-form__wide">
+      <Rows<Point>
+        legend={legend}
+        one={one}
+        labelled
+        items={items}
+        onChange={onChange}
+        blank={() => ({ name: "" })}
+        hint="Its source is the document and where in it, such as SDD v2.3 · §4.1."
+        itemLabel={(point, index) => `${one} ${point.name.trim() || index + 1}`}
+        render={(point, change, index) => (
+          <div className={`cat-points${longNames ? " cat-points--long" : ""}`}>
+            <div className="cat-form__cell cat-points__name">
+              <TextField label="Name" value={point.name} required error={errorAt?.(`${path}.${index}.name`)} onChange={(name) => change({ name })} />
+            </div>
+            <div className="cat-form__cell cat-points__means">
+              <TextField label="What it means" value={point.description} onChange={(description) => change({ description: description || null })} />
+            </div>
+            <div className="cat-form__cell cat-points__source">
+              <TextField label="Source" value={point.source} onChange={(source) => change({ source: source || null })} />
+            </div>
+            <div className="cat-form__cell">
+              <SelectField
+                label="How sure its source is"
+                value={point.confidence ?? ""}
+                options={CONFIDENCE_OPTIONS}
+                onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
+              />
+            </div>
+            {/* Confirmed in a source no one names reads as nothing when the offering is read: said here, not refused. */}
+            {point.confidence === "confirmed" && !point.source?.trim() && (
+              <p className="ds-field__hint cat-points__note">
+                <Status tone="warning">Confirmed, but its source is not named; name it, or say how sure it is.</Status>
+              </p>
+            )}
+          </div>
+        )}
+      />
+      <p className="ds-visually-hidden" aria-live="polite">{said}</p>
+      {pasting ? (
+        <div className="cat-points__paste">
+          <AreaField
+            label={`Paste several ${many}`}
+            value={text}
+            rows={4}
+            hint="One a line; add “ — ” and what it means if the source says. Their sources are left for you to name."
+            onChange={setText}
+          />
+          <ActionGroup>
+            <Button
+              variant="secondary"
+              unavailableReason={pasted.length ? null : `Paste at least one ${one} first.`}
+              onClick={addPasted}
+            >
+              {pasted.length > 1 ? `Add these ${pasted.length} ${many}` : `Add the ${one}`}
+            </Button>
+            <Button
+              variant="tertiary"
+              onClick={() => {
+                setPasting(false);
+                setText("");
+                focusLater(() => document.getElementById(`${path}-paste`));
+              }}
+            >
+              Cancel the paste
+            </Button>
+          </ActionGroup>
+        </div>
+      ) : (
+        <Button id={`${path}-paste`} variant="tertiary" onClick={() => setPasting(true)}>
+          Paste several {many}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/** Who the offering is for and what it promises, each with where it comes from: a section of its own. */
+export function OfferingAudience({ value, onChange, errorAt }: SectionProps) {
+  return (
+    <>
+      <PointRows legend="Who it is for" one="audience" items={value.audiences} onChange={(audiences) => onChange({ ...value, audiences })} path="audiences" errorAt={errorAt} />
+      <PointRows
+        legend="What it promises"
+        one="promise"
+        items={value.values}
+        onChange={(values) => onChange({ ...value, values })}
+        path="values"
+        errorAt={errorAt}
+        longNames
+      />
+    </>
+  );
+}
 
 /** What every section editor of an offering takes: the offering, edited in place. */
 export type SectionProps = {
@@ -144,18 +270,6 @@ export function OfferingFacts({ value, onChange, offerings, release, errorAt }: 
       )}
       <AreaField label="What it offers" value={value.proposition} onChange={(proposition) => set({ proposition: proposition || null })} />
       <AreaField label="Why a customer buys it" value={value.purpose} onChange={(purpose) => set({ purpose: purpose || null })} />
-      <LinesField
-        label="For"
-        value={pointLines(value.audiences)}
-        hint="One audience per line; add “ — ” and a description if the source gives one."
-        onChange={(items) => set({ audiences: linePoints(items, value.audiences) })}
-      />
-      <LinesField
-        label="Promises"
-        value={pointLines(value.values)}
-        hint="One per line; add “ — ” and a description if the source gives one."
-        onChange={(items) => set({ values: linePoints(items, value.values) })}
-      />
     </>
   );
 }

@@ -71,13 +71,56 @@
   font-weight: var(--weight-emphasis);
 }
 
-/* A repeating row named on its own rule, for long groups such as lifecycle notes. */
+/* A repeating row named on its own rule, for long groups such as lifecycle notes: quieter than its group's legend. */
 .cat-form__row-title {
   inline-size: 100%;
   margin-block-end: var(--space-2);
   padding: var(--space-1) 0;
-  border-block-end: var(--rule-heavy) solid var(--color-rule-heavy);
-  font-weight: var(--weight-strong);
+  border-block-end: var(--rule-hair) solid var(--color-rule);
+  font-weight: var(--weight-emphasis);
+}
+
+/* An audience or a promise: what it is on one line, its source on the next. */
+.cat-points {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-4);
+  align-items: end;
+}
+
+.cat-points__means,
+.cat-points__source,
+.cat-points--long .cat-points__name {
+  grid-column: span 2;
+}
+
+.cat-points--long .cat-points__means {
+  grid-column: span 1;
+}
+
+.cat-points__note {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.cat-points__paste {
+  display: grid;
+  gap: var(--space-2);
+  max-inline-size: 72ch;
+}
+
+@media (max-width: 40rem) {
+  .cat-points {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cat-points__means,
+  .cat-points__source,
+  .cat-points--long .cat-points__name,
+  .cat-points--long .cat-points__means {
+    grid-column: auto;
+  }
 }
 
 /* A closed row's title opens it: the whole title is the target, read as the row's heading. */
