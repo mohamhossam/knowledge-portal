@@ -27,6 +27,14 @@
   max-inline-size: none;
 }
 
+/* A wide field keeps its hint and its error to a readable measure. */
+.cat-form__cell .ds-field__hint,
+.cat-form__cell .ds-field__error,
+.cat-form > .ds-field__hint,
+.cat-form__rows > .ds-field__hint {
+  max-inline-size: 72ch;
+}
+
 .cat-form__wide,
 .cat-form__grid > .cat-form__rows {
   grid-column: 1 / -1;
@@ -146,6 +154,14 @@
   .cat-form__role .ds-radios > legend {
     inline-size: 100%;
   }
+}
+
+/* What still names something a removal would take away, each a link to change it. */
+.cat-edit__users {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding-inline-start: var(--space-5);
 }
 
 /* What the edit has changed so far, or the question before it is thrown away. */

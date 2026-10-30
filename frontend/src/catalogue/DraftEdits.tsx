@@ -1,22 +1,26 @@
+import { Trash2 } from "lucide-react";
 import { type FormEvent, Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import type { CatalogueSystem, Channel, Journey, Offering, Relationship, RelationshipKind, Release, SourceConfidence } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
+import { routerPath } from "../auth/paths";
 import { blankSystem, channelUses, draftBody, systemUses } from "./drafting";
 import { CONFIDENCE_OPTIONS, usedHow } from "./catalogue";
 import {
-  finishedOffering, finishedSystem, interfacesChanges, interfacesOfSystem, interfacesProblem, interfacesWith, journeyOrderProblem, journeyProblem,
+  blankConcept, conceptChanges, type ConceptField, conceptIssue, conceptsWith, conceptUsers, finishedConcept, finishedOffering, finishedSystem, interfacesChanges, interfacesOfSystem, interfacesProblem, interfacesWith, journeyOrderProblem, journeyProblem,
   type Link, linksChanges, linksOf, linksProblem, offeringProblem, relationshipsWith, slug, systemChanges, systemProblem,
 } from "./editing";
 import { ActionGroup, Button, Status } from "../design/components";
 import { useFocusAfterRender } from "../design/hooks";
+import { RouterLink } from "../shell/links";
 import { AreaField, PickField, Rows, SelectField, SystemField, TextField } from "./forms";
 import { JourneyEditor } from "./JourneyEditor";
 import { OfferingFacts } from "./OfferingEditor";
 import { questionProblem } from "./governance";
 import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
 import { entityNames, INTERFACE_STYLE } from "./ontology";
+import { ConceptEditor } from "./ConceptEditor";
 import { SystemEditor } from "./SystemEditor";
 import { useCatalogueContext } from "./useCatalogue";
 import { useEditing } from "./useEditing";
@@ -32,12 +36,14 @@ function listed(names: string[]): string {
  * scrolls. The verb stays focusable while it can't be sent, with the reason
  * beside it (§1.2); a failure is said in a line mounted from the start.
  */
-export function EditPanel({ title, children, action, busy, problem, error, onSubmit, onCancel, danger, conflictMessage, focusOnOpen, level = 3, changes }: {
+export function EditPanel({ title, children, action, actionIcon, busy, problem, error, onSubmit, onCancel, danger, conflictMessage, focusOnOpen, level = 3, changes }: {
   title: string;
+  /** An icon before the verb, such as a bin on a removal. */
+  actionIcon?: ReactNode;
   /**
    * What the edit has changed so far, by the names of its fields: said beside the verb, and
-   * while there is any, Cancel and Escape ask before throwing it away. Left out, the panel
-   * cancels at once.
+   * while there is any, Cancel, Escape and a link out of the panel ask before throwing it away,
+   * and closing the tab warns. Left out, the panel cancels at once.
    */
   changes?: string[];
   /** Its title's heading level: 2 where it takes the place of a page's own section. */
@@ -57,8 +63,11 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
 }) {
   const id = useId();
   const heading = useRef<HTMLHeadingElement>(null);
+  const form = useRef<HTMLFormElement>(null);
+  const navigate = useNavigate();
   const Heading = level === 2 ? "h2" : "h3";
-  const [asking, setAsking] = useState(false);
+  // Asking before the changes go: on Cancel or Escape, or on a link out of the panel, which it then follows.
+  const [asking, setAsking] = useState<{ to?: string } | null>(null);
   const focusAfter = useFocusAfterRender();
   // Where the person was when the panel asked, so keeping on editing goes back there.
   const was = useRef<HTMLElement | null>(null);
@@ -69,17 +78,43 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
     if (asking) document.getElementById(`${id}-keep`)?.focus();
   }, [asking, id]);
   const changed = changes ?? [];
-  const ask = () => {
+  const ask = (to?: string) => {
     was.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setAsking(true);
+    setAsking({ to });
   };
   const keepEditing = () => {
-    setAsking(false);
+    setAsking(null);
     // The Cancel pressed to ask is a new button by now; a field is still the one it was.
     focusAfter(() => (was.current?.isConnected && was.current !== document.body ? was.current : document.getElementById(`${id}-cancel`)));
   };
   // A changed form is not thrown away by one press: Cancel or Escape asks first, and Escape again keeps editing.
   const leave = () => (changed.length && !asking ? ask() : asking ? keepEditing() : onCancel());
+  const discard = () => {
+    const to = asking?.to;
+    onCancel();
+    if (to) navigate(to);
+  };
+  // Nor by a link elsewhere on the page (another record, a tab, the sidebar), nor by closing the tab.
+  const dirty = changed.length > 0;
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    const click = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href]") : null;
+      if (!link || link.target || link.hasAttribute("download") || link.origin !== window.location.origin || form.current?.contains(link)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      was.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      setAsking({ to: `${routerPath(link.pathname)}${link.search}${link.hash}` });
+    };
+    window.addEventListener("beforeunload", warn);
+    window.document.addEventListener("click", click, true);
+    return () => {
+      window.removeEventListener("beforeunload", warn);
+      window.document.removeEventListener("click", click, true);
+    };
+  }, [dirty]);
   const conflict = error instanceof ApiError && error.status === 409;
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -87,6 +122,7 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
   };
   return (
     <form
+      ref={form}
       className={danger ? "cat-edit cat-edit--danger" : "cat-edit"}
       aria-labelledby={`${id}-title`}
       noValidate
@@ -117,10 +153,12 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
         */}
         {asking ? (
           <Fragment key="asking">
-            <p id={`${id}-discard`} className="cat-edit__changes">Discard your changes to {listed(changed)}?</p>
+            <p id={`${id}-discard`} className="cat-edit__changes">
+              {asking.to ? `Leave, and discard your changes to ${listed(changed)}?` : `Discard your changes to ${listed(changed)}?`}
+            </p>
             <ActionGroup>
               <Button id={`${id}-keep`} variant="primary" aria-describedby={`${id}-discard`} onClick={keepEditing}>Keep editing</Button>
-              <Button variant="tertiary" onClick={onCancel}>Discard the changes</Button>
+              <Button variant="tertiary" onClick={discard}>{asking.to ? "Discard and leave" : "Discard the changes"}</Button>
             </ActionGroup>
           </Fragment>
         ) : (
@@ -131,7 +169,7 @@ export function EditPanel({ title, children, action, busy, problem, error, onSub
               </p>
             )}
             <ActionGroup>
-              <Button type="submit" variant={danger ? "danger" : "primary"} busy={busy} unavailableReason={busy ? null : problem}>
+              <Button type="submit" variant={danger ? "danger" : "primary"} icon={actionIcon} busy={busy} unavailableReason={busy ? null : problem}>
                 {busy ? "Saving…" : action}
               </Button>
               <Button id={`${id}-cancel`} variant="tertiary" onClick={leave}>Cancel</Button>
@@ -209,6 +247,107 @@ export function SystemRemove({ system, onDone }: { system: CatalogueSystem; onDo
     </EditPanel>
   );
 }
+
+type Concept = NonNullable<Release["business_capabilities"]>[number];
+
+/** The concept form's fields by the names it shows, for the reason beside the verb. */
+const CONCEPT_FIELD: Record<ConceptField, string> = {
+  pref_label: "Preferred label",
+  alt_labels: "Other labels",
+  broader_id: "Broader concept",
+  domain_id: "Capability domain",
+  close_match: "Near matches",
+  replaced_by: "Replaced by",
+};
+
+/**
+ * Editing a concept, or adding one; a new one opens on its own sheet once saved. `retire` opens
+ * it already retired, for "Retire it instead".
+ */
+export function ConceptEdit({ concept, retire, onDone }: { concept?: Concept; retire?: boolean; onDone: (saved?: string) => void }) {
+  const { book, base } = useCatalogueContext();
+  const release = book.release;
+  const navigate = useNavigate();
+  const { saveDraft } = useEditing(release);
+  const [original] = useState<Concept>(() => concept ?? blankConcept());
+  const [value, setValue] = useState<Concept>(() => (retire ? { ...original, deprecated: true } : original));
+  const issue = conceptIssue(value, release);
+  return (
+    <EditPanel
+      title={concept ? `Edit ${concept.pref_label}` : "Add a concept"}
+      focusOnOpen={!concept || retire}
+      action={concept ? "Save the concept" : "Add the concept"}
+      busy={saveDraft.isPending}
+      // The field says what is wrong; the verb only points to it.
+      problem={issue ? `Correct ${CONCEPT_FIELD[issue.field]} first.` : null}
+      changes={conceptChanges(original, value, release)}
+      error={saveDraft.error}
+      onCancel={() => onDone()}
+      onSubmit={() => {
+        const finished = finishedConcept(value, release);
+        saveDraft.mutate(draftBody(release, { business_capabilities: conceptsWith(release, finished) }), {
+          onSuccess: () => {
+            onDone(finished.id);
+            if (!concept) navigate(`${base}/concepts/${encodeURIComponent(finished.id)}`);
+          },
+        });
+      }}
+    >
+      <ConceptEditor value={value} onChange={setValue} release={release} issue={issue} />
+    </EditPanel>
+  );
+}
+
+/**
+ * Removing a concept: only one nothing names, since a link to it would be left pointing nowhere.
+ * While something does, each is a link to change it, and retiring is offered instead.
+ */
+export function ConceptRemove({ concept, onDone, onRetire }: { concept: Concept; onDone: () => void; onRetire: () => void }) {
+  const { book, base } = useCatalogueContext();
+  const release = book.release;
+  const navigate = useNavigate();
+  const { saveDraft } = useEditing(release);
+  const users = conceptUsers(release, concept.id);
+  return (
+    <EditPanel
+      title={`Remove ${concept.pref_label}`}
+      focusOnOpen
+      action={`Remove “${concept.pref_label}”`}
+      actionIcon={<Trash2 size={16} />}
+      danger
+      busy={saveDraft.isPending}
+      problem={users.length ? `Something still names it; ${users.length === 1 ? "change it" : "change those"} first, or retire it instead.` : null}
+      error={saveDraft.error}
+      onCancel={onDone}
+      onSubmit={() =>
+        void saveDraft
+          .mutateAsync(draftBody(release, { business_capabilities: (release.business_capabilities ?? []).filter((item) => item.id !== concept.id) }))
+          .then(() => navigate(`${base}/concepts`, { state: { notice: `${concept.pref_label} was removed from the draft.` } }))
+          .catch(() => undefined)
+      }
+    >
+      {users.length ? (
+        <>
+          <p className="cat-edit__lead">It is still named by:</p>
+          <ul className="cat-edit__users">
+            {users.map((user) => (
+              <li key={`${user.path}:${user.text}`}>
+                <RouterLink href={`${base}/${user.path}`}>{sentence(user.text)}</RouterLink>
+              </li>
+            ))}
+          </ul>
+          <ActionGroup>
+            <Button onClick={onRetire}>Retire it instead</Button>
+          </ActionGroup>
+        </>
+      ) : (
+        <p className="cat-edit__lead">Requirement work keeps mapping to it until the draft is published. To keep it readable but out of use, retire it instead.</p>
+      )}
+    </EditPanel>
+  );
+}
+
+const sentence = (text: string) => text.charAt(0).toLocaleUpperCase() + text.slice(1);
 
 const HOW: { value: RelationshipKind; label: string }[] = [
   { value: "calls_api", label: "Calls its API" },

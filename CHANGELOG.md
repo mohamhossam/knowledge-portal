@@ -139,6 +139,25 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Concepts are edited, added and removed on their own screen; before, they came only from
+  accepted suggestions and catalogue files. "Edit this concept" holds its preferred and other
+  labels, what it means, its broader concept or capability domain, its outside and near matches,
+  its source, and whether it is retired and what replaces it; the systems and offering parts that
+  realise it stay in view. The service's rules are checked before saving: each label names one
+  concept, no concept sits under itself, at most three levels under a capability domain (broader
+  concepts that would go deeper are not offered), a domain only on a top concept (kept while one
+  is tried under another), and no move that would leave a linked capability outside its
+  concept's capability domain. A problem is said under the field it is at. "Add a concept" sits
+  beside the list, and a concept is removed only when nothing names it: until then the removal
+  links to each thing that does and offers "Retire it instead". The list and the record now put a
+  concept under another in its top concept's capability domain (it was listed under "No
+  capability domain"), each top concept followed by those under it; the record says where the
+  domain comes from and lists a concept's near matches. No upgrade step.
+- A changed edit in the catalogue (a system, its connections or interfaces, a concept) is no
+  longer thrown away by a link elsewhere on the page: the panel asks first ("Leave, and discard
+  your changes to …?") and then follows it, and closing the tab warns. While an edit or a removal
+  is open, the record's own Edit and Remove buttons give way to it, so switching between them
+  cannot drop changes either. Hints and errors in wide form fields keep to a readable measure.
 - A system's edit form now covers everything else its record shows about the system itself: whether
   it is outside the operator, the owner its source names, its roadmap, its own source and how sure
   that source is, the concept each capability realises (or why none fits), and the information it

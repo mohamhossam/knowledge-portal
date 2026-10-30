@@ -41,17 +41,19 @@ export function TextField({ label, value, onChange, required, dir = "auto", wide
   );
 }
 
-export function AreaField({ label, value, onChange, rows = 2, hint, required }: {
+export function AreaField({ label, value, onChange, rows = 2, hint, required, error }: {
   label: string;
   value: string | null | undefined;
   onChange: (value: string) => void;
   rows?: number;
   hint?: string;
   required?: boolean;
+  /** What is wrong with the value, said beside the field and tied to it. */
+  error?: string | null;
 }) {
   return (
     <div className="cat-form__cell cat-form__wide">
-      <Field label={label} hint={hint} required={required}>
+      <Field label={label} hint={hint} error={error} required={required}>
         {(control) => (
           <textarea
             className="ds-input ds-input--area"
@@ -69,12 +71,13 @@ export function AreaField({ label, value, onChange, rows = 2, hint, required }: 
 }
 
 /** A list edited one item per line: names, phrases, rules. */
-export function LinesField({ label, value, onChange, hint, required }: {
+export function LinesField({ label, value, onChange, hint, required, error }: {
   label: string;
   value: string[];
   onChange: (value: string[]) => void;
   hint?: string;
   required?: boolean;
+  error?: string | null;
 }) {
   return (
     <AreaField
@@ -83,13 +86,14 @@ export function LinesField({ label, value, onChange, hint, required }: {
       rows={Math.min(6, Math.max(2, value.length + 1))}
       hint={hint ?? "One per line."}
       required={required}
+      error={error}
       // Kept as typed while editing, spaces and an empty last line included; `lines` trims at submit.
       onChange={(text) => onChange(text.split("\n"))}
     />
   );
 }
 
-export function SelectField({ label, value, onChange, options, wide, hint }: {
+export function SelectField({ label, value, onChange, options, wide, hint, error }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -97,6 +101,7 @@ export function SelectField({ label, value, onChange, options, wide, hint }: {
   options: { value: string; label: string; group?: string }[];
   wide?: boolean;
   hint?: string;
+  error?: string | null;
 }) {
   const runs: { group?: string; options: typeof options }[] = [];
   for (const option of options) {
@@ -107,7 +112,7 @@ export function SelectField({ label, value, onChange, options, wide, hint }: {
   const render = (list: typeof options) => list.map((option) => <option key={option.value} value={option.value}>{option.label}</option>);
   return (
     <div className={wide ? "cat-form__cell cat-form__wide" : "cat-form__cell"}>
-      <Field label={label} hint={hint}>
+      <Field label={label} hint={hint} error={error}>
         {(control) => (
           <select className="ds-input ds-input--select" {...control} value={value} onChange={(event) => onChange(event.target.value)}>
             {runs.map((run, index) =>
