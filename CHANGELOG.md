@@ -139,6 +139,19 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- A Vocabulary tab reads and edits the catalogue's controlled vocabulary. Every vocabulary of
+  the version, the seven built in (eTOM process, channel kind, component kind, role, Open API,
+  information entity and document type) and any a curator defined, is listed with its terms in
+  reading order beside the chosen term's record: its labels and code, what it means, its broader
+  and narrower terms, its outside matches, its source, and what uses it, each a link. A document
+  type is also read against the library, so the documents of that type show. On a draft, a term
+  is added, edited, retired with what replaces it, or removed once nothing uses it, retiring
+  being offered instead; the roles are ordered strongest first, saving every rank; and a
+  curator's own vocabulary is added, renamed or removed once empty, with the free-text fields it
+  covers, each covered by one vocabulary at most and kept while its terms are linked through it.
+  The service's rules are said at the field once Save has been tried, and a new term or
+  vocabulary asks before what was filled in is thrown away. A concept's edit, like a term's, now
+  takes focus when it opens, and adding one is headed at the record's level. No upgrade step.
 - A journey's edit covers everything its views show. Each step says who performs it as one
   choice (a system, the channel's entry system, a team or party, or not said, never two), its role
   from the vocabulary's roles, its eTOM place, what it does and produces, its point of no return,

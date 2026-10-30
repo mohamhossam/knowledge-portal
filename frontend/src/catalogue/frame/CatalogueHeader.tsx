@@ -13,12 +13,13 @@ import { type CatalogueContext, useCatalogueContext, useMappingImpact } from "..
 
 /** A catalogue page, as its sub-navigation and its breadcrumb name it. */
 export type CataloguePageId =
-  | "systems" | "map" | "concepts" | "offerings" | "journeys" | "domains" | "channels" | "governance" | "versions" | "compare" | "evidence" | "golden";
+  | "systems" | "map" | "concepts" | "vocabulary" | "offerings" | "journeys" | "domains" | "channels" | "governance" | "versions" | "compare" | "evidence" | "golden";
 
 const PAGE_LABEL: Record<CataloguePageId, string> = {
   systems: "Systems",
   map: "Map",
   concepts: "Concepts",
+  vocabulary: "Vocabulary",
   offerings: "Offerings",
   journeys: "Journeys",
   domains: "Landscape",
@@ -34,6 +35,7 @@ const PAGE_PATH: Partial<Record<CataloguePageId, string>> = {
   systems: "",
   map: "/map",
   concepts: "/concepts",
+  vocabulary: "/vocabulary",
   offerings: "/offerings",
   journeys: "/journeys",
   domains: "/domains",
@@ -146,6 +148,7 @@ function pages(base: string, page: CataloguePageId, inService: boolean, release:
   return [
     { href: base, label: "Systems", current: page === "systems", count: release.systems.length },
     { href: `${base}/concepts`, label: "Concepts", current: page === "concepts", count: release.business_capabilities?.length ?? 0 },
+    { href: `${base}/vocabulary`, label: "Vocabulary", current: page === "vocabulary", count: release.vocabulary?.length ?? 0 },
     { href: `${base}/offerings`, label: "Offerings", current: page === "offerings", count: release.products?.length ?? 0 },
     { href: `${base}/journeys`, label: "Journeys", current: page === "journeys", count: release.journeys?.length ?? 0 },
     { href: `${base}/domains`, label: "Landscape", current: page === "domains" },

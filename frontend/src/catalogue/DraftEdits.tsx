@@ -287,7 +287,9 @@ export function ConceptEdit({ concept, retire, onDone }: { concept?: Concept; re
   return (
     <EditPanel
       title={concept ? `Edit ${concept.pref_label}` : "Add a concept"}
-      focusOnOpen={!concept || retire}
+      // Adding takes the place of a record, so its title is the record's level.
+      level={concept ? 3 : 2}
+      focusOnOpen
       action={concept ? "Save the concept" : "Add the concept"}
       busy={saveDraft.isPending}
       // The field says what is wrong; the verb only points to it.

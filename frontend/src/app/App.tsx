@@ -50,11 +50,12 @@ const ReviewFocus = library.page("ReviewFocus");
 
 /** The catalogue: a version's pages, its draft's steps, versions and compare. */
 const catalogue = routeGroup(async () => {
-  const [frame, systems, map, concepts, domains, channels, governance, offerings, journeys, evidence, compare, versions, sources, decide, decideFocus, changes, check, publish, headed, golden] = await Promise.all([
+  const [frame, systems, map, concepts, vocabulary, domains, channels, governance, offerings, journeys, evidence, compare, versions, sources, decide, decideFocus, changes, check, publish, headed, golden] = await Promise.all([
     import("../catalogue/CataloguePage"),
     import("../catalogue/SystemsPage"),
     import("../catalogue/MapPage"),
     import("../catalogue/ConceptsPage"),
+    import("../catalogue/VocabularyPage"),
     import("../catalogue/DomainsPage"),
     import("../catalogue/ChannelsPage"),
     import("../catalogue/GovernancePage"),
@@ -73,7 +74,7 @@ const catalogue = routeGroup(async () => {
     import("../catalogue/golden/GoldenSetPage"),
   ]);
   return {
-    ...frame, ...systems, ...map, ...concepts, ...domains, ...channels, ...governance, ...offerings, ...journeys, ...evidence, ...compare,
+    ...frame, ...systems, ...map, ...concepts, ...vocabulary, ...domains, ...channels, ...governance, ...offerings, ...journeys, ...evidence, ...compare,
     CatalogueVersionsPage: versions.VersionsPage,
     ...sources, ...decide, ...decideFocus, ...changes, ...check, ...publish, ...headed, ...golden,
   };
@@ -82,6 +83,7 @@ const CataloguePage = catalogue.page("CataloguePage");
 const SystemsPage = catalogue.page("SystemsPage");
 const MapPage = catalogue.page("MapPage");
 const ConceptsPage = catalogue.page("ConceptsPage");
+const VocabularyPage = catalogue.page("VocabularyPage");
 const DomainsPage = catalogue.page("DomainsPage");
 const ChannelsPage = catalogue.page("ChannelsPage");
 const GovernancePage = catalogue.page("GovernancePage");
@@ -144,6 +146,8 @@ const catalogueRoutes = (
     <Route path="map" element={<MapPage />} />
     <Route path="concepts" element={<ConceptsPage />} />
     <Route path="concepts/:conceptId" element={<ConceptsPage />} />
+    <Route path="vocabulary" element={<VocabularyPage />} />
+    <Route path="vocabulary/:termId" element={<VocabularyPage />} />
     <Route path="domains" element={<HeadedPage page="domains"><DomainsPage /></HeadedPage>} />
     <Route path="channels" element={<HeadedPage page="channels"><ChannelsPage /></HeadedPage>} />
     <Route path="governance" element={<GovernancePage />} />
