@@ -79,6 +79,7 @@ export function OfferingPlans({ offering, action }: { offering: Offering; action
                 <bdi>{short(plan.name)}</bdi>{" "}
                 {plan.confidence ? <SourceMark confidence={plan.confidence} /> : <span className="cat-quiet">Not said</span>}
                 {plan.source && <span className="cat-detail" dir="auto"><SourceName text={plan.source} /></span>}
+                {plan.description && <span className="cat-detail" dir="auto">{plan.description}</span>}
               </li>
             ))}
           </ul>

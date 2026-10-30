@@ -56,6 +56,18 @@ p.cat-quiet {
   overflow-wrap: anywhere;
 }
 
+/* What a thing is, as its sources say: prose in body ink, at a measure, three lines at most in a dense row. */
+.cat-desc {
+  display: -webkit-box;
+  max-inline-size: 60ch;
+  overflow: hidden;
+  color: var(--color-ink);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  unicode-bidi: plaintext;
+}
+
 .cat-name {
   font-weight: var(--weight-emphasis);
 }
