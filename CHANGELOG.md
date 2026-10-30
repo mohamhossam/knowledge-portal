@@ -139,6 +139,20 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- "Edit where systems sit" (and "Edit the business areas") edits the tree as an outline: the top
+  domains in their order, each one's sub-domains indented under it in theirs. A domain moves past
+  its neighbour with everything inside it, a sub-domain put at the top lands after its old
+  parent, removing a domain moves what was inside it up a level, and each row closes to its name
+  and a line of what it holds. Each landscape top domain also says its place on the map (among
+  the layers, the bus, the layer the bus runs under, or a side layer) and whether it runs across
+  the others. The edit starts from the map as it is drawn, so a version that left the standard
+  domains to be known by their ids keeps them where they are when one place changes, and "How the
+  map will read it" says the layers, the side layers, what runs across and any place two domains
+  claim before saving. The service's rules are said at the field once Save has been tried: a
+  parent that is not itself or inside it, three levels at most, sibling names unique, one bus and
+  one layer above it, only with a bus, and a place only on a top domain. "Inside" never offers a
+  domain itself or what is inside it, and closing the edit hands focus back to its button. No
+  upgrade step.
 - A journey's edit covers everything its views show. Each step says who performs it as one
   choice (a system, the channel's entry system, a team or party, or not said, never two), its role
   from the vocabulary's roles, its eTOM place, what it does and produces, its point of no return,

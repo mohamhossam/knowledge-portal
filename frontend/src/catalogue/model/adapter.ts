@@ -155,24 +155,41 @@ function conventionalLayout(id: string): TamDomain["layout"] {
   return SIDE_DOMAINS.includes(id) ? "side" : undefined;
 }
 
-/** The TAM domains, each with its groups, whether it is a cross-cutting band, and where the map draws it. */
-function domainsOf(landscape: NonNullable<Release["landscape_domains"]>): Catalogue["domains"] {
-  const tops = landscape.filter((item) => !item.parent_id);
-  // A version saved before the service marked cross-cutting domains marks none: then they are known by id.
+type Placing = { id: string; parent_id?: string | null; cross_cutting?: boolean; layout?: TamDomain["layout"] | null };
+
+/**
+ * The landscape domains as the map draws them: each top domain with whether it is cross-cutting
+ * and its place, said outright. A version that marks no domain cross-cutting, or names no place,
+ * has them known by TAM's ids instead, and so does an edit that clears them all.
+ */
+export function landscapeAsDrawn<T extends Placing>(landscape: T[]): T[] {
+  // A version saved before the service marked cross-cutting domains marks none.
   const marked = landscape.some((item) => item.cross_cutting);
   // Likewise a version saved before domains named their place on the map (review recommendation 10).
   const placed = landscape.some((item) => item.layout);
-  return tops.map((top) => {
-    const layout = placed ? top.layout ?? undefined : conventionalLayout(top.id);
-    return {
+  return landscape.map((item) =>
+    item.parent_id
+      ? item
+      : {
+          ...item,
+          cross_cutting: marked ? Boolean(item.cross_cutting) : BAND_DOMAINS.includes(item.id),
+          layout: (placed ? item.layout : conventionalLayout(item.id)) ?? null,
+        },
+  );
+}
+
+/** The TAM domains, each with its groups, whether it is a cross-cutting band, and where the map draws it. */
+function domainsOf(landscape: NonNullable<Release["landscape_domains"]>): Catalogue["domains"] {
+  return landscapeAsDrawn(landscape)
+    .filter((item) => !item.parent_id)
+    .map((top) => ({
       id: top.id,
       name: top.name,
       scope: top.description ?? "",
       groups: landscape.filter((item) => item.parent_id === top.id).map((item) => ({ id: item.id, name: item.name })),
-      band: marked ? top.cross_cutting : BAND_DOMAINS.includes(top.id),
-      ...(layout ? { layout } : {}),
-    };
-  });
+      band: Boolean(top.cross_cutting),
+      ...(top.layout ? { layout: top.layout } : {}),
+    }));
 }
 
 /** The systems, each placed in its domain and group. */
