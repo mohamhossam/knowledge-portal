@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
-import { api, type CatalogueSystem, type Relationship, type SourceConfidence } from "../api/client";
+import { api, type CatalogueSystem, type Relationship } from "../api/client";
 import { errorMessage } from "../api/errors";
 import { ActionGroup, Button, type Column, DataTable, Facts, Lines, RecordView, Section, Skeleton, Status } from "../design/components";
 import { useFocusAfterRender } from "../design/hooks";
@@ -17,8 +17,7 @@ import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRo
 import { SystemContextDiagram } from "./diagrams/CatalogueDiagrams";
 import { ConnectionEdit, ConnectionRemove, ConnectionsEdit, InterfacesEdit, SystemEdit, SystemRemove } from "./DraftEdits";
 import { type ConceptIndex, entityNames, INTERFACE_STYLE, type Interface, interfacesOf } from "./ontology";
-import { SourceStatus } from "./SourceStatus";
-import { SourceName } from "./provenance/Provenance";
+import { SourceStated } from "./provenance/Provenance";
 import { useCatalogueContext } from "./useCatalogue";
 
 /** Where a record was reached from, so the way back can be lit and retraced. */
@@ -138,8 +137,9 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
 }
 
 function Capabilities({ system, index }: { system: CatalogueSystem; index: ConceptIndex }) {
-  const { base } = useCatalogueContext();
+  const { book, base } = useCatalogueContext();
   const components = new Map(system.components.map((item) => [item.id, item.name]));
+  const areas = new Map((book.release.capability_domains ?? []).map((item) => [item.id, item.name]));
   type Capability = CatalogueSystem["capabilities"][number];
   const columns: Column<Capability>[] = [
     {
@@ -150,7 +150,14 @@ function Capabilities({ system, index }: { system: CatalogueSystem; index: Conce
       cell: (capability) => (
         <>
           {capability.name}
-          {capability.component_id && <span className="cat-detail">in <bdi>{components.get(capability.component_id) ?? capability.component_id}</bdi></span>}
+          {(capability.component_id || capability.domain_id) && (
+            <span className="cat-detail">
+              {capability.component_id && <>in <bdi>{components.get(capability.component_id) ?? capability.component_id}</bdi></>}
+              {capability.component_id && capability.domain_id && " · "}
+              {/* The business area it is filed under, as the business areas map reads it. */}
+              {capability.domain_id && <>Business area: <bdi>{areas.get(capability.domain_id) ?? capability.domain_id}</bdi></>}
+            </span>
+          )}
         </>
       ),
     },
@@ -218,6 +225,8 @@ function Interfaces({ system }: { system: CatalogueSystem }) {
       ? { id: "who", header: "Used by", cell: (item) => (item.consumer_ids.length ? list(item.consumer_ids) : <span className="cat-quiet">No consumer recorded</span>) }
       : { id: "who", header: "Exposed by", cell: (item) => sys(item.system_id) },
     { id: "style", header: "Style", cell: (item) => INTERFACE_STYLE[item.style] },
+    { id: "what", header: "What it is", bidi: true, cell: (item) => (item.description ? <span className="cat-desc">{item.description}</span> : <span className="cat-quiet">No description</span>) },
+    { id: "source", header: "Source", bidi: true, cell: (item) => <SourceStated fact={item} /> },
   ];
   if (editing) {
     return (
@@ -486,14 +495,6 @@ function Data({ system }: { system: CatalogueSystem }) {
 }
 
 /** Where a fact comes from: how sure its source is, as a status, and the source; "Not stated" when neither is said. */
-function SourceStated({ fact }: { fact: { confidence?: SourceConfidence | null; source?: string | null } }) {
-  return (
-    <span className="cat-inline">
-      {fact.confidence && <SourceStatus confidence={fact.confidence} short />}
-      {fact.source ? <SourceName text={fact.source} /> : !fact.confidence && <span className="cat-quiet">Not stated</span>}
-    </span>
-  );
-}
 
 function Components({ system }: { system: CatalogueSystem }) {
   type Component = CatalogueSystem["components"][number];

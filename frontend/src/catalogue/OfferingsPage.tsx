@@ -232,6 +232,14 @@ function AllOfferings({ release }: { release: Release }) {
   );
 }
 
+/** Where an order type sits in the customer's life with the service, in a few words. */
+const STAGE_WORD: Record<NonNullable<Offering["order_types"][number]["stage"]>, string> = {
+  join: "Joining",
+  change: "Changing a live account",
+  support: "Support",
+  leave: "Leaving",
+};
+
 const TABS = ["components", "plans", "orders", "journeys", "footprint", "rules", "service", "governance", "audience"] as const;
 type Tab = (typeof TABS)[number];
 const TAB_LABEL: Record<Tab, string> = {
@@ -387,9 +395,10 @@ function OfferingRecord({ offering }: { offering: Offering }) {
         />
       )}
       {/* Who it is for and what it promises, by name; what each means is on its own tab. */}
-      {(offering.audiences.length > 0 || offering.values.length > 0 || portfolio.length > 0) && (
+      {(offering.audiences.length > 0 || offering.values.length > 0 || portfolio.length > 0 || offering.purpose) && (
         <Facts
           items={[
+            ...(offering.purpose ? [["Why a customer buys it", <span key="purpose" dir="auto">{offering.purpose}</span>] as [string, ReactNode]] : []),
             ...(portfolio.length ? [["Portfolio", <bdi key="portfolio">{portfolio.join(" › ")}</bdi>] as [string, ReactNode]] : []),
             ...(offering.audiences.length ? [["For", <bdi key="for">{offering.audiences.map((item) => item.name).join(" · ")}</bdi>] as [string, ReactNode]] : []),
             ...(offering.values.length ? [["Promises", <bdi key="promises">{offering.values.map((item) => item.name).join(" · ")}</bdi>] as [string, ReactNode]] : []),
@@ -515,15 +524,18 @@ function Components({ offering, action, orderName }: { offering: Offering; actio
           {part.name}
           <span className="cat-detail">
             {[
+              part.hub ? "The device it is built on" : null,
               part.kind,
               part.mandatory === true ? "Always included" : part.mandatory === false ? "Optional" : null,
               part.customer_visible ? "Seen by the customer" : null,
               part.code,
             ].filter(Boolean).join(" · ")}
           </span>
+
         </>
       ),
     },
+    { id: "what", header: "What it is", bidi: true, cell: (part) => (part.description ? <span className="cat-desc">{part.description}</span> : <span className="cat-quiet">No description</span>) },
     {
       id: "concept",
       header: "Means (concept)",
@@ -559,6 +571,7 @@ function Components({ offering, action, orderName }: { offering: Offering; actio
                   <bdi>{roleLabel(item.role)}</bdi>
                   {item.order_types.length > 0 && <> for <bdi>{item.order_types.map(orderName).join(", ")}</bdi></>}
                 </span>
+                {item.description && <span className="cat-detail cat-desc">{item.description}</span>}
               </li>
             ))}
           </ul>
@@ -607,6 +620,7 @@ function OrderMatrix({ offering, action, channelName }: { offering: Offering; ac
           {type.name}
           <span className="cat-detail">
             <code className="cat-code">{type.code}</code>
+            {type.stage && ` · ${STAGE_WORD[type.stage]}`}
             {!type.enabled && " · Not offered"}
           </span>
         </>

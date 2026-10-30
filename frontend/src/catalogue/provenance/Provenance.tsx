@@ -12,9 +12,11 @@ import { type ReactNode, useContext, useState } from "react";
 
 import { api } from "../../api/client";
 import { errorMessage } from "../../api/errors";
+import type { SourceConfidence } from "../../api/client";
 import { Button, EvidenceQuote, Status } from "../../design/components";
 import { RouterLink } from "../../shell/links";
 import { SourcesContext, namedSource, withLevel } from "../governance";
+import { SourceStatus } from "../SourceStatus";
 import { useCatalogueContext } from "../useCatalogue";
 
 /** Where a registered source's record is, on Governance. */
@@ -153,4 +155,14 @@ function CitedImage({ versionId, title }: { versionId: string; title: string }) 
   });
   if (image.isError) return <span role="status"><Status tone="attention">{errorMessage(image.error)}</Status></span>;
   return image.data ? <img className="prov-image" src={image.data} alt={`From ${title}`} /> : <span className="cat-quiet" role="status">Opening the image…</span>;
+}
+
+/** A fact's source and how sure it is, where every row says it: "Not stated" when it says neither. */
+export function SourceStated({ fact }: { fact: { confidence?: SourceConfidence | null; source?: string | null } }) {
+  return (
+    <span className="cat-inline">
+      {fact.confidence && <SourceStatus confidence={fact.confidence} short />}
+      {fact.source ? <SourceName text={fact.source} /> : !fact.confidence && <span className="cat-quiet">Not stated</span>}
+    </span>
+  );
 }
