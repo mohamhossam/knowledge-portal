@@ -62,7 +62,7 @@ describe("realisation and NFRs read on a sheet", () => {
     const [broadband, firewall] = OFFERING.components;
     const { unmount } = render(<><RealisedAs part={broadband!} /><RealisationKey offering={OFFERING} /></>);
     expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
-      "CFSS GPON internet CFSSuggested · inferred, not stated in the source",
+      "CFSS GPON internet CFS Inferred, not stated in its source",
       "Resource GPON line",
     ]);
     const list = within(screen.getByRole("list"));

@@ -14,7 +14,7 @@ import { AcceptedFrom } from "./AcceptedFrom";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useFindParam } from "./frame/useFindParam";
 import { LEGACY_ROLE_RANK } from "./model/conventions";
-import { SOURCE_TONE, SOURCE_WORD } from "./ontology";
+import { SourceStatus } from "./SourceStatus";
 import { SourceName } from "./provenance/Provenance";
 import { Retired } from "./Retired";
 import { useCatalogueContext } from "./useCatalogue";
@@ -483,7 +483,7 @@ function TermRecord({ term }: { term: Term }) {
       meta={
         <>
           {term.deprecated && <Retired successor={replacement && { name: replacement.pref_label, href: `${base}/vocabulary/${encodeURIComponent(replacement.id)}` }} />}
-          {term.confidence && <Status tone={SOURCE_TONE[term.confidence]}>{SOURCE_WORD[term.confidence]}</Status>}
+          {term.confidence && <SourceStatus confidence={term.confidence} />}
           <RouterLink href={`${base}/vocabulary?in=${encodeURIComponent(term.scheme)}`}>{scheme?.name ?? term.scheme}</RouterLink>
           {path.length > 0 && <bdi>{path.join(" › ")}</bdi>}
         </>

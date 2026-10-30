@@ -1716,7 +1716,7 @@ products:
     statement: 'The new generic CPE rate plan for 90G/120G carries an exit charge of AED 650 (to be confirmed
       by the business), per contract period: no contract, 1 year, 2 years.'
     kind: billing
-    confidence: confirmed
+    confidence: gap
     source: SDD v2.3 · §ADO 438907, US 438909
   - id: R11
     statement: The 900/450 speed profile is not offered on the Fortinet 90G until it passes the lab test.

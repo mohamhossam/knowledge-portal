@@ -67,14 +67,15 @@ describe("every offering, listed and side by side", () => {
     expect(within(other).getByRole("link", { name: /Visitor Line/ })).toHaveTextContent("Mobile Plans - Prepaid Visitor Line");
   });
 
-  it("lays them side by side in the list's order, says once how many there are, and marks inferred as suggested", () => {
+  it("lays them side by side in the list's order, says once how many there are, and marks inferred as inferred, never as a model's suggestion", () => {
     open();
     expect(screen.getByText("5 offerings. Choose one to read what it is made of and who delivers it.")).toBeInTheDocument();
     expect(screen.queryByText(/What is sold, what it is made of/)).not.toBeInTheDocument();
     expect(tableNames()).toEqual(["Roam Daily", "Roam Weekly", "Business Pro Plus", "Visitor Line", "Devices & Accessories"]);
     const row = screen.getByRole("rowheader", { name: /^Roam Daily/ }).closest("tr")!;
     expect(row).toHaveTextContent("Roam Like Home");
-    expect(row).toHaveTextContent("Suggested · inferred, not stated in the source");
+    expect(row).toHaveTextContent("Inferred");
+    expect(row).not.toHaveTextContent("Suggested");
     expect(screen.getByRole("rowheader", { name: /^Devices & Accessories/ }).closest("tr")).toHaveTextContent("Not stated");
   });
 

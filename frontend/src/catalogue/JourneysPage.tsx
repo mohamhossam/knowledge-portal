@@ -17,7 +17,7 @@ import { JourneyEdit, WholeRemove, WholeRename } from "./DraftEdits";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useFindParam } from "./frame/useFindParam";
 import type { JourneyView } from "./journey/JourneyViews";
-import { SOURCE_TONE, SOURCE_WORD } from "./ontology";
+import { SourceStatus } from "./SourceStatus";
 import { useCatalogueContext } from "./useCatalogue";
 import { useRowTarget } from "./useRowTarget";
 
@@ -214,7 +214,7 @@ function AllJourneys({ release }: { release: Release }) {
     {
       id: "source",
       header: "Source",
-      cell: (journey) => (journey.confidence ? <Status tone={SOURCE_TONE[journey.confidence]}>{SOURCE_WORD[journey.confidence]}</Status> : <span className="cat-quiet">Not stated</span>),
+      cell: (journey) => (journey.confidence ? <SourceStatus confidence={journey.confidence} short /> : <span className="cat-quiet">Not stated</span>),
     },
   ];
   return (
@@ -260,7 +260,7 @@ function JourneyRecord({ journey }: { journey: Journey }) {
       lead={journey.description || undefined}
       meta={
         <>
-          {journey.confidence && <Status tone={SOURCE_TONE[journey.confidence]}>{SOURCE_WORD[journey.confidence]}</Status>}
+          {journey.confidence && <SourceStatus confidence={journey.confidence} />}
           <AcceptedFrom accepted={acceptances(journey)} summary />
           <span>
             {offering ? (

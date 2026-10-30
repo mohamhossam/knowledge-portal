@@ -26,9 +26,13 @@ const ICON: Record<StatusTone, typeof Check> = {
   stopped: Square,
 };
 
-/** A status is always an icon and words, never colour alone (§15). Severe is never lighter than routine. */
-export function Status({ tone, children }: { tone: StatusTone; children: ReactNode }) {
-  const Icon = ICON[tone];
+/**
+ * A status is always an icon and words, never colour alone (§15). Severe is never lighter than
+ * routine. `icon` replaces the tone's own where its meaning would mislead, such as neutral's clock
+ * on a fact that is settled, not waiting.
+ */
+export function Status({ tone, icon, children }: { tone: StatusTone; icon?: typeof Check; children: ReactNode }) {
+  const Icon = icon ?? ICON[tone];
   return (
     <span className={`ds-status ds-status--${tone}`}>
       <Icon size={14} aria-hidden="true" className="ds-status__icon" />

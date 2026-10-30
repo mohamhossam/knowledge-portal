@@ -3604,7 +3604,7 @@
      "id": "R10",
      "statement": "The new generic CPE rate plan for 90G/120G carries an exit charge of AED 650 (to be confirmed by the business), per contract period: no contract, 1 year, 2 years.",
      "kind": "billing",
-     "confidence": "confirmed",
+     "confidence": "gap",
      "source": "SDD v2.3 · §ADO 438907, US 438909",
      "kind_id": null
     },

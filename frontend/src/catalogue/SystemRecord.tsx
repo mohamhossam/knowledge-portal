@@ -16,7 +16,8 @@ import { AcceptedFrom } from "./AcceptedFrom";
 import { connections, dependsHow, domainPath, sentenceCase, systemName, systemRoles, usedHow } from "./catalogue";
 import { SystemContextDiagram } from "./diagrams/CatalogueDiagrams";
 import { ConnectionEdit, ConnectionRemove, ConnectionsEdit, InterfacesEdit, SystemEdit, SystemRemove } from "./DraftEdits";
-import { type ConceptIndex, entityNames, INTERFACE_STYLE, type Interface, interfacesOf, SOURCE_TONE, SOURCE_WORD } from "./ontology";
+import { type ConceptIndex, entityNames, INTERFACE_STYLE, type Interface, interfacesOf } from "./ontology";
+import { SourceStatus } from "./SourceStatus";
 import { SourceName } from "./provenance/Provenance";
 import { useCatalogueContext } from "./useCatalogue";
 
@@ -488,7 +489,7 @@ function Data({ system }: { system: CatalogueSystem }) {
 function SourceStated({ fact }: { fact: { confidence?: SourceConfidence | null; source?: string | null } }) {
   return (
     <span className="cat-inline">
-      {fact.confidence && <Status tone={SOURCE_TONE[fact.confidence]}>{SOURCE_WORD[fact.confidence]}</Status>}
+      {fact.confidence && <SourceStatus confidence={fact.confidence} short />}
       {fact.source ? <SourceName text={fact.source} /> : !fact.confidence && <span className="cat-quiet">Not stated</span>}
     </span>
   );
