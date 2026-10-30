@@ -2,15 +2,13 @@ import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import type { SourceConfidence } from "../api/client";
 import { ActionGroup, Button, Checkbox, Status } from "../design/components";
 import { useFocusAfterRender } from "../design/hooks";
 import { RouterLink } from "../shell/links";
-import { CONFIDENCE_OPTIONS } from "./catalogue";
 import { draftBody } from "./drafting";
 import { EditPanel } from "./DraftEdits";
 import { AreaField, Choices, CheckField, LinesField, SelectField, TextField } from "./forms";
-import { SourceField } from "./SourceField";
+import { SourceField, SurenessField } from "./SourceField";
 import { LEGACY_ROLE_RANK } from "./model/conventions";
 import { useCatalogueContext } from "./useCatalogue";
 import { useEditing } from "./useEditing";
@@ -121,12 +119,7 @@ function TermEditor({ value, onChange, issue, adding }: {
         <legend className="cat-form__legend">Its source</legend>
         <div className="cat-form__grid">
           <SourceField value={value.source} onChange={(source) => set({ source })} />
-          <SelectField
-            label="How sure its source is"
-            value={value.confidence ?? ""}
-            options={CONFIDENCE_OPTIONS}
-            onChange={(confidence) => set({ confidence: (confidence || null) as SourceConfidence | null })}
-          />
+          <SurenessField source={value.source} value={value.confidence} onChange={(confidence) => set({ confidence })} />
         </div>
       </fieldset>
 

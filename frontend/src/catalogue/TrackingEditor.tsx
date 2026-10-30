@@ -1,10 +1,9 @@
 import { Plus, X } from "lucide-react";
 
-import type { CatalogueSystem, Channel, Offering, SourceConfidence } from "../api/client";
+import type { CatalogueSystem, Channel, Offering } from "../api/client";
 import { Button } from "../design/components";
-import { CONFIDENCE_OPTIONS } from "./catalogue";
 import { AreaField, CheckField, Rows, SelectField, SystemField, TextField } from "./forms";
-import { SourceField } from "./SourceField";
+import { SourceField, SurenessField } from "./SourceField";
 import type { Names } from "./OfferingEditor";
 
 type Tracking = NonNullable<Offering["tracking"]>;
@@ -15,22 +14,12 @@ type Fallout = Tracking["fallout"][number];
 
 const BLANK: Tracking = { order_types: [], flows: [], channels: [], milestones: [], statuses: [], fallout: [] };
 
-/** How sure the source is of one fact, so a curator who settles a gap can say so. */
-function Sureness({ value, onChange }: { value: SourceConfidence | null | undefined; onChange: (value: SourceConfidence | null) => void }) {
-  return (
-    <SelectField
-      label="How sure its source is"
-      value={value ?? ""}
-      options={CONFIDENCE_OPTIONS}
-      onChange={(next) => onChange((next || null) as SourceConfidence | null)}
-    />
-  );
-}
-
+/** A row's name in its list, capitalised as every list's rows are: "Status Activated", "Fallout 2". */
 const cut = (text: string, index: number, what: string) => {
   const name = text.trim();
-  if (!name) return `${what} ${index + 1}`;
-  return `${what} ${name.length > 40 ? `${name.slice(0, 39)}…` : name}`;
+  const one = `${what.charAt(0).toLocaleUpperCase()}${what.slice(1)}`;
+  if (!name) return `${one} ${index + 1}`;
+  return `${one} ${name.length > 40 ? `${name.slice(0, 39)}…` : name}`;
 };
 
 /**
@@ -108,7 +97,7 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes,
             <TextField label="Its story" value={item.story} wide onChange={(story) => change({ story: story || null })} />
             <TextField label="What the sources say when the screen is not named" value={item.ui_note} wide onChange={(text) => change({ ui_note: text || null })} />
             <SourceField value={item.source} previous={value.channels[index - 1]} onCopy={change} onChange={(source) => change({ source })} />
-            <Sureness value={item.confidence} onChange={(confidence) => change({ confidence })} />
+            <SurenessField source={item.source} value={item.confidence} onChange={(confidence) => change({ confidence })} />
           </>
         )}
       />
@@ -127,7 +116,7 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes,
             <TextField label="What it carries" value={item.label} required wide onChange={(label) => change({ label })} />
             <TextField label="Over (interface)" value={item.interface} wide onChange={(text) => change({ interface: text || null })} />
             <SourceField value={item.source} previous={value.flows[index - 1]} onCopy={change} onChange={(source) => change({ source })} />
-            <Sureness value={item.confidence} onChange={(confidence) => change({ confidence })} />
+            <SurenessField source={item.source} value={item.confidence} onChange={(confidence) => change({ confidence })} />
           </>
         )}
       />
@@ -145,7 +134,7 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes,
             <SystemField label="Raised by" value={item.system_id ?? ""} systems={systems} writtenAs={system(item.system_id)} allowNone onChange={(id) => change({ system_id: id || null })} />
             <TextField label="Detail" value={item.detail} wide onChange={(detail) => change({ detail: detail || null })} />
             <SourceField value={item.source} previous={value.milestones[index - 1]} onCopy={change} onChange={(source) => change({ source })} />
-            <Sureness value={item.confidence} onChange={(confidence) => change({ confidence })} />
+            <SurenessField source={item.source} value={item.confidence} onChange={(confidence) => change({ confidence })} />
           </>
         )}
       />
@@ -157,10 +146,12 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes,
         onChange={(items) => set({ statuses: items })}
         blank={() => ({ label: "" })}
         itemLabel={(item, index) => cut(item.label, index, "status")}
-        render={(item, change) => (
+        render={(item, change, index) => (
           <>
             <TextField label="Status" value={item.label} required onChange={(label) => change({ label })} />
             <TextField label="Detail" value={item.detail} wide onChange={(detail) => change({ detail: detail || null })} />
+            <SourceField value={item.source} previous={value.statuses[index - 1]} onCopy={change} onChange={(source) => change({ source })} />
+            <SurenessField source={item.source} value={item.confidence} onChange={(confidence) => change({ confidence })} />
           </>
         )}
       />
@@ -178,7 +169,7 @@ export function TrackingEditor({ value, onChange, systems, channels, orderTypes,
             <AreaField label="What happens" value={item.handling} onChange={(handling) => change({ handling: handling || null })} />
             <SystemField label="Falls out in" value={item.system_id ?? ""} systems={systems} writtenAs={system(item.system_id)} allowNone onChange={(id) => change({ system_id: id || null })} />
             <SourceField value={item.source} previous={value.fallout[index - 1]} onCopy={change} onChange={(source) => change({ source })} />
-            <Sureness value={item.confidence} onChange={(confidence) => change({ confidence })} />
+            <SurenessField source={item.source} value={item.confidence} onChange={(confidence) => change({ confidence })} />
           </>
         )}
       />

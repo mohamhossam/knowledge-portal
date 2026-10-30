@@ -58,7 +58,7 @@ export function OfferingRules({ offering, freeText, action, editing }: {
               )}
               <Lines label={`Business rules of ${offering.name}`}>
                 {shown.map((rule) => (
-                  <li key={rule.id} className="off-rule">
+                  <li key={rule.id} className="off-rule" data-row-id={rule.id}>
                     <code className="off-rule__id" translate="no">{rule.id}</code>
                     <span className="off-rule__body">
                       <span className="cat-detail">{kindWord(kindOf(rule))}</span>

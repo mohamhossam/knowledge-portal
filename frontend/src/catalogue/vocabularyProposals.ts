@@ -5,6 +5,7 @@
  * tab only says what it proposed and where, and Decide is where it is accepted.
  */
 import type { Release, Suggestion } from "../api/client";
+import { callIds } from "./model/adapter";
 import { FIELD_WORDS, type Term, type VocabularyField } from "./vocabularyEditing";
 
 /** One place a value is written, and the value as it was read there (VocabularyRef). */
@@ -62,8 +63,18 @@ export function placeOf(ref: ValueRef, release: Release): { text: string; path: 
     case "activity_mode":
     case "activity_phase":
       return { text: `step ${ref.item} of the journey ${named(release.journeys)}`, path: `${at("journeys")}?row=${encodeURIComponent(ref.item ?? "")}` };
-    case "integration_open_api":
-      return { text: `hand-over ${Number(ref.item) + 1} of the journey ${named(release.journeys)}`, path: `${at("journeys")}?view=integrations` };
+    case "integration_open_api": {
+      // The hand-over's own row of the journey's calls, by the id its view gives it, seen through
+      // the first channel its step names (a step naming none is in every channel's view).
+      const journey = release.journeys?.find((item) => item.id === ref.owner_id);
+      const handover = journey?.integrations[Number(ref.item)];
+      const call = journey && handover ? callIds(journey.integrations)[Number(ref.item)] : undefined;
+      const channel = journey?.activities.find((item) => item.number === handover?.from_activity)?.channels[0];
+      return {
+        text: `hand-over ${Number(ref.item) + 1} of the journey ${named(release.journeys)}`,
+        path: `${at("journeys")}?view=integrations${channel ? `&channel=${encodeURIComponent(channel)}` : ""}${call ? `&row=${encodeURIComponent(call)}` : ""}`,
+      };
+    }
     case "channel_kind":
       return { text: `the channel ${named(release.channels)}`, path: "channels" };
     case "component_kind":
@@ -73,9 +84,9 @@ export function placeOf(ref: ValueRef, release: Release): { text: string; path: 
       return { text: `${system} in the part ${ref.item} of ${offering()}`, path: `${at("offerings")}?tab=components&row=${encodeURIComponent(ref.item ?? "")}` };
     }
     case "nfr_quality":
-      return { text: `${ref.item} in ${offering()}`, path: `${at("offerings")}?tab=service` };
+      return { text: `${ref.item} in ${offering()}`, path: `${at("offerings")}?tab=service&row=${encodeURIComponent(ref.item ?? "")}` };
     case "rule_kind":
-      return { text: `${ref.item} in ${offering()}`, path: `${at("offerings")}?tab=rules` };
+      return { text: `${ref.item} in ${offering()}`, path: `${at("offerings")}?tab=rules&row=${encodeURIComponent(ref.item ?? "")}` };
     case "offering_family":
     case "offering_lifecycle":
       return { text: offering(), path: at("offerings") };

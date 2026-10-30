@@ -1,7 +1,6 @@
-import type { Channel, Offering, SourceConfidence } from "../api/client";
-import { CONFIDENCE_OPTIONS } from "./catalogue";
+import type { Channel, Offering } from "../api/client";
 import { AreaField, CheckField, LinesField, Rows, SelectField, TextField } from "./forms";
-import { SourceField } from "./SourceField";
+import { SourceField, SurenessField } from "./SourceField";
 import { ChannelChoices, type Names } from "./OfferingEditor";
 
 type Note = Offering["lifecycle_notes"][number];
@@ -82,12 +81,7 @@ export function LifecycleEditor({ value, onChange, channels, orderTypes, names }
           <TextField label="Title" value={note.title} required wide onChange={(title) => change({ title })} />
           <TextField label="Kind, as the source groups it" value={note.kind} onChange={(kind) => change({ kind: kind || null })} />
           <SourceField value={note.source} previous={value[index - 1]} onCopy={change} onChange={(source) => change({ source })} />
-          <SelectField
-            label="How sure its source is"
-            value={note.confidence ?? ""}
-            options={CONFIDENCE_OPTIONS}
-            onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
-          />
+          <SurenessField source={note.source} value={note.confidence} onChange={(confidence) => change({ confidence })} />
           <AreaField label="Summary" value={note.summary} onChange={(summary) => change({ summary: summary || null })} />
           {orderTypes.length > 0 && (
             <fieldset className="cat-form__choices cat-form__wide">
@@ -134,12 +128,7 @@ export function LifecycleEditor({ value, onChange, channels, orderTypes, names }
                 />
                 <BlockFields block={block} change={edit} />
                 <SourceField value={block.source} previous={note.blocks[place - 1]} onCopy={edit} onChange={(source) => edit({ source })} />
-                <SelectField
-                  label="How sure its source is"
-                  value={block.confidence ?? ""}
-                  options={CONFIDENCE_OPTIONS}
-                  onChange={(confidence) => edit({ confidence: (confidence || null) as SourceConfidence | null })}
-                />
+                <SurenessField source={block.source} value={block.confidence} onChange={(confidence) => edit({ confidence })} />
               </>
             )}
           />

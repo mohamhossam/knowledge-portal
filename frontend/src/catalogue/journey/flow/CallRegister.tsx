@@ -7,6 +7,7 @@
  * brings its calls forward (sequence) or keeps only its calls (table).
  */
 import { type CSSProperties, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { Button, type Column, DataTable, Facts, Select } from "../../../design/components";
 import { laneName, MODE_WORDS, NOT_STATED, operationName, styleName, systemName, viewTitle } from "../../model/words";
@@ -22,7 +23,10 @@ const isActivity = (step: Step | undefined): step is ActivityStep => step?.kind 
 type Row = { call: Integration; index: number };
 
 export function CallRegister({ data, view }: { data: Catalogue; view: JourneyView }) {
-  const [mode, setMode] = useState<"sequence" | "table">("sequence");
+  // A link to one hand-over (?row=<call>) opens the table, where its row is found and focused.
+  const [params] = useSearchParams();
+  const linked = params.get("row");
+  const [mode, setMode] = useState<"sequence" | "table">(() => (linked && view.integrations.some((item) => item.id === linked) ? "table" : "sequence"));
   const [system, setSystem] = useState<string | null>(null);
   const [picked, setPicked] = useState(0);
   // Another journey or channel has other calls: start again at its first call, with no system picked.

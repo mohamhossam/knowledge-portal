@@ -156,6 +156,7 @@ function JourneysList({ current, onAdd }: { current?: string; onAdd?: () => void
             onChange={(value) =>
               setParams((previous) => {
                 const next = new URLSearchParams(previous);
+                next.delete("row");
                 if (value === ALL) next.delete("system");
                 else next.set("system", value);
                 return next;
@@ -294,7 +295,9 @@ function JourneyRecord({ journey }: { journey: Journey }) {
     >
       {missingStep && (
         <p role="status" className="cat-notice">
-          <Status tone="attention">Step {missingStep}, which the link named, is no longer in this journey.</Status>
+          <Status tone="attention">
+            {view === "integrations" ? "The hand-over the link named is no longer in this journey." : `Step ${missingStep}, which the link named, is no longer in this journey.`}
+          </Status>
         </p>
       )}
       {editing === "edit" && <JourneyEdit journey={journey} onDone={() => close("edit")} />}
@@ -326,6 +329,7 @@ function JourneyRecord({ journey }: { journey: Journey }) {
             onViewChange={(next) =>
               setParams((previous) => {
                 const query = new URLSearchParams(previous);
+                query.delete("row");
                 if (next === "swimlane") query.delete("view");
                 else query.set("view", next);
                 return query;

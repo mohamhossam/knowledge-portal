@@ -104,7 +104,7 @@ export function LinesField({ label, value, onChange, hint, required, error }: {
   );
 }
 
-export function SelectField({ label, value, onChange, options, wide, hint, error }: {
+export function SelectField({ label, value, onChange, options, wide, hint, error, unavailableReason }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -113,6 +113,11 @@ export function SelectField({ label, value, onChange, options, wide, hint, error
   wide?: boolean;
   hint?: string;
   error?: string | null;
+  /**
+   * Why it cannot be chosen yet, said as its hint: it stays in its place and in the tab order
+   * (DESIGN.md, unavailable with a reason), so nothing moves when it can be, and focus is never lost.
+   */
+  unavailableReason?: string | null;
 }) {
   const runs: { group?: string; options: typeof options }[] = [];
   for (const option of options) {
@@ -123,9 +128,17 @@ export function SelectField({ label, value, onChange, options, wide, hint, error
   const render = (list: typeof options) => list.map((option) => <option key={option.value} value={option.value}>{option.label}</option>);
   return (
     <div className={wide ? "cat-form__cell cat-form__wide" : "cat-form__cell"}>
-      <Field label={label} hint={hint} error={error}>
+      <Field label={label} hint={unavailableReason ?? hint} error={error}>
         {(control) => (
-          <select className="ds-input ds-input--select" {...control} value={value} onChange={(event) => onChange(event.target.value)}>
+          <select
+            className="ds-input ds-input--select"
+            {...control}
+            aria-disabled={unavailableReason ? true : undefined}
+            value={value}
+            onChange={(event) => {
+              if (!unavailableReason) onChange(event.target.value);
+            }}
+          >
             {runs.map((run, index) =>
               run.group ? <optgroup key={`${run.group}:${index}`} label={run.group}>{render(run.options)}</optgroup> : render(run.options),
             )}

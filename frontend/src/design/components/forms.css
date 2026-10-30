@@ -38,6 +38,13 @@
   color: var(--field-placeholder);
 }
 
+/* Unavailable: an outline with the reason as its hint, never a faded fill, still focusable. */
+.ds-input[aria-disabled="true"] {
+  border-color: var(--button-unavailable-border);
+  color: var(--button-unavailable-fg);
+  cursor: not-allowed;
+}
+
 .ds-input[aria-invalid="true"] {
   border-color: var(--field-error);
   border-width: var(--rule-heavy);
