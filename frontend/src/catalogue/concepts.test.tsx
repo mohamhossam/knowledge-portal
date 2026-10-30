@@ -92,6 +92,9 @@ describe("editing a concept on its record", () => {
     fireEvent.change(within(form).getByLabelText(/Other labels/), { target: { value: "order-entry" } });
     expect(within(form).getByRole("button", { name: "Save the concept" })).toHaveAttribute("aria-disabled", "true");
     expect(within(form).getByText("Correct Other labels first.")).toBeInTheDocument();
+    // Said at the field once Save has been tried, not before anything is done.
+    expect(within(form).getByLabelText(/Other labels/)).not.toHaveAttribute("aria-invalid");
+    fireEvent.click(within(form).getByRole("button", { name: "Save the concept" }));
     const field = within(form).getByLabelText(/Other labels/);
     expect(field).toHaveAttribute("aria-invalid", "true");
     expect(field).toHaveAccessibleDescription(/“order-entry” already names Order capture; each label names one concept\./);
@@ -137,6 +140,7 @@ describe("editing a concept on its record", () => {
     fireEvent.click(screen.getByRole("button", { name: "Edit this concept" }));
     const form = screen.getByRole("form", { name: "Edit Quoting" });
     fireEvent.change(within(form).getByLabelText("Broader concept"), { target: { value: "cap-billing" } });
+    fireEvent.click(within(form).getByRole("button", { name: "Save the concept" }));
     expect(within(form).getByText(/The capability Quote orders of CWOM sits in Sales, and its concept would sit in Billing/)).toBeInTheDocument();
   });
 

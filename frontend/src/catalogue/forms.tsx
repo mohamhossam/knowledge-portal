@@ -167,9 +167,11 @@ export function SystemField({ label, value, onChange, systems, writtenAs, allowN
  * through a closed select picks each option it passes. One chosen that the list no longer has
  * stays shown, as written.
  */
-export function PickField({ label, hint, chosen, options, onChange }: {
+export function PickField({ label, hint, chosen, options, onChange, error }: {
   label: string;
   hint?: string;
+  /** What is wrong with the choices, said under the select and tied to it. */
+  error?: string | null;
   chosen: string[];
   /** Options with a group are set under it, in the order given. */
   options: { value: string; label: string; group?: string }[];
@@ -194,10 +196,11 @@ export function PickField({ label, hint, chosen, options, onChange }: {
           label={label}
           hint={hint}
           value={left.some((option) => option.value === next) ? next : ""}
-          options={[{ value: "", label: left.length ? "Choose one to add…" : "Every one is chosen" }, ...left]}
+          options={[{ value: "", label: left.length ? "Choose one to add…" : "All are chosen already" }, ...left]}
+          error={error}
           onChange={setNext}
         />
-        <Button aria-label={`Add to ${label.toLocaleLowerCase()}`} icon={<Plus size={14} />} disabled={!next} onClick={add}>
+        <Button aria-label={`Add to ${label.toLocaleLowerCase()}`} icon={<Plus size={14} />} disabled={!next || left.length === 0} onClick={add}>
           Add
         </Button>
       </div>
@@ -229,7 +232,7 @@ export function PickField({ label, hint, chosen, options, onChange }: {
 const sentence = (text: string) => text.charAt(0).toLocaleUpperCase() + text.slice(1);
 
 /** Repeating rows: each a ruled fieldset with its own remove, and one add at the foot. */
-export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel, labelled }: {
+export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel, labelled, removeReason }: {
   legend: string;
   /** One of them, for the add button: "branch", "hand-over". */
   one: string;
@@ -240,6 +243,8 @@ export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel
   itemLabel: (item: T, index: number) => string;
   /** Show each row's name as its heading, for rows long enough to lose one's place in. */
   labelled?: boolean;
+  /** Why a row cannot be removed, such as something still naming it; its Remove then says so instead. */
+  removeReason?: (item: T, index: number) => string | null;
 }) {
   const group = useRef<HTMLFieldSetElement>(null);
   const focusLater = useFocusAfterRender();
@@ -269,7 +274,7 @@ export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel
             {render(item, (patch) => onChange(items.map((current, at) => (at === index ? { ...current, ...patch } : current))), index)}
           </div>
           <div className="cat-form__remove">
-            <Button variant="tertiary" icon={<X size={14} />} onClick={() => remove(index)}>
+            <Button variant="tertiary" icon={<X size={14} />} unavailableReason={removeReason?.(item, index) ?? null} onClick={() => remove(index)}>
               Remove {itemLabel(item, index)}
             </Button>
           </div>
