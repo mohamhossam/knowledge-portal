@@ -7,6 +7,11 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Fixed
 
+- How sure a source is reads in one set of words everywhere: the explorer's solution document,
+  a journey step's tag and the exports say "Has gaps", never "Gap", and where nothing says the
+  word is about the source (a step's tag, a realisation line, a sentence) it is said in full,
+  "its source leaves gaps". A non-functional requirement no source defines reads "Not defined"
+  once, on screen and in the document, with no confidence mark beside it. No upgrade step.
 - Changing a system's dependency no longer drops where it comes from and how sure that is.
 - "Keep editing", in the question a changed system or connections edit asks before it is thrown
   away, no longer saves the edit. The question's buttons took the place of Save and Cancel as the

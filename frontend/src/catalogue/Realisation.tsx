@@ -115,7 +115,8 @@ const NFR_COLUMNS: Column<Nfr>[] = [
     cell: (item) => (
       <>
         {item.statement ?? <span className="offering-quiet">Not stated</span>}
-        <Provenance item={item} />
+        {/* A quality no source defines is said once, as "Not defined": no confidence mark beside it, only where it was looked for. */}
+        <Provenance item={item.coverage === "missing" ? { ...item, confidence: null } : item} />
       </>
     ),
   },

@@ -161,6 +161,18 @@ describe("the Solution Architecture document", () => {
     expect(words(section(online.blocks, "10. Tracking & Operational Architecture"))).toMatch(/Online \| Digital Order ID ↔ CWOM Order ID \| B2B Web/);
   });
 
+  it("says how sure a source is in the words every screen uses, never a third set", () => {
+    const legend = tables(made().blocks).find((table) => table.cols[0]?.label === "Confidence");
+    expect(legend?.rows.map((row) => text(row[0]!))).toEqual(["Confirmed", "Inferred", "Has gaps"]);
+  });
+
+  it("says a quality no source defines once, as Not defined, with no confidence word beside it", () => {
+    const nfrs = tables(section(made().blocks, "13. Non-Functional Requirements"))[0]!;
+    const availability = nfrs.rows.find((row) => text(row[0]!) === "Availability")!;
+    expect(text(availability[1]!)).toBe("Not defined");
+    expect(text(availability[3]!)).not.toMatch(/Has gaps|Inferred|Confirmed/);
+  });
+
   it("lists each fact its source marks as a gap, with where the document shows it", () => {
     const gaps = section(made().blocks, "16. Architecture Gaps & Open Questions");
 

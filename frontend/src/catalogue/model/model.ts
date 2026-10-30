@@ -10,6 +10,8 @@
  * inferred from one, or a gap. A gap is shown as a gap, never filled in.
  */
 
+import { SOURCE_WORD } from "../ontology";
+
 export type Evidence = {
   status: "confirmed" | "inferred" | "gap";
   /** A registered source's id, when the evidence names one. */
@@ -328,11 +330,8 @@ export type Catalogue = {
   roleRank: StepRole[];
 };
 
-export const EVIDENCE_WORDS: Record<Evidence["status"], string> = {
-  confirmed: "Confirmed",
-  inferred: "Inferred",
-  gap: "Gap",
-};
+/** How sure a source is, in the words every screen uses under a Source column. */
+export const EVIDENCE_WORDS: Record<Evidence["status"], string> = SOURCE_WORD;
 
 /**
  * Roles from strongest to weakest, as `order` ranks them (the version's own, `roleRank`):
