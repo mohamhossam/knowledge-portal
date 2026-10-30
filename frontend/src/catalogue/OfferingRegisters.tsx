@@ -5,17 +5,19 @@
  */
 import { useState } from "react";
 
-import type { Release, SourceConfidence } from "../api/client";
-import { Button, type Column, DataTable, Section } from "../design/components";
+import type { Release } from "../api/client";
+import { Button, type Column, DataTable, Section, Status } from "../design/components";
+import { RouterLink } from "../shell/links";
 import { useFocusAfterRender } from "../design/hooks";
 import { count } from "../home/format";
-import { CONFIDENCE_OPTIONS, LAYERS, systemName } from "./catalogue";
+import { LAYERS, systemName } from "./catalogue";
 import { draftBody } from "./drafting";
 import { EditPanel } from "./DraftEdits";
 import { BELOW, finishedPortfolio, finishedRecords, portfolioIssue, portfolioRemoveReason, recordRemoveReason, recordsIssue, type RowIssue, savedSame } from "./editing";
 import { AreaField, CheckField, LinesField, PickField, Rows, SelectField, TextField } from "./forms";
 import { SourceStated } from "./provenance/Provenance";
-import { SourceField } from "./SourceField";
+import { SourceField, SurenessField } from "./SourceField";
+import { useRowTarget } from "./useRowTarget";
 import { useCatalogueContext } from "./useCatalogue";
 import { useEditing } from "./useEditing";
 
@@ -67,6 +69,8 @@ export function PortfolioRegister() {
   const nodes = release.portfolio ?? [];
   const { editing, open, close } = useRegisterEdit("register-edit-portfolio");
   const byId = new Map(nodes.map((node) => [node.id, node]));
+  // A link to a node (a retired one's successor) lands on its row here.
+  const missingNode = useRowTarget('[data-register="portfolio"]');
   const offerings = release.products ?? [];
   type Row = PortfolioNode & { path: string };
   const rows: Row[] = nodes.map((node) => ({ ...node, path: pathOf(byId, node.id) })).sort((a, b) => a.path.localeCompare(b.path));
@@ -90,7 +94,19 @@ export function PortfolioRegister() {
           {row.path}
           {row.deprecated && (
             <span className="cat-detail">
-              Retired{row.replaced_by && <>, replaced by <bdi>{byId.get(row.replaced_by)?.name ?? row.replaced_by}</bdi></>}
+              Retired
+              {row.replaced_by && (
+                <>
+                  , replaced by{" "}
+                  {byId.has(row.replaced_by) ? (
+                    <RouterLink href={`?row=${encodeURIComponent(row.replaced_by)}`}>
+                      <bdi>{pathOf(byId, row.replaced_by)}</bdi>
+                    </RouterLink>
+                  ) : (
+                    <bdi>{row.replaced_by}</bdi>
+                  )}
+                </>
+              )}
             </span>
           )}
         </>
@@ -112,7 +128,14 @@ export function PortfolioRegister() {
       {editing ? (
         <PortfolioEdit onDone={close} />
       ) : rows.length ? (
-        <DataTable caption="The portfolio, from the top down" captionHidden columns={columns} rows={rows} rowId={(row) => row.id} />
+        <div data-register="portfolio">
+          {missingNode && (
+            <p role="status" className="cat-notice">
+              <Status tone="attention">The node {missingNode}, which the link named, is no longer in the portfolio.</Status>
+            </p>
+          )}
+          <DataTable caption="The portfolio, from the top down" captionHidden columns={columns} rows={rows} rowId={(row) => row.id} />
+        </div>
       ) : (
         <p className="cat-quiet">This version has no portfolio yet{editable ? "; add its business units and families here." : "."}</p>
       )}
@@ -340,12 +363,7 @@ function RecordsEdit({ onDone }: { onDone: () => void }) {
             )}
             <AreaField label="What it is" value={record.description} onChange={(description) => update({ description: description || null })} />
             <SourceField value={record.source} previous={items[index - 1]} onCopy={update} onChange={(source) => update({ source })} />
-            <SelectField
-              label="How sure its source is"
-              value={record.confidence ?? ""}
-              options={CONFIDENCE_OPTIONS}
-              onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
-            />
+            <SurenessField source={record.source} value={record.confidence} onChange={(confidence) => update({ confidence })} />
           </>
         )}
       />

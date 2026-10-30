@@ -156,7 +156,7 @@ export function ConflictsEdit({ onDone }: { onDone: () => void }) {
         labelled
         blank={() => ({ id: "", title: "", a: { source_id: "", statement: "" }, b: { source_id: "", statement: "" }, scope: [], accepted: [] })}
         itemLabel={(item, index) => cut(item.title, index, "conflict")}
-        render={(item, update) => (
+        render={(item, update, index) => (
           <>
             <TextField label="Title" value={item.title} required wide onChange={(title) => update({ title })} />
             <TextField label="Id" value={item.id} dir="ltr" hint="Such as CF-01; made for you when left empty." onChange={(id) => update({ id })} />
@@ -220,7 +220,14 @@ export function ConflictsEdit({ onDone }: { onDone: () => void }) {
               }}
             />
             {/* Where the conflict itself is recorded, after what it is: kept apart from the two sources that disagree. */}
-            <SourceField label="Where the conflict is recorded" value={item.source} onChange={(source) => update({ source })} />
+            <SourceField
+              label="Where the conflict is recorded"
+              value={item.source}
+              previous={items[index - 1]}
+              copyLabel="Same as the conflict above"
+              onCopy={({ source }) => update({ source })}
+              onChange={(source) => update({ source })}
+            />
           </>
         )}
       />

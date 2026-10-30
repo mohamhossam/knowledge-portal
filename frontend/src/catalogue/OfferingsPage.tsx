@@ -173,6 +173,7 @@ function AllOfferings({ release }: { release: Release }) {
   const shown = holds === "components" ? withParts : holds === "empty" ? rows.filter((offering) => offering.components.length === 0) : rows;
   const show = (id: string) => {
     const next = new URLSearchParams(params);
+    next.delete("row");
     if (id === "all") next.delete("holds");
     else next.set("holds", id);
     setParams(next, { replace: true });
@@ -283,6 +284,7 @@ function OfferingRecord({ offering }: { offering: Offering }) {
   const choose = (next: Tab) =>
     setParams((previous) => {
       const query = new URLSearchParams(previous);
+      query.delete("row");
       if (next === "components") query.delete("tab");
       else query.set("tab", next);
       return query;
@@ -368,7 +370,9 @@ function OfferingRecord({ offering }: { offering: Offering }) {
     >
       {missingPart && (
         <p role="status" className="cat-notice">
-          <Status tone="attention">The part {missingPart}, which the link named, is no longer in this offering.</Status>
+          <Status tone="attention">
+            The {tab === "rules" ? "rule" : tab === "service" ? "quality" : "part"} {missingPart}, which the link named, is no longer in this offering.
+          </Status>
         </p>
       )}
       {editing === "facts" && panel("facts")}

@@ -385,6 +385,16 @@ html:has(.cat-edit__foot),
   box-shadow: inset 3px 0 0 var(--table-row-current-bar);
 }
 
+/* A list's item linked to, such as a business rule, marked the same way, its ring inside it. */
+.ds-lines > li[data-row-target] {
+  background: var(--table-row-current);
+  box-shadow: inset 3px 0 0 var(--table-row-current-bar);
+}
+
+.ds-lines > li[data-row-target]:focus {
+  outline-offset: -2px;
+}
+
 /* Its cell's focus ring sits inside the cell: the table's wrapper clips whatever lies outside it. */
 .ds-table tbody tr[data-row-target] > [tabindex="-1"]:focus {
   outline-offset: -2px;

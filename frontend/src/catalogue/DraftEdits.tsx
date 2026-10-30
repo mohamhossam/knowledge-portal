@@ -1,12 +1,14 @@
 import { Trash2 } from "lucide-react";
-import { type FormEvent, Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { type FormEvent, Fragment, type ReactNode, useContext, useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import type { CatalogueSystem, Channel, Journey, Offering, Relationship, RelationshipKind, Release, SourceConfidence } from "../api/client";
+import type { CatalogueSystem, Channel, Journey, Offering, Relationship, RelationshipKind, Release } from "../api/client";
 import { ApiError, errorMessage } from "../api/errors";
 import { routerPath } from "../auth/paths";
 import { blankSystem, channelUses, draftBody, systemUses } from "./drafting";
-import { CONFIDENCE_OPTIONS, usedHow } from "./catalogue";
+import { SourceNotesContext, sourceNotes, useSourceFieldCount } from "./sourceNotes";
+import { NoSourceYet } from "./SourceField";
+import { usedHow } from "./catalogue";
 import {
   blankConcept, conceptChanges, type ConceptField, conceptIssue, conceptsWith, conceptUsers, finishedConcept, finishedOffering, finishedSystem, interfacesChanges, interfacesOfSystem, interfacesProblem, interfacesWith, finishedJourney, journeyChanges, journeyIssue, journeyOrderProblem, savedSame, domainsChanges, domainsIssue, type EditedDomain, outlined,
   type Link, linksChanges, linksOf, linksProblem, offeringChanged, offeringIssue, offeringProblem, realisationProblem, relationshipsWith, slug, systemChanges,
@@ -16,10 +18,10 @@ import { ActionGroup, Button, Status } from "../design/components";
 import { useFocusAfterRender } from "../design/hooks";
 import { RouterLink } from "../shell/links";
 import { AreaField, PickField, Rows, SelectField, SystemField, TextField } from "./forms";
-import { SourceField } from "./SourceField";
+import { SourceField, SurenessField } from "./SourceField";
 import { JourneyEditor } from "./JourneyEditor";
 import { OfferingFacts } from "./OfferingEditor";
-import { questionProblem } from "./governance";
+import { questionProblem, SourcesContext } from "./governance";
 import { OFFERING_SECTIONS, type OfferingSection } from "./offeringSections";
 import { entityNames, INTERFACE_STYLE } from "./ontology";
 import { ConceptEditor } from "./ConceptEditor";
@@ -71,6 +73,10 @@ export function EditPanel({ title, children, action, actionIcon, busy, problem, 
   onCancel: () => void;
   danger?: boolean;
 }) {
+  // The form's source fields, so what the register lacks is said at the first only.
+  const [notes] = useState(sourceNotes);
+  const sourceFields = useSourceFieldCount(notes);
+  const register = useContext(SourcesContext);
   const id = useId();
   const heading = useRef<HTMLHeadingElement>(null);
   const form = useRef<HTMLFormElement>(null);
@@ -149,7 +155,8 @@ export function EditPanel({ title, children, action, actionIcon, busy, problem, 
       }}
     >
       <Heading id={`${id}-title`} ref={heading} tabIndex={focusOnOpen ? -1 : undefined} className="cat-edit__title">{title}</Heading>
-      {children}
+      {sourceFields > 0 && register.sources.size === 0 && <NoSourceYet />}
+      <SourceNotesContext.Provider value={notes}>{children}</SourceNotesContext.Provider>
       {/* Mounted before it has anything to say, so a failure is announced. */}
       <p className="cat-edit__failure" role="alert">
         {error ? (
@@ -592,12 +599,7 @@ export function InterfacesEdit({ system, onDone }: { system: CatalogueSystem; on
               />
               <AreaField label="What it is for" value={item.description} onChange={(description) => update({ description: description || null })} />
               <SourceField value={item.source} previous={exposed[index - 1]} onCopy={update} onChange={(source) => update({ source })} />
-              <SelectField
-                label="How sure its source is"
-                value={item.confidence ?? ""}
-                options={CONFIDENCE_OPTIONS}
-                onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
-              />
+              <SurenessField source={item.source} value={item.confidence} onChange={(confidence) => update({ confidence })} />
             </>
           )}
         />
@@ -760,12 +762,7 @@ export function ChannelsEdit({ onDone }: { onDone: () => void }) {
             />
             <AreaField label="What it is" value={item.description} onChange={(description) => update({ description: description || null })} />
             <SourceField value={item.source} previous={items[index - 1]} onCopy={update} onChange={(source) => update({ source })} />
-            <SelectField
-              label="How sure its source is"
-              value={item.confidence ?? ""}
-              options={CONFIDENCE_OPTIONS}
-              onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
-            />
+            <SurenessField source={item.source} value={item.confidence} onChange={(confidence) => update({ confidence })} />
           </>
         )}
       />

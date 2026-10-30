@@ -1,12 +1,11 @@
 import { useId, useMemo } from "react";
 
-import type { CatalogueSystem, Release, SourceConfidence } from "../api/client";
+import type { CatalogueSystem, Release } from "../api/client";
 import { RadioGroup } from "../design/components";
-import { CONFIDENCE_OPTIONS } from "./catalogue";
 import { systemUses } from "./drafting";
 import { conceptDomain } from "./editing";
 import { AreaField, CheckField, LinesField, Rows, SelectField, TextField } from "./forms";
-import { SourceField } from "./SourceField";
+import { SourceField, SurenessField } from "./SourceField";
 
 type Capability = CatalogueSystem["capabilities"][number];
 type Component = CatalogueSystem["components"][number];
@@ -145,12 +144,7 @@ export function SystemEditor({ value, onChange, release }: {
             onChange={(owner) => set({ owner: owner || null })}
           />
           <SourceField value={value.source} onChange={(source) => set({ source })} />
-          <SelectField
-            label="How sure its source is"
-            value={value.confidence ?? ""}
-            options={CONFIDENCE_OPTIONS}
-            onChange={(confidence) => set({ confidence: (confidence || null) as SourceConfidence | null })}
-          />
+          <SurenessField source={value.source} value={value.confidence} onChange={(confidence) => set({ confidence })} />
         </div>
       </fieldset>
 
@@ -221,12 +215,7 @@ export function SystemEditor({ value, onChange, release }: {
               onChange={(triggers) => update({ triggers })}
             />
             <SourceField value={item.source} previous={value.capabilities[index - 1]} onCopy={update} onChange={(source) => update({ source })} />
-            <SelectField
-              label="How sure its source is"
-              value={item.confidence ?? ""}
-              options={CONFIDENCE_OPTIONS}
-              onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
-            />
+            <SurenessField source={item.source} value={item.confidence} onChange={(confidence) => update({ confidence })} />
           </>
         )}
       />
@@ -285,12 +274,7 @@ export function SystemEditor({ value, onChange, release }: {
             <LinesField label="Also called" value={item.aliases} onChange={(aliases) => update({ aliases })} />
             <AreaField label="What it does" value={item.description} onChange={(description) => update({ description: description || null })} />
             <SourceField value={item.source} previous={value.components[index - 1]} onCopy={update} onChange={(source) => update({ source })} />
-            <SelectField
-              label="How sure its source is"
-              value={item.confidence ?? ""}
-              options={CONFIDENCE_OPTIONS}
-              onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
-            />
+            <SurenessField source={item.source} value={item.confidence} onChange={(confidence) => update({ confidence })} />
           </>
         )}
       />

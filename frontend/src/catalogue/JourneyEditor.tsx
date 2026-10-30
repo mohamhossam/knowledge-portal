@@ -2,9 +2,9 @@ import { useRef } from "react";
 
 import type { CatalogueSystem, Channel, Journey, JourneyActivity, Offering, SourceConfidence } from "../api/client";
 import type { Interface } from "./ontology";
-import { CONFIDENCE, orderedSteps } from "./catalogue";
+import { orderedSteps } from "./catalogue";
 import { AreaField, PickField, Rows, SelectField, SystemField, TextField, CheckField } from "./forms";
-import { SourceField, type Sourced } from "./SourceField";
+import { SourceField, type Sourced, SurenessField } from "./SourceField";
 import { roleCode } from "./model/vocabulary";
 import { ChannelChoices } from "./OfferingEditor";
 
@@ -16,11 +16,6 @@ const TIMINGS = [
   { value: "", label: "Not said" },
   { value: "Sync", label: "Sync: waits for its answer" },
   { value: "Async", label: "Async: carries on" },
-];
-
-const CONFIDENCE_OPTIONS = [
-  { value: "", label: "Not stated" },
-  ...(Object.keys(CONFIDENCE) as SourceConfidence[]).map((value) => ({ value, label: CONFIDENCE[value] })),
 ];
 
 const RULE_KINDS = [
@@ -144,12 +139,7 @@ export function JourneyEditor({ value, onChange, systems, offerings, channels = 
   ) => (
     <>
       <SourceField value={item.source} previous={previous} onCopy={update} onChange={(source) => update({ source })} />
-      <SelectField
-        label="How sure its source is"
-        value={item.confidence ?? ""}
-        options={CONFIDENCE_OPTIONS}
-        onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
-      />
+      <SurenessField source={item.source} value={item.confidence} onChange={(confidence) => update({ confidence })} />
     </>
   );
 
