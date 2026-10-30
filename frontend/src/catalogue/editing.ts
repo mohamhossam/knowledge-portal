@@ -412,3 +412,192 @@ export function interfacesChanges(release: Release, systemId: string, exposed: I
     ...(JSON.stringify([...was.used].sort()) !== JSON.stringify([...used].sort()) ? ["what it uses"] : []),
   ];
 }
+
+type Concept = NonNullable<Release["business_capabilities"]>[number];
+
+/** How concept labels compare (skos.label_key): letters and digits alone, so "Wi-Fi" is "WiFi". */
+const labelKey = (label: string) => label.toLocaleLowerCase().replace(/[^\p{L}\p{M}\p{N}]+/gu, "");
+
+/** Concepts are at most this many levels deep under a business area (concepts.MAX_CONCEPT_DEPTH). */
+const MAX_CONCEPT_DEPTH = 3;
+
+export const blankConcept = (): Concept => ({ id: "", pref_label: "", alt_labels: [], close_match: [], deprecated: false, accepted: [] });
+
+/** A new concept's id from its label, as the service makes one: "Managed Wi-Fi" is "cap-managed-wi-fi". */
+function conceptIdFor(label: string, taken: Set<string>): string {
+  const words = label.toLocaleLowerCase().match(/[\p{L}\p{M}\p{N}]+/gu) ?? [];
+  const base = words.length ? `cap-${words.join("-")}` : "cap";
+  let id = base;
+  for (let n = 2; taken.has(id); n += 1) id = `${base}-${n}`;
+  return id;
+}
+
+/** What the service is sent for a concept: trimmed, an id when new, a business area only on a top concept. */
+export function finishedConcept(value: Concept, release: Release): Concept {
+  const taken = new Set((release.business_capabilities ?? []).map((item) => item.id));
+  return {
+    ...value,
+    id: value.id || conceptIdFor(value.pref_label, taken),
+    pref_label: value.pref_label.trim(),
+    alt_labels: lines(value.alt_labels),
+    close_match: lines(value.close_match),
+    definition: value.definition?.trim() || null,
+    exact_match: value.exact_match?.trim() || null,
+    source: value.source?.trim() || null,
+    broader_id: value.broader_id || null,
+    domain_id: value.broader_id ? null : value.domain_id || null,
+    replaced_by: value.deprecated ? value.replaced_by || null : null,
+  };
+}
+
+/** The concepts once this one is saved in its place, or added. */
+export function conceptsWith(release: Release, concept: Concept): Concept[] {
+  const all = release.business_capabilities ?? [];
+  return all.some((item) => item.id === concept.id) ? all.map((item) => (item.id === concept.id ? concept : item)) : [...all, concept];
+}
+
+/** A concept and every concept under it, by id. */
+export function conceptAndNarrower(concepts: Concept[], id: string): Set<string> {
+  const found = new Set([id]);
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const item of concepts) {
+      if (item.broader_id && found.has(item.broader_id) && !found.has(item.id)) {
+        found.add(item.id);
+        grew = true;
+      }
+    }
+  }
+  return found;
+}
+
+/** The business area a concept sits in among these concepts: its own as a top concept, else its top concept's. */
+function domainAmong(concepts: Map<string, Concept>, id: string): string | null {
+  const seen = new Set<string>();
+  for (let item = concepts.get(id); item && !seen.has(item.id); item = item.broader_id ? concepts.get(item.broader_id) : undefined) {
+    if (!item.broader_id) return item.domain_id ?? null;
+    seen.add(item.id);
+  }
+  return null;
+}
+
+/** The concept form's fields a problem can belong to. */
+export type ConceptField = "pref_label" | "alt_labels" | "broader_id" | "domain_id" | "close_match" | "replaced_by";
+
+/** Why a concept cannot be saved yet, and the field it is at, if anything: the service's rules for concepts, and the capabilities linked to it. */
+export function conceptIssue(value: Concept, release: Release): { field: ConceptField; message: string } | null {
+  const concept = finishedConcept(value, release);
+  const all = release.business_capabilities ?? [];
+  const at = (field: ConceptField, message: string) => ({ field, message });
+  if (!labelKey(concept.pref_label)) return at("pref_label", "Give the concept a preferred label, with a letter or digit.");
+  if (concept.alt_labels.some((label) => !labelKey(label))) return at("alt_labels", "Every other label needs a letter or digit.");
+  const own = [concept.pref_label, ...concept.alt_labels];
+  const seen = new Set<string>();
+  for (const label of own) {
+    if (seen.has(labelKey(label))) return at("alt_labels", `“${label}” is listed twice; each of its labels differs from the rest.`);
+    seen.add(labelKey(label));
+  }
+  for (const other of all.filter((item) => item.id !== concept.id)) {
+    const clash = own.find((label) => [other.pref_label, ...other.alt_labels].some((theirs) => labelKey(theirs) === labelKey(label)));
+    if (clash) {
+      return at(labelKey(clash) === labelKey(concept.pref_label) ? "pref_label" : "alt_labels", `“${clash}” already names ${other.pref_label}; each label names one concept.`);
+    }
+  }
+  const edited = conceptsWith(release, concept);
+  const byId = new Map(edited.map((item) => [item.id, item]));
+  const named = (id: string) => byId.get(id)?.pref_label ?? id;
+  if (concept.broader_id) {
+    if (conceptAndNarrower(edited, concept.id).has(concept.broader_id)) {
+      return at("broader_id", `${named(concept.broader_id)} sits under this concept, so it cannot be its broader one.`);
+    }
+    const tooDeep = deepestUnder(edited, concept.id);
+    if (tooDeep) return at("broader_id", `Concepts are at most ${MAX_CONCEPT_DEPTH} levels deep; under ${named(concept.broader_id)}, ${named(tooDeep)} would be deeper.`);
+  }
+  if (concept.exact_match && concept.close_match.includes(concept.exact_match)) {
+    return at("close_match", `${concept.exact_match} is its outside match, so it is not also a near one.`);
+  }
+  if (new Set(concept.close_match).size !== concept.close_match.length) return at("close_match", "Each near match is named once.");
+  if (concept.replaced_by) {
+    const seenReplaced = new Set([concept.id]);
+    for (let item = byId.get(concept.replaced_by); item?.replaced_by; item = byId.get(item.replaced_by)) {
+      if (seenReplaced.has(item.replaced_by)) return at("replaced_by", `${named(concept.replaced_by)} is replaced, in turn, by this concept; choose another to replace it.`);
+      seenReplaced.add(item.id);
+    }
+  }
+  // A capability sits in its concept's capability domain: moving a concept must not leave one behind.
+  const areas = new Map((release.capability_domains ?? []).map((item) => [item.id, item.name]));
+  const moved = conceptAndNarrower(edited, concept.id);
+  for (const system of release.systems) {
+    for (const capability of system.capabilities) {
+      if (!capability.concept_id || !moved.has(capability.concept_id) || !capability.domain_id) continue;
+      const held = domainAmong(byId, capability.concept_id);
+      if (held && held !== capability.domain_id) {
+        const was = areas.get(capability.domain_id) ?? capability.domain_id;
+        return at(
+          concept.broader_id ? "broader_id" : "domain_id",
+          `The capability ${capability.name} of ${system.name} sits in ${was}, and its concept would sit in ${areas.get(held) ?? held}; change that capability's domain first.`,
+        );
+      }
+    }
+  }
+  return null;
+}
+
+/** Why a concept cannot be saved yet, if anything. */
+export const conceptProblem = (value: Concept, release: Release): string | null => conceptIssue(value, release)?.message ?? null;
+
+/** Levels from the top down to a concept, among these concepts; a loop stops counting past the limit. */
+function levelOf(byId: Map<string, Concept>, id: string): number {
+  let levels = 1;
+  for (let item = byId.get(id); item?.broader_id && levels <= MAX_CONCEPT_DEPTH + 1; item = byId.get(item.broader_id)) levels += 1;
+  return levels;
+}
+
+/** The first concept, this one or one under it, that would sit more than MAX_CONCEPT_DEPTH levels down, if any. */
+function deepestUnder(concepts: Concept[], id: string): string | null {
+  const byId = new Map(concepts.map((item) => [item.id, item]));
+  return [...conceptAndNarrower(concepts, id)].find((item) => levelOf(byId, item) > MAX_CONCEPT_DEPTH) ?? null;
+}
+
+/** Whether a concept may sit under another without any concept going more than MAX_CONCEPT_DEPTH levels down. */
+export function fitsUnder(release: Release, concept: Concept, broaderId: string): boolean {
+  const edited = conceptsWith(release, { ...concept, id: concept.id || "*new", broader_id: broaderId });
+  return deepestUnder(edited, concept.id || "*new") === null;
+}
+
+/** A concept's parts as its form names them, each read the way it is saved. */
+const CONCEPT_PARTS: [string, (concept: Concept) => unknown][] = [
+  ["its labels", (concept) => [concept.pref_label, concept.alt_labels]],
+  ["what it means", (concept) => concept.definition ?? null],
+  ["where it sits", (concept) => [concept.broader_id ?? null, concept.domain_id ?? null]],
+  ["its outside matches", (concept) => [concept.exact_match ?? null, concept.close_match]],
+  ["its source", (concept) => [concept.confidence ?? null, concept.source ?? null]],
+  ["whether it is retired", (concept) => [concept.deprecated, concept.replaced_by ?? null]],
+];
+
+/** Which parts of a concept an edit has changed, by the form's names for them. */
+export function conceptChanges(before: Concept, after: Concept, release: Release): string[] {
+  const [was, is] = [finishedConcept(before, release), finishedConcept(after, release)];
+  return CONCEPT_PARTS.filter(([, read]) => JSON.stringify(read(was)) !== JSON.stringify(read(is))).map(([name]) => name);
+}
+
+/** What names a concept, each with the page it is on (under the catalogue's base): system capabilities, offering parts, narrower concepts and concepts it replaces. */
+export function conceptUsers(release: Release, id: string): { text: string; path: string }[] {
+  const concepts = release.business_capabilities ?? [];
+  const at = (kind: string, target: string) => `${kind}/${encodeURIComponent(target)}`;
+  return [
+    ...release.systems.flatMap((system) =>
+      system.capabilities.filter((item) => item.concept_id === id).map((item) => ({ text: `the capability ${item.name} of ${system.name}`, path: at("systems", system.id) })),
+    ),
+    ...(release.products ?? []).flatMap((offering) =>
+      offering.components
+        .filter((part) => (part.capability_ids ?? []).includes(id))
+        .map((part) => ({ text: `the part ${part.name} of ${offering.name}`, path: at("offerings", offering.id) })),
+    ),
+    ...concepts.filter((item) => item.broader_id === id).map((item) => ({ text: `the narrower concept ${item.pref_label}`, path: at("concepts", item.id) })),
+    ...concepts.filter((item) => item.replaced_by === id).map((item) => ({ text: `${item.pref_label}, which it replaces`, path: at("concepts", item.id) })),
+  ];
+}
+
+/** What names a concept, in words. */
+export const conceptUses = (release: Release, id: string): string[] => conceptUsers(release, id).map((user) => user.text);

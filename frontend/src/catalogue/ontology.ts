@@ -77,7 +77,25 @@ export function conceptIndex(release: Release): ConceptIndex {
   };
 }
 
-/** A concept's place: its capability domain, then its broader concepts, outermost first. */
+/**
+ * The capability domain a concept sits in: its own as a top concept, else its top concept's,
+ * which every concept under it inherits (concepts.concept_domain). `from` is that top concept
+ * when the domain is inherited.
+ */
+export function domainOf(index: ConceptIndex, concept: Concept): { id: string | null; from?: Concept } {
+  const seen = new Set<string>();
+  let current: Concept | undefined = concept;
+  while (current?.broader_id && !seen.has(current.id)) {
+    seen.add(current.id);
+    const broader = index.byId.get(current.broader_id);
+    if (!broader) break;
+    current = broader;
+  }
+  const id = current?.domain_id && index.domains.has(current.domain_id) ? current.domain_id : null;
+  return current && current.id !== concept.id ? { id, from: current } : { id };
+}
+
+/** A concept's place: its capability domain (its top concept's, for one under another), then its broader concepts, outermost first. */
 export function conceptPath(index: ConceptIndex, concept: Concept): string[] {
   const path: string[] = [];
   const seen = new Set<string>([concept.id]);
@@ -87,7 +105,8 @@ export function conceptPath(index: ConceptIndex, concept: Concept): string[] {
     if (!broader) break;
     path.unshift(broader.pref_label);
   }
-  const domain = concept.domain_id ? index.domains.get(concept.domain_id)?.name : undefined;
+  const domainId = domainOf(index, concept).id;
+  const domain = domainId ? index.domains.get(domainId)?.name : undefined;
   return domain ? [domain, ...path] : path;
 }
 

@@ -1,19 +1,22 @@
-import { type ReactNode, useMemo } from "react";
+import { Plus } from "lucide-react";
+import { type ReactNode, useMemo, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 
 import {
-  DataTable, EmptyState, Facts, GapBadge, ListFilter, ListFind, ListTools, RecordList, type RecordGroup, RecordPlaceholder, RecordView,
-  Section, Status, Workbench,
+  ActionGroup, Button, DataTable, EmptyState, Facts, GapBadge, ListFilter, ListFind, ListTools, RecordList, type RecordGroup, RecordPlaceholder,
+  RecordView, Section, Status, Workbench,
 } from "../design/components";
+import { useFocusAfterRender } from "../design/hooks";
 import { count } from "../home/format";
 import { RouterLink } from "../shell/links";
 import { Retired } from "./Retired";
 import { acceptances } from "./accepted";
 import { AcceptedFrom } from "./AcceptedFrom";
+import { ConceptEdit, ConceptRemove } from "./DraftEdits";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useFindParam } from "./frame/useFindParam";
 import {
-  type Concept, type ConceptIndex, conceptIndex, conceptPath, coverage, findConcepts, realisationRecords, SOURCE_TONE, SOURCE_WORD,
+  type Concept, type ConceptIndex, conceptIndex, conceptPath, coverage, domainOf, findConcepts, realisationRecords, SOURCE_TONE, SOURCE_WORD,
 } from "./ontology";
 import { SourceName } from "./provenance/Provenance";
 import { useCatalogueContext } from "./useCatalogue";
@@ -30,7 +33,16 @@ const UNREALISED = "no-system";
  */
 export function ConceptsPage() {
   const { conceptId } = useParams();
-  const { book, base } = useCatalogueContext();
+  const { book, base, editable } = useCatalogueContext();
+  const location = useLocation();
+  const notice = (location.state as { notice?: string } | null)?.notice;
+  const [adding, setAdding] = useState(false);
+  const focusLater = useFocusAfterRender();
+  // Closing an add that was not saved gives focus back to "Add a concept"; a saved one opens its sheet.
+  const stopAdding = (saved?: string) => {
+    if (!saved) focusLater(() => document.getElementById("concept-add"));
+    setAdding(false);
+  };
   const index = useMemo(() => conceptIndex(book.release), [book.release]);
   const chosen = conceptId !== undefined ? index.byId.get(conceptId) : undefined;
 
@@ -38,19 +50,29 @@ export function ConceptsPage() {
     return (
       <>
         <CatalogueHeader page="concepts" />
-        <EmptyState title="This version names no capability concept yet.">
-          <p>Concepts arrive with a version built from the ontology. Requirement work maps by system capabilities and phrases until then.</p>
-        </EmptyState>
+        {adding ? (
+          <ConceptEdit onDone={stopAdding} />
+        ) : (
+          <EmptyState
+            title="This version names no capability concept yet."
+            action={editable ? <Button id="concept-add" icon={<Plus size={16} />} onClick={() => setAdding(true)}>Add a concept</Button> : undefined}
+          >
+            <p>Concepts arrive with a version built from the ontology, or are added here. Requirement work maps by system capabilities and phrases until then.</p>
+          </EmptyState>
+        )}
       </>
     );
   }
 
-  const record = chosen ? (
+  const record = adding ? (
+    <ConceptEdit onDone={stopAdding} />
+  ) : chosen ? (
     <ConceptRecord key={chosen.id} concept={chosen} index={index} />
   ) : conceptId !== undefined ? (
     <EmptyState title={`This version has no concept “${conceptId}”.`} action={<RouterLink href={`${base}/concepts`}>See every concept</RouterLink>} />
   ) : (
     <RecordPlaceholder title={`${count(index.concepts.length, "concept")}. Choose one to read what realises it.`}>
+      {notice && <p role="status" className="cat-notice"><Status tone="done">{notice}</Status></p>}
       <CoverageLine index={index} />
     </RecordPlaceholder>
   );
@@ -58,7 +80,12 @@ export function ConceptsPage() {
   return (
     <>
       <CatalogueHeader page="concepts" chosen={chosen?.pref_label} />
-      <Workbench listLabel="Concepts" chosen={Boolean(chosen)} list={<ConceptsList index={index} current={chosen?.id} />} record={record} />
+      <Workbench
+        listLabel="Concepts"
+        chosen={Boolean(chosen) || adding}
+        list={<ConceptsList index={index} current={chosen?.id} onAdd={editable && !adding ? () => setAdding(true) : undefined} />}
+        record={record}
+      />
     </>
   );
 }
@@ -68,7 +95,7 @@ function CoverageLine({ index }: { index: ConceptIndex }) {
   const { book } = useCatalogueContext();
   const tally = coverage(book.release, index);
   const areas = [...index.domains.values()]
-    .map((domain) => ({ name: domain.name, n: index.concepts.filter((concept) => concept.domain_id === domain.id).length }))
+    .map((domain) => ({ name: domain.name, n: index.concepts.filter((concept) => domainOf(index, concept).id === domain.id).length }))
     .filter((area) => area.n > 0);
   return (
     <section className="cat-tally" aria-label="How much is mapped to concepts">
@@ -96,7 +123,23 @@ function CoverageLine({ index }: { index: ConceptIndex }) {
 
 const realised = (index: ConceptIndex, concept: Concept) => (index.systems.get(concept.id)?.length ?? 0) > 0;
 
-function ConceptsList({ index, current }: { index: ConceptIndex; current?: string }) {
+/** The concepts as a scheme: each top concept followed by those under it, depth first, by label at each level. */
+function inSchemeOrder(index: ConceptIndex): Concept[] {
+  const ordered: Concept[] = [];
+  const placed = new Set<string>();
+  const visit = (concept: Concept) => {
+    if (placed.has(concept.id)) return;
+    placed.add(concept.id);
+    ordered.push(concept);
+    for (const narrower of index.narrower.get(concept.id) ?? []) visit(narrower);
+  };
+  for (const concept of index.concepts) if (!concept.broader_id || !index.byId.has(concept.broader_id)) visit(concept);
+  // A concept caught in a loop of broader ones still shows, after the rest.
+  for (const concept of index.concepts) visit(concept);
+  return ordered;
+}
+
+function ConceptsList({ index, current, onAdd }: { index: ConceptIndex; current?: string; onAdd?: () => void }) {
   const { base } = useCatalogueContext();
   const [params, setParams] = useSearchParams();
   const show = params.get("show") === UNREALISED ? UNREALISED : ALL;
@@ -104,10 +147,10 @@ function ConceptsList({ index, current }: { index: ConceptIndex; current?: strin
   const found = useMemo(() => findConcepts(index.concepts, find), [index.concepts, find]);
   const unrealised = index.concepts.filter((concept) => !realised(index, concept)).length;
 
-  // Grouped by capability domain, in the domains' order; concepts without one last.
+  // Grouped by capability domain (a narrower concept's is its top concept's), in the domains' order; concepts without one last.
   const groups = useMemo<RecordGroup[]>(() => {
     const query = params.size ? `?${params}` : "";
-    const shown = index.concepts
+    const shown = inSchemeOrder(index)
       .filter((concept) => show === ALL || !realised(index, concept))
       .filter((concept) => !find.trim() || found.has(concept.id));
     const order = [...index.domains.keys(), ""];
@@ -115,15 +158,22 @@ function ConceptsList({ index, current }: { index: ConceptIndex; current?: strin
       id: domainId || "none",
       label: domainId ? <bdi>{index.domains.get(domainId)?.name}</bdi> : "No capability domain",
       items: shown
-        .filter((concept) => (concept.domain_id && index.domains.has(concept.domain_id) ? concept.domain_id : "") === domainId)
+        .filter((concept) => (domainOf(index, concept).id ?? "") === domainId)
         .map((concept) => {
           const why = found.get(concept.id);
+          const broader = concept.broader_id ? index.byId.get(concept.broader_id) : undefined;
           return {
             id: concept.id,
             href: `${base}/concepts/${encodeURIComponent(concept.id)}${query}`,
             name: concept.deprecated ? <span className="cat-retired">{concept.pref_label}</span> : concept.pref_label,
             bidi: true,
-            detail: why ? <>Also called “<bdi>{why}</bdi>”</> : concept.alt_labels.join(" · ") || undefined,
+            detail:
+              broader || why || concept.alt_labels.length ? (
+                <>
+                  {broader && <>Under <bdi>{broader.pref_label}</bdi>{(why || concept.alt_labels.length > 0) && " · "}</>}
+                  {why ? <>Also called “<bdi>{why}</bdi>”</> : concept.alt_labels.join(" · ")}
+                </>
+              ) : undefined,
             meta: concept.deprecated ? <span className="cat-quiet">Retired</span> : <GapBadge gaps={realised(index, concept) ? [] : ["a system that realises it"]} />,
           };
         }),
@@ -151,6 +201,7 @@ function ConceptsList({ index, current }: { index: ConceptIndex; current?: strin
             }, { replace: true })
           }
         />
+        {onAdd && <Button id="concept-add" variant="tertiary" icon={<Plus size={16} />} onClick={onAdd}>Add a concept</Button>}
       </ListTools>
       <RecordList
         label="Capability concepts in this version"
@@ -164,8 +215,17 @@ function ConceptsList({ index, current }: { index: ConceptIndex; current?: strin
 }
 
 function ConceptRecord({ concept, index }: { concept: Concept; index: ConceptIndex }) {
-  const { book, base } = useCatalogueContext();
+  const { book, base, editable } = useCatalogueContext();
   const location = useLocation();
+  // "retire" is the edit opened from a blocked removal, already retired.
+  const [editing, setEditing] = useState<"concept" | "retire" | "remove" | null>(null);
+  // Closing an edit gives focus back to the button that opened it.
+  const focusLater = useFocusAfterRender();
+  const close = (key: "concept" | "remove") => () => {
+    focusLater(() => document.getElementById(`concept-edit-${key}`));
+    setEditing(null);
+  };
+  const changing = editing === "concept" || editing === "retire";
   const records = realisationRecords(book.release);
   const path = conceptPath(index, concept);
   const systems = index.systems.get(concept.id) ?? [];
@@ -174,6 +234,17 @@ function ConceptRecord({ concept, index }: { concept: Concept; index: ConceptInd
   const broader = concept.broader_id ? index.byId.get(concept.broader_id) : undefined;
   const replacement = concept.replaced_by ? index.byId.get(concept.replaced_by) : undefined;
   const conceptLink = (other: Concept) => <Link key={other.id} to={`${base}/concepts/${encodeURIComponent(other.id)}`} dir="auto">{other.pref_label}</Link>;
+  // Where it sits: its own capability domain, or its top concept's, said as inherited.
+  const domain = domainOf(index, concept);
+  const domainName = domain.id ? index.domains.get(domain.id)?.name : undefined;
+  const domainFact: ReactNode = domainName ? (
+    <span>
+      <bdi>{domainName}</bdi>
+      {domain.from && <span className="cat-detail">From its top concept, {conceptLink(domain.from)}</span>}
+    </span>
+  ) : (
+    <span className="cat-quiet">{domain.from ? <>Not placed: its top concept, {conceptLink(domain.from)}, has none</> : "Not placed yet"}</span>
+  );
 
   type Use = (typeof systems)[number];
   type Part = (typeof components)[number];
@@ -189,14 +260,28 @@ function ConceptRecord({ concept, index }: { concept: Concept; index: ConceptInd
         </>
       }
       lead={concept.definition || undefined}
+      actions={
+        // One edit at a time: while one is open its own Cancel closes it, so switching never drops changes unasked.
+        editable && editing === null ? (
+          <ActionGroup label={`Edit ${concept.pref_label}`}>
+            <Button id="concept-edit-concept" aria-expanded={editing === "concept"} onClick={() => setEditing(editing === "concept" ? null : "concept")}>Edit this concept</Button>
+            <Button id="concept-edit-remove" variant="tertiary" aria-expanded={editing === "remove"} onClick={() => setEditing(editing === "remove" ? null : "remove")}>Remove this concept…</Button>
+          </ActionGroup>
+        ) : undefined
+      }
     >
-      <Section title="Labels" count={1 + concept.alt_labels.length} headingLevel={3}>
-        <ul className="cat-chips" aria-label={`Labels of ${concept.pref_label}`}>
-          <li><span className="cat-chip cat-chip--preferred" dir="auto">{concept.pref_label}<span className="ds-visually-hidden"> (preferred)</span></span></li>
-          {concept.alt_labels.map((label) => <li key={label}><span className="cat-chip cat-chip--plain" dir="auto">{label}</span></li>)}
-        </ul>
-        <p className="cat-quiet">Each label names one concept. “Wi-Fi” and “WiFi” count as the same label.</p>
-      </Section>
+      {changing && <ConceptEdit key={editing} concept={concept} retire={editing === "retire"} onDone={close("concept")} />}
+      {editing === "remove" && <ConceptRemove concept={concept} onDone={close("remove")} onRetire={() => setEditing("retire")} />}
+      {/* While the concept is edited, what its form holds gives way to it; what realises it stays. */}
+      {!changing && (
+        <Section title="Labels" count={1 + concept.alt_labels.length} headingLevel={3}>
+          <ul className="cat-chips" aria-label={`Labels of ${concept.pref_label}`}>
+            <li><span className="cat-chip cat-chip--preferred" dir="auto">{concept.pref_label}<span className="ds-visually-hidden"> (preferred)</span></span></li>
+            {concept.alt_labels.map((label) => <li key={label}><span className="cat-chip cat-chip--plain" dir="auto">{label}</span></li>)}
+          </ul>
+          <p className="cat-quiet">Each label names one concept. “Wi-Fi” and “WiFi” count as the same label.</p>
+        </Section>
+      )}
       <Section title="Systems that do this" count={systems.length} headingLevel={3}>
         {systems.length ? (
           <DataTable<Use>
@@ -251,17 +336,21 @@ function ConceptRecord({ concept, index }: { concept: Concept; index: ConceptInd
           <p className="cat-quiet">No offering component means this concept.</p>
         )}
       </Section>
-      <Section title="About" headingLevel={3}>
-        <Facts
-          items={[
-            ["Broader concept", broader ? conceptLink(broader) : <span className="cat-quiet">None (a top concept)</span>],
-            ...(narrower.length ? [["Narrower", <span key="narrower">{narrower.map((item, position) => <span key={item.id}>{position > 0 && ", "}{conceptLink(item)}</span>)}</span>] as [string, ReactNode]] : []),
-            ["Outside match", concept.exact_match ? <bdi>{concept.exact_match}</bdi> : <span className="cat-quiet">None recorded</span>],
-            ["Source", concept.source ? <SourceName text={concept.source} /> : <span className="cat-quiet">Not stated</span>],
-            ...(acceptances(concept).length ? [["Accepted from", <AcceptedFrom key="accepted" accepted={acceptances(concept)} />] as [string, ReactNode]] : []),
-          ]}
-        />
-      </Section>
+      {!changing && (
+        <Section title="About" headingLevel={3}>
+          <Facts
+            items={[
+              ["Capability domain", domainFact],
+              ["Broader concept", broader ? conceptLink(broader) : <span className="cat-quiet">None (a top concept)</span>],
+              ...(narrower.length ? [["Narrower", <span key="narrower">{narrower.map((item, position) => <span key={item.id}>{position > 0 && ", "}{conceptLink(item)}</span>)}</span>] as [string, ReactNode]] : []),
+              ["Outside match", concept.exact_match ? <bdi>{concept.exact_match}</bdi> : <span className="cat-quiet">None recorded</span>],
+              ...((concept.close_match ?? []).length ? [["Near matches", <bdi key="near">{concept.close_match.join(", ")}</bdi>] as [string, ReactNode]] : []),
+              ["Source", concept.source ? <SourceName text={concept.source} /> : <span className="cat-quiet">Not stated</span>],
+              ...(acceptances(concept).length ? [["Accepted from", <AcceptedFrom key="accepted" accepted={acceptances(concept)} />] as [string, ReactNode]] : []),
+            ]}
+          />
+        </Section>
+      )}
     </RecordView>
   );
 }

@@ -64,7 +64,8 @@ export function SystemRecord({ system, index }: { system: CatalogueSystem; index
       }
       lead={system.description || undefined}
       actions={
-        editable ? (
+        // One edit at a time: while one is open its own Cancel closes it, so switching never drops changes unasked.
+        editable && editing === null ? (
           <ActionGroup label={`Edit ${system.name}`}>
             <Button id="system-edit-system" aria-expanded={editing === "system"} onClick={() => setEditing(editing === "system" ? null : "system")}>Edit this system</Button>
             <Button id="system-edit-remove" variant="tertiary" aria-expanded={editing === "remove"} onClick={() => setEditing(editing === "remove" ? null : "remove")}>Remove this system…</Button>
