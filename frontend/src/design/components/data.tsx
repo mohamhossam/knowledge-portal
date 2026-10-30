@@ -96,10 +96,15 @@ export type Column<T> = {
   numeric?: boolean;
   /** Free text: each cell takes its own direction (§13). */
   bidi?: boolean;
+  /** Set apart from the columns before it by a soft rule: another kind of fact, such as a source after channels. */
+  divider?: boolean;
   width?: string;
 };
 
 export type Sort = { id: string; direction: "ascending" | "descending" };
+
+const cellClass = (column: { numeric?: boolean; divider?: boolean }) =>
+  [column.numeric ? "ds-table__num" : null, column.divider ? "ds-table__divider" : null].filter(Boolean).join(" ") || undefined;
 
 /**
  * The ledger table. Dense, sticky head under the rule, sortable columns
@@ -219,7 +224,7 @@ export function DataTable<T>({
   const header = (column: Column<T>) => {
     const sorted = sort?.id === column.id ? sort.direction : undefined;
     return (
-      <th key={column.id} scope="col" aria-sort={column.sortable ? sorted ?? "none" : undefined} style={column.width ? { inlineSize: column.width } : undefined} className={column.numeric ? "ds-table__num" : undefined}>
+      <th key={column.id} scope="col" aria-sort={column.sortable ? sorted ?? "none" : undefined} style={column.width ? { inlineSize: column.width } : undefined} className={cellClass(column)}>
         {column.sortable && onSort ? (
           <button type="button" className="ds-table__sort" onClick={() => onSort({ id: column.id, direction: sorted === "ascending" ? "descending" : "ascending" })}>
             {column.header}
@@ -270,7 +275,7 @@ export function DataTable<T>({
                         key={column.id}
                         scope={column.rowHeader ? "row" : undefined}
                         dir={column.bidi ? "auto" : undefined}
-                        className={column.numeric ? "ds-table__num" : undefined}
+                        className={cellClass(column)}
                         role={grid ? (column.rowHeader ? "rowheader" : "gridcell") : undefined}
                         data-cell-focus={focusable || undefined}
                         tabIndex={focusable ? (isCurrent ? 0 : -1) : undefined}

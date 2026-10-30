@@ -5,6 +5,18 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ## Unreleased
 
+### Added
+
+- Facts a draft kept that no screen showed or edited. An order type says the delivery drop it
+  comes in ("Delivery drop P1") and where it comes from, and both are edited with it. An
+  offering part and each line it is realised as take a source and how sure it is, said under
+  the part's name and on the line. An interface says what it passes on (with whose interface it
+  is) and the TM Forum Open APIs it matches, and its edit picks both: passing an interface on
+  adds it to what the system uses, says so, and takes it back with the last relay; either
+  change now counts as a change, so it is never dropped without asking. A journey step says its
+  system's function under who performs it, and the step's edit takes it. Every form sets a
+  source and how sure it is on a row of their own. No upgrade step.
+
 ### Fixed
 
 - Small catalogue leftovers from the edit reviews. A link to a hand-over, a business rule or a

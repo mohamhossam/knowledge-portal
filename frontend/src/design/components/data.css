@@ -162,6 +162,10 @@
   background: var(--table-row-selected);
 }
 
+.ds-table__divider {
+  border-inline-start: var(--rule-hair) solid var(--color-rule);
+}
+
 .ds-table__num {
   text-align: end !important;
   font-stretch: var(--table-numeral-stretch);

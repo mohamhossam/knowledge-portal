@@ -181,6 +181,11 @@ export function interfacesOf(release: Release, systemId: string): { exposes: Int
   };
 }
 
+/** The TM Forum Open APIs (a vocabulary scheme) an interface does the same job as, by id. */
+export function openApiNames(release: Release): Map<string, string> {
+  return new Map((release.vocabulary ?? []).filter((term) => term.scheme === "open_api").map((term) => [term.id, term.pref_label]));
+}
+
 /** The names of information entities (a vocabulary scheme), by id. */
 export function entityNames(release: Release): Map<string, string> {
   return new Map(

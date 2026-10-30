@@ -26,6 +26,7 @@ export function finishedOffering(value: Offering): Offering {
   return {
     ...value,
     rules: lines(value.rules),
+    order_types: value.order_types.map((type) => ({ ...type, delivery_drop: type.delivery_drop?.trim() || null, source: type.source?.trim() || null })),
     audiences: value.audiences.map(finishedPoint),
     values: value.values.map(finishedPoint),
     boundaries: lines(value.boundaries ?? []),
@@ -530,6 +531,7 @@ export function finishedJourney(value: Journey): Journey {
       etom: text(step.etom),
       description: text(step.description),
       output: text(step.output),
+      system_function: text(step.system_function),
       point_of_no_return: text(step.point_of_no_return),
       track: text(step.track),
       source: text(step.source),
@@ -808,7 +810,12 @@ export function interfacesProblem(release: Release, systemId: string, exposed: I
 export function interfacesChanges(release: Release, systemId: string, exposed: Interface[], used: string[]): string[] {
   const was = interfacesOfSystem(release, systemId);
   const read = (items: Interface[]) =>
-    JSON.stringify(items.map((item) => [item.id, item.name.trim(), item.style, item.consumer_ids, item.entity_ids, item.description?.trim() || null, item.confidence ?? null, item.source?.trim() || null]));
+    JSON.stringify(
+      items.map((item) => [
+        item.id, item.name.trim(), item.style, item.consumer_ids, item.entity_ids, [...item.relays].sort(), [...item.open_api_ids].sort(),
+        item.description?.trim() || null, item.confidence ?? null, item.source?.trim() || null,
+      ]),
+    );
   return [
     ...(read(was.exposed) !== read(exposed) ? ["what it exposes"] : []),
     ...(JSON.stringify([...was.used].sort()) !== JSON.stringify([...used].sort()) ? ["what it uses"] : []),

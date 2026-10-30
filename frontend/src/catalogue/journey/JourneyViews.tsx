@@ -105,11 +105,19 @@ function StepsTable({ journey, system, systemName, channelName, entry }: ViewPro
       bidi: true,
       cell: (row) => {
         const who = performer(row.step, entry);
-        if (!who.systemId) return <span className="journey-quiet">{performerWords(who, systemName, entry)}</span>;
+        if (!who.systemId)
+          return (
+            <>
+              <span className="journey-quiet">{performerWords(who, systemName, entry)}</span>
+              {row.step.system_function && <span className="journey-line" dir="auto">{row.step.system_function}</span>}
+            </>
+          );
         return (
           <>
             {system(who.systemId)}
             {who.kind === "entry" && entry && <span className="journey-line">The entry system of <bdi>{entry.channel}</bdi></span>}
+            {/* What the system does in this step, as the source says it: retrieval reads it before the step's description. */}
+            {row.step.system_function && <span className="journey-line" dir="auto">{row.step.system_function}</span>}
           </>
         );
       },

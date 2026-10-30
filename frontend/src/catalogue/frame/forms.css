@@ -124,6 +124,11 @@
   display: contents;
 }
 
+/* A source starts its own row, so where a fact comes from and how sure it is read together. */
+.cat-source > :first-child {
+  grid-column-start: 1;
+}
+
 .cat-source__copy {
   align-self: end;
 }
