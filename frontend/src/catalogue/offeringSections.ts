@@ -2,16 +2,17 @@
 import type { ReactNode } from "react";
 
 import {
-  OfferingBusinessRules, OfferingDecisions, OfferingFacts, OfferingNfrs, OfferingNotes, OfferingOrderTypes, OfferingParts, OfferingPlansFields,
+  OfferingAudience, OfferingBusinessRules, OfferingDecisions, OfferingFacts, OfferingNfrs, OfferingNotes, OfferingOrderTypes, OfferingParts, OfferingPlansFields,
   OfferingQuestions, OfferingRules, OfferingSources, OfferingTracking, type SectionProps,
 } from "./OfferingEditor";
 
 /** The sections of an offering's sheet that are edited on their own, in the sheet's order. */
 export type OfferingSection =
-  | "facts" | "orders" | "parts" | "plans" | "business" | "nfrs" | "tracking" | "notes" | "questions" | "decisions" | "sources" | "rules";
+  | "facts" | "audience" | "orders" | "parts" | "plans" | "business" | "nfrs" | "tracking" | "notes" | "questions" | "decisions" | "sources" | "rules";
 
 export const OFFERING_SECTIONS: Record<OfferingSection, { edit: string; save: string; Fields: (props: SectionProps) => ReactNode }> = {
   facts: { edit: "what it is", save: "Save what it is", Fields: OfferingFacts },
+  audience: { edit: "who it is for and what it promises", save: "Save who it is for and what it promises", Fields: OfferingAudience },
   orders: { edit: "the order types", save: "Save the order types", Fields: OfferingOrderTypes },
   parts: { edit: "the parts", save: "Save the parts", Fields: OfferingParts },
   plans: { edit: "the plans", save: "Save the plans", Fields: OfferingPlansFields },

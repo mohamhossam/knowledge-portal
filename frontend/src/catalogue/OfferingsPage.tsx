@@ -18,7 +18,7 @@ import { OfferingEdit, OfferingSectionEdit, WholeRemove, WholeRename } from "./D
 import { PortfolioRegister, RecordsRegister } from "./OfferingRegisters";
 import { CatalogueHeader } from "./frame/CatalogueHeader";
 import { useFindParam } from "./frame/useFindParam";
-import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions, SourceMark } from "./GovernanceSections";
+import { ArchitectureDecisions, ConflictList, OfferingSourceList, OpenQuestions, Provenance, SourceMark } from "./GovernanceSections";
 import { conflictsFor, questionOf } from "./governance";
 import { LifecycleSection } from "./LifecycleNotes";
 import { familyGroups } from "./offering/familyGroups";
@@ -390,15 +390,15 @@ function OfferingRecord({ offering }: { offering: Offering }) {
       )}
       <OfferingStructureDiagram offering={offering} />
       <Tabs label="This offering" tabs={TABS.map((id) => ({ id, label: TAB_LABEL[id] }))} selected={tab} onSelect={choose}>
-        {tab === "audience" && (
+        {tab === "audience" && edited("audience",
           <div className="cat-stack">
-            <Section title="Who it is for" count={offering.audiences.length} headingLevel={3}>
+            <Section title="Who it is for" count={offering.audiences.length} actions={offer("audience")} headingLevel={3}>
               {offering.audiences.length ? <Points items={offering.audiences} /> : <p className="cat-quiet">No audience is recorded.</p>}
             </Section>
             <Section title="What it promises" count={offering.values.length} headingLevel={3}>
               {offering.values.length ? <Points items={offering.values} /> : <p className="cat-quiet">No promise is recorded.</p>}
             </Section>
-          </div>
+          </div>,
         )}
         {tab === "components" && edited("parts", <Components offering={offering} action={offer("parts")} orderName={orderName} />)}
         {tab === "plans" && edited("plans", <OfferingPlans offering={offering} action={offer("plans")} />)}
@@ -470,13 +470,15 @@ function OfferingRecord({ offering }: { offering: Offering }) {
 }
 
 /** Audiences or promises, each by name with what it means under it. */
-function Points({ items }: { items: { name: string; description?: string | null }[] }) {
+function Points({ items }: { items: Offering["values"] }) {
   return (
     <Lines>
-      {items.map((item) => (
-        <li key={item.name}>
+      {items.map((item, index) => (
+        <li key={`${index}:${item.name}`}>
           <strong dir="auto">{item.name}</strong>
           {item.description && <span className="cat-detail" dir="auto">{item.description}</span>}
+          {/* Where it comes from, when the source says it or it is marked: on a quiet line of its own. */}
+          <Provenance item={item} />
         </li>
       ))}
     </Lines>

@@ -6,7 +6,7 @@
 import "./frame/forms.css";
 
 import { Plus, X } from "lucide-react";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useId, useRef, useState } from "react";
 
 import type { CatalogueSystem } from "../api/client";
 import { Button, Checkbox, Field } from "../design/components";
@@ -236,7 +236,7 @@ export function PickField({ label, hint, chosen, options, onChange, error }: {
 const sentence = (text: string) => text.charAt(0).toLocaleUpperCase() + text.slice(1);
 
 /** Repeating rows: each a ruled fieldset with its own remove, and one add at the foot. */
-export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel, labelled, removeReason, collapsible, summary, forceOpen }: {
+export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel, labelled, removeReason, collapsible, summary, forceOpen, hint }: {
   legend: string;
   /** One of them, for the add button: "branch", "hand-over". */
   one: string;
@@ -258,7 +258,10 @@ export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel
   summary?: (item: T, index: number) => string;
   /** A row that must be open, such as one with a problem in it once Save has been tried. */
   forceOpen?: (item: T, index: number) => boolean;
+  /** Said once under the group's legend, for what every row's fields share, rather than on each row. */
+  hint?: ReactNode;
 }) {
+  const hintId = useId();
   const group = useRef<HTMLFieldSetElement>(null);
   const focusLater = useFocusAfterRender();
   const [opened, setOpened] = useState<number[]>([]);
@@ -283,8 +286,9 @@ export function Rows<T>({ legend, one, items, onChange, blank, render, itemLabel
   };
   const toggle = (index: number) => setOpened(opened.includes(index) ? opened.filter((at) => at !== index) : [...opened, index]);
   return (
-    <fieldset ref={group} className="cat-form__rows">
+    <fieldset ref={group} className="cat-form__rows" aria-describedby={hint ? `${hintId}-hint` : undefined}>
       <legend className="cat-form__legend">{legend}</legend>
+      {hint && <p id={`${hintId}-hint`} className="ds-field__hint">{hint}</p>}
       {items.length === 0 && <p className="ds-field__hint">None yet.</p>}
       {items.map((item, index) => {
         const open = isOpen(item, index);

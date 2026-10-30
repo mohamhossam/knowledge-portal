@@ -139,6 +139,15 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- Who an offering is for and what it promises have an edit of their own on the offering's "Who it is
+  for" tab, out of the long "what it is" form. Each is a row with its name, what it means,
+  its source and how sure that source is, so where each comes from is kept and can be changed by
+  hand; before, the form wrote them as lines of "name — description" and left their sources as
+  they were. Several are pasted at once, one a line with " — " before what it means; a confirmed
+  one whose source is not named is said at its field; and one left without a name is said under
+  its field once Save has been tried. The tab says each one's source. Rows named on their own rule
+  across the catalogue's edits now sit quieter under their group's legend, and a hint a group
+  shares is said once for it. No upgrade step.
 - A journey's edit covers everything its views show. Each step says who performs it as one
   choice (a system, the channel's entry system, a team or party, or not said, never two), its role
   from the vocabulary's roles, its eTOM place, what it does and produces, its point of no return,
