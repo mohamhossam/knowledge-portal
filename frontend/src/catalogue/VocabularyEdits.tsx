@@ -10,6 +10,7 @@ import { CONFIDENCE_OPTIONS } from "./catalogue";
 import { draftBody } from "./drafting";
 import { EditPanel } from "./DraftEdits";
 import { AreaField, Choices, CheckField, LinesField, SelectField, TextField } from "./forms";
+import { SourceField } from "./SourceField";
 import { LEGACY_ROLE_RANK } from "./model/conventions";
 import { useCatalogueContext } from "./useCatalogue";
 import { useEditing } from "./useEditing";
@@ -118,13 +119,13 @@ function TermEditor({ value, onChange, issue, adding }: {
       <fieldset className="cat-form__rows">
         <legend className="cat-form__legend">Its source</legend>
         <div className="cat-form__grid">
+          <SourceField value={value.source} onChange={(source) => set({ source })} />
           <SelectField
             label="How sure its source is"
             value={value.confidence ?? ""}
             options={CONFIDENCE_OPTIONS}
             onChange={(confidence) => set({ confidence: (confidence || null) as SourceConfidence | null })}
           />
-          <TextField label="Source" value={value.source} hint="The document and where in it, such as SDD v2.3 · §4.1." onChange={(source) => set({ source: source || null })} />
         </div>
       </fieldset>
 

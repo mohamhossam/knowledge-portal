@@ -6,6 +6,7 @@ import { CONFIDENCE_OPTIONS } from "./catalogue";
 import { systemUses } from "./drafting";
 import { conceptDomain } from "./editing";
 import { AreaField, CheckField, LinesField, Rows, SelectField, TextField } from "./forms";
+import { SourceField } from "./SourceField";
 
 type Capability = CatalogueSystem["capabilities"][number];
 type Component = CatalogueSystem["components"][number];
@@ -13,8 +14,6 @@ type Option = { value: string; label: string; group?: string };
 
 /** The concept choice that says none fits; no concept id starts with "*". */
 const NONE_FITS = "*none-fits";
-
-const SOURCE_HINT = "The document and where in it, such as SDD v2.3 · §4.1.";
 
 /** Concepts to link a capability to, under their business areas, the area each sits in, and whether any has one. */
 function conceptChoices(release: Release): { options: Option[]; domains: Map<string, string | null>; placed: boolean } {
@@ -129,13 +128,13 @@ export function SystemEditor({ value, onChange, release }: {
             hint="As its source names one; Ownership decides who runs it."
             onChange={(owner) => set({ owner: owner || null })}
           />
+          <SourceField value={value.source} onChange={(source) => set({ source })} />
           <SelectField
             label="How sure its source is"
             value={value.confidence ?? ""}
             options={CONFIDENCE_OPTIONS}
             onChange={(confidence) => set({ confidence: (confidence || null) as SourceConfidence | null })}
           />
-          <TextField label="Source" value={value.source} hint={SOURCE_HINT} onChange={(source) => set({ source: source || null })} />
         </div>
       </fieldset>
 
@@ -205,13 +204,13 @@ export function SystemEditor({ value, onChange, release }: {
               hint="One phrase per line. Requirement work maps a requirement here when it uses one."
               onChange={(triggers) => update({ triggers })}
             />
+            <SourceField value={item.source} onChange={(source) => update({ source })} />
             <SelectField
               label="How sure its source is"
               value={item.confidence ?? ""}
               options={CONFIDENCE_OPTIONS}
               onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
             />
-            <TextField label="Source" value={item.source} hint={SOURCE_HINT} onChange={(source) => update({ source: source || null })} />
           </>
         )}
       />
@@ -269,13 +268,13 @@ export function SystemEditor({ value, onChange, release }: {
             <TextField label="Built with" value={item.technology} onChange={(technology) => update({ technology: technology || null })} />
             <LinesField label="Also called" value={item.aliases} onChange={(aliases) => update({ aliases })} />
             <AreaField label="What it does" value={item.description} onChange={(description) => update({ description: description || null })} />
+            <SourceField value={item.source} onChange={(source) => update({ source })} />
             <SelectField
               label="How sure its source is"
               value={item.confidence ?? ""}
               options={CONFIDENCE_OPTIONS}
               onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
             />
-            <TextField label="Source" value={item.source} hint={SOURCE_HINT} onChange={(source) => update({ source: source || null })} />
           </>
         )}
       />

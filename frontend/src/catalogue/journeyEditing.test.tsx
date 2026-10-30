@@ -7,6 +7,7 @@ import { api, type Journey, type Release } from "../api/client";
 import { EXPLORED } from "../explorer/fixtures";
 import { catalogue } from "./catalogue";
 import { journeyChanges } from "./editing";
+import { SourcesContext, sourceRegister } from "./governance";
 import { JourneysPage } from "./JourneysPage";
 import type { CatalogueContext } from "./useCatalogue";
 import { checkAxeAfterEach } from "../test/axe";
@@ -31,6 +32,8 @@ const HANDOVER = "Hand-over 1: 2. Submit the service request to 3. Orchestrate";
 function open() {
   const context: CatalogueContext = { book: catalogue(RELEASE), base: "/architecture", inService: false, editable: true, actorName: () => "Amina" };
   render(
+    // The register the catalogue's pages give every edit, so a source is chosen from it.
+    <SourcesContext.Provider value={sourceRegister(RELEASE)}>
     <QueryClientProvider client={new QueryClient()}>
       <MemoryRouter initialEntries={[`/architecture/journeys/${JOURNEY.id}`]}>
         <Routes>
@@ -39,7 +42,8 @@ function open() {
           </Route>
         </Routes>
       </MemoryRouter>
-    </QueryClientProvider>,
+    </QueryClientProvider>
+    </SourcesContext.Provider>,
   );
   fireEvent.click(screen.getByRole("button", { name: "Edit this journey" }));
   return screen.getByRole("form", { name: `Edit ${JOURNEY.name}` });
@@ -81,13 +85,14 @@ describe("a journey's steps, edited with everything its views show", () => {
     fireEvent.change(within(ticket).getByLabelText("What it produces"), { target: { value: "An onboarding ticket" } });
     fireEvent.change(within(ticket).getByLabelText("Point of no return"), { target: { value: "Once the ticket is raised" } });
     fireEvent.change(within(ticket).getByLabelText("Track"), { target: { value: "FIELD" } });
-    fireEvent.change(within(ticket).getByLabelText("Source"), { target: { value: "SDD §7.2" } });
+    fireEvent.change(within(ticket).getByLabelText("Source"), { target: { value: "SDD" } });
+    fireEvent.change(within(ticket).getByLabelText(/^Where in it/), { target: { value: "§7.2" } });
     expect(within(form).getByText("Changed: step 4.")).toBeInTheDocument();
     fireEvent.click(within(form).getByRole("button", { name: "Save the journey" }));
     await waitFor(() => expect(save).toHaveBeenCalled());
     expect(savedJourney(save).activities.find((step) => step.number === "4")).toMatchObject({
       performer: "MSS team", performing_system_id: null, channel_entry: false, role: "orchestrate", etom: "Order Handling › Issue Orders",
-      description: "Raises the onboarding ticket.", output: "An onboarding ticket", point_of_no_return: "Once the ticket is raised", track: "FIELD", source: "SDD §7.2",
+      description: "Raises the onboarding ticket.", output: "An onboarding ticket", point_of_no_return: "Once the ticket is raised", track: "FIELD", source: "BPP SDD · §7.2",
     });
   });
 
@@ -146,14 +151,26 @@ describe("a journey's hand-overs", () => {
     fireEvent.change(within(call).getByLabelText(/What it is for/), { target: { value: "Opens the service request." } });
     fireEvent.change(within(call).getByLabelText("Style"), { target: { value: "API" } });
     fireEvent.change(within(call).getByLabelText("TM Forum equivalent"), { target: { value: "TMF641 Service Ordering" } });
-    fireEvent.change(within(call).getByLabelText("Source"), { target: { value: "SDD §8" } });
+    fireEvent.change(within(call).getByLabelText("Source"), { target: { value: "SDD" } });
+    fireEvent.change(within(call).getByLabelText(/^Where in it/), { target: { value: "§8" } });
     expect(within(form).getByText("Changed: the hand-over 2 to 3.")).toBeInTheDocument();
     fireEvent.click(within(form).getByRole("button", { name: "Save the journey" }));
     await waitFor(() => expect(save).toHaveBeenCalled());
     expect(savedJourney(save).integrations[0]).toMatchObject({
       from_system_id: "rtf", to_system_id: "cwom", via_system_id: null, purpose: "Opens the service request.", style: "API",
-      tmf_equivalent: "TMF641 Service Ordering", source: "SDD §8",
+      tmf_equivalent: "TMF641 Service Ordering", source: "BPP SDD · §8",
     });
+  });
+});
+
+describe("a fact's source, in an edit", () => {
+  it("offers the register in a new tab, so the edit stays open", () => {
+    const form = open();
+    const ticket = row(form, "Step 4. Ticket the onboarding");
+    fireEvent.change(within(ticket).getByLabelText("Source"), { target: { value: "*elsewhere" } });
+    const register = within(ticket).getByRole("link", { name: "Register it on Governance (opens in a new tab)" });
+    expect(register).toHaveAttribute("target", "_blank");
+    expect(register).toHaveAttribute("href", "/architecture/governance");
   });
 });
 
