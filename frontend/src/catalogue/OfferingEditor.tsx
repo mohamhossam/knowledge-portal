@@ -1,7 +1,7 @@
-import type { CatalogueSystem, Channel, KnowledgeSource, Offering, SourceConfidence } from "../api/client";
+import type { CatalogueSystem, Channel, KnowledgeSource, Offering, Release, SourceConfidence } from "../api/client";
 import { CONFIDENCE_OPTIONS, COVERAGE, LAYERS } from "./catalogue";
-import { lines } from "./editing";
-import { AreaField, CheckField, LinesField, Rows, SelectField, SystemField, TextField } from "./forms";
+import { conceptDomain, lines } from "./editing";
+import { AreaField, CheckField, LinesField, PickField, Rows, SelectField, SystemField, TextField } from "./forms";
 import { LifecycleEditor } from "./LifecycleEditor";
 import { TrackingEditor } from "./TrackingEditor";
 
@@ -56,6 +56,8 @@ export type SectionProps = {
   register?: KnowledgeSource[];
   /** The draft's offerings, to retire this one for another (review recommendation 7); only on a draft's sheet. */
   offerings?: Offering[];
+  /** The version itself, for what the offering links to: its concepts, portfolio and realisation records. */
+  release?: Release;
 };
 
 type Question = Offering["questions"][number];
@@ -63,8 +65,30 @@ type Decision = Offering["decisions"][number];
 
 const orderTypeOptions = (value: Offering) => value.order_types.map((type) => ({ code: type.code, name: type.name || type.code }));
 
-/** What the offering is: its facts, what it offers, who it is for and what it promises. */
-export function OfferingFacts({ value, onChange, offerings }: SectionProps) {
+/** Portfolio nodes as places to put an offering, each by its path from the top ("Business unit › Family"). */
+function portfolioOptions(release: Release | undefined, current: string | null | undefined) {
+  const nodes = new Map((release?.portfolio ?? []).map((node) => [node.id, node]));
+  const path = (id: string) => {
+    const names: string[] = [];
+    const seen = new Set<string>();
+    for (let node = nodes.get(id); node && !seen.has(node.id); node = node.parent_id ? nodes.get(node.parent_id) : undefined) {
+      seen.add(node.id);
+      names.unshift(node.name);
+    }
+    return names.join(" › ");
+  };
+  return [
+    { value: "", label: "Not placed in the portfolio" },
+    ...[...nodes.values()]
+      // A retired node only while the offering already sits in it.
+      .filter((node) => !node.deprecated || node.id === current)
+      .map((node) => ({ value: node.id, label: node.deprecated ? `${path(node.id)} (retired)` : path(node.id) }))
+      .sort((a, b) => a.label.localeCompare(b.label)),
+  ];
+}
+
+/** What the offering is: its facts, where it sits in the portfolio, what it offers, who it is for and what it promises. */
+export function OfferingFacts({ value, onChange, offerings, release }: SectionProps) {
   const set = (patch: Partial<Offering>) => onChange({ ...value, ...patch });
   // ADR-0121: what can stand in for a retired offering is one still in service.
   const successors = [
@@ -85,6 +109,15 @@ export function OfferingFacts({ value, onChange, offerings }: SectionProps) {
           options={CONFIDENCE_OPTIONS}
           onChange={(confidence) => set({ confidence: (confidence || null) as SourceConfidence | null })}
         />
+        {(release?.portfolio ?? []).length > 0 && (
+          <SelectField
+            label="Portfolio"
+            value={value.portfolio_node_id ?? ""}
+            options={portfolioOptions(release, value.portfolio_node_id)}
+            wide
+            onChange={(id) => set({ portfolio_node_id: id || null })}
+          />
+        )}
       </div>
       {offerings && (
         <>
@@ -157,9 +190,61 @@ export function OfferingOrderTypes({ value, onChange, channels, names }: Section
   );
 }
 
-/** Its parts, the systems responsible for each, and what each is realised as. */
-export function OfferingParts({ value, onChange, systems, names }: SectionProps) {
+/** Concepts a part may mean, under their capability domains; a retired one only while a part already means it. */
+function conceptOptions(release: Release | undefined, chosen: string[]) {
+  const domains = new Map((release?.capability_domains ?? []).map((domain) => [domain.id, domain.name]));
+  return (release?.business_capabilities ?? [])
+    .filter((concept) => !concept.deprecated || chosen.includes(concept.id))
+    .map((concept) => {
+      const domain = release ? conceptDomain(release, concept.id) : null;
+      return {
+        value: concept.id,
+        label: concept.deprecated ? `${concept.pref_label} (retired)` : concept.pref_label,
+        group: (domain && domains.get(domain)) || "No capability domain",
+      };
+    })
+    .sort((a, b) => a.group.localeCompare(b.group) || a.label.localeCompare(b.label));
+}
+
+/** The realisation records of one layer, to link a part's "realised as" to the record it means. */
+function recordOptions(release: Release | undefined, layer: Realised["layer"]) {
+  return [
+    { value: "", label: "Not linked to a record" },
+    ...(release?.realisations ?? [])
+      .filter((record) => record.layer === layer)
+      .map((record) => ({ value: record.id, label: record.name }))
+      .sort((a, b) => a.label.localeCompare(b.label)),
+  ];
+}
+
+/**
+ * The record a thing a part is realised as means, among its layer's records. A record of another
+ * layer, left by a layer change, stays shown and is said to be wrong; a layer with none says so.
+ */
+function RecordField({ item, release, onChange }: { item: Realised; release: Release | undefined; onChange: (record_id: string | null) => void }) {
+  const options = recordOptions(release, item.layer);
+  const linked = item.record_id ? (release?.realisations ?? []).find((record) => record.id === item.record_id) : undefined;
+  const astray = linked && linked.layer !== item.layer ? linked : undefined;
+  const layerName = LAYERS.find((entry) => entry.layer === item.layer)?.short ?? item.layer;
+  if (options.length === 1 && !item.record_id) {
+    return <p className="ds-field__hint cat-form__wide">No {layerName} record in this draft to link it to.</p>;
+  }
+  return (
+    <SelectField
+      label="The record it means"
+      value={item.record_id ?? ""}
+      options={astray ? [...options, { value: astray.id, label: `${astray.name} (another layer)` }] : options}
+      error={astray ? `${astray.name} is a record of another layer: choose a ${layerName} record, or none.` : null}
+      onChange={(record_id) => onChange(record_id || null)}
+    />
+  );
+}
+
+/** Its parts, the concepts each means, the systems responsible for each, and what each is realised as. */
+export function OfferingParts({ value, onChange, systems, names, release }: SectionProps) {
   const orders = orderTypeOptions(value);
+  const hasConcepts = (release?.business_capabilities ?? []).length > 0;
+  const hasRecords = (release?.realisations ?? []).length > 0;
   // One part at most is the device the bundle is built on: one choice, not a box on each part.
   const hub = value.components.findIndex((part) => part.hub);
   const chooseHub = (index: string) =>
@@ -178,6 +263,7 @@ export function OfferingParts({ value, onChange, systems, names }: SectionProps)
       <Rows<Part>
         legend="Parts"
         one="part"
+        labelled
         items={value.components}
         onChange={(components) => onChange({ ...value, components })}
         blank={() => ({ id: "", name: "", responsibilities: [], realisation: [], capability_ids: [], hub: false })}
@@ -194,6 +280,37 @@ export function OfferingParts({ value, onChange, systems, names }: SectionProps)
               onChange={(customer_visible) => update({ customer_visible })}
             />
             <AreaField label="What it is" value={part.description} onChange={(description) => update({ description: description || null })} />
+            {(hasConcepts || (part.capability_ids ?? []).length > 0 || part.unlinked_reason != null) && (
+              <>
+                {part.unlinked_reason == null && (
+                  <PickField
+                    label="Concepts it means"
+                    hint="The concepts requirement work maps to this part through."
+                    chosen={part.capability_ids ?? []}
+                    options={conceptOptions(release, part.capability_ids ?? [])}
+                    onChange={(capability_ids) => update({ capability_ids })}
+                  />
+                )}
+                <CheckField
+                  label="No concept fits it"
+                  checked={part.unlinked_reason != null}
+                  // A part is linked to concepts or says why none fits, never both. The concepts it had stay
+                  // until it is saved, so unticking brings them back; saving with the box ticked lets them go.
+                  onChange={(none) => update({ unlinked_reason: none ? part.unlinked_reason ?? "" : null })}
+                />
+                {part.unlinked_reason != null && (
+                  <>
+                    {(part.capability_ids ?? []).length > 0 && (
+                      <p className="ds-field__hint cat-form__wide">
+                        Saving lets go of {(part.capability_ids ?? []).length === 1 ? "the concept" : `the ${part.capability_ids.length} concepts`} it
+                        means; untick the box to keep {(part.capability_ids ?? []).length === 1 ? "it" : "them"}.
+                      </p>
+                    )}
+                    <TextField label="Why no concept fits" value={part.unlinked_reason} required wide onChange={(unlinked_reason) => update({ unlinked_reason })} />
+                  </>
+                )}
+              </>
+            )}
             <Rows<Responsibility>
               legend="Responsible systems"
               one="responsible system"
@@ -243,9 +360,17 @@ export function OfferingParts({ value, onChange, systems, names }: SectionProps)
                     label="Layer"
                     value={item.layer}
                     options={LAYER_OPTIONS}
+                    // A record of another layer stays linked, and is said to be wrong, until it is relinked or let go.
                     onChange={(layer) => change({ layer: layer as Realised["layer"] })}
                   />
                   <TextField label="Name" value={item.name} required wide onChange={(name) => change({ name })} />
+                  {hasRecords && <RecordField item={item} release={release} onChange={(record_id) => change({ record_id })} />}
+                  <SelectField
+                    label="How sure its source is"
+                    value={item.confidence ?? ""}
+                    options={CONFIDENCE_OPTIONS}
+                    onChange={(confidence) => change({ confidence: (confidence || null) as SourceConfidence | null })}
+                  />
                 </>
               )}
             />
@@ -436,6 +561,96 @@ export function OfferingSources({ value, onChange, register = [] }: SectionProps
 /** Its rules, one per line. */
 export function OfferingRules({ value, onChange }: SectionProps) {
   return <LinesField label="Rules" value={value.rules} hint="One rule per line." onChange={(rules) => onChange({ ...value, rules })} />;
+}
+
+type Plan = Offering["plans"][number];
+type Characteristic = Plan["characteristics"][number];
+type BusinessRule = Offering["business_rules"][number];
+
+/** Its plans as the sources describe them: each with the characteristics that set it apart, and where it comes from. */
+export function OfferingPlansFields({ value, onChange }: SectionProps) {
+  return (
+    <Rows<Plan>
+      legend="Plans"
+      one="plan"
+      labelled
+      items={value.plans ?? []}
+      onChange={(plans) => onChange({ ...value, plans })}
+      blank={() => ({ name: "", characteristics: [] })}
+      itemLabel={(plan, index) => `plan ${plan.name.trim() || index + 1}`}
+      render={(plan, update) => (
+        <>
+          <TextField label="Plan" value={plan.name} required onChange={(name) => update({ name })} />
+          <SelectField
+            label="How sure its source is"
+            value={plan.confidence ?? ""}
+            options={CONFIDENCE_OPTIONS}
+            onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
+          />
+          <TextField label="Source" value={plan.source} hint="The document and where in it, such as SDD v2.3 · §4.1." onChange={(source) => update({ source: source || null })} />
+          <AreaField label="What it is" value={plan.description} onChange={(description) => update({ description: description || null })} />
+          <Rows<Characteristic>
+            legend="Characteristics"
+            one="characteristic"
+            items={plan.characteristics}
+            onChange={(characteristics) => update({ characteristics })}
+            blank={() => ({ name: "", value: "" })}
+            itemLabel={(item, index) => `characteristic ${item.name.trim() || index + 1}`}
+            render={(item, change) => (
+              <>
+                <TextField label="Characteristic" value={item.name} required onChange={(name) => change({ name })} />
+                <TextField
+                  label="Value"
+                  value={item.value}
+                  required
+                  hint="With its unit, such as 200 Mbps: plans compare by it."
+                  onChange={(text) => change({ value: text })}
+                />
+              </>
+            )}
+          />
+        </>
+      )}
+    />
+  );
+}
+
+/** What a business rule governs, as sources group them; any other word may be typed. */
+const RULE_KINDS = ["composition", "eligibility", "dependency", "lifecycle", "fulfilment", "billing"];
+
+/** The rules it is sold and fulfilled by: each with an id, what it governs, what it says and where it comes from. */
+export function OfferingBusinessRules({ value, onChange }: SectionProps) {
+  return (
+    <Rows<BusinessRule>
+      legend="Business rules"
+      one="business rule"
+      labelled
+      items={value.business_rules ?? []}
+      onChange={(business_rules) => onChange({ ...value, business_rules })}
+      blank={() => ({ id: "", statement: "" })}
+      itemLabel={(rule, index) => `rule ${rule.id.trim() || index + 1}`}
+      render={(rule, update) => (
+        <>
+          {/* What the rule says comes first: a new rule's focus lands there, and the id is made when left empty. */}
+          <AreaField label="What it says" value={rule.statement} required onChange={(statement) => update({ statement })} />
+          <TextField
+            label="What it governs"
+            value={rule.kind}
+            hint={`Such as ${RULE_KINDS.join(", ")}.`}
+            onChange={(kind) => update({ kind: kind || null })}
+          />
+          <TextField label="Id" value={rule.id} dir="ltr" hint="Such as BR-04; made for you when left empty." onChange={(id) => update({ id })} />
+          <SelectField
+            label="How sure its source is"
+            value={rule.confidence ?? ""}
+            options={CONFIDENCE_OPTIONS}
+            onChange={(confidence) => update({ confidence: (confidence || null) as SourceConfidence | null })}
+          />
+          <TextField label="Source" value={rule.source} hint="The document and where in it, such as SDD v2.3 · §4.1." onChange={(source) => update({ source: source || null })} />
+        </>
+      )}
+    />
+  );
 }
 
 /**

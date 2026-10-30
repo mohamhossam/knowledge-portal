@@ -24,7 +24,8 @@ const TAB_EDITS: [string, string[]][] = [
   ["?tab=service", ["Edit what it is", "Edit the non-functional requirements", "Edit the order tracking", "Edit the lifecycle notes"]],
   ["?tab=governance", ["Edit what it is", "Edit the open questions", "Edit the architecture decisions", "Edit the sources and boundaries"]],
   // The offering's free-text rules sit under its business rules, on the Rules tab (catalogue merge, step 3).
-  ["?tab=rules", ["Edit what it is", "Edit the rules"]],
+  ["?tab=rules", ["Edit what it is", "Edit the business rules", "Edit the other rules"]],
+  ["?tab=plans", ["Edit what it is", "Edit the plans"]],
 ];
 const EDITS = [...new Set(TAB_EDITS.flatMap(([, names]) => names))];
 
@@ -82,17 +83,17 @@ describe("an offering edited one section at a time", () => {
   it("saves one section and sends the rest of the offering unchanged", async () => {
     const save = vi.spyOn(api, "saveDraft").mockResolvedValue(RELEASE);
     open(true, `/architecture/offerings/${OFFERING.id}?tab=rules`);
-    fireEvent.click(screen.getByRole("button", { name: "Edit the rules" }));
-    const panel = screen.getByRole("form", { name: "Edit the rules of Business Pro Plus" });
+    fireEvent.click(screen.getByRole("button", { name: "Edit the other rules" }));
+    const panel = screen.getByRole("form", { name: "Edit the other rules of Business Pro Plus" });
     fireEvent.change(within(panel).getByLabelText(/^Rules/), { target: { value: "One line per site\n  \nNo resale" } });
-    fireEvent.click(within(panel).getByRole("button", { name: "Save the rules" }));
+    fireEvent.click(within(panel).getByRole("button", { name: "Save the other rules" }));
 
     await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
     const sent = save.mock.calls[0]![1].products![0]!;
     expect(sent.rules).toEqual(["One line per site", "No resale"]);
     // Everything else is the offering as it was, only tidied as every save tidies it.
     expect({ ...sent, rules: [] }).toEqual({ ...finishedOffering(OFFERING), rules: [] });
-    await waitFor(() => expect(screen.getByRole("button", { name: "Edit the rules" })).toHaveFocus());
+    await waitFor(() => expect(screen.getByRole("button", { name: "Edit the other rules" })).toHaveFocus());
   });
 
   it("takes the device it is built on as one choice, so only one part is ever its hub", async () => {

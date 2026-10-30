@@ -9,7 +9,8 @@ import { blankSystem, channelUses, draftBody, systemUses } from "./drafting";
 import { CONFIDENCE_OPTIONS, usedHow } from "./catalogue";
 import {
   blankConcept, conceptChanges, type ConceptField, conceptIssue, conceptsWith, conceptUsers, finishedConcept, finishedOffering, finishedSystem, interfacesChanges, interfacesOfSystem, interfacesProblem, interfacesWith, journeyOrderProblem, journeyProblem,
-  type Link, linksChanges, linksOf, linksProblem, offeringProblem, relationshipsWith, slug, systemChanges, systemProblem,
+  type Link, linksChanges, linksOf, linksProblem, offeringChanged, offeringProblem, realisationProblem, relationshipsWith, slug, systemChanges,
+  systemProblem,
 } from "./editing";
 import { ActionGroup, Button, Status } from "../design/components";
 import { useFocusAfterRender } from "../design/hooks";
@@ -737,13 +738,12 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
   const { book } = useCatalogueContext();
   const release = book.release;
   const { saveDraft } = useEditing(release);
-  const [value, setValue] = useState<Offering>(
-    () => ({
-      id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [],
-      sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], accepted: [], former_ids: [],
-      deprecated: false,
-    }),
-  );
+  const [blank] = useState<Offering>(() => ({
+    id: "", name: "", rules: [], order_types: [], components: [], values: [], audiences: [], nfrs: [], lifecycle_notes: [],
+    sources: [], questions: [], decisions: [], boundaries: [], not_used: [], plans: [], business_rules: [], accepted: [], former_ids: [],
+    deprecated: false,
+  }));
+  const [value, setValue] = useState<Offering>(blank);
   const products = release.products ?? [];
   const clash = products.some((item) => item.name.trim().toLocaleLowerCase() === value.name.trim().toLocaleLowerCase());
   return (
@@ -753,6 +753,7 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
       action="Add the offering"
       busy={saveDraft.isPending}
       problem={offeringProblem(value) ?? (clash ? "Another offering has that name." : null)}
+      changes={offeringChanged(blank, value) ? ["the new offering"] : []}
       error={saveDraft.error}
       onCancel={() => onDone()}
       onSubmit={() => {
@@ -762,7 +763,7 @@ export function OfferingEdit({ onDone }: { onDone: (saved?: string) => void }) {
     >
       <p className="cat-edit__lead">Say what it is; its order types, parts and the rest are added on its sheet, one section at a time.</p>
       <div className="cat-form">
-        <OfferingFacts value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} offerings={release.products ?? []} />
+        <OfferingFacts value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} offerings={release.products ?? []} release={release} />
       </div>
     </EditPanel>
   );
@@ -788,10 +789,13 @@ export function OfferingSectionEdit({ offering, section, onDone }: { offering: O
       busy={saveDraft.isPending}
       problem={
         offeringProblem(value) ??
+        realisationProblem(value, release) ??
         journeyOrderProblem(value, release.journeys ?? []) ??
         questionProblem(value, release.conflicts ?? []) ??
         (clash ? "Another offering has that name." : null)
       }
+      // A section that would save the offering differently asks before Cancel, Escape or a link throw it away.
+      changes={offeringChanged(offering, value) ? [section === "facts" ? "what it is" : edit] : []}
       error={saveDraft.error}
       onCancel={onDone}
       onSubmit={() => {
@@ -802,7 +806,7 @@ export function OfferingSectionEdit({ offering, section, onDone }: { offering: O
     >
       <p className="cat-edit__lead">The other sections can be edited once this one is saved or cancelled.</p>
       <div className="cat-form">
-        <Fields value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} register={release.sources ?? []} />
+        <Fields value={value} onChange={setValue} systems={release.systems} channels={release.channels ?? []} register={release.sources ?? []} release={release} />
       </div>
     </EditPanel>
   );

@@ -393,11 +393,13 @@ function OfferingRecord({ offering }: { offering: Offering }) {
           </div>
         )}
         {tab === "components" && edited("parts", <Components offering={offering} action={offer("parts")} orderName={orderName} />)}
-        {tab === "plans" && <OfferingPlans offering={offering} />}
+        {tab === "plans" && edited("plans", <OfferingPlans offering={offering} action={offer("plans")} />)}
         {tab === "footprint" && <OfferingFootprint release={book.release} offeringId={offering.id} base={base} />}
         {tab === "rules" && (
           <OfferingRules
             offering={offering}
+            action={offer("business")}
+            editing={editing === "business" ? panel("business") : undefined}
             freeText={edited("rules", (
               <Section title="Other rules" count={offering.rules.length} actions={offer("rules")} headingLevel={3}>
                 {offering.rules.length ? (

@@ -6,7 +6,7 @@
 import "./frame/forms.css";
 
 import { Plus, X } from "lucide-react";
-import { type ReactNode, useRef } from "react";
+import { type ReactNode, useRef, useState } from "react";
 
 import type { CatalogueSystem } from "../api/client";
 import { Button, Checkbox, Field } from "../design/components";
@@ -162,8 +162,10 @@ export function SystemField({ label, value, onChange, systems, writtenAs, allowN
 }
 
 /**
- * Several chosen from a list: the chosen ones as words, each with its own remove, and one select
- * to add another. One chosen that the list no longer has stays shown, as written.
+ * Several chosen from a list: the chosen ones as words, each with its own remove, and a select
+ * with an Add beside it. Choosing in the select adds nothing until Add is pressed, since arrowing
+ * through a closed select picks each option it passes. One chosen that the list no longer has
+ * stays shown, as written.
  */
 export function PickField({ label, hint, chosen, options, onChange }: {
   label: string;
@@ -175,17 +177,30 @@ export function PickField({ label, hint, chosen, options, onChange }: {
 }) {
   const name = (value: string) => options.find((option) => option.value === value)?.label ?? value;
   const left = options.filter((option) => !chosen.includes(option.value));
+  const [next, setNext] = useState("");
   const cell = useRef<HTMLDivElement>(null);
   const focusLater = useFocusAfterRender();
+  const add = () => {
+    if (!next) return;
+    onChange([...chosen, next]);
+    setNext("");
+    // Add is unavailable again once its choice is in: focus goes back to the select for the next one.
+    focusLater(() => cell.current?.querySelector("select"));
+  };
   return (
     <div ref={cell} className="cat-form__cell cat-form__wide">
-      <SelectField
-        label={label}
-        hint={hint}
-        value=""
-        options={[{ value: "", label: chosen.length ? "Add another…" : "Add one…" }, ...left]}
-        onChange={(value) => value && onChange([...chosen, value])}
-      />
+      <div className="cat-form__pick">
+        <SelectField
+          label={label}
+          hint={hint}
+          value={left.some((option) => option.value === next) ? next : ""}
+          options={[{ value: "", label: left.length ? "Choose one to add…" : "Every one is chosen" }, ...left]}
+          onChange={setNext}
+        />
+        <Button aria-label={`Add to ${label.toLocaleLowerCase()}`} icon={<Plus size={14} />} disabled={!next} onClick={add}>
+          Add
+        </Button>
+      </div>
       {chosen.length > 0 && (
         <ul className="cat-form__chosen" aria-label={`${label}: chosen`}>
           {chosen.map((value) => (

@@ -139,6 +139,25 @@ Each release tag `vX.Y.Z` publishes `ghcr.io/mohamhossam/knowledge-api:vX.Y.Z` a
 
 ### Added
 
+- More of an offering's sheet is edited where it is read. Each part is linked to the concepts it
+  means, or says why no concept fits (requirement work maps to a part through its concepts), and
+  each thing a part is realised as is linked to the realisation record it means, in its own layer,
+  with how sure its source is. The Plans tab has "Edit the plans" (each plan's name, what it is,
+  its characteristics with their values, and its source) and the Rules tab "Edit the business
+  rules" (each rule's id, numbered when left empty, what it governs, what it says and its source).
+  "Edit what it is" places the offering in the portfolio, each node named by its path. The
+  service's rules are checked before saving: a link to concepts or a reason, never both; plan
+  names and business rule ids each once; every characteristic with its name and value, once per
+  plan; a realisation linked only to a record of its own layer. Part rows carry their names, and
+  the free-text rules' edit reads "Edit the other rules". No upgrade step.
+- An offering's section edits ask before Cancel, Escape, a link elsewhere or closing the tab
+  throws a change away, as the system and concept edits do. Ticking "No concept fits it" keeps
+  the part's concepts until it is saved (unticking brings them back) and says saving lets them go;
+  a realisation's record stays through a layer change and is said to be of another layer until it
+  is relinked or let go; a layer with no records says so.
+- Choosing in a pick-several field (a part's concepts, an interface's users and what it carries,
+  the interfaces a system uses) adds nothing until "Add" is pressed: arrowing through a closed
+  select picked every option it passed.
 - Concepts are edited, added and removed on their own screen; before, they came only from
   accepted suggestions and catalogue files. "Edit this concept" holds its preferred and other
   labels, what it means, its broader concept or capability domain, its outside and near matches,

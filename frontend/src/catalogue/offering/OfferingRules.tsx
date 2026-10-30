@@ -25,7 +25,14 @@ const KIND_WORDS: Record<string, string> = {
 
 const kindWord = (kind: string) => KIND_WORDS[kind] ?? kind.charAt(0).toUpperCase() + kind.slice(1);
 
-export function OfferingRules({ offering, freeText }: { offering: Offering; freeText: ReactNode }) {
+export function OfferingRules({ offering, freeText, action, editing }: {
+  offering: Offering;
+  freeText: ReactNode;
+  /** "Edit the business rules", on a draft. */
+  action?: ReactNode;
+  /** The business rules' edit, shown in place of the list while it is open. */
+  editing?: ReactNode;
+}) {
   // A version saved before offerings held business rules has none.
   const rules = offering.business_rules ?? [];
   const [kind, setKind] = useState(ALL);
@@ -35,37 +42,39 @@ export function OfferingRules({ offering, freeText }: { offering: Offering; free
 
   return (
     <div className="cat-stack">
-      <Section title="Business rules" count={rules.length} headingLevel={3}>
-        {rules.length === 0 ? (
-          <p className="cat-quiet">No business rule is recorded for this offering.</p>
-        ) : (
-          <>
-            {kinds.length > 1 && (
-              <FilterStrip
-                label="What the rule governs"
-                filters={[{ id: ALL, label: "All", count: rules.length }, ...kinds.map((item) => ({ id: item, label: kindWord(item), count: rules.filter((rule) => kindOf(rule) === item).length }))]}
-                active={kind}
-                onChange={setKind}
-              />
-            )}
-            <Lines label={`Business rules of ${offering.name}`}>
-              {shown.map((rule) => (
-                <li key={rule.id} className="off-rule">
-                  <code className="off-rule__id" translate="no">{rule.id}</code>
-                  <span className="off-rule__body">
-                    <span className="cat-detail">{kindWord(kindOf(rule))}</span>
-                    <span dir="auto">{rule.statement}</span>
-                    <span className="off-rule__source">
-                      {rule.confidence ? <SourceMark confidence={rule.confidence} /> : <span className="cat-quiet">Not said</span>}
-                      {rule.source && <span className="cat-detail" dir="auto"><SourceName text={rule.source} /></span>}
+      {editing ?? (
+        <Section title="Business rules" count={rules.length} actions={action} headingLevel={3}>
+          {rules.length === 0 ? (
+            <p className="cat-quiet">No business rule is recorded for this offering.</p>
+          ) : (
+            <>
+              {kinds.length > 1 && (
+                <FilterStrip
+                  label="What the rule governs"
+                  filters={[{ id: ALL, label: "All", count: rules.length }, ...kinds.map((item) => ({ id: item, label: kindWord(item), count: rules.filter((rule) => kindOf(rule) === item).length }))]}
+                  active={kind}
+                  onChange={setKind}
+                />
+              )}
+              <Lines label={`Business rules of ${offering.name}`}>
+                {shown.map((rule) => (
+                  <li key={rule.id} className="off-rule">
+                    <code className="off-rule__id" translate="no">{rule.id}</code>
+                    <span className="off-rule__body">
+                      <span className="cat-detail">{kindWord(kindOf(rule))}</span>
+                      <span dir="auto">{rule.statement}</span>
+                      <span className="off-rule__source">
+                        {rule.confidence ? <SourceMark confidence={rule.confidence} /> : <span className="cat-quiet">Not said</span>}
+                        {rule.source && <span className="cat-detail" dir="auto"><SourceName text={rule.source} /></span>}
+                      </span>
                     </span>
-                  </span>
-                </li>
-              ))}
-            </Lines>
-          </>
-        )}
-      </Section>
+                  </li>
+                ))}
+              </Lines>
+            </>
+          )}
+        </Section>
+      )}
       {freeText}
     </div>
   );
