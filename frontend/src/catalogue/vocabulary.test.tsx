@@ -1,0 +1,260 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter, Outlet, Route, Routes, useLocation } from "react-router-dom";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { api, type Release } from "../api/client";
+import { checkAxeAfterEach } from "../test/axe";
+import { catalogue } from "./catalogue";
+import type { CatalogueContext } from "./useCatalogue";
+import { VocabularyPage } from "./VocabularyPage";
+import { schemeIssue, termIdFor } from "./vocabularyEditing";
+
+checkAxeAfterEach();
+afterEach(() => vi.restoreAllMocks());
+
+const term = (id: string, scheme: string, pref_label: string, extra: object = {}) => ({
+  id, scheme, pref_label, alt_labels: [], close_match: [], deprecated: false, accepted: [], ...extra,
+});
+
+/** A draft with roles, information entities and a vocabulary a curator defined for offerings' NFR quality. */
+const RELEASE = {
+  id: "draft-1", name: "October", revision: 4, status: "draft", documents: [],
+  systems: [
+    { id: "cwom", name: "CWOM", aliases: [], capabilities: [], components: [], constraints: [], masters: ["entity-customer"], reads: [] },
+  ],
+  relationships: [],
+  journeys: [
+    {
+      id: "new", name: "New activation", activities: [{ number: "10", name: "Orchestrate", role_id: "role-orchestrate", supporting_system_ids: [], component_ids: [], channels: [], channel_entry: false, main_track: true }],
+      flow_rules: [], integrations: [], edges: [], channel_edges: [], shared_edges: [], accepted: [], former_ids: [],
+    },
+  ],
+  schemes: [{ id: "nfr_quality", name: "NFR quality", definition: "How well an offering must work.", fields: ["nfr_quality"] }],
+  vocabulary: [
+    term("role-orchestrate", "responsibility_role", "Orchestrate", { rank: 1 }),
+    term("role-activate", "responsibility_role", "Activate", { rank: 2 }),
+    term("role-bill", "responsibility_role", "Bill", { rank: 3 }),
+    term("entity-customer", "information_entity", "Customer", { alt_labels: ["Party"], definition: "Who buys from us." }),
+    term("entity-order", "information_entity", "Order"),
+    term("api-tmf622", "open_api", "Product Ordering", { notation: "TMF622" }),
+    term("nfr-quality-availability", "nfr_quality", "Availability"),
+    term("doctype-hld", "document_type", "High-level design", { alt_labels: ["HLD"] }),
+  ],
+} as unknown as Release;
+
+function Where() {
+  const location = useLocation();
+  return <p data-testid="where">{location.pathname}{location.search}</p>;
+}
+
+function open(path = "/architecture/vocabulary") {
+  vi.spyOn(api, "changeRequests").mockResolvedValue([] as never);
+  vi.spyOn(api, "mappingImpact").mockResolvedValue({ outdated_requirements: 0 } as never);
+  const context: CatalogueContext = { book: catalogue(RELEASE), base: "/architecture", inService: false, editable: true, actorName: () => "Amina" };
+  render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route path="architecture" element={<Outlet context={context} />}>
+            <Route path="vocabulary" element={<VocabularyPage />} />
+            <Route path="vocabulary/:termId" element={<VocabularyPage />} />
+          </Route>
+        </Routes>
+        <Where />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+const sentVocabulary = (save: ReturnType<typeof vi.spyOn>) => (save.mock.calls[0]![1] as { vocabulary: { id: string; rank?: number | null }[] }).vocabulary;
+
+describe("the vocabulary, read", () => {
+  it("lists every vocabulary, a curator's too, with how many terms each holds and the fields it covers", () => {
+    open();
+    const table = screen.getByRole("table", { name: "The vocabularies of this version" });
+    const nfr = within(table).getByRole("row", { name: /NFR quality/ });
+    expect(within(nfr).getByText("Defined in this version")).toBeInTheDocument();
+    expect(within(nfr).getByText("An offering's NFR quality")).toBeInTheDocument();
+    expect(within(within(table).getByRole("row", { name: /^Role/ })).getByText("3")).toBeInTheDocument();
+  });
+
+  it("reads a term: its labels, what it means, and what in the version uses it", () => {
+    open("/architecture/vocabulary/entity-customer");
+    expect(screen.getByRole("heading", { name: "Customer", level: 2 })).toBeInTheDocument();
+    expect(screen.getByText("Who buys from us.")).toBeInTheDocument();
+    expect(within(screen.getByRole("list", { name: "Labels of Customer" })).getByText("Party")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "The system CWOM" })).toHaveAttribute("href", "/architecture/systems/cwom");
+  });
+
+  it("finds a term by its code", () => {
+    open();
+    fireEvent.change(screen.getByLabelText("Find a term by any label or code"), { target: { value: "tmf622" } });
+    expect(screen.getByRole("link", { name: /Product Ordering/ })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^Customer/ })).not.toBeInTheDocument();
+  });
+
+  it("says a role's strength, strongest first", () => {
+    open("/architecture/vocabulary/role-activate");
+    expect(screen.getByText("2nd of 3 roles, strongest first")).toBeInTheDocument();
+  });
+});
+
+describe("a term, edited", () => {
+  it("edits its labels and code, and says a label another term has under its field once Save is tried", async () => {
+    const save = vi.spyOn(api, "saveDraft").mockResolvedValue(RELEASE);
+    open("/architecture/vocabulary/entity-order");
+    fireEvent.click(screen.getByRole("button", { name: "Edit this term" }));
+    const form = screen.getByRole("form", { name: "Edit Order" });
+    fireEvent.change(within(form).getByLabelText(/Other labels/), { target: { value: "Party" } });
+    expect(within(form).getByText("Correct the other labels first.")).toBeInTheDocument();
+    fireEvent.click(within(form).getByRole("button", { name: "Save the term" }));
+    expect(within(form).getByText("“Party” already names Customer; each label and code names one term of the vocabulary.")).toBeInTheDocument();
+    expect(save).not.toHaveBeenCalled();
+    fireEvent.change(within(form).getByLabelText(/Other labels/), { target: { value: "Product order" } });
+    fireEvent.change(within(form).getByLabelText(/^Code/), { target: { value: " PO " } });
+    expect(within(form).getByText("Changed: its labels and code.")).toBeInTheDocument();
+    fireEvent.click(within(form).getByRole("button", { name: "Save the term" }));
+    await waitFor(() => expect(save).toHaveBeenCalled());
+    expect(sentVocabulary(save).find((item) => item.id === "entity-order")).toMatchObject({ alt_labels: ["Product order"], notation: "PO" });
+  });
+
+  it("adds a term to the vocabulary filtered to, with an id the service would give it", async () => {
+    const save = vi.spyOn(api, "saveDraft").mockResolvedValue(RELEASE);
+    open("/architecture/vocabulary?in=information_entity");
+    fireEvent.click(screen.getByRole("button", { name: "Add a term" }));
+    const form = screen.getByRole("form", { name: "Add a term to Information entity" });
+    expect(within(form).getByLabelText("Vocabulary")).toHaveValue("information_entity");
+    fireEvent.change(within(form).getByLabelText(/Preferred label/), { target: { value: "Billing account" } });
+    fireEvent.change(within(form).getByLabelText("Broader term"), { target: { value: "entity-customer" } });
+    fireEvent.click(within(form).getByRole("button", { name: "Add the term" }));
+    await waitFor(() => expect(save).toHaveBeenCalled());
+    expect(sentVocabulary(save).at(-1)).toMatchObject({ id: "entity-billing-account", scheme: "information_entity", broader_id: "entity-customer" });
+    await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent("/architecture/vocabulary/entity-billing-account"));
+  });
+
+  it("removes only a term nothing uses, and offers to retire one something does", async () => {
+    const save = vi.spyOn(api, "saveDraft").mockResolvedValue(RELEASE);
+    open("/architecture/vocabulary/role-orchestrate");
+    fireEvent.click(screen.getByRole("button", { name: "Remove this term…" }));
+    const form = screen.getByRole("form", { name: "Remove Orchestrate" });
+    expect(within(form).getByRole("link", { name: "The journey New activation" })).toBeInTheDocument();
+    fireEvent.click(within(form).getByRole("button", { name: "Retire it instead" }));
+    expect(screen.getByRole("form", { name: "Edit Orchestrate" })).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Retired/)).toBeChecked();
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it("orders the roles strongest first, saving every rank from the order", async () => {
+    const save = vi.spyOn(api, "saveDraft").mockResolvedValue(RELEASE);
+    open("/architecture/vocabulary?in=responsibility_role");
+    fireEvent.click(screen.getByRole("button", { name: "Order the roles" }));
+    const form = screen.getByRole("form", { name: "Order the roles" });
+    fireEvent.click(within(form).getByRole("button", { name: "Move up Bill" }));
+    expect(within(form).getByText("Bill moved up: now 2 of 3.")).toBeInTheDocument();
+    await waitFor(() => expect(within(form).getByRole("button", { name: "Move up Bill" })).toHaveFocus());
+    expect(within(form).getByText("Changed: the order.")).toBeInTheDocument();
+    fireEvent.click(within(form).getByRole("button", { name: "Save the order" }));
+    await waitFor(() => expect(save).toHaveBeenCalled());
+    const ranks = Object.fromEntries(sentVocabulary(save).filter((item) => item.id.startsWith("role-")).map((item) => [item.id, item.rank]));
+    expect(ranks).toEqual({ "role-orchestrate": 1, "role-bill": 2, "role-activate": 3 });
+  });
+});
+
+describe("what the critique asked of it", () => {
+  it("reads a document type against the library, and keeps one a library document has until it is retyped", async () => {
+    vi.spyOn(api, "libraryDocuments").mockResolvedValue([{ id: "doc-1", title: "Order design", document_type: "doctype-hld" }] as never);
+    open("/architecture/vocabulary/doctype-hld");
+    expect(await screen.findByRole("link", { name: "The library document Order design" })).toHaveAttribute("href", "/library/doc-1");
+    fireEvent.click(screen.getByRole("button", { name: "Remove this term…" }));
+    const form = screen.getByRole("form", { name: "Remove High-level design" });
+    expect(within(form).getByText("Something still names it; change it first, or retire it instead.")).toBeInTheDocument();
+  });
+
+  it("says the library was checked when no document has the type", async () => {
+    vi.spyOn(api, "libraryDocuments").mockResolvedValue([] as never);
+    open("/architecture/vocabulary/doctype-hld");
+    expect(await screen.findByText("Nothing in this version or the library links this term.")).toBeInTheDocument();
+  });
+
+  it("takes focus when a term's edit opens, since the button that opened it gives way", async () => {
+    open("/architecture/vocabulary/entity-order");
+    fireEvent.click(screen.getByRole("button", { name: "Edit this term" }));
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Edit Order" })).toHaveFocus());
+  });
+
+  it("counts nothing as changed when roles that were never ranked are only opened, and says saving records their order", () => {
+    const unranked = { ...RELEASE, vocabulary: RELEASE.vocabulary!.map((item) => ({ ...item, rank: null })) } as unknown as Release;
+    vi.spyOn(api, "changeRequests").mockResolvedValue([] as never);
+    vi.spyOn(api, "mappingImpact").mockResolvedValue({ outdated_requirements: 0 } as never);
+    const context: CatalogueContext = { book: catalogue(unranked), base: "/architecture", inService: false, editable: true, actorName: () => "Amina" };
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={["/architecture/vocabulary?in=responsibility_role"]}>
+          <Routes>
+            <Route path="architecture" element={<Outlet context={context} />}>
+              <Route path="vocabulary" element={<VocabularyPage />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Order the roles" }));
+    const form = screen.getByRole("form", { name: "Order the roles" });
+    expect(within(form).getByText("Nothing changed yet.")).toBeInTheDocument();
+    expect(within(form).getByText("Some roles have no saved order yet; saving records the order shown.")).toBeInTheDocument();
+  });
+
+  it("asks before throwing away a new vocabulary with only its fields chosen, and a new term says plainly what it waits for", () => {
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Add a vocabulary" }));
+    const form = screen.getByRole("form", { name: "Add a vocabulary" });
+    fireEvent.click(within(form).getByLabelText("An offering's family"));
+    expect(within(form).getByText("Changed: the new vocabulary.")).toBeInTheDocument();
+    fireEvent.keyDown(within(form).getByLabelText("An offering's family"), { key: "Escape" });
+    expect(within(form).getByText("Discard your changes to the new vocabulary?")).toBeInTheDocument();
+    fireEvent.click(within(form).getByRole("button", { name: "Discard the changes" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add a term" }));
+    expect(within(screen.getByRole("form", { name: /^Add a term to/ })).getByText("Give it a preferred label to add it.")).toBeInTheDocument();
+  });
+});
+
+describe("a curator's vocabulary, edited", () => {
+  it("adds one with its own name and the fields it covers, a field another covers left out", async () => {
+    const save = vi.spyOn(api, "saveDraft").mockResolvedValue(RELEASE);
+    open();
+    fireEvent.click(screen.getByRole("button", { name: "Add a vocabulary" }));
+    const form = screen.getByRole("form", { name: "Add a vocabulary" });
+    expect(within(form).getByLabelText("An offering's NFR quality")).toBeDisabled();
+    fireEvent.change(within(form).getByLabelText(/^Name/), { target: { value: "role" } });
+    fireEvent.click(within(form).getByRole("button", { name: "Add the vocabulary" }));
+    expect(within(form).getByText("Role is the name of another vocabulary; each has its own.")).toBeInTheDocument();
+    fireEvent.change(within(form).getByLabelText(/^Name/), { target: { value: "Offering family" } });
+    fireEvent.click(within(form).getByLabelText("An offering's family"));
+    fireEvent.click(within(form).getByRole("button", { name: "Add the vocabulary" }));
+    await waitFor(() => expect(save).toHaveBeenCalled());
+    expect((save.mock.calls[0]![1] as { schemes: unknown[] }).schemes.at(-1)).toMatchObject({ id: "offering_family", name: "Offering family", fields: ["offering_family"] });
+  });
+
+  it("removes one only once it holds no terms", () => {
+    open("/architecture/vocabulary?in=nfr_quality");
+    fireEvent.click(screen.getByRole("button", { name: "Remove this vocabulary…" }));
+    const form = screen.getByRole("form", { name: "Remove the vocabulary NFR quality" });
+    expect(within(form).getByText("It still holds a term; remove it first.")).toBeInTheDocument();
+  });
+
+  it("keeps a field while its terms are still linked through it", () => {
+    const linked = {
+      ...RELEASE,
+      products: [{ id: "bpp", name: "Business Pro Plus", nfr: [{ quality_id: "nfr-quality-availability" }] }],
+    } as unknown as Release;
+    const scheme = linked.schemes![0]!;
+    expect(schemeIssue({ ...scheme, fields: [] }, linked, scheme)).toMatchObject({ field: "fields" });
+    expect(schemeIssue({ ...scheme, fields: [] }, RELEASE, scheme)).toBeNull();
+  });
+
+  it("makes a new term's id as the service does", () => {
+    expect(termIdFor("etom_process", "Order Handling", new Set())).toBe("etom-order-handling");
+    expect(termIdFor("nfr_quality", "Availability", new Set(["nfr-quality-availability"]))).toBe("nfr-quality-availability-2");
+  });
+});
