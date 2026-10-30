@@ -1,0 +1,90 @@
+/*
+ * A domain tree edited as an outline: each domain a ruled row, indented under its parent by a
+ * hairline, with its moves and its remove in fixed places. Layout only, from semantic tokens.
+ */
+
+.cat-outline {
+  display: grid;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+.cat-outline__reading {
+  display: grid;
+  gap: var(--space-1);
+  max-inline-size: 72ch;
+}
+
+.cat-outline__reading p {
+  margin: 0;
+}
+
+.cat-outline__list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A sub-domain sits under its parent, a step in and on a hairline, so the tree reads at a glance. */
+.cat-outline__item {
+  min-inline-size: 0;
+  margin-inline-start: calc(var(--depth, 0) * var(--space-6));
+}
+
+.cat-outline__item:not([data-depth="0"]) {
+  padding-inline-start: var(--space-3);
+  border-inline-start: var(--rule-hair) solid var(--color-rule);
+}
+
+.cat-outline__row {
+  display: grid;
+  gap: var(--space-2);
+  min-inline-size: 0;
+  margin: 0;
+  padding: var(--space-1) 0 var(--space-2);
+  border: 0;
+  border-block-end: var(--rule-hair) solid var(--color-rule);
+}
+
+.cat-outline__title {
+  inline-size: 100%;
+  padding: 0;
+  font-weight: var(--weight-strong);
+}
+
+/* The summary takes what room is left; the moves and the remove keep their places. */
+.cat-outline__bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 7.5rem 8.5rem 7rem;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.cat-outline__summary {
+  margin: 0;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.cat-outline__slot {
+  display: flex;
+}
+
+.cat-outline__slot--end {
+  justify-content: end;
+}
+
+.cat-outline__add {
+  padding-block-start: var(--space-2);
+}
+
+@media (max-width: 40rem) {
+  .cat-outline__bar {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .cat-outline__summary {
+    grid-column: 1 / -1;
+  }
+}

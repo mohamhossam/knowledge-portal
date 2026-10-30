@@ -288,6 +288,178 @@ export function journeyIssue(value: Journey): OfferingIssue | null {
 /** Why a journey cannot be saved yet, if anything. */
 export const journeyProblem = (value: Journey): string | null => journeyIssue(value)?.message ?? null;
 
+/** A domain as edited: a landscape domain also says whether it is cross-cutting and its place on the map. */
+export type EditedDomain = {
+  id: string;
+  name: string;
+  parent_id?: string | null;
+  description?: string | null;
+  cross_cutting?: boolean;
+  layout?: "bus" | "above_bus" | "side" | null;
+  /** The edit's own name for a row, kept through moves; a new domain has no id yet. Never sent. */
+  key?: string;
+};
+
+/** A place on the map, in words. */
+export const LAYOUT_WORDS = { bus: "the bus", above_bus: "the layer above the bus", side: "a side layer" } as const;
+
+/** How deep the service lets domains nest (`MAX_DOMAIN_DEPTH`). */
+export const MAX_DOMAIN_DEPTH = 3;
+
+/** A row of the outline: the domain, where it is in the list, how deep it sits, and its parent's place. */
+export type OutlineRow<T> = { item: T; index: number; depth: number; parent: number | null };
+
+/**
+ * The domains as an outline: the top domains in their order, each one's sub-domains under it in
+ * theirs. A domain whose parent is missing, or that would be inside itself, reads at the top.
+ */
+export function domainOutline<T extends EditedDomain>(items: T[]): OutlineRow<T>[] {
+  const at = new Map<string, number>();
+  items.forEach((item, index) => item.id && !at.has(item.id) && at.set(item.id, index));
+  const parentOf = (index: number): number | null => {
+    const parent = items[index]!.parent_id;
+    const found = parent ? at.get(parent) : undefined;
+    if (found === undefined || found === index) return null;
+    // Inside itself, further up: read at the top, where the problem is said.
+    for (let seen = new Set([index]), up: number | undefined = found; up !== undefined; ) {
+      if (seen.has(up)) return null;
+      seen.add(up);
+      const next: string | null | undefined = items[up]!.parent_id;
+      up = next ? at.get(next) : undefined;
+    }
+    return found;
+  };
+  const parents = items.map((_, index) => parentOf(index));
+  const rows: OutlineRow<T>[] = [];
+  const visit = (index: number, depth: number) => {
+    rows.push({ item: items[index]!, index, depth, parent: parents[index] ?? null });
+    items.forEach((_, child) => parents[child] === index && visit(child, depth + 1));
+  };
+  items.forEach((_, index) => parents[index] === null && visit(index, 0));
+  return rows;
+}
+
+/** The domains in the outline's order, so each one's sub-domains follow it. */
+export const outlined = <T extends EditedDomain>(items: T[]): T[] => domainOutline(items).map((row) => row.item);
+
+/** A domain with everything inside it: its row and the rows under it, as a run of the outline. */
+function subtree<T>(rows: OutlineRow<T>[], at: number): [number, number] {
+  let end = at + 1;
+  while (end < rows.length && rows[end]!.depth > rows[at]!.depth) end += 1;
+  return [at, end];
+}
+
+/** The rows that share a domain's parent, in their order. */
+export const siblingsOf = <T>(rows: OutlineRow<T>[], at: number): number[] =>
+  rows.flatMap((row, place) => (row.parent === rows[at]!.parent ? [place] : []));
+
+/** A domain moved past its neighbour among its siblings, with everything inside it. */
+export function moveDomain<T extends EditedDomain>(items: T[], index: number, by: -1 | 1): T[] {
+  const rows = domainOutline(items);
+  const at = rows.findIndex((row) => row.index === index);
+  const siblings = siblingsOf(rows, at);
+  const other = siblings[siblings.indexOf(at) + by];
+  if (other === undefined) return outlined(items);
+  const [first, second] = by < 0 ? [other, at] : [at, other];
+  const [a0, a1] = subtree(rows, first);
+  const [b0, b1] = subtree(rows, second);
+  const order = [...rows.slice(0, a0), ...rows.slice(b0, b1), ...rows.slice(a0, a1), ...rows.slice(b1)];
+  return order.map((row) => row.item);
+}
+
+/** A domain removed; what was inside it moves up to its parent, or to the top. */
+export function removeDomain<T extends EditedDomain>(items: T[], index: number): T[] {
+  const gone = items[index]!;
+  return outlined(
+    items
+      .filter((_, at) => at !== index)
+      .map((item) => (gone.id && item.parent_id === gone.id ? { ...item, parent_id: gone.parent_id ?? null } : item)),
+  );
+}
+
+/**
+ * What stops a domain tree being saved, field by field, as the service checks it: a name on every
+ * domain, unique among its siblings; a parent that is not itself or inside it, three levels at most;
+ * a place on the map only for a top domain; one bus and one layer above it at most, and that layer
+ * only with a bus. Of two given the same place, the one left where it was keeps it, and else the
+ * one placed before `latest` (the key of the domain placed last).
+ */
+export function domainsIssue(items: EditedDomain[], before: EditedDomain[] = [], latest?: string): OfferingIssue | null {
+  const at = (path: string, field: string, message: string): OfferingIssue => ({ message, at: path, field });
+  const words = (item: EditedDomain) => (item.name.trim() ? `the domain ${item.name.trim()}` : "a new domain");
+  const byId = new Map(items.filter((item) => item.id).map((item) => [item.id, item]));
+  const named = new Map<string, string>();
+  for (const [index, item] of items.entries()) {
+    if (!item.name.trim()) return at(`domains.${index}.name`, `the name of ${words(item)}`, "Give the domain a name.");
+    const sibling = `${item.parent_id ?? ""}\u0000${fold(item.name)}`;
+    if (named.has(sibling)) {
+      const parent = item.parent_id ? byId.get(item.parent_id)?.name : null;
+      return at(`domains.${index}.name`, `the name of ${words(item)}`, `Another domain ${parent ? `inside ${parent}` : "at the top"} is named ${item.name.trim()}.`);
+    }
+    named.set(sibling, item.name);
+    let depth = 1;
+    for (let seen = new Set([item.id]), up = item.parent_id; up; depth += 1) {
+      const parent = byId.get(up);
+      if (!parent) return at(`domains.${index}.parent`, `where ${words(item)} sits`, "Its parent is not in the list; choose another, or At the top.");
+      if (seen.has(parent.id) || parent.id === item.id) return at(`domains.${index}.parent`, `where ${words(item)} sits`, "It would be inside itself; choose another parent.");
+      seen.add(parent.id);
+      up = parent.parent_id;
+    }
+    if (depth > MAX_DOMAIN_DEPTH) {
+      return at(`domains.${index}.parent`, `where ${words(item)} sits`, `Domains are at most ${MAX_DOMAIN_DEPTH} levels deep; put it, or what it is inside, higher.`);
+    }
+  }
+  const was = new Map(before.map((item) => [item.id, item.layout ?? null]));
+  const moved = (item: EditedDomain) => !item.id || was.get(item.id) !== (item.layout ?? null);
+  for (const [index, item] of items.entries()) {
+    const place = `domains.${index}.layout`;
+    if (item.layout && item.parent_id) {
+      return at(place, `the place of ${words(item)}`, "Only a top domain has a place on the map; choose Among the layers, or put it at the top.");
+    }
+    if (item.layout === "bus" || item.layout === "above_bus") {
+      const same = items.filter((other) => other.layout === item.layout);
+      const keeper = same.find((other) => !moved(other)) ?? same.find((other) => other.key !== latest) ?? same[0]!;
+      if (same.length > 1 && keeper !== item) {
+        return at(place, `the place of ${words(item)}`, `${keeper.name.trim()} is ${LAYOUT_WORDS[item.layout]} already; the map has one.`);
+      }
+    }
+    if (item.layout === "above_bus" && !items.some((other) => other.layout === "bus")) {
+      return at(place, `the place of ${words(item)}`, "The layer above the bus needs a domain that is the bus.");
+    }
+  }
+  return null;
+}
+
+/** What an edit of a domain tree has changed, in words: each domain by name, those added and removed, and the order. */
+export function domainsChanges(before: EditedDomain[], after: EditedDomain[]): string[] {
+  const settle = (item: EditedDomain) => ({
+    name: item.name.trim(),
+    parent_id: item.parent_id || null,
+    description: item.description?.trim() || null,
+    cross_cutting: Boolean(item.cross_cutting),
+    layout: item.layout ?? null,
+  });
+  const was = new Map(before.map((item) => [item.id, item]));
+  const changed: string[] = [];
+  for (const item of after) {
+    const old = item.id ? was.get(item.id) : undefined;
+    if (!old) changed.push(item.name.trim() ? `the new domain ${item.name.trim()}` : "a new domain");
+    else if (!savedSame(settle(old), settle(item))) changed.push(item.name.trim() || old.name);
+  }
+  const kept = new Set(after.map((item) => item.id));
+  for (const item of before) if (!kept.has(item.id)) changed.push(`the removed domain ${item.name}`);
+  // The order that means something: each parent's own, of the domains kept where they were.
+  const now = new Map(after.map((item) => [item.id, item]));
+  const stayed = (id: string) => Boolean(id) && was.has(id) && now.has(id) && (was.get(id)!.parent_id ?? null) === (now.get(id)!.parent_id ?? null);
+  const order = (items: EditedDomain[]) =>
+    domainOutline(items)
+      .filter((row) => stayed(row.item.id))
+      .map((row) => `${row.item.parent_id ?? ""}>${row.item.id}`);
+  const grouped = (rows: string[]) => [...new Set(rows.map((row) => row.split(">")[0]))].map((parent) => rows.filter((row) => row.startsWith(`${parent}>`)));
+  if (!savedSame(grouped(order(before)).sort(), grouped(order(after)).sort())) changed.push("the order");
+  return changed.length > 6 ? [...changed.slice(0, 5), `${changed.length - 5} more`] : changed;
+}
+
 /**
  * What an edit of a journey has changed, in words: its own facts, each step by its number (a step
  * renumbered reads as one added and one removed), the branches, and each hand-over by its steps.
